@@ -1,16 +1,12 @@
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { AdminPayload, UserPayload } from './types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'spectrumcosmo-secret-key-2024'
 
-export interface AdminPayload {
-  id: string
-  username: string
-  role: string
-}
-
-export function signToken(payload: AdminPayload): string {
+// ─── ADMIN AUTH ───────────────────────────────────────────
+export function signAdminToken(payload: AdminPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
 }
 
@@ -41,4 +37,30 @@ export async function getAdminFromCookies(): Promise<AdminPayload | null> {
   const token = cookieStore.get('admin_token')?.value
   if (!token) return null
   return verifyToken(token)
+}
+
+// ─── CUSTOMER AUTH ────────────────────────────────────────
+export function signUserToken(payload: UserPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+}
+
+export function verifyUserToken(token: string): UserPayload | null {
+  try {
+    return jwt.verify(token, JWT_SECRET) as UserPayload
+  } catch {
+    return null
+  }
+}
+
+export function getUserFromRequest(req: NextRequest): UserPayload | null {
+  const token = req.cookies.get('user_token')?.value
+  if (!token) return null
+  return verifyUserToken(token)
+}
+
+export async function getUserFromCookies(): Promise<UserPayload | null> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('user_token')?.value
+  if (!token) return null
+  return verifyUserToken(token)
 }
