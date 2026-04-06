@@ -44,7 +44,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               {product.description && <p className="text-gray-600 leading-relaxed mb-8">{product.description}</p>}
               <div className="bg-orange-50 rounded-2xl p-6 mb-8">
                 <h2 className="font-bold text-[#111111] mb-4">Place Your Order</h2>
-                <OrderForm productName={product.name} />
+                <OrderForm productName={product.name} productPrice={parseFloat(product.price)} productId={product.id} />
               </div>
             </div>
           </div>
