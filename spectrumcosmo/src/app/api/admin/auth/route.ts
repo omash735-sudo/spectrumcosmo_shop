@@ -1,31 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-import { signAdminToken, verifyToken } from '@/lib/auth'
-import bcrypt from 'bcryptjs'
+import { signAdminToken } from '@/lib/auth'
 
-// POST — Login
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'spectrumcosmo2024'
+
 export async function POST(req: NextRequest) {
   try {
     const { username, password } = await req.json()
 
-    if (!username || !password)
-      return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
-
-    const sql = getDb()
-    const result = await sql`SELECT * FROM admins WHERE username = ${username}`
-
-    if (result.length === 0)
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
-
-    const admin = result[0]
-    const valid = await bcrypt.compare(password, admin.password_hash)
-
-    if (!valid)
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
+    }
 
     const token = signAdminToken({
-      id: admin.id,
-      username: admin.username,
+      id: 'admin',
+      username: ADMIN_USERNAME,
       role: 'admin'
     })
 
@@ -37,13 +26,12 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24
     })
     return response
+
   } catch (error) {
-    console.error('Admin auth error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
 
-// DELETE — Logout
 export async function DELETE() {
   const response = NextResponse.json({ message: 'Logged out' })
   response.cookies.delete('admin_token')
