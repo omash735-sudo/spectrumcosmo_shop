@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getDb } from '@/lib/db'
 import { signUserToken } from '@/lib/userAuth'
+import { sendMail } from '@/lib/mailer'
 
 async function ensureUsersTable() {
   const sql = getDb()
@@ -20,24 +21,24 @@ async function ensureUsersTable() {
 
 export async function POST(req: NextRequest) {
   try {
+    const { name, email, password } = await req.json()
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: 'name, email, password required' }, { status: 400 })
+    }
+
     await ensureUsersTable()
-    const { email, password } = await req.json()
-    if (!email || !password) {
-      return NextResponse.json({ error: 'email and password required' }, { status: 400 })
-    }
-
     const sql = getDb()
-    const users = await sql`SELECT id, name, email, password_hash FROM users WHERE email = ${email}`
-    if (users.length === 0) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    const existing = await sql`SELECT id FROM users WHERE email = ${email}`
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
     }
 
-    const user = users[0]
-    const ok = await bcrypt.compare(password, user.password_hash)
-    if (!ok) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    const hash = await bcrypt.hash(password, 10)
+    const [user] =
+      await sql`INSERT INTO users (name, email, password_hash) VALUES (${name}, ${email}, ${hash}) RETURNING id, name, email`
 
     const token = signUserToken({ id: user.id, name: user.name, email: user.email, role: 'customer' })
-    const res = NextResponse.json({ user: { id: user.id, name: user.name, email: user.email } })
+    const res = NextResponse.json({ user })
     res.cookies.set('user_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
+
+    await sendMail({
+      to: user.email,
+      subject: 'Welcome to SpectrumCosmo',
+      text: `Hi ${user.name}, welcome to SpectrumCosmo.`,
+    }).catch(() => null)
+
     return res
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

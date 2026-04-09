@@ -1,6 +1,38 @@
+'use client'
+
 import Link from 'next/link'
-import { ShoppingBag, Instagram, Twitter, Mail } from 'lucide-react'
+import { ShoppingBag, Instagram, Twitter, Mail, Facebook, MessageCircle, Music2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+type SocialLinks = {
+  instagram: string
+  twitter: string
+  facebook: string
+  tiktok: string
+  whatsapp: string
+  email: string
+}
+
 export default function Footer() {
+  const [links, setLinks] = useState<SocialLinks>({
+    instagram: '',
+    twitter: '',
+    facebook: '',
+    tiktok: '',
+    whatsapp: '',
+    email: 'spectrumcosmo01@gmail.com',
+  })
+
+  useEffect(() => {
+    fetch('/api/admin/social-links')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return
+        setLinks((prev) => ({ ...prev, ...data }))
+      })
+      .catch(() => null)
+  }, [])
+
   return (
     <footer className="bg-[#111111] text-white" id="contact">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -12,9 +44,12 @@ export default function Footer() {
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">Wear your excitement with pride. Custom apparel and anime merchandise crafted for those who live boldly.</p>
             <div className="flex gap-3 mt-5">
-              <a href="#" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Instagram size={16} /></a>
-              <a href="#" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Twitter size={16} /></a>
-              <a href="mailto:hello@spectrumcosmo.com" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Mail size={16} /></a>
+              {links.instagram && <a href={links.instagram} target="_blank" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Instagram size={16} /></a>}
+              {links.twitter && <a href={links.twitter} target="_blank" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Twitter size={16} /></a>}
+              {links.facebook && <a href={links.facebook} target="_blank" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Facebook size={16} /></a>}
+              {links.tiktok && <a href={links.tiktok} target="_blank" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Music2 size={16} /></a>}
+              {links.whatsapp && <a href={links.whatsapp} target="_blank" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><MessageCircle size={16} /></a>}
+              <a href={`mailto:${links.email}`} className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors"><Mail size={16} /></a>
             </div>
           </div>
           <div>
@@ -28,7 +63,7 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Get in Touch</h3>
             <ul className="space-y-3 text-sm text-gray-400">
-              <li>spectrumcosmo01@gmail.com</li>
+              <li>{links.email}</li>
               <li>Mon–Fri, 9am–6pm WAT</li>
               <li className="pt-2"><Link href="/products" className="inline-flex items-center gap-2 bg-[#F97316] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#ea6c0f] transition-colors">Shop the Collection</Link></li>
             </ul>

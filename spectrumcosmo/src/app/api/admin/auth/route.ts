@@ -1,39 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { signAdminToken } from '@/lib/auth'
+import { signToken } from '@/lib/auth'
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'spectrumcosmo2024'
+import { getDb } from '@/lib/db'
+import bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   try {
     const { username, password } = await req.json()
-
-    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
+    const sql = getDb()
+    
+    const users = await sql`SELECT * FROM admins WHERE username = ${username}`
+    if (users.length === 0) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
-    const token = signAdminToken({
-      id: 'admin',
-      username: ADMIN_USERNAME,
-      role: 'admin'
-    })
-
-    const response = NextResponse.json({ message: 'Login successful' })
-    response.cookies.set('admin_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24
-    })
-    return response
-
-  } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    const user = users[0]
+    const valid = await bcrypt.compare(password, user.password_hash)
+    
+    if (valid) {
+      const token = signToken({ id: user.id, username: user.username, role: 'admin' })
+      const res = NextResponse.json({ success: true })
+      res.cookies.set('admin_token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24,
+        path: '/',
+      })
+      return res
+    }
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ message: 'Logged out' })
-  response.cookies.delete('admin_token')
-  return response
+  const res = NextResponse.json({ success: true })
+  res.cookies.delete('admin_token')
+  return res
 }

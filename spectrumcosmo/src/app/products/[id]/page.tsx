@@ -5,6 +5,8 @@ import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import OrderForm from '@/components/storefront/OrderForm'
 import StarRating from '@/components/ui/StarRating'
+import CurrencyPrice from '@/components/storefront/CurrencyPrice'
+import AddToCartButton from '@/components/storefront/AddToCartButton'
 import { getDb } from '@/lib/db'
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,11 +42,19 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="flex flex-col justify-center">
               <h1 className="text-4xl font-bold text-[#111111] mb-3" style={{fontFamily:'var(--font-display)'}}>{product.name}</h1>
               {reviews.length>0 && <div className="flex items-center gap-3 mb-4"><StarRating rating={avgRating} /><span className="text-sm text-gray-500">({reviews.length} review{reviews.length!==1?'s':''})</span></div>}
-              <p className="text-4xl font-bold text-[#F97316] mb-6">${parseFloat(product.price).toFixed(2)}</p>
+              <p className="text-4xl font-bold text-[#F97316] mb-6"><CurrencyPrice amountUsd={Number(product.price ?? 0)} /></p>
               {product.description && <p className="text-gray-600 leading-relaxed mb-8">{product.description}</p>}
+              <div className="mb-8">
+                <AddToCartButton
+                  productId={String(product.id)}
+                  productName={product.name}
+                  imageUrl={product.image_url}
+                  priceUsd={Number(product.price ?? 0)}
+                />
+              </div>
               <div className="bg-orange-50 rounded-2xl p-6 mb-8">
                 <h2 className="font-bold text-[#111111] mb-4">Place Your Order</h2>
-                <OrderForm productName={product.name} productPrice={parseFloat(product.price)} productId={product.id} />
+                <OrderForm productName={product.name} />
               </div>
             </div>
           </div>
