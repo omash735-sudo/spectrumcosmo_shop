@@ -19,14 +19,16 @@ async function ensureUsersTable() {
 
 export async function GET(req: NextRequest) {
   const userToken = getUserFromRequest(req)
-  if (!userToken) return NextResponse.json({ user: null }, { status: 401 })
+  // Always 200 + { user } so client fetch() never treats "logged out" as a failed request
+  // (some browsers/CDNs mishandle 401 on session checks and break /account).
+  if (!userToken) return NextResponse.json({ user: null })
 
   try {
     await ensureUsersTable()
     const sql = getDb()
     const users =
       await sql`SELECT id, name, email, phone, newsletter_subscribed FROM users WHERE id = ${userToken.id}`
-    if (users.length === 0) return NextResponse.json({ user: null }, { status: 404 })
+    if (users.length === 0) return NextResponse.json({ user: null })
     return NextResponse.json({ user: users[0] })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

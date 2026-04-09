@@ -24,10 +24,10 @@ export default function Navbar() {
   const subtotal = useMemo(() => subtotalUsd * (rates[currency] ?? 1), [subtotalUsd, rates, currency])
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
+    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
+      .then((r) => r.json())
       .then((data) => setUser(data?.user || null))
-      .catch(() => null)
+      .catch(() => setUser(null))
   }, [])
 
   const logout = async () => {
