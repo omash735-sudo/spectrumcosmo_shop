@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { signToken } from '@/lib/auth'
-
+import { signAdminToken } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
@@ -18,7 +17,7 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.password_hash)
     
     if (valid) {
-      const token = signToken({ id: user.id, username: user.username, role: 'admin' })
+      const token = signAdminToken({ id: user.id, username: user.username, role: 'admin' })
       const res = NextResponse.json({ success: true })
       res.cookies.set('admin_token', token, {
         httpOnly: true,
