@@ -1,20 +1,32 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ShoppingBag, Loader2, Eye, EyeOff } from 'lucide-react'
+
 export default function AdminLoginPage() {
-  const router = useRouter()
   const [form, setForm] = useState({ username:'', password:'' })
   const [showPw, setShowPw] = useState(false)
   const [status, setStatus] = useState<'idle'|'loading'|'error'>('idle')
   const [error, setError] = useState('')
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus('loading')
-    const res = await fetch('/api/admin/auth', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
-    if (res.ok) { router.push('/admin/dashboard'); router.refresh() }
-    else { const d = await res.json(); setError(d.error||'Login failed'); setStatus('error') }
+    const res = await fetch('/api/admin/auth', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(form),
+      credentials: 'include'
+    })
+    if (res.ok) { 
+      window.location.href = '/admin/dashboard'
+    }
+    else { 
+      const d = await res.json()
+      setError(d.error || 'Login failed')
+      setStatus('error') 
+    }
   }
+
   return (
     <div className="min-h-screen bg-[#111111] flex items-center justify-center px-4">
       <div className="absolute inset-0 opacity-5">
