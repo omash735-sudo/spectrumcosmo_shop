@@ -1,3 +1,9 @@
+export interface AdminPayload {
+  id: string
+  username: string
+  role: 'admin'
+}
+
 export interface Product {
   id: string
   name: string
