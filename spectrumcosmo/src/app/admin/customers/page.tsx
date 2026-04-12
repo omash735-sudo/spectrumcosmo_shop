@@ -20,12 +20,12 @@ export default async function CustomersPage() {
       SELECT 
         customer_name,
         phone_number,
-        email,
+        customer_email,
         COUNT(*) as total_orders,
         SUM(COALESCE(total_amount, total_price)) as total_spent,
         MAX(created_at) as last_order
       FROM orders
-      GROUP BY customer_name, phone_number, email
+      GROUP BY customer_name, phone_number, customer_email
       ORDER BY last_order DESC
     `
   } catch (err) {
@@ -84,7 +84,9 @@ export default async function CustomersPage() {
                     {/* Contact */}
                     <td className="px-6 py-4">
                       <p className="text-sm text-gray-600">{c.phone_number}</p>
-                      <p className="text-xs text-gray-400">{c.email || '—'}</p>
+                      <p className="text-xs text-gray-400">
+                        {c.customer_email || '—'}
+                      </p>
                     </td>
 
                     {/* Orders */}
