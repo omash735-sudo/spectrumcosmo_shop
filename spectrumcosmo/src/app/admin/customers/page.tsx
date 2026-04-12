@@ -20,13 +20,22 @@ export default async function CustomersPage() {
       SELECT 
         customer_name,
         phone_number,
-        customer_email,
-        COUNT(*) as total_orders,
-        SUM(COALESCE(total_amount, total_price)) as total_spent,
+        COALESCE(customer_email, 'no-email') as customer_email,
+        COUNT(*)::int as total_orders,
+        COALESCE(
+          SUM(
+            COALESCE(total_amount, 0) + COALESCE(total_price, 0)
+          ),
+          0
+        ) as total_spent,
         MAX(created_at) as last_order
       FROM orders
-      GROUP BY customer_name, phone_number, customer_email
-      ORDER BY last_order DESC
+      WHERE customer_name IS NOT NULL
+      GROUP BY 
+        customer_name,
+        phone_number,
+        COALESCE(customer_email, 'no-email')
+      ORDER BY MAX(created_at) DESC
     `
   } catch (err) {
     console.error(err)
@@ -83,9 +92,11 @@ export default async function CustomersPage() {
 
                     {/* Contact */}
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600">{c.phone_number}</p>
+                      <p className="text-sm text-gray-600">
+                        {c.phone_number}
+                      </p>
                       <p className="text-xs text-gray-400">
-                        {c.customer_email || '—'}
+                        {c.customer_email}
                       </p>
                     </td>
 
@@ -96,7 +107,7 @@ export default async function CustomersPage() {
 
                     {/* Total spent */}
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      MK {c.total_spent || 0}
+                      MK {c.total_spent}
                     </td>
 
                     {/* Last order */}
