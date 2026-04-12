@@ -1,38 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyUserToken, verifyToken } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    const token = req.cookies.get('admin_token')?.value
-    console.log('MIDDLEWARE - token:', token ? 'EXISTS' : 'MISSING')
-    console.log('MIDDLEWARE - verify:', token ? verifyToken(token) : 'NO TOKEN')
-  }
+  const adminToken = req.cookies.get('admin_token')?.value
+  const userToken = req.cookies.get('user_token')?.value
 
-  // ✅ Allow public admin login route
-  if (pathname.startsWith('/admin/login')) {
-    return NextResponse.next()
-  }
-
-  // ✅ Allow public user login route
-  if (pathname.startsWith('/auth/login')) {
-    return NextResponse.next()
-  }
-
-  // Protect customer routes
-  if (pathname.startsWith('/account')) {
-    const token = req.cookies.get('user_token')?.value
-    if (!token || !verifyUserToken(token)) {
-      return NextResponse.redirect(new URL('/auth/login', req.url))
+  // Protect admin routes (ONLY check existence)
+  if (pathname.startsWith('/admin')) {
+    if (!adminToken) {
+      return NextResponse.redirect(new URL('/admin/login', req.url))
     }
   }
 
-  // Protect admin routes
-  if (pathname.startsWith('/admin')) {
-    const token = req.cookies.get('admin_token')?.value
-    if (!token || !verifyToken(token)) {
-      return NextResponse.redirect(new URL('/admin/login', req.url))
+  // Protect user account routes (ONLY check existence)
+  if (pathname.startsWith('/account')) {
+    if (!userToken) {
+      return NextResponse.redirect(new URL('/auth/login', req.url))
     }
   }
 
@@ -40,5 +25,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/account/:path*', '/admin/:path*']
+  matcher: ['/admin/:path*', '/account/:path*']
 }
