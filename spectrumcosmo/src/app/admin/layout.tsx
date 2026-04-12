@@ -11,6 +11,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <nav className="space-y-1 text-sm">
 
+          {/* Core */}
+          <p className="text-xs text-gray-400 mt-2 mb-1">CORE</p>
+
           <Link href="/admin/dashboard" className="block p-2 rounded hover:bg-gray-100">
             Dashboard
           </Link>
@@ -27,21 +30,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Reviews
           </Link>
 
-          <Link href="/admin/delivery" className="block p-2 rounded hover:bg-gray-100">
-            Delivery
-          </Link>
+          {/* Business Flow */}
+          <p className="text-xs text-gray-400 mt-4 mb-1">OPERATIONS</p>
 
           <Link href="/admin/payments" className="block p-2 rounded hover:bg-gray-100">
             Payments
+          </Link>
+
+          <Link href="/admin/delivery" className="block p-2 rounded hover:bg-gray-100">
+            Delivery
           </Link>
 
           <Link href="/admin/customers" className="block p-2 rounded hover:bg-gray-100">
             Customers
           </Link>
 
+          {/* Growth / Insights */}
+          <p className="text-xs text-gray-400 mt-4 mb-1">GROWTH</p>
+
           <Link href="/admin/analytics" className="block p-2 rounded hover:bg-gray-100">
             Analytics
           </Link>
+
+          <Link href="/admin/newsletter" className="block p-2 rounded hover:bg-gray-100">
+            Newsletter
+          </Link>
+
+          {/* System */}
+          <p className="text-xs text-gray-400 mt-4 mb-1">SYSTEM</p>
 
           <Link href="/admin/settings" className="block p-2 rounded hover:bg-gray-100">
             Settings
