@@ -13,121 +13,36 @@ export default async function CustomersPage() {
 
   const sql = getDb()
 
-  let customers: any[] = []
+  let orders: any[] = []
 
   try {
-    customers = await sql`
-      SELECT 
-        customer_name,
-        phone_number,
-        COALESCE(customer_email, 'no-email') as customer_email,
-        COUNT(*)::int as total_orders,
-        COALESCE(
-          SUM(
-            COALESCE(total_amount, 0) + COALESCE(total_price, 0)
-          ),
-          0
-        ) as total_spent,
-        MAX(created_at) as last_order
-      FROM orders
-      WHERE customer_name IS NOT NULL
-      GROUP BY 
-        customer_name,
-        phone_number,
-        COALESCE(customer_email, 'no-email')
-      ORDER BY MAX(created_at) DESC
+    orders = await sql`
+      SELECT * FROM orders
+      LIMIT 20
     `
   } catch (err) {
-    console.error(err)
+    console.error("DB ERROR:", err)
   }
 
+  console.log("ORDERS RESULT:", orders)
+
   return (
-    <div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">TEST - Orders Data</h1>
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111111]">Customers</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Manage and track all your customers.
-        </p>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-[#111111]">Customer List</h2>
+      {orders.length === 0 ? (
+        <p>No orders found (or DB not connected)</p>
+      ) : (
+        <div className="space-y-2">
+          {orders.map((o, i) => (
+            <div key={i} className="p-3 border rounded">
+              <p><b>Name:</b> {o.customer_name}</p>
+              <p><b>Email:</b> {o.customer_email}</p>
+              <p><b>Phone:</b> {o.phone_number}</p>
+            </div>
+          ))}
         </div>
-
-        {customers.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-400 text-sm">
-            No customers found.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-
-            <table className="w-full">
-
-              <thead>
-                <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
-                  <th className="text-left px-6 py-3">Customer</th>
-                  <th className="text-left px-6 py-3">Contact</th>
-                  <th className="text-left px-6 py-3">Orders</th>
-                  <th className="text-left px-6 py-3">Total Spent</th>
-                  <th className="text-left px-6 py-3">Last Order</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-50">
-
-                {customers.map((c: any, idx: number) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-
-                    {/* Customer */}
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-sm text-[#111111]">
-                        {c.customer_name}
-                      </p>
-                    </td>
-
-                    {/* Contact */}
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-600">
-                        {c.phone_number}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {c.customer_email}
-                      </p>
-                    </td>
-
-                    {/* Orders */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {c.total_orders}
-                    </td>
-
-                    {/* Total spent */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      MK {c.total_spent}
-                    </td>
-
-                    {/* Last order */}
-                    <td className="px-6 py-4 text-xs text-gray-400">
-                      {c.last_order
-                        ? new Date(c.last_order).toLocaleDateString()
-                        : '—'}
-                    </td>
-
-                  </tr>
-                ))}
-
-              </tbody>
-
-            </table>
-
-          </div>
-        )}
-
-      </div>
+      )}
     </div>
   )
 }
