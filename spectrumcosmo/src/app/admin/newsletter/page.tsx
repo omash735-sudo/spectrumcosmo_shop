@@ -4,69 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { verifyToken } from '@/lib/auth'
 import { getDb } from '@/lib/db'
-import { revalidatePath } from 'next/cache'
-
-async function createNewsletter(formData: FormData) {
-  'use server'
-
-  const sql = getDb()
-
-  const title = formData.get('title')?.toString()
-  const content = formData.get('content')?.toString()
-  const image_url = formData.get('image_url')?.toString()
-  const product_link = formData.get('product_link')?.toString()
-
-  await sql`
-    INSERT INTO newsletters (
-      title,
-      content,
-      image_url,
-      product_link,
-      is_pinned,
-      is_sent,
-      created_at
-    )
-    VALUES (
-      ${title},
-      ${content},
-      ${image_url},
-      ${product_link},
-      false,
-      false,
-      NOW()
-    )
-  `
-
-  revalidatePath('/admin/newsletter')
-}
-
-async function pinNewsletter(id: string) {
-  'use server'
-
-  const sql = getDb()
-
-  await sql`
-    UPDATE newsletters
-    SET is_pinned = true
-    WHERE id = ${id}
-  `
-
-  revalidatePath('/admin/newsletter')
-}
-
-async function sendNewsletter(id: string) {
-  'use server'
-
-  const sql = getDb()
-
-  await sql`
-    UPDATE newsletters
-    SET is_sent = true
-    WHERE id = ${id}
-  `
-
-  revalidatePath('/admin/newsletter')
-}
+import Link from 'next/link'
 
 export default async function NewsletterPage() {
   const cookieStore = await cookies()
@@ -76,74 +14,35 @@ export default async function NewsletterPage() {
 
   const sql = getDb()
 
-  let newsletters: any[] = []
-
-  try {
-    newsletters = await sql`
-      SELECT *
-      FROM newsletters
-      ORDER BY created_at DESC
-    `
-  } catch (err) {
-    console.error(err)
-  }
+  const newsletters = await sql`
+    SELECT *
+    FROM newsletter
+    ORDER BY created_at DESC
+  `
 
   return (
-    <div>
+    <div className="pt-16 lg:pt-0">
 
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#111111]">Newsletter</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Create and manage announcements for your customers.
+          Create, manage and send newsletters.
         </p>
       </div>
 
-      {/* Create Form */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
+      <div className="flex justify-between items-center mb-6">
+        <p className="text-sm text-gray-400">
+          {newsletters.length} total posts
+        </p>
 
-        <h2 className="font-bold text-[#111111] mb-4">Create Newsletter</h2>
-
-        <form action={createNewsletter} className="space-y-3">
-
-          <input
-            name="title"
-            placeholder="Title"
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm"
-            required
-          />
-
-          <textarea
-            name="content"
-            placeholder="Content"
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm"
-            rows={4}
-            required
-          />
-
-          <input
-            name="image_url"
-            placeholder="Image URL"
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm"
-          />
-
-          <input
-            name="product_link"
-            placeholder="Product Link (optional)"
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm"
-          />
-
-          <button
-            type="submit"
-            className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm hover:bg-orange-600"
-          >
-            Create Newsletter
-          </button>
-
-        </form>
+        <Link
+          href="/admin/newsletter/new"
+          className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm font-medium"
+        >
+          Create Newsletter
+        </Link>
       </div>
 
-      {/* List */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
         <div className="px-6 py-4 border-b border-gray-100">
@@ -155,52 +54,72 @@ export default async function NewsletterPage() {
             No newsletters created yet.
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
 
-            <thead>
-              <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
-                <th className="text-left px-6 py-3">Title</th>
-                <th className="text-left px-6 py-3">Status</th>
-                <th className="text-left px-6 py-3">Actions</th>
-              </tr>
-            </thead>
+            <table className="w-full">
 
-            <tbody className="divide-y divide-gray-50">
+              <thead>
+                <tr className="text-xs text-gray-400 uppercase bg-gray-50">
+                  <th className="px-6 py-3 text-left">Title</th>
+                  <th className="px-6 py-3 text-left">Content</th>
+                  <th className="px-6 py-3 text-left">Image</th>
+                  <th className="px-6 py-3 text-left">Date</th>
+                  <th className="px-6 py-3 text-left">Action</th>
+                </tr>
+              </thead>
 
-              {newsletters.map((n: any) => (
-                <tr key={n.id} className="hover:bg-gray-50">
+              <tbody className="divide-y divide-gray-50">
 
-                  <td className="px-6 py-4 text-sm text-[#111111]">
-                    {n.title}
-                  </td>
+                {newsletters.map((n: any, i: number) => (
+                  <tr key={i} className="hover:bg-gray-50">
 
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {n.is_sent ? 'Sent' : 'Draft'}{' '}
-                    {n.is_pinned ? '(Pinned)' : ''}
-                  </td>
+                    <td className="px-6 py-4 font-medium text-sm">
+                      {n.title}
+                    </td>
 
-                  <td className="px-6 py-4 flex gap-2">
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-[250px] truncate">
+                      {n.content}
+                    </td>
 
-                    <form action={pinNewsletter.bind(null, n.id)}>
-                      <button className="px-3 py-1 text-xs rounded-lg bg-blue-500 text-white hover:bg-blue-600">
-                        Pin
-                      </button>
-                    </form>
+                    <td className="px-6 py-4">
+                      {n.image_url ? (
+                        <img
+                          src={n.image_url}
+                          className="w-12 h-12 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-400">No image</span>
+                      )}
+                    </td>
 
-                    <form action={sendNewsletter.bind(null, n.id)}>
-                      <button className="px-3 py-1 text-xs rounded-lg bg-green-500 text-white hover:bg-green-600">
+                    <td className="px-6 py-4 text-xs text-gray-400">
+                      {new Date(n.created_at).toLocaleDateString()}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/newsletter/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: n.id }),
+                          })
+                          alert('Newsletter sent')
+                        }}
+                        className="bg-[#F97316] text-white px-3 py-1 rounded-lg text-xs"
+                      >
                         Send
                       </button>
-                    </form>
+                    </td>
 
-                  </td>
+                  </tr>
+                ))}
 
-                </tr>
-              ))}
+              </tbody>
 
-            </tbody>
+            </table>
 
-          </table>
+          </div>
         )}
 
       </div>
