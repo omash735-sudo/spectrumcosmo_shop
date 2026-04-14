@@ -7,14 +7,15 @@ export function middleware(req: NextRequest) {
   const adminToken = req.cookies.get('admin_token')?.value
   const userToken = req.cookies.get('user_token')?.value
 
-  // Protect admin routes (ONLY check existence)
-  if (pathname.startsWith('/admin')) {
+  // Exclude login page from protection
+  const isAdminLogin = pathname === '/admin/login'
+
+  if (pathname.startsWith('/admin') && !isAdminLogin) {
     if (!adminToken) {
       return NextResponse.redirect(new URL('/admin/login', req.url))
     }
   }
 
-  // Protect user account routes (ONLY check existence)
   if (pathname.startsWith('/account')) {
     if (!userToken) {
       return NextResponse.redirect(new URL('/auth/login', req.url))
@@ -26,4 +27,4 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: ['/admin/:path*', '/account/:path*']
-}
+    }
