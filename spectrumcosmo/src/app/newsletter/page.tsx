@@ -93,7 +93,7 @@ export default function NewsletterPage() {
           <section>
             <h2 className="text-2xl font-bold mb-2">Watch Anime</h2>
             <a
-              href="https://aniwatch.to"
+              href="https://anikai.to/"
               target="_blank"
               className="border px-6 py-3 rounded-full hover:bg-gray-100 inline-block"
             >
