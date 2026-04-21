@@ -9,6 +9,7 @@ export default function NewsletterPage() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [animeNews, setAnimeNews] = useState<any[]>([])
+  const [trendingAnime, setTrendingAnime] = useState<any[]>([])
 
   useEffect(() => {
     const loadNews = async () => {
@@ -22,6 +23,25 @@ export default function NewsletterPage() {
     }
 
     loadNews()
+  }, [])
+
+  useEffect(() => {
+    const loadTrending = async () => {
+      try {
+        const res = await fetch('https://api.jikan.moe/v4/top/anime')
+        const data = await res.json()
+
+        const filtered = data.data
+          .filter((anime: any) => anime.trailer?.embed_url)
+          .slice(0, 4)
+
+        setTrendingAnime(filtered)
+      } catch {
+        console.log('Failed to load trending anime')
+      }
+    }
+
+    loadTrending()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,141 +75,162 @@ export default function NewsletterPage() {
     setLoading(false)
   }
 
+  const products = [
+    {
+      name: 'Akatsuki Hoodie',
+      price: 'MK 75,000',
+      image: '/images/akatsuki.jpg',
+      link: '/product/akatsuki-hoodie',
+    },
+    {
+      name: 'Naruto Pendant',
+      price: 'MK 8,000',
+      image: '/images/pendant.jpg',
+      link: '/product/naruto-pendant',
+    },
+  ]
+
   return (
     <>
       <Navbar />
 
       <main className="bg-white min-h-screen py-20">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4">
 
-          {/* Header */}
-          <div className="text-center mb-14">
-            <h1 className="text-4xl font-bold text-[#111111] mb-3">
-              Stay Connected
+          {/* Hero */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-bold mb-4">
+              Discover Anime Worlds
             </h1>
-            <p className="text-gray-500">
-              Get updates on new drops, anime news, and exclusive content.
+
+            <p className="text-gray-500 mb-6">
+              Drops, news and trending anime in one place.
             </p>
+
+            <form onSubmit={handleSubmit} className="flex justify-center gap-3 flex-wrap">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="px-6 py-3 border rounded-full w-72"
+              />
+
+              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full transition">
+                {loading ? '...' : 'Subscribe'}
+              </button>
+            </form>
+
+            {status === 'success' && (
+              <p className="text-green-600 mt-3">Subscribed</p>
+            )}
           </div>
 
-          {/* Subscribe */}
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 mb-10">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="flex-1 px-6 py-4 border border-gray-200 rounded-full focus:outline-none"
-            />
-
-            <button
-              disabled={loading}
-              className="bg-[#F97316] text-white px-8 py-4 rounded-full font-medium disabled:opacity-60"
-            >
-              {loading ? 'Loading...' : 'Subscribe'}
-            </button>
-          </form>
-
-          {status === 'success' && (
-            <p className="text-green-600 text-center mb-8">
-              Successfully subscribed.
-            </p>
-          )}
-
-          {status === 'error' && (
-            <p className="text-red-500 text-center mb-8">
-              Something went wrong.
-            </p>
-          )}
-
-          {/* New Drops */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-3">New Drops</h2>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="border rounded-xl p-4">
-                <p className="font-semibold">Akatsuki Hoodie</p>
-                <p className="text-sm text-gray-500">
-                  Latest anime-inspired release
-                </p>
-              </div>
-
-              <div className="border rounded-xl p-4">
-                <p className="font-semibold">Naruto Pendant</p>
-                <p className="text-sm text-gray-500">
-                  Limited edition drop
-                </p>
-              </div>
+          {/* Products */}
+          <section className="mb-20">
+            <div className="flex justify-between mb-6">
+              <h2 className="text-2xl font-bold">New Drops</h2>
+              <a href="/shop" className="text-orange-500 hover:underline">
+                View all
+              </a>
             </div>
-          </section>
 
-          {/* Anime News */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-3">Anime News</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {products.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.link}
+                  className="group rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition overflow-hidden"
+                >
+                  <img
+                    src={item.image}
+                    className="h-56 w-full object-cover group-hover:scale-105 transition duration-300"
+                  />
 
-            <div className="space-y-3">
-              {animeNews.length === 0 && (
-                <p className="text-gray-500">Loading news...</p>
-              )}
-
-              {animeNews.map((item, i) => (
-                <div key={i} className="border rounded-xl p-4">
-                  {item.type === 'trending' ? (
-                    <>
-                      <p className="font-semibold">{item.title}</p>
-                      <p className="text-sm text-gray-500">
-                        Trending Score: {item.score}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        className="font-semibold hover:underline"
-                      >
-                        {item.title}
-                      </a>
-                      <p className="text-sm text-gray-500">
-                        {item.date}
-                      </p>
-                    </>
-                  )}
-                </div>
+                  <div className="p-4">
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-orange-500 font-bold">{item.price}</p>
+                  </div>
+                </a>
               ))}
             </div>
           </section>
 
-          {/* Watch Anime */}
-          <section>
-            <h2 className="text-2xl font-bold mb-3">Watch Anime</h2>
+          {/* News */}
+          <section className="mb-20">
+            <div className="flex justify-between mb-6">
+              <h2 className="text-2xl font-bold">Anime News</h2>
+              <a href="/news" className="text-orange-500 hover:underline">
+                See more
+              </a>
+            </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="border rounded-xl p-4">
-                <p className="font-semibold mb-2">Streaming Hub</p>
-                <p className="text-sm text-gray-500 mb-3">
-                  Explore anime streaming platforms.
-                </p>
-
+            <div className="grid md:grid-cols-3 gap-6">
+              {animeNews.slice(0, 3).map((item, i) => (
                 <a
-                  href="https://anikai.to/"
+                  key={i}
+                  href={item.link}
                   target="_blank"
-                  className="border px-6 py-3 rounded-full inline-block"
+                  className="group rounded-2xl shadow-sm hover:shadow-lg overflow-hidden transition"
                 >
-                  Open Site
-                </a>
-              </div>
+                  <img
+                    src={item.image || '/images/placeholder.jpg'}
+                    className="h-48 w-full object-cover group-hover:scale-105 transition"
+                  />
 
-              <div className="border rounded-xl p-4 bg-black text-white">
-                <p className="text-sm opacity-70">Preview</p>
-                <p className="mt-2 font-semibold">
-                  Anime Experience
-                </p>
-                <p className="text-xs opacity-60 mt-2">
-                  Click to explore
-                </p>
-              </div>
+                  <div className="p-4">
+                    <p className="font-semibold group-hover:underline">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {item.date}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          {/* Watch Now */}
+          <section className="mb-20">
+            <div className="flex justify-between mb-6">
+              <h2 className="text-2xl font-bold">Watch Now</h2>
+              <a href="/watch" className="text-orange-500 hover:underline">
+                View all
+              </a>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {trendingAnime.map((anime, i) => (
+                <div
+                  key={i}
+                  className="group relative rounded-2xl overflow-hidden bg-black shadow-sm hover:shadow-lg transition"
+                >
+                  <img
+                    src={anime.images?.jpg?.large_image_url}
+                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                  />
+
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition" />
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center group-hover:scale-110 transition">
+                      ▶
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-0 p-4 text-white">
+                    <p className="font-semibold">{anime.title}</p>
+                    <a
+                      href={`/watch/${anime.mal_id}`}
+                      className="text-orange-400 text-sm hover:underline"
+                    >
+                      Watch now
+                    </a>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -199,4 +240,4 @@ export default function NewsletterPage() {
       <Footer />
     </>
   )
-}
+      }
