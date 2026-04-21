@@ -2,45 +2,59 @@ import { getDb } from '@/lib/db'
 import { sendNewsletter } from '@/lib/newsletter/send'
 
 export async function POST(req: Request) {
-  const sql = getDb()
+  try {
+    const sql = getDb()
 
-  const {
-    title,
-    content,
-    image_url,
-    audience = 'all',
-    status = 'draft',
-    auto_send = false,
-  } = await req.json()
-
-  const result = await sql`
-    INSERT INTO newsletter (
+    const {
       title,
       content,
       image_url,
-      audience,
-      status,
-      auto_send,
-      created_at
-    )
-    VALUES (
-      ${title},
-      ${content},
-      ${image_url},
-      ${audience},
-      ${status},
-      ${auto_send},
-      NOW()
-    )
-    RETURNING *
-  `
+      audience = 'all',
+      status = 'draft',
+      auto_send = false,
+    } = await req.json()
 
-  const newsletter = result[0]
+    if (!title || !content) {
+      return Response.json(
+        { error: 'Title and content required' },
+        { status: 400 }
+      )
+    }
 
-  // AUTO SEND TRIGGER
-  if (auto_send && image_url) {
-    await sendNewsletter(newsletter.id)
+    const result = await sql`
+      INSERT INTO newsletter (
+        title,
+        content,
+        image_url,
+        audience,
+        status,
+        auto_send,
+        created_at
+      )
+      VALUES (
+        ${title},
+        ${content},
+        ${image_url || null},
+        ${audience},
+        ${status},
+        ${auto_send},
+        NOW()
+      )
+      RETURNING *
+    `
+
+    const newsletter = result[0]
+
+    if (auto_send && status === 'sent') {
+      await sendNewsletter(newsletter.id)
+    }
+
+    return Response.json({
+      success: true,
+      newsletter,
+    })
+  } catch (err) {
+    console.error(err)
+    return Response.json({ error: 'Failed' }, { status: 500 })
   }
-
-  return Response.json(newsletter)
 }
