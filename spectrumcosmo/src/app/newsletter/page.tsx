@@ -8,8 +8,71 @@ export default function NewsletterPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  const [animeFeed, setAnimeFeed] = useState<any[]>([])
+  const [visibleAnime, setVisibleAnime] = useState<any[]>([])
   const [animeNews, setAnimeNews] = useState<any[]>([])
-  const [trendingAnime, setTrendingAnime] = useState<any[]>([])
+
+  const products = [
+    {
+      id: 1,
+      name: 'Akatsuki Hoodie',
+      price: 'MK 75,000',
+      image: '/images/akatsuki.jpg',
+      status: 'available',
+      link: '/product/akatsuki-hoodie',
+    },
+    {
+      id: 2,
+      name: 'Naruto Pendant',
+      price: 'MK 8,000',
+      image: '/images/pendant.jpg',
+      status: 'preorder',
+      link: '/preorder/naruto-pendant',
+    },
+    {
+      id: 3,
+      name: 'Anime Jacket',
+      price: 'MK 60,000',
+      image: '/images/jacket.jpg',
+      status: 'coming_soon',
+      link: '/coming-soon/anime-jacket',
+    },
+  ]
+
+  useEffect(() => {
+    const loadAnime = async () => {
+      try {
+        const res = await fetch('https://api.jikan.moe/v4/top/anime')
+        const data = await res.json()
+        setAnimeFeed(data.data || [])
+      } catch {
+        setAnimeFeed([])
+      }
+    }
+
+    loadAnime()
+  }, [])
+
+  useEffect(() => {
+    if (!animeFeed.length) return
+
+    const update = () => {
+      const sorted = [...animeFeed].sort(
+        (a, b) => (b.popularity || 0) - (a.popularity || 0)
+      )
+
+      setVisibleAnime(sorted.slice(0, 10))
+    }
+
+    update()
+
+    const interval = setInterval(() => {
+      update()
+    }, 12000)
+
+    return () => clearInterval(interval)
+  }, [animeFeed])
 
   useEffect(() => {
     const loadNews = async () => {
@@ -25,25 +88,6 @@ export default function NewsletterPage() {
     loadNews()
   }, [])
 
-  useEffect(() => {
-    const loadTrending = async () => {
-      try {
-        const res = await fetch('https://api.jikan.moe/v4/top/anime')
-        const data = await res.json()
-
-        const filtered = data.data
-          .filter((anime: any) => anime.trailer?.embed_url)
-          .slice(0, 4)
-
-        setTrendingAnime(filtered)
-      } catch {
-        console.log('Failed to load trending anime')
-      }
-    }
-
-    loadTrending()
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -55,7 +99,7 @@ export default function NewsletterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: 'Newsletter Subscription',
-          content: 'User subscribed from newsletter page',
+          content: 'User subscribed',
           audience: 'all',
           status: 'sent',
           auto_send: true,
@@ -75,20 +119,13 @@ export default function NewsletterPage() {
     setLoading(false)
   }
 
-  const products = [
-    {
-      name: 'Akatsuki Hoodie',
-      price: 'MK 75,000',
-      image: '/images/akatsuki.jpg',
-      link: '/product/akatsuki-hoodie',
-    },
-    {
-      name: 'Naruto Pendant',
-      price: 'MK 8,000',
-      image: '/images/pendant.jpg',
-      link: '/product/naruto-pendant',
-    },
-  ]
+  const handleProductRoute = (item: any) => {
+    if (item.status === 'available') {
+      window.location.href = item.link
+    } else {
+      window.location.href = item.link
+    }
+  }
 
   return (
     <>
@@ -97,139 +134,138 @@ export default function NewsletterPage() {
       <main className="bg-white min-h-screen py-20">
         <div className="max-w-6xl mx-auto px-4">
 
-          {/* Hero */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold mb-4">
-              Discover Anime Worlds
-            </h1>
+          <section className="grid md:grid-cols-2 gap-10 items-center mb-20">
 
-            <p className="text-gray-500 mb-6">
-              Drops, news and trending anime in one place.
-            </p>
+            <div>
+              <h1 className="text-5xl font-bold mb-4 leading-tight">
+                Discover Anime Worlds
+              </h1>
 
-            <form onSubmit={handleSubmit} className="flex justify-center gap-3 flex-wrap">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="px-6 py-3 border rounded-full w-72"
-              />
+              <p className="text-gray-500 mb-6">
+                Drops, news, and trending anime in one place.
+              </p>
 
-              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full transition">
-                {loading ? '...' : 'Subscribe'}
-              </button>
-            </form>
+              <form onSubmit={handleSubmit} className="flex gap-3 flex-wrap">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="px-6 py-3 border rounded-full w-72"
+                />
 
-            {status === 'success' && (
-              <p className="text-green-600 mt-3">Subscribed</p>
-            )}
-          </div>
+                <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full transition">
+                  {loading ? 'Loading' : 'Subscribe'}
+                </button>
+              </form>
 
-          {/* Products */}
-          <section className="mb-20">
-            <div className="flex justify-between mb-6">
-              <h2 className="text-2xl font-bold">New Drops</h2>
-              <a href="/shop" className="text-orange-500 hover:underline">
-                View all
-              </a>
+              {status === 'success' && (
+                <p className="text-green-600 mt-3">Subscribed successfully</p>
+              )}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {products.map((item, i) => (
+            <div className="grid grid-cols-5 gap-2">
+              {visibleAnime.slice(0, 10).map((anime, i) => (
                 <a
                   key={i}
-                  href={item.link}
-                  className="group rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition overflow-hidden"
+                  href={`/watch/${anime.mal_id}`}
+                  className="relative h-28 rounded-xl overflow-hidden group"
                 >
                   <img
-                    src={item.image}
-                    className="h-56 w-full object-cover group-hover:scale-105 transition duration-300"
+                    src={anime.images?.jpg?.large_image_url}
+                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
                   />
 
-                  <div className="p-4">
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-orange-500 font-bold">{item.price}</p>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/60 transition" />
+
+                  <div className="absolute bottom-1 left-2 text-white text-xs opacity-0 group-hover:opacity-100 transition">
+                    {anime.title}
                   </div>
                 </a>
               ))}
             </div>
+
           </section>
 
-          {/* News */}
+          <section className="mb-20">
+            <div className="flex justify-between mb-6">
+              <h2 className="text-2xl font-bold">New Drops</h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {products.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleProductRoute(item)}
+                  className="cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition"
+                >
+                  <img
+                    src={item.image}
+                    className="h-56 w-full object-cover hover:scale-105 transition duration-300"
+                  />
+
+                  <div className="p-4">
+                    <p className="text-xs text-orange-500 uppercase">
+                      {item.status.replace('_', ' ')}
+                    </p>
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-orange-500 font-bold">{item.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section className="mb-20">
             <div className="flex justify-between mb-6">
               <h2 className="text-2xl font-bold">Anime News</h2>
-              <a href="/news" className="text-orange-500 hover:underline">
-                See more
-              </a>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
               {animeNews.slice(0, 3).map((item, i) => (
                 <a
                   key={i}
-                  href={item.link}
+                  href={item.link || '#'}
                   target="_blank"
-                  className="group rounded-2xl shadow-sm hover:shadow-lg overflow-hidden transition"
+                  className="rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition cursor-pointer"
                 >
                   <img
                     src={item.image || '/images/placeholder.jpg'}
-                    className="h-48 w-full object-cover group-hover:scale-105 transition"
+                    className="h-48 w-full object-cover hover:scale-105 transition"
                   />
 
                   <div className="p-4">
-                    <p className="font-semibold group-hover:underline">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      {item.date}
-                    </p>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-xs text-gray-400 mt-2">{item.date}</p>
                   </div>
                 </a>
               ))}
             </div>
           </section>
 
-          {/* Watch Now */}
-          <section className="mb-20">
-            <div className="flex justify-between mb-6">
-              <h2 className="text-2xl font-bold">Watch Now</h2>
-              <a href="/watch" className="text-orange-500 hover:underline">
-                View all
-              </a>
-            </div>
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Watch Now</h2>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {trendingAnime.map((anime, i) => (
-                <div
+              {visibleAnime.slice(0, 4).map((anime, i) => (
+                <a
                   key={i}
-                  className="group relative rounded-2xl overflow-hidden bg-black shadow-sm hover:shadow-lg transition"
+                  href={`/watch/${anime.mal_id}`}
+                  className="relative rounded-2xl overflow-hidden group bg-black"
                 >
                   <img
                     src={anime.images?.jpg?.large_image_url}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                    className="w-full h-full object-cover group-hover:scale-110 transition"
                   />
 
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition" />
 
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center group-hover:scale-110 transition">
-                      ▶
-                    </div>
-                  </div>
-
                   <div className="absolute bottom-0 p-4 text-white">
                     <p className="font-semibold">{anime.title}</p>
-                    <a
-                      href={`/watch/${anime.mal_id}`}
-                      className="text-orange-400 text-sm hover:underline"
-                    >
-                      Watch now
-                    </a>
+                    <p className="text-sm text-orange-400">Watch now</p>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </section>
@@ -240,4 +276,4 @@ export default function NewsletterPage() {
       <Footer />
     </>
   )
-      }
+}
