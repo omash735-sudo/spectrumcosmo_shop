@@ -9,7 +9,7 @@ export default function LaunchOverlay() {
   // Launch date: 1 month + 2 weeks from setup (edit if needed)
   const LAUNCH_DATE = new Date('2026-07-07T00:00:00')
 
-  const MASTER_KEY = '0981789298'
+  const MASTER_KEY = '0000'
 
   const [locked, setLocked] = useState(true)
   const [input, setInput] = useState('')
