@@ -67,7 +67,7 @@ export default function WatchPage() {
 
               {/* CTA */}
               <a
-                href="https://aniwatch.to"
+                href="https://anikai.to/"
                 target="_blank"
                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full transition"
               >
