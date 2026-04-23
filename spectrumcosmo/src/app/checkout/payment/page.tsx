@@ -5,86 +5,38 @@ import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { Loader2 } from 'lucide-react'
 
-type CheckoutData = {
-  items: any[]
-  form: {
-    customer_name: string
-    phone_number: string
-    custom_details: string
-  }
-  subtotalUsd: number
+const STATUS_STYLE: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  approved: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-700',
 }
 
-const BANKS = {
-  national: {
-    name: 'National Bank of Malawi',
-    accountName: 'Omash Mashiri',
-    accountNumber: '1011435331'
-  },
-  standard: {
-    name: 'Standard Bank',
-    accountName: 'Omash Mashiri',
-    accountNumber: '9100007328742'
-  },
-  fcb: {
-    name: 'First Capital Bank',
-    accountName: 'Omash Mashiri',
-    accountNumber: '0004503146447'
-  }
-}
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default function PaymentPage() {
-  const [data, setData] = useState<CheckoutData | null>(null)
-  const [method, setMethod] = useState<'mobile' | 'bank' | 'card' | ''>('')
-  const [wallet, setWallet] = useState<'airtel' | 'mpamba' | ''>('')
-  const [bank, setBank] = useState<'national' | 'standard' | 'fcb' | ''>('')
-  const [reference, setReference] = useState('')
-  const [placing, setPlacing] = useState(false)
-  const [message, setMessage] = useState('')
+  const load = async () => {
+    setLoading(true)
+    const res = await fetch('/api/account/orders')
+    const data = res.ok ? await res.json() : []
+    setPayments(data)
+    setLoading(false)
+  }
 
   useEffect(() => {
-    const saved = localStorage.getItem('checkoutData')
-    if (!saved) {
-      window.location.href = '/checkout'
-      return
-    }
-    setData(JSON.parse(saved))
+    load()
   }, [])
 
-  if (!data) {
+  if (loading) {
     return (
       <>
         <Navbar />
         <main className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin" />
+          <Loader2 className="animate-spin text-orange-500" />
         </main>
         <Footer />
       </>
     )
-  }
-
-  const submitOrder = async () => {
-    if (!method) return
-    if (method === 'mobile' && !wallet) return
-    if (method === 'bank' && !bank) return
-
-    setPlacing(true)
-
-    await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...data.form,
-        items: data.items,
-        total_price_usd: data.subtotalUsd,
-        payment_method: method === 'mobile' ? wallet : method,
-        payment_reference: reference
-      })
-    })
-
-    localStorage.removeItem('checkoutData')
-    setPlacing(false)
-    setMessage('Order placed successfully. Track it in your account.')
   }
 
   return (
@@ -92,130 +44,99 @@ export default function PaymentPage() {
       <Navbar />
 
       <main className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-4xl mx-auto px-4 space-y-6">
+        <div className="max-w-5xl mx-auto px-4 space-y-6">
 
-          <h1 className="text-2xl font-bold">Payment</h1>
+          <h1 className="text-2xl font-bold">Payments & Tracking</h1>
 
-          {/* PAYMENT METHOD CARDS */}
-          <div className="grid md:grid-cols-3 gap-4">
-
-            <button
-              onClick={() => setMethod('mobile')}
-              className={`p-4 rounded-xl border hover:shadow ${
-                method === 'mobile' ? 'border-orange-500' : ''
-              }`}
-            >
-              Mobile Wallet
-            </button>
-
-            <button
-              onClick={() => setMethod('bank')}
-              className={`p-4 rounded-xl border hover:shadow ${
-                method === 'bank' ? 'border-orange-500' : ''
-              }`}
-            >
-              Bank Transfer
-            </button>
-
-            <button
-              onClick={() => setMethod('card')}
-              className={`p-4 rounded-xl border opacity-60 cursor-not-allowed`}
-              disabled
-            >
-              Card / E-Payment (Coming Soon)
-            </button>
-          </div>
-
-          {/* MOBILE MONEY */}
-          {method === 'mobile' && (
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <button onClick={() => setWallet('airtel')} className="btn-secondary">
-                  Airtel Money
-                </button>
-                <button onClick={() => setWallet('mpamba')} className="btn-secondary">
-                  TNM Mpamba
-                </button>
-              </div>
-
-              {wallet && (
-                <div className="border rounded-xl p-4 bg-gray-50">
-                  <p className="font-semibold">
-                    {wallet === 'airtel' ? 'Airtel Money' : 'TNM Mpamba'}
-                  </p>
-
-                  <p className="text-sm mt-2">
-                    Send to:
-                    <b className="ml-1">
-                      {wallet === 'airtel' ? '0888 123 456' : '0999 987 654'}
-                    </b>
-                  </p>
-
-                  <p className="text-sm">Name: SpectrumCosmo</p>
-
-                  <input
-                    className="input mt-3"
-                    placeholder="Transaction Reference"
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                  />
-                </div>
-              )}
+          {payments.length === 0 ? (
+            <div className="bg-white p-6 rounded-xl text-gray-500">
+              No payments found.
             </div>
-          )}
+          ) : (
+            payments.map((p) => (
+              <div key={p.id} className="bg-white rounded-xl border p-5 space-y-4">
 
-          {/* BANK TRANSFER */}
-          {method === 'bank' && (
-            <div className="space-y-4">
+                {/* HEADER */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold">{p.product_name}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(p.created_at).toLocaleString()}
+                    </p>
+                  </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => setBank('national')} className="btn-secondary">
-                  National Bank
-                </button>
-                <button onClick={() => setBank('standard')} className="btn-secondary">
-                  Standard Bank
-                </button>
-                <button onClick={() => setBank('fcb')} className="btn-secondary">
-                  First Capital
-                </button>
-              </div>
-
-              {bank && (
-                <div className="border rounded-xl p-4 bg-gray-50">
-                  <p className="font-semibold">{BANKS[bank].name}</p>
-
-                  <p className="text-sm mt-2">
-                    Account Name: <b>{BANKS[bank].accountName}</b>
-                  </p>
-
-                  <p className="text-sm">
-                    Account Number: <b>{BANKS[bank].accountNumber}</b>
-                  </p>
-
-                  <input
-                    className="input mt-3"
-                    placeholder="Transaction Reference"
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                  />
+                  <span className={`px-3 py-1 rounded-full text-xs ${STATUS_STYLE[p.status]}`}>
+                    {p.status}
+                  </span>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* SUBMIT */}
-          <button
-            onClick={submitOrder}
-            disabled={placing}
-            className="btn-primary w-full justify-center"
-          >
-            {placing ? <><Loader2 size={16} className="animate-spin" />Processing...</> : 'Confirm Payment'}
-          </button>
+                {/* DETAILS */}
+                <p className="text-sm text-gray-600">
+                  {p.custom_details || 'No extra details'}
+                </p>
 
-          {message && (
-            <p className="text-sm text-green-700 bg-green-50 p-3 rounded-xl">
-              {message}
-            </p>
+                {/* PROOF */}
+                {p.proof_of_payment_url ? (
+                  <a
+                    href={p.proof_of_payment_url}
+                    target="_blank"
+                    className="text-orange-600 text-sm hover:underline"
+                  >
+                    View Payment Proof
+                  </a>
+                ) : (
+                  <p className="text-xs text-gray-400">
+                    No proof uploaded yet
+                  </p>
+                )}
+
+                {/* PAYMENT METHOD */}
+                <p className="text-xs text-gray-500">
+                  Method: {p.payment_method || 'Not specified'}
+                </p>
+
+                {/* TRACKING TIMELINE */}
+                <div className="mt-4 space-y-2 border-t pt-4">
+
+                  <p className="font-semibold text-sm">Tracking</p>
+
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <p className="text-xs">Order placed</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        p.proof_of_payment_url ? 'bg-green-500' : 'bg-gray-300'
+                      }`}
+                    />
+                    <p className="text-xs">Proof submitted</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        p.status === 'approved'
+                          ? 'bg-green-500'
+                          : p.status === 'declined'
+                          ? 'bg-red-500'
+                          : 'bg-gray-300'
+                      }`}
+                    />
+                    <p className="text-xs">
+                      {p.status === 'approved'
+                        ? 'Payment approved'
+                        : p.status === 'declined'
+                        ? 'Payment rejected'
+                        : 'Waiting for admin approval'}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+            ))
           )}
 
         </div>
