@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, ShoppingBag, ShoppingCart } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -14,6 +14,7 @@ const links = [
   { href: '/products', label: 'Products' },
   { href: '/reviews', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
+  { href: '/about', label: 'About Us' },
 ]
 
 export default function Navbar() {
@@ -66,12 +67,12 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* RIGHT SIDE */}
+            {/* RIGHT SIDE (DESKTOP) */}
             <div className="hidden md:flex items-center gap-3">
 
               <CurrencySelector />
 
-              {/* CART BUTTON */}
+              {/* CART */}
               <button
                 onClick={() => setCartOpen(true)}
                 className="relative p-2 rounded-lg hover:bg-orange-50"
@@ -84,10 +85,13 @@ export default function Navbar() {
                 )}
               </button>
 
-              {/* USER */}
+              {/* USER (DESKTOP) */}
               {user ? (
                 <>
-                  <Link href="/account" className="text-sm text-gray-600 hover:text-[#F97316]">
+                  <Link
+                    href="/account"
+                    className="text-sm text-gray-600 hover:text-[#F97316]"
+                  >
                     {user.name?.split(' ')[0] || 'Account'}
                   </Link>
 
@@ -100,11 +104,17 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm text-gray-600 hover:text-[#F97316]">
+                  <Link
+                    href="/login"
+                    className="text-sm text-gray-600 hover:text-[#F97316]"
+                  >
                     Sign In
                   </Link>
 
-                  <Link href="/signup" className="btn-secondary text-sm px-4 py-2">
+                  <Link
+                    href="/signup"
+                    className="btn-secondary text-sm px-4 py-2"
+                  >
                     Sign Up
                   </Link>
                 </>
@@ -115,7 +125,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* MOBILE MENU BUTTON */}
+            {/* MOBILE BUTTON */}
             <button
               onClick={() => setOpen(!open)}
               className="md:hidden p-2 rounded-lg"
@@ -130,33 +140,89 @@ export default function Navbar() {
         <div
           className={clsx(
             'md:hidden border-t bg-white overflow-hidden transition-all',
-            open ? 'max-h-96' : 'max-h-0'
+            open ? 'max-h-[600px]' : 'max-h-0'
           )}
         >
           <nav className="px-4 py-3 space-y-2">
 
+            {/* LINKS */}
             {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 rounded-lg"
               >
                 {l.label}
               </Link>
             ))}
 
+            {/* CURRENCY */}
+            <div className="px-4 py-2">
+              <CurrencySelector />
+            </div>
+
+            {/* CART */}
             <button
               onClick={() => {
                 setCartOpen(true)
                 setOpen(false)
               }}
-              className="w-full text-left px-4 py-2 text-sm"
+              className="w-full text-left px-4 py-2 text-sm text-gray-700"
             >
               Cart ({totalItems})
             </button>
 
-            <Link href="/products" className="btn-primary w-full text-center">
+            {/* USER (MOBILE FIXED) */}
+            <div className="border-t pt-2 mt-2">
+
+              {user ? (
+                <>
+                  <Link
+                    href="/account"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700"
+                  >
+                    My Account
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      logout()
+                      setOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700"
+                  >
+                    Sign In
+                  </Link>
+
+                  <Link
+                    href="/signup"
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* SHOP BUTTON */}
+            <Link
+              href="/products"
+              onClick={() => setOpen(false)}
+              className="btn-primary w-full text-center mt-2"
+            >
               Shop Now
             </Link>
 
@@ -164,7 +230,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* CART DRAWER (IMPORTANT PART) */}
+      {/* CART DRAWER */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   )
