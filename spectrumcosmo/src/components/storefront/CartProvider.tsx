@@ -12,68 +12,83 @@ export type CartItem = {
 
 type CartContextType = {
   items: CartItem[]
-  addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void
+  addItem: (item: Omit<CartItem, 'quantity'>, qty?: number) => void
   removeItem: (id: string) => void
-  updateQty: (id: string, quantity: number) => void
+  updateQty: (id: string, qty: number) => void
   clearCart: () => void
   totalItems: number
   subtotalUsd: number
 }
 
 const CartContext = createContext<CartContextType | null>(null)
+
 const STORAGE_KEY = 'spectrumcosmo_cart'
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return
-    try {
-      const parsed = JSON.parse(raw) as CartItem[]
-      if (Array.isArray(parsed)) setItems(parsed)
-    } catch {
-      // ignore invalid local storage data
-    }
+    const data = localStorage.getItem(STORAGE_KEY)
+    if (data) setItems(JSON.parse(data))
   }, [])
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [items])
 
-  const addItem = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((p) => p.id === item.id)
-      if (existing) {
-        return prev.map((p) => (p.id === item.id ? { ...p, quantity: p.quantity + quantity } : p))
+  const addItem = (item: Omit<CartItem, 'quantity'>, qty = 1) => {
+    setItems(prev => {
+      const found = prev.find(i => i.id === item.id)
+      if (found) {
+        return prev.map(i =>
+          i.id === item.id ? { ...i, quantity: i.quantity + qty } : i
+        )
       }
-      return [...prev, { ...item, quantity }]
+      return [...prev, { ...item, quantity: qty }]
     })
   }
 
-  const removeItem = (id: string) => setItems((prev) => prev.filter((p) => p.id !== id))
+  const removeItem = (id: string) =>
+    setItems(prev => prev.filter(i => i.id !== id))
 
-  const updateQty = (id: string, quantity: number) => {
-    if (quantity <= 0) return removeItem(id)
-    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, quantity } : p)))
-  }
+  const updateQty = (id: string, qty: number) =>
+    setItems(prev =>
+      prev.map(i =>
+        i.id === id ? { ...i, quantity: Math.max(1, qty) } : i
+      )
+    )
 
   const clearCart = () => setItems([])
 
-  const totalItems = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items])
-  const subtotalUsd = useMemo(() => items.reduce((sum, i) => sum + i.priceUsd * i.quantity, 0), [items])
-
-  const value = useMemo(
-    () => ({ items, addItem, removeItem, updateQty, clearCart, totalItems, subtotalUsd }),
-    [items, totalItems, subtotalUsd],
+  const totalItems = useMemo(
+    () => items.reduce((s, i) => s + i.quantity, 0),
+    [items]
   )
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>
+  const subtotalUsd = useMemo(
+    () => items.reduce((s, i) => s + i.priceUsd * i.quantity, 0),
+    [items]
+  )
+
+  return (
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQty,
+        clearCart,
+        totalItems,
+        subtotalUsd
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  )
 }
 
-export function useCart() {
+export const useCart = () => {
   const ctx = useContext(CartContext)
-  if (!ctx) throw new Error('useCart must be used within CartProvider')
+  if (!ctx) throw new Error('CartProvider missing')
   return ctx
 }
-
