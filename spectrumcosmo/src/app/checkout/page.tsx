@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { useCart } from '@/components/storefront/CartProvider'
@@ -9,46 +9,50 @@ import { formatCurrencyAmount } from '@/lib/currency'
 import { Loader2 } from 'lucide-react'
 
 export default function CheckoutPage() {
-  const { items, updateQty, removeItem, subtotalUsd } = useCart()
+  const { items, subtotalUsd } = useCart()
   const { currency, rates } = useCurrency()
 
   const [form, setForm] = useState({
-    customer_name: '',
-    phone_number: '',
-    custom_details: ''
+    name: '',
+    phone: '',
+    location: '',
+    notes: '',
+    payment_method: 'airtel_money'
   })
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const subtotal = subtotalUsd * (rates[currency] ?? 1)
+  const subtotal = useMemo(
+    () => subtotalUsd * (rates[currency] ?? 1),
+    [subtotalUsd, rates, currency]
+  )
 
-  const handleContinue = (e: React.FormEvent) => {
+  const deliveryFee = 1500
+  const total = subtotal + deliveryFee
+
+  const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault()
-
     setError('')
 
-    if (items.length === 0) {
-      setError('Your cart is empty.')
-      return
-    }
-
-    if (!form.customer_name.trim() || !form.phone_number.trim()) {
-      setError('Please enter your name and phone number.')
-      return
-    }
+    if (items.length === 0) return setError('Cart is empty')
+    if (!form.name || !form.phone || !form.location)
+      return setError('Fill in name, phone and location')
 
     setLoading(true)
 
-    const checkoutData = {
+    const data = {
       items,
       form,
-      subtotalUsd
+      subtotalUsd,
+      payment_method: form.payment_method
     }
 
-    localStorage.setItem('checkoutData', JSON.stringify(checkoutData))
+    localStorage.setItem('checkoutData', JSON.stringify(data))
 
-    window.location.href = '/checkout/payment'
+    setTimeout(() => {
+      window.location.href = '/checkout/payment'
+    }, 800)
   }
 
   return (
@@ -56,150 +60,126 @@ export default function CheckoutPage() {
       <Navbar />
 
       <main className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid lg:grid-cols-3 gap-6">
+        <div className="max-w-4xl mx-auto px-4 py-10">
 
-          {/* CART SECTION */}
-          <section className="lg:col-span-2 bg-white rounded-2xl border border-gray-100">
+          {/* HEADER */}
+          <div className="bg-white p-6 rounded-2xl border mb-6">
+            <h1 className="text-2xl font-bold text-[#111]">Secure Checkout</h1>
+            <p className="text-sm text-gray-500">
+              Pay via Airtel Money or Mpamba — fast & safe
+            </p>
+          </div>
 
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h1 className="text-2xl font-bold text-[#111111]">Checkout</h1>
-              <p className="text-sm text-gray-500">
-                Review your items before proceeding to payment
-              </p>
-            </div>
+          <div className="grid md:grid-cols-2 gap-6">
 
-            <div className="divide-y divide-gray-100">
-              {items.length === 0 ? (
-                <div className="p-6 text-sm text-gray-500">
-                  Your cart is empty.
-                </div>
-              ) : (
-                items.map((item) => (
-                  <div key={item.id} className="p-6 flex flex-wrap items-center justify-between gap-4">
-
-                    <div>
-                      <p className="font-semibold text-[#111111]">{item.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {formatCurrencyAmount(
-                          item.priceUsd * (rates[currency] ?? 1),
-                          currency
-                        )} each
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateQty(item.id, item.quantity - 1)}
-                        className="px-2 py-1 border rounded-lg"
-                      >
-                        -
-                      </button>
-
-                      <span className="w-8 text-center">{item.quantity}</span>
-
-                      <button
-                        onClick={() => updateQty(item.id, item.quantity + 1)}
-                        className="px-2 py-1 border rounded-lg"
-                      >
-                        +
-                      </button>
-
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-sm text-red-500 ml-3"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                  </div>
-                ))
-              )}
-            </div>
-
-          </section>
-
-          {/* DETAILS SECTION */}
-          <section className="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
-
-            <h2 className="font-bold text-[#111111] mb-4">
-              Order Details
-            </h2>
-
-            <form onSubmit={handleContinue} className="space-y-3">
+            {/* FORM */}
+            <form onSubmit={handleCheckout} className="bg-white p-6 rounded-2xl border space-y-3">
 
               <input
-                className="input"
+                className="w-full border rounded-lg px-3 py-2"
                 placeholder="Full Name"
-                value={form.customer_name}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    customer_name: e.target.value
-                  }))
-                }
+                value={form.name}
+                onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
               />
 
               <input
-                className="input"
-                placeholder="Phone Number"
-                value={form.phone_number}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    phone_number: e.target.value
-                  }))
-                }
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Phone Number (Mpamba / Airtel)"
+                value={form.phone}
+                onChange={(e) => setForm(p => ({ ...p, phone: e.target.value }))}
+              />
+
+              <input
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Location (Town, Area)"
+                value={form.location}
+                onChange={(e) => setForm(p => ({ ...p, location: e.target.value }))}
               />
 
               <textarea
-                className="input resize-none"
+                className="w-full border rounded-lg px-3 py-2"
                 rows={3}
-                placeholder="Additional Notes (optional)"
-                value={form.custom_details}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    custom_details: e.target.value
-                  }))
-                }
+                placeholder="Delivery notes (optional)"
+                value={form.notes}
+                onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
               />
 
-              {/* TOTAL */}
-              <div className="flex items-center justify-between text-sm pt-3 border-t">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="font-semibold text-[#111111]">
-                  {formatCurrencyAmount(subtotal, currency)}
-                </span>
+              {/* PAYMENT OPTIONS */}
+              <div className="pt-2">
+                <p className="text-sm font-semibold mb-2">Payment Method</p>
+
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    checked={form.payment_method === 'airtel_money'}
+                    onChange={() => setForm(p => ({ ...p, payment_method: 'airtel_money' }))}
+                  />
+                  Airtel Money
+                </label>
+
+                <label className="flex items-center gap-2 text-sm mt-1">
+                  <input
+                    type="radio"
+                    checked={form.payment_method === 'tnm_mpamba'}
+                    onChange={() => setForm(p => ({ ...p, payment_method: 'tnm_mpamba' }))}
+                  />
+                  TNM Mpamba
+                </label>
               </div>
 
-              {/* BUTTON */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full justify-center"
-              >
+              <button className="btn-primary w-full mt-4" disabled={loading}>
                 {loading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={16} />
                     Processing...
-                  </>
+                  </span>
                 ) : (
-                  'Continue to Payment'
+                  'Proceed to Payment'
                 )}
               </button>
 
-              {/* ERROR */}
               {error && (
-                <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">
                   {error}
                 </p>
               )}
 
             </form>
 
-          </section>
+            {/* SUMMARY */}
+            <div className="bg-white p-6 rounded-2xl border h-fit">
 
+              <h2 className="font-bold mb-4">Order Summary</h2>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Items</span>
+                  <span>{items.length}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{formatCurrencyAmount(subtotal, currency)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Delivery</span>
+                  <span>{deliveryFee} MWK</span>
+                </div>
+
+                <div className="border-t pt-2 flex justify-between font-bold">
+                  <span>Total</span>
+                  <span>{formatCurrencyAmount(total, currency)}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4">
+                Orders are confirmed after payment via mobile money.
+              </p>
+
+            </div>
+
+          </div>
         </div>
       </main>
 
