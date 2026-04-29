@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, ShoppingBag, ShoppingCart } from 'lucide-react'
+import { Menu, X, ShoppingBag, ShoppingCart, User } from 'lucide-react'
 import { clsx } from 'clsx'
 
 import CurrencySelector from '@/components/storefront/CurrencySelector'
@@ -70,7 +70,7 @@ export default function Navbar() {
           {/* RIGHT SIDE */}
           <div className="flex items-center gap-3">
 
-            {/* Currency (clean + minimal) */}
+            {/* Currency */}
             <div className="hidden md:block">
               <CurrencySelector />
             </div>
@@ -80,7 +80,7 @@ export default function Navbar() {
               onClick={() => setCartOpen(true)}
               className="relative text-gray-700 hover:text-[#F97316]"
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={20} />
               {totalItems > 0 && (
                 <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-[10px] px-1.5 rounded-full">
                   {totalItems}
@@ -88,62 +88,41 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* USER */}
-            {user ? (
-              <div className="relative">
-
+            {/* USER ICON (VISIBLE ON MOBILE TOO) */}
+            <div className="relative">
+              {user ? (
                 <button
                   onClick={() => setUserMenu(!userMenu)}
                   className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] font-bold"
                 >
                   {user.name?.charAt(0).toUpperCase()}
                 </button>
-
-                {userMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg text-sm">
-
-                    <Link
-                      href="/account"
-                      className="block px-4 py-2 hover:bg-orange-50"
-                    >
-                      My Account
-                    </Link>
-
-                    <Link
-                      href="/account/tracking"
-                      className="block px-4 py-2 hover:bg-orange-50"
-                    >
-                      Track Orders
-                    </Link>
-
-                    <Link
-                      href="/account/settings"
-                      className="block px-4 py-2 hover:bg-orange-50"
-                    >
-                      Settings
-                    </Link>
-
-                    <button
-                      onClick={logout}
-                      className="w-full text-left px-4 py-2 hover:bg-orange-50"
-                    >
-                      Logout
-                    </button>
-
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2 text-sm">
-                <Link href="/login" className="hover:text-[#F97316]">
-                  Login
+              ) : (
+                <Link href="/login">
+                  <User className="w-5 h-5 text-gray-700 hover:text-[#F97316]" />
                 </Link>
-                <span>/</span>
-                <Link href="/signup" className="hover:text-[#F97316]">
-                  Sign Up
-                </Link>
-              </div>
-            )}
+              )}
+
+              {user && userMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg text-sm">
+                  <Link href="/account" className="block px-4 py-2 hover:bg-orange-50">
+                    My Account
+                  </Link>
+                  <Link href="/account/tracking" className="block px-4 py-2 hover:bg-orange-50">
+                    Track Orders
+                  </Link>
+                  <Link href="/account/settings" className="block px-4 py-2 hover:bg-orange-50">
+                    Settings
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-2 hover:bg-orange-50"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* MOBILE MENU BUTTON */}
             <button onClick={() => setOpen(!open)} className="md:hidden">
@@ -158,6 +137,7 @@ export default function Navbar() {
       <div className={clsx('md:hidden border-t bg-white', open ? 'block' : 'hidden')}>
         <nav className="px-4 py-3 space-y-2">
 
+          {/* MAIN LINKS */}
           {links.map(l => (
             <Link
               key={l.href}
@@ -169,25 +149,22 @@ export default function Navbar() {
             </Link>
           ))}
 
+          {/* Currency */}
           <div className="px-4 py-2">
             <CurrencySelector />
           </div>
 
-          {/* MOBILE AUTH FIX (IMPORTANT FIX) */}
+          {/* AUTH SECTION (FIXED) */}
           <div className="border-t mt-2 pt-2">
 
             {user ? (
               <>
-                <Link href="/account" className="block px-4 py-2 text-sm">
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm"
+                >
                   My Account
-                </Link>
-
-                <Link href="/account/tracking" className="block px-4 py-2 text-sm">
-                  Track Orders
-                </Link>
-
-                <Link href="/account/settings" className="block px-4 py-2 text-sm">
-                  Settings
                 </Link>
 
                 <button
@@ -211,8 +188,10 @@ export default function Navbar() {
 
           </div>
 
+          {/* CTA */}
           <Link
             href="/products"
+            onClick={() => setOpen(false)}
             className="btn-primary w-full text-center mt-2"
           >
             Shop Now
@@ -224,24 +203,17 @@ export default function Navbar() {
       {/* CART */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* FLOATING WHATSAPP */}
+      {/* WHATSAPP FLOAT */}
       <a
         href="https://wa.me/265893160202"
         target="_blank"
-        className="fixed bottom-6 right-6 z-50 group"
+        className="fixed bottom-6 right-6 z-50"
       >
-        <div className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:scale-110 transition relative">
-
+        <div className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:scale-110 transition">
           <span className="absolute inset-0 rounded-full bg-green-400 opacity-40 animate-ping"></span>
-
-          <svg
-            className="w-7 h-7 text-white relative z-10"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
+          <svg className="w-7 h-7 text-white relative z-10" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20.52 3.48A11.78 11.78 0 0012.06 0C5.49 0 .2 5.29.2 11.86c0 2.09.55 4.14 1.59 5.94L0 24l6.41-1.68a11.86 11.86 0 005.65 1.44h.01c6.57 0 11.86-5.29 11.86-11.86a11.78 11.78 0 00-3.41-8.42z" />
           </svg>
-
         </div>
       </a>
     </>
