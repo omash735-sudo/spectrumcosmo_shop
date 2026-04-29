@@ -39,14 +39,56 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
 
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto">
+
+          {/* ================= TOP BAR ================= */}
+          <div className="hidden md:flex justify-between items-center px-4 py-2 text-xs text-gray-600 border-b border-gray-100">
+
+            {/* LEFT */}
+            <div className="flex items-center gap-2">
+              <span>📞</span>
+              <span>Hotline 24/7 +265 88 917 8877</span>
+            </div>
+
+            {/* RIGHT */}
+            <div className="flex items-center gap-6">
+
+              <button className="hover:text-[#F97316]">
+                Track Order
+              </button>
+
+              <CurrencySelector />
+
+              <button className="hover:text-[#F97316]">
+                Eng ▼
+              </button>
+
+              {user ? (
+                <button onClick={logout} className="hover:text-[#F97316]">
+                  Logout
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link href="/login" className="hover:text-[#F97316]">
+                    Login
+                  </Link>
+                  <span>/</span>
+                  <Link href="/signup" className="hover:text-[#F97316]">
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ================= BOTTOM BAR ================= */}
+          <div className="flex items-center justify-between px-4 py-4">
 
             {/* LOGO */}
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#F97316] rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center">
                 <ShoppingBag size={18} className="text-white" />
               </div>
               <span className="text-xl font-bold text-[#111111]">
@@ -54,183 +96,146 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* DESKTOP LINKS */}
-            <nav className="hidden md:flex items-center gap-1">
+            {/* DESKTOP NAV */}
+            <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
               {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-[#F97316] rounded-lg hover:bg-orange-50"
+                  className="text-gray-600 hover:text-[#F97316] transition"
                 >
                   {l.label}
                 </Link>
               ))}
             </nav>
 
-            {/* RIGHT SIDE (DESKTOP) */}
-            <div className="hidden md:flex items-center gap-3">
-
-              <CurrencySelector />
+            {/* RIGHT ACTIONS */}
+            <div className="flex items-center gap-4">
 
               {/* CART */}
               <button
                 onClick={() => setCartOpen(true)}
-                className="relative p-2 rounded-lg hover:bg-orange-50"
+                className="relative flex items-center gap-2 text-gray-700 hover:text-[#F97316]"
               >
                 <ShoppingCart size={18} />
+
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#F97316] text-white text-[10px] grid place-items-center">
+                  <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-[10px] px-1.5 rounded-full">
                     {totalItems}
                   </span>
                 )}
               </button>
 
-              {/* USER (DESKTOP) */}
-              {user ? (
-                <>
-                  <Link
-                    href="/account"
-                    className="text-sm text-gray-600 hover:text-[#F97316]"
-                  >
-                    {user.name?.split(' ')[0] || 'Account'}
-                  </Link>
+              {/* MOBILE MENU BUTTON */}
+              <button
+                onClick={() => setOpen(!open)}
+                className="md:hidden p-2"
+              >
+                {open ? <X size={22} /> : <Menu size={22} />}
+              </button>
 
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-600 hover:text-[#F97316]"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-sm text-gray-600 hover:text-[#F97316]"
-                  >
-                    Sign In
-                  </Link>
-
-                  <Link
-                    href="/signup"
-                    className="btn-secondary text-sm px-4 py-2"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-
-              <Link href="/products" className="btn-primary text-sm">
+              {/* SHOP BUTTON */}
+              <Link
+                href="/products"
+                className="hidden md:inline-block bg-[#F97316] text-white px-4 py-2 rounded-full text-sm hover:bg-orange-600 transition"
+              >
                 Shop Now
               </Link>
             </div>
 
-            {/* MOBILE BUTTON */}
-            <button
-              onClick={() => setOpen(!open)}
-              className="md:hidden p-2 rounded-lg"
-            >
-              {open ? <X size={22} /> : <Menu size={22} />}
-            </button>
-
           </div>
-        </div>
-
-        {/* MOBILE MENU */}
-        <div
-          className={clsx(
-            'md:hidden border-t bg-white overflow-hidden transition-all',
-            open ? 'max-h-[600px]' : 'max-h-0'
-          )}
-        >
-          <nav className="px-4 py-3 space-y-2">
-
-            {/* LINKS */}
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 rounded-lg"
-              >
-                {l.label}
-              </Link>
-            ))}
-
-            {/* CURRENCY */}
-            <div className="px-4 py-2">
-              <CurrencySelector />
-            </div>
-
-            {/* CART */}
-            <button
-              onClick={() => {
-                setCartOpen(true)
-                setOpen(false)
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700"
-            >
-              Cart ({totalItems})
-            </button>
-
-            {/* USER (MOBILE FIXED) */}
-            <div className="border-t pt-2 mt-2">
-
-              {user ? (
-                <>
-                  <Link
-                    href="/account"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700"
-                  >
-                    My Account
-                  </Link>
-
-                  <button
-                    onClick={() => {
-                      logout()
-                      setOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700"
-                  >
-                    Sign In
-                  </Link>
-
-                  <Link
-                    href="/signup"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-700"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* SHOP BUTTON */}
-            <Link
-              href="/products"
-              onClick={() => setOpen(false)}
-              className="btn-primary w-full text-center mt-2"
-            >
-              Shop Now
-            </Link>
-
-          </nav>
         </div>
       </header>
 
-      {/* CART DRAWER */}
+      {/* ================= MOBILE MENU ================= */}
+      <div
+        className={clsx(
+          'md:hidden border-t bg-white overflow-hidden transition-all',
+          open ? 'max-h-[600px]' : 'max-h-0'
+        )}
+      >
+        <nav className="px-4 py-3 space-y-2">
+
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 rounded-lg"
+            >
+              {l.label}
+            </Link>
+          ))}
+
+          <div className="px-4 py-2">
+            <CurrencySelector />
+          </div>
+
+          <button
+            onClick={() => {
+              setCartOpen(true)
+              setOpen(false)
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700"
+          >
+            Cart ({totalItems})
+          </button>
+
+          <div className="border-t pt-2 mt-2">
+
+            {user ? (
+              <>
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700"
+                >
+                  My Account
+                </Link>
+
+                <button
+                  onClick={() => {
+                    logout()
+                    setOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700"
+                >
+                  Sign In
+                </Link>
+
+                <Link
+                  href="/signup"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+
+          </div>
+
+          <Link
+            href="/products"
+            onClick={() => setOpen(false)}
+            className="btn-primary w-full text-center mt-2"
+          >
+            Shop Now
+          </Link>
+
+        </nav>
+      </div>
+
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   )
