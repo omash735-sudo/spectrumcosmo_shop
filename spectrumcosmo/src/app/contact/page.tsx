@@ -2,6 +2,8 @@
 
 import { useState, ChangeEvent, FormEvent, useEffect } from 'react'
 import Link from 'next/link'
+import Navbar from '@/components/storefront/Navbar'
+import Footer from '@/components/storefront/Footer'
 
 interface ContactFormData {
   fullName: string
