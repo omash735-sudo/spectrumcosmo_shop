@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ChangeEvent, FormEvent } from 'react'
+import { useState, ChangeEvent, FormEvent, useEffect } from 'react'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 
@@ -18,6 +18,42 @@ export default function ContactPage() {
     contactNumber: '',
     message: ''
   })
+
+  // ===== ANIME BACKGROUND SYSTEM (10 IMAGES) =====
+  const backgrounds = [
+    'https://images.unsplash.com/photo-1526481280695-3c687fd5432c',
+    'https://images.unsplash.com/photo-1503899036084-c55cdd92da26',
+    'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df',
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
+    'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5',
+    'https://images.unsplash.com/photo-1516900557549-41557d405adf',
+    'https://images.unsplash.com/photo-1526481280695-3c687fd5432c',
+    'https://images.unsplash.com/photo-1501785888041-af3ef285b470',
+    'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d',
+    'https://images.unsplash.com/photo-1472214103451-9374bd1c798e'
+  ]
+
+  const [bgIndex, setBgIndex] = useState(0)
+  const [offsetY, setOffsetY] = useState(0)
+
+  // ===== ROTATION (5 seconds) =====
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % backgrounds.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // ===== PARALLAX EFFECT =====
+  useEffect(() => {
+    const handleScroll = () => {
+      setOffsetY(window.scrollY * 0.3)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -43,11 +79,7 @@ export default function ContactPage() {
       return
     }
 
-    console.log('Contact Form:', form)
-
-    alert(
-      `Thanks ${form.fullName}! We’ll respond within 24–48 hours.`
-    )
+    alert(`Thanks ${form.fullName}! We’ll respond within 24–48 hours.`)
 
     setForm({
       fullName: '',
@@ -63,17 +95,34 @@ export default function ContactPage() {
 
       <main className="bg-gray-50 min-h-screen">
 
-        {/* HEADER */}
-        <section className="py-20 text-center bg-orange-50">
-          <h1 className="text-4xl font-bold text-[#111111] mb-4">
-            Contact Us
-          </h1>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            Need help, custom orders, or collaboration? We usually reply within 24–48 hours.
-          </p>
+        {/* ===== HERO (ANIME + PARALLAX) ===== */}
+        <section className="relative h-[420px] overflow-hidden flex items-center justify-center text-white">
+
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+            style={{
+              backgroundImage: `url(${backgrounds[bgIndex]})`,
+              transform: `translateY(${offsetY}px) scale(1.1)`
+            }}
+          />
+
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/55" />
+
+          {/* Content */}
+          <div className="relative text-center px-4">
+            <h1 className="text-4xl font-bold mb-4">
+              Contact Us
+            </h1>
+            <p className="text-gray-200 max-w-xl mx-auto">
+              Need help, custom orders, or collaboration? We usually reply within 24–48 hours.
+            </p>
+          </div>
+
         </section>
 
-        {/* CONTACT SECTION */}
+        {/* ===== CONTACT FORM ===== */}
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4">
 
@@ -89,68 +138,42 @@ export default function ContactPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Name */}
-                <div>
-                  <label className="text-sm text-gray-700">
-                    Full Name *
-                  </label>
-                  <input
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    className="w-full mt-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
-                    placeholder="Your name"
-                  />
-                </div>
+                <input
+                  name="fullName"
+                  value={form.fullName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border rounded-lg"
+                  placeholder="Full Name"
+                />
 
-                {/* Email */}
-                <div>
-                  <label className="text-sm text-gray-700">
-                    Email *
-                  </label>
-                  <input
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    className="w-full mt-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
-                    placeholder="you@example.com"
-                  />
-                </div>
+                <input
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border rounded-lg"
+                  placeholder="Email"
+                />
 
-                {/* Phone */}
-                <div>
-                  <label className="text-sm text-gray-700">
-                    Contact Number *
-                  </label>
-                  <input
-                    name="contactNumber"
-                    value={form.contactNumber}
-                    onChange={handleChange}
-                    className="w-full mt-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
-                    placeholder="Your phone number"
-                  />
-                </div>
+                <input
+                  name="contactNumber"
+                  value={form.contactNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border rounded-lg"
+                  placeholder="Contact Number"
+                />
 
-                {/* Message */}
-                <div>
-                  <label className="text-sm text-gray-700">
-                    Message *
-                  </label>
-                  <textarea
-                    name="message"
-                    value={form.message}
-                    onChange={handleChange}
-                    rows={5}
-                    className="w-full mt-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-400 outline-none"
-                    placeholder="How can we help you?"
-                  />
-                </div>
+                <textarea
+                  name="message"
+                  value={form.message}
+                  onChange={handleChange}
+                  rows={5}
+                  className="w-full px-4 py-3 border rounded-lg"
+                  placeholder="Message"
+                />
 
-                {/* Button */}
                 <button
                   type="submit"
-                  className="w-full bg-[#F97316] text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition"
+                  className="w-full bg-[#F97316] text-white py-3 rounded-lg"
                 >
                   Send Message
                 </button>
@@ -160,7 +183,7 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* SUPPORT INFO */}
+        {/* ===== INFO CARDS ===== */}
         <section className="pb-20">
           <div className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-6 text-center">
 
