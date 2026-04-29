@@ -1,208 +1,95 @@
 'use client'
 
-import { useState, ChangeEvent, FormEvent, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 
-interface ContactFormData {
-  fullName: string
-  email: string
-  contactNumber: string
-  message: string
-}
+const images = [
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470830/zenitsu-agatsuma-3840x2160-24356_g79imh.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470912/chisa-wuthering-5120x2880-24840_flwmaf.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470897/japan-artistic-5120x2880-25406_yboawj.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470879/ash-ketchum-pikachu-3840x2160-17918_v8h1cr.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470821/mirei-tsukino-anya-6400x3597-24381_ttcolj.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470790/skirk-blue-3840x2160-22953_cdfqqa.jpg",
+  "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470818/jungle-tree-dark-3840x2160-22695_ehccrb.jpg"
+]
 
 export default function ContactPage() {
-  const [form, setForm] = useState<ContactFormData>({
-    fullName: '',
-    email: '',
-    contactNumber: '',
-    message: ''
-  })
+  const [index, setIndex] = useState(0)
 
-  // ===== ANIME BACKGROUND SYSTEM (10 IMAGES) =====
-  const backgrounds = [
-    'https://images.unsplash.com/photo-1526481280695-3c687fd5432c',
-    'https://images.unsplash.com/photo-1503899036084-c55cdd92da26',
-    'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df',
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
-    'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5',
-    'https://images.unsplash.com/photo-1516900557549-41557d405adf',
-    'https://images.unsplash.com/photo-1526481280695-3c687fd5432c',
-    'https://images.unsplash.com/photo-1501785888041-af3ef285b470',
-    'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d',
-    'https://images.unsplash.com/photo-1472214103451-9374bd1c798e'
-  ]
-
-  const [bgIndex, setBgIndex] = useState(0)
-  const [offsetY, setOffsetY] = useState(0)
-
-  // ===== ROTATION (5 seconds) =====
   useEffect(() => {
     const interval = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % backgrounds.length)
-    }, 5000)
+      setIndex((prev) => (prev + 1) % images.length)
+    }, 4000)
 
     return () => clearInterval(interval)
   }, [])
-
-  // ===== PARALLAX EFFECT =====
-  useEffect(() => {
-    const handleScroll = () => {
-      setOffsetY(window.scrollY * 0.3)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    if (
-      !form.fullName ||
-      !form.email ||
-      !form.contactNumber ||
-      !form.message
-    ) {
-      alert('Please fill in all fields.')
-      return
-    }
-
-    if (!form.email.includes('@')) {
-      alert('Please enter a valid email.')
-      return
-    }
-
-    alert(`Thanks ${form.fullName}! We’ll respond within 24–48 hours.`)
-
-    setForm({
-      fullName: '',
-      email: '',
-      contactNumber: '',
-      message: ''
-    })
-  }
 
   return (
     <>
       <Navbar />
 
-      <main className="bg-gray-50 min-h-screen">
+      <main className="min-h-screen bg-black">
 
-        {/* ===== HERO (ANIME + PARALLAX) ===== */}
-        <section className="relative h-[420px] overflow-hidden flex items-center justify-center text-white">
+        {/* HERO (ANIME PARALLAX STYLE) */}
+        <section className="relative h-[60vh] flex items-center justify-center text-center overflow-hidden">
 
-          {/* Background Image */}
+          {/* BACKGROUND IMAGE */}
           <div
             className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
             style={{
-              backgroundImage: `url(${backgrounds[bgIndex]})`,
-              transform: `translateY(${offsetY}px) scale(1.1)`
+              backgroundImage: `url(${images[index]})`,
+              transform: 'scale(1.05)'
             }}
           />
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/55" />
+          {/* DARK OVERLAY */}
+          <div className="absolute inset-0 bg-black/60" />
 
-          {/* Content */}
-          <div className="relative text-center px-4">
-            <h1 className="text-4xl font-bold mb-4">
-              Contact Us
+          {/* TEXT */}
+          <div className="relative z-10 text-white px-4">
+            <h1 className="text-4xl md:text-5xl font-bold">
+              Contact SpectrumCosmo
             </h1>
-            <p className="text-gray-200 max-w-xl mx-auto">
-              Need help, custom orders, or collaboration? We usually reply within 24–48 hours.
+            <p className="mt-3 text-gray-200 max-w-xl mx-auto">
+              Collaborate, apply, or get support — everything starts here.
             </p>
           </div>
 
         </section>
 
-        {/* ===== CONTACT FORM ===== */}
-        <section className="py-16">
-          <div className="max-w-4xl mx-auto px-4">
+        {/* OPTIONS */}
+        <section className="max-w-6xl mx-auto px-4 py-14 grid md:grid-cols-2 gap-6">
 
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+          <Link href="/contact/collaboration" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
+            <h2 className="text-xl font-semibold">Collaboration</h2>
+            <p className="text-gray-600 mt-2">
+              Work with us to feature your products or brand.
+            </p>
+          </Link>
 
-              <h2 className="text-xl font-semibold mb-2 text-[#111111]">
-                Send us a message
-              </h2>
+          <Link href="/contact/influencer" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
+            <h2 className="text-xl font-semibold">Influencer Program</h2>
+            <p className="text-gray-600 mt-2">
+              Apply to promote SpectrumCosmo and earn rewards.
+            </p>
+          </Link>
 
-              <p className="text-gray-500 text-sm mb-8">
-                We’ll get back to you as soon as possible.
-              </p>
+          <Link href="/contact/support" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
+            <h2 className="text-xl font-semibold">Support</h2>
+            <p className="text-gray-600 mt-2">
+              Get help with orders, payments, and account issues.
+            </p>
+          </Link>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+          <Link href="/contact/business" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
+            <h2 className="text-xl font-semibold">Business</h2>
+            <p className="text-gray-600 mt-2">
+              Long-term partnerships and wholesale deals.
+            </p>
+          </Link>
 
-                <input
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border rounded-lg"
-                  placeholder="Full Name"
-                />
-
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border rounded-lg"
-                  placeholder="Email"
-                />
-
-                <input
-                  name="contactNumber"
-                  value={form.contactNumber}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border rounded-lg"
-                  placeholder="Contact Number"
-                />
-
-                <textarea
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  rows={5}
-                  className="w-full px-4 py-3 border rounded-lg"
-                  placeholder="Message"
-                />
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#F97316] text-white py-3 rounded-lg"
-                >
-                  Send Message
-                </button>
-
-              </form>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== INFO CARDS ===== */}
-        <section className="pb-20">
-          <div className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-6 text-center">
-
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="font-bold text-[#F97316]">Fast Response</p>
-              <p className="text-sm text-gray-500 mt-1">24–48 hours reply time</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="font-bold text-[#F97316]">Support</p>
-              <p className="text-sm text-gray-500 mt-1">Orders, custom designs & help</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <p className="font-bold text-[#F97316]">Collaboration</p>
-              <p className="text-sm text-gray-500 mt-1">Business & influencer deals</p>
-            </div>
-
-          </div>
         </section>
 
       </main>
