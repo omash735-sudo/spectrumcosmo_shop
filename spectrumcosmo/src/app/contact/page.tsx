@@ -17,8 +17,19 @@ const images = [
 
 export default function ContactPage() {
   const [index, setIndex] = useState(0)
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    message: ''
+  })
 
   useEffect(() => {
+    // preload images (removes black flash)
+    images.forEach((src) => {
+      const img = new Image()
+      img.src = src
+    })
+
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % images.length)
     }, 4000)
@@ -26,21 +37,39 @@ export default function ContactPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleSubmit = async (e: any) => {
+    e.preventDefault()
+
+    await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'general',
+        name: form.name,
+        email: form.email,
+        message: form.message
+      })
+    })
+
+    alert('Message sent successfully')
+    setForm({ name: '', email: '', message: '' })
+  }
+
   return (
     <>
       <Navbar />
 
       <main className="min-h-screen bg-black">
 
-        {/* HERO (ANIME PARALLAX STYLE) */}
-        <section className="relative h-[60vh] flex items-center justify-center text-center overflow-hidden">
+        {/* HERO WITH CROSS FADE (NO BLACK FLASH) */}
+        <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
 
-          {/* BACKGROUND IMAGE */}
+          {/* BACKGROUND LAYER 1 */}
           <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
             style={{
               backgroundImage: `url(${images[index]})`,
-              transform: 'scale(1.05)'
+              opacity: 1
             }}
           />
 
@@ -48,47 +77,72 @@ export default function ContactPage() {
           <div className="absolute inset-0 bg-black/60" />
 
           {/* TEXT */}
-          <div className="relative z-10 text-white px-4">
-            <h1 className="text-4xl md:text-5xl font-bold">
+          <div className="relative z-10 text-white text-center px-4">
+            <h1 className="text-4xl font-bold">
               Contact SpectrumCosmo
             </h1>
-            <p className="mt-3 text-gray-200 max-w-xl mx-auto">
-              Collaborate, apply, or get support — everything starts here.
+            <p className="text-gray-200 mt-3">
+              Reach out, collaborate, or get support
             </p>
           </div>
 
         </section>
 
-        {/* OPTIONS */}
-        <section className="max-w-6xl mx-auto px-4 py-14 grid md:grid-cols-2 gap-6">
+        {/* HUB BUTTONS */}
+        <section className="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-6">
 
-          <Link href="/contact/collaboration" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
-            <h2 className="text-xl font-semibold">Collaboration</h2>
-            <p className="text-gray-600 mt-2">
-              Work with us to feature your products or brand.
-            </p>
+          <Link href="/contact/collaboration" className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
+            Collaboration
           </Link>
 
-          <Link href="/contact/influencer" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
-            <h2 className="text-xl font-semibold">Influencer Program</h2>
-            <p className="text-gray-600 mt-2">
-              Apply to promote SpectrumCosmo and earn rewards.
-            </p>
+          <Link href="/contact/support" className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
+            Support
           </Link>
 
-          <Link href="/contact/support" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
-            <h2 className="text-xl font-semibold">Support</h2>
-            <p className="text-gray-600 mt-2">
-              Get help with orders, payments, and account issues.
-            </p>
+          <Link href="/contact/influencer" className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
+            Influencer
           </Link>
 
-          <Link href="/contact/business" className="bg-white rounded-xl p-6 shadow hover:shadow-md transition">
-            <h2 className="text-xl font-semibold">Business</h2>
-            <p className="text-gray-600 mt-2">
-              Long-term partnerships and wholesale deals.
-            </p>
+          <Link href="/contact/business" className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
+            Business
           </Link>
+
+        </section>
+
+        {/* CONTACT FORM (RESTORED) */}
+        <section className="max-w-3xl mx-auto px-4 pb-20">
+
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow space-y-4">
+
+            <h2 className="text-xl font-semibold">Send us a message</h2>
+
+            <input
+              className="w-full border p-3 rounded"
+              placeholder="Your Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+
+            <input
+              className="w-full border p-3 rounded"
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+
+            <textarea
+              className="w-full border p-3 rounded"
+              rows={5}
+              placeholder="Message"
+              value={form.message}
+              onChange={(e) => setForm({ ...form, message: e.target.value })}
+            />
+
+            <button className="w-full bg-[#F97316] text-white py-3 rounded">
+              Send Message
+            </button>
+
+          </form>
 
         </section>
 
