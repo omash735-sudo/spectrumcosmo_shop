@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, ShoppingBag, ShoppingCart, User } from 'lucide-react'
-import { clsx } from 'clsx'
+import clsx from 'clsx'
 
 import CurrencySelector from '@/components/storefront/CurrencySelector'
 import { useCart } from '@/components/storefront/CartProvider'
@@ -40,10 +40,11 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="hidden md:block sticky top-0 z-50 bg-white border-b border-gray-100">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4">
 
-          {/* Logo */}
+          {/* LOGO */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center">
               <ShoppingBag size={18} className="text-white" />
@@ -53,8 +54,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Links */}
-          <nav className="flex items-center gap-6 text-sm">
+          {/* DESKTOP LINKS */}
+          <nav className="hidden md:flex items-center gap-6 text-sm">
             {links.map(l => (
               <Link
                 key={l.href}
@@ -66,12 +67,15 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Right Side */}
+          {/* RIGHT SIDE */}
           <div className="flex items-center gap-3">
 
-            <CurrencySelector />
+            {/* CURRENCY (desktop only) */}
+            <div className="hidden md:block">
+              <CurrencySelector />
+            </div>
 
-            {/* Cart */}
+            {/* CART */}
             <button
               onClick={() => setCartOpen(true)}
               className="relative text-gray-700 hover:text-[#F97316]"
@@ -84,7 +88,7 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* User */}
+            {/* USER */}
             <div className="relative">
               {user ? (
                 <button
@@ -120,13 +124,85 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* MOBILE MENU BUTTON */}
+            <button
+              onClick={() => setOpen(!open)}
+              className="md:hidden"
+            >
+              {open ? <X size={22} /> : <Menu size={22} />}
+            </button>
+
           </div>
         </div>
       </header>
 
+      {/* MOBILE MENU */}
+      <div className={clsx('md:hidden border-t bg-white', open ? 'block' : 'hidden')}>
+        <nav className="px-4 py-3 space-y-2">
+
+          {links.map(l => (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700"
+            >
+              {l.label}
+            </Link>
+          ))}
+
+          <div className="px-4 py-2">
+            <CurrencySelector />
+          </div>
+
+          <div className="border-t mt-2 pt-2">
+
+            {user ? (
+              <>
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm"
+                >
+                  My Account
+                </Link>
+
+                <button
+                  onClick={logout}
+                  className="w-full text-left px-4 py-2 text-sm"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="block px-4 py-2 text-sm">
+                  Login
+                </Link>
+
+                <Link href="/signup" className="block px-4 py-2 text-sm">
+                  Sign Up
+                </Link>
+              </>
+            )}
+
+          </div>
+
+          <Link
+            href="/products"
+            onClick={() => setOpen(false)}
+            className="block w-full text-center mt-2 bg-[#F97316] text-white py-2 rounded-md"
+          >
+            Shop Now
+          </Link>
+
+        </nav>
+      </div>
+
+      {/* CART */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* WhatsApp */}
+      {/* WHATSAPP FLOAT */}
       <a
         href="https://wa.me/265893160202"
         target="_blank"
