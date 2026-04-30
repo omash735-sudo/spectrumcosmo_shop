@@ -1,14 +1,9 @@
-'use client'
-
 import type { Metadata } from 'next'
 import './globals.css'
 
 import { CurrencyProvider } from '@/components/storefront/CurrencyProvider'
 import { CartProvider } from '@/components/storefront/CartProvider'
-import BottomNav from '@/components/storefront/BottomNav'
 import Navbar from '@/components/storefront/Navbar'
-
-import { usePathname } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -16,13 +11,6 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-
-  const hideBottomNav =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/signup') ||
-    pathname.startsWith('/checkout')
-
   return (
     <html lang="en">
       <body className="antialiased">
@@ -30,20 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CurrencyProvider>
           <CartProvider>
 
-            {/* Desktop Navbar */}
+            {/* TOP NAVBAR (GLOBAL) */}
             <Navbar />
 
-            {/* Page Content */}
-            <main className="pb-20 md:pb-0">
+            {/* PAGE CONTENT */}
+            <main className="min-h-screen">
               {children}
             </main>
-
-            {/* Mobile Bottom Nav */}
-            {!hideBottomNav && (
-              <div className="md:hidden">
-                <BottomNav />
-              </div>
-            )}
 
           </CartProvider>
         </CurrencyProvider>
