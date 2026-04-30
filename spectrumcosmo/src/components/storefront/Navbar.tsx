@@ -42,25 +42,25 @@ export default function Navbar() {
     <>
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-4">
 
           {/* LOGO */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center">
               <ShoppingBag size={18} className="text-white" />
             </div>
-            <span className="text-xl font-bold">
+            <span className="text-xl font-bold tracking-tight">
               Spectrum<span className="text-[#F97316]">Cosmo</span>
             </span>
           </Link>
 
           {/* DESKTOP LINKS */}
-          <nav className="hidden md:flex items-center gap-6 text-sm">
+          <nav className="hidden md:flex items-center gap-8 text-sm">
             {links.map(l => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="text-gray-600 hover:text-[#F97316]"
+                className="text-gray-600 hover:text-[#F97316] transition"
               >
                 {l.label}
               </Link>
@@ -68,17 +68,30 @@ export default function Navbar() {
           </nav>
 
           {/* RIGHT SIDE */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
 
-            {/* CURRENCY (desktop only) */}
+            {/* CURRENCY */}
             <div className="hidden md:block">
               <CurrencySelector />
             </div>
 
+            {/* AUTH (desktop) */}
+            {!user && (
+              <div className="hidden md:flex items-center gap-4 text-sm">
+                <Link href="/login" className="text-gray-700 hover:text-[#F97316]">
+                  Login
+                </Link>
+
+                <Link href="/signup" className="text-gray-700 hover:text-[#F97316]">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
             {/* CART */}
             <button
               onClick={() => setCartOpen(true)}
-              className="relative text-gray-700 hover:text-[#F97316]"
+              className="relative text-gray-700 hover:text-[#F97316] transition"
             >
               <ShoppingCart size={20} />
               {totalItems > 0 && (
@@ -93,7 +106,7 @@ export default function Navbar() {
               {user ? (
                 <button
                   onClick={() => setUserMenu(!userMenu)}
-                  className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] font-bold"
+                  className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] font-bold"
                 >
                   {user.name?.charAt(0).toUpperCase()}
                 </button>
@@ -104,7 +117,7 @@ export default function Navbar() {
               )}
 
               {user && userMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg text-sm">
+                <div className="absolute right-0 mt-3 w-52 bg-white border rounded-md shadow-lg text-sm">
                   <Link href="/account" className="block px-4 py-2 hover:bg-orange-50">
                     My Account
                   </Link>
@@ -124,10 +137,10 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* MOBILE MENU BUTTON */}
+            {/* MOBILE MENU */}
             <button
               onClick={() => setOpen(!open)}
-              className="md:hidden"
+              className="md:hidden ml-1"
             >
               {open ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -137,50 +150,53 @@ export default function Navbar() {
       </header>
 
       {/* MOBILE MENU */}
-      <div className={clsx('md:hidden border-t bg-white', open ? 'block' : 'hidden')}>
-        <nav className="px-4 py-3 space-y-2">
+      <div className={clsx(
+        'md:hidden border-t bg-white transition-all',
+        open ? 'block' : 'hidden'
+      )}>
+        <nav className="px-5 py-4 space-y-2">
 
           {links.map(l => (
             <Link
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700"
+              className="block px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-50"
             >
               {l.label}
             </Link>
           ))}
 
-          <div className="px-4 py-2">
+          <div className="px-3 py-2">
             <CurrencySelector />
           </div>
 
-          <div className="border-t mt-2 pt-2">
+          <div className="border-t mt-3 pt-3">
 
             {user ? (
               <>
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-2 text-sm"
+                  className="block px-3 py-2 text-sm"
                 >
                   My Account
                 </Link>
 
                 <button
                   onClick={logout}
-                  className="w-full text-left px-4 py-2 text-sm"
+                  className="w-full text-left px-3 py-2 text-sm"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="block px-4 py-2 text-sm">
+                <Link href="/login" className="block px-3 py-2 text-sm">
                   Login
                 </Link>
 
-                <Link href="/signup" className="block px-4 py-2 text-sm">
+                <Link href="/signup" className="block px-3 py-2 text-sm">
                   Sign Up
                 </Link>
               </>
@@ -191,7 +207,7 @@ export default function Navbar() {
           <Link
             href="/products"
             onClick={() => setOpen(false)}
-            className="block w-full text-center mt-2 bg-[#F97316] text-white py-2 rounded-md"
+            className="block w-full text-center mt-3 bg-[#F97316] text-white py-2.5 rounded-md"
           >
             Shop Now
           </Link>
@@ -202,7 +218,7 @@ export default function Navbar() {
       {/* CART */}
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* WHATSAPP FLOAT */}
+      {/* WHATSAPP */}
       <a
         href="https://wa.me/265893160202"
         target="_blank"
