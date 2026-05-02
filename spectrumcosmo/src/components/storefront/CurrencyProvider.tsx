@@ -2,18 +2,20 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CurrencyCode } from '@/lib/currency'
+import { useSettings } from './SettingsProvider'
 
 type CurrencyContextType = {
   currency: CurrencyCode
-  setCurrency: (currency: CurrencyCode) => void
   rates: Record<CurrencyCode, number>
+  convert: (amountInUsd: number, currency?: CurrencyCode) => number
 }
 
 const CurrencyContext = createContext<CurrencyContextType | null>(null)
-const STORAGE_KEY = 'spectrumcosmo_currency'
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<CurrencyCode>('USD')
+  const { settings } = useSettings()
+  const currency = settings.currency
+
   const [rates, setRates] = useState<Record<CurrencyCode, number>>({
     USD: 1,
     MWK: 1750,
@@ -21,43 +23,46 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     EUR: 0.92,
   })
 
+  // fetch live rates
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored === 'USD' || stored === 'MWK' || stored === 'ZAR' || stored === 'EUR') {
-      setCurrencyState(stored)
-    }
-
     fetch('/api/exchange-rates')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return
-        if (data.USD && data.MWK && data.ZAR && data.EUR) {
-          setRates({
-            USD: Number(data.USD),
-            MWK: Number(data.MWK),
-            ZAR: Number(data.ZAR),
-            EUR: Number(data.EUR),
-          })
-        }
+
+        setRates({
+          USD: Number(data.USD ?? 1),
+          MWK: Number(data.MWK ?? 1750),
+          ZAR: Number(data.ZAR ?? 18.5),
+          EUR: Number(data.EUR ?? 0.92),
+        })
       })
       .catch(() => null)
   }, [])
 
-  const setCurrency = (nextCurrency: CurrencyCode) => {
-    setCurrencyState(nextCurrency)
-    window.localStorage.setItem(STORAGE_KEY, nextCurrency)
+  const convert = (amountInUsd: number, target?: CurrencyCode) => {
+    const curr = target || currency
+    return amountInUsd * rates[curr]
   }
 
-  const value = useMemo(() => ({ currency, setCurrency, rates }), [currency, rates])
+  const value = useMemo(
+    () => ({
+      currency,
+      rates,
+      convert,
+    }),
+    [currency, rates]
+  )
 
-  return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
+  return (
+    <CurrencyContext.Provider value={value}>
+      {children}
+    </CurrencyContext.Provider>
+  )
 }
 
 export function useCurrency() {
   const ctx = useContext(CurrencyContext)
-  if (!ctx) {
-    throw new Error('useCurrency must be used inside CurrencyProvider')
-  }
+  if (!ctx) throw new Error('useCurrency must be used inside CurrencyProvider')
   return ctx
 }
-
