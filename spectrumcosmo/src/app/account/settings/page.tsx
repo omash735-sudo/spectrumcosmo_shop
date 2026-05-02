@@ -4,8 +4,12 @@ import { useEffect, useState } from 'react'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { Loader2 } from 'lucide-react'
+import { useSettings } from '@/components/storefront/SettingsProvider'
+import type { CurrencyCode } from '@/lib/currency'
 
 export default function SettingsPage() {
+  const { settings, update } = useSettings()
+
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -114,36 +118,23 @@ export default function SettingsPage() {
 
             <form onSubmit={updateProfile} className="space-y-4">
 
-              <div>
-                <label className="text-sm text-gray-600">Name</label>
-                <input
-                  className="input"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                />
-              </div>
+              <input
+                className="input"
+                value={form.name}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, name: e.target.value }))
+                }
+              />
 
-              <div>
-                <label className="text-sm text-gray-600">Email</label>
-                <input
-                  className="input bg-gray-100"
-                  value={user.email}
-                  readOnly
-                />
-              </div>
+              <input className="input bg-gray-100" value={user.email} readOnly />
 
-              <div>
-                <label className="text-sm text-gray-600">Phone</label>
-                <input
-                  className="input"
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, phone: e.target.value }))
-                  }
-                />
-              </div>
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, phone: e.target.value }))
+                }
+              />
 
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -156,70 +147,134 @@ export default function SettingsPage() {
                     }))
                   }
                 />
-                Receive newsletter updates
+                Newsletter
               </label>
 
               <button className="btn-primary w-full" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Profile'}
+                Save Profile
               </button>
             </form>
           </section>
 
-          {/* PASSWORD SETTINGS */}
-          <section className="bg-white rounded-2xl border p-6">
+          {/* SETTINGS PANEL (REAL FUNCTIONAL SETTINGS) */}
+          <section className="bg-white rounded-2xl border p-6 space-y-4">
+
+            <h2 className="text-xl font-bold">App Settings</h2>
+
+            {/* CURRENCY */}
+            <div>
+              <p className="text-sm font-medium mb-1">Currency</p>
+              <select
+                className="input"
+                value={settings.currency}
+                onChange={(e) =>
+                  update({ currency: e.target.value as CurrencyCode })
+                }
+              >
+                <option value="USD">USD</option>
+                <option value="MWK">MWK</option>
+                <option value="ZAR">ZAR</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+
+            {/* DARK MODE */}
+            <label className="flex justify-between items-center">
+              Dark Mode
+              <input
+                type="checkbox"
+                checked={settings.darkMode}
+                onChange={(e) => update({ darkMode: e.target.checked })}
+              />
+            </label>
+
+            {/* EMAIL */}
+            <label className="flex justify-between items-center">
+              Email Notifications
+              <input
+                type="checkbox"
+                checked={settings.emailNotifications}
+                onChange={(e) =>
+                  update({ emailNotifications: e.target.checked })
+                }
+              />
+            </label>
+
+            {/* SMS */}
+            <label className="flex justify-between items-center">
+              SMS Alerts
+              <input
+                type="checkbox"
+                checked={settings.smsAlerts}
+                onChange={(e) => update({ smsAlerts: e.target.checked })}
+              />
+            </label>
+
+            {/* LANGUAGE */}
+            <select
+              className="input"
+              value={settings.language}
+              onChange={(e) => update({ language: e.target.value })}
+            >
+              <option>English</option>
+              <option>French</option>
+              <option>Spanish</option>
+            </select>
+
+          </section>
+
+          {/* PASSWORD */}
+          <section className="bg-white rounded-2xl border p-6 md:col-span-2">
+
             <h2 className="text-xl font-bold mb-4">Security</h2>
 
-            <form onSubmit={updatePassword} className="space-y-4">
+            <form onSubmit={updatePassword} className="grid gap-3">
 
-              <div>
-                <label className="text-sm text-gray-600">Current Password</label>
-                <input
-                  type="password"
-                  className="input"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) =>
-                    setPasswordForm((p) => ({
-                      ...p,
-                      currentPassword: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+              <input
+                type="password"
+                className="input"
+                placeholder="Current Password"
+                value={passwordForm.currentPassword}
+                onChange={(e) =>
+                  setPasswordForm((p) => ({
+                    ...p,
+                    currentPassword: e.target.value,
+                  }))
+                }
+              />
 
-              <div>
-                <label className="text-sm text-gray-600">New Password</label>
-                <input
-                  type="password"
-                  className="input"
-                  value={passwordForm.newPassword}
-                  onChange={(e) =>
-                    setPasswordForm((p) => ({
-                      ...p,
-                      newPassword: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+              <input
+                type="password"
+                className="input"
+                placeholder="New Password"
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm((p) => ({
+                    ...p,
+                    newPassword: e.target.value,
+                  }))
+                }
+              />
 
-              <div>
-                <label className="text-sm text-gray-600">Confirm Password</label>
-                <input
-                  type="password"
-                  className="input"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordForm((p) => ({
-                      ...p,
-                      confirmPassword: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+              <input
+                type="password"
+                className="input"
+                placeholder="Confirm Password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) =>
+                  setPasswordForm((p) => ({
+                    ...p,
+                    confirmPassword: e.target.value,
+                  }))
+                }
+              />
 
-              <button className="btn-primary w-full" disabled={saving}>
-                {saving ? 'Updating...' : 'Update Password'}
+              <button className="btn-primary">
+                Update Password
               </button>
+
             </form>
+
           </section>
 
         </div>
