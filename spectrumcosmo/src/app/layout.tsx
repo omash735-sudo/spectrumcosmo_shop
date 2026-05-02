@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
 
+import { SettingsProvider } from '@/components/storefront/SettingsProvider'
 import { CurrencyProvider } from '@/components/storefront/CurrencyProvider'
 import { CartProvider } from '@/components/storefront/CartProvider'
-import { SettingsProvider } from '@/components/storefront/SettingsProvider'
+import { UserProvider } from '@/components/storefront/UserProvider'
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -18,11 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <SettingsProvider>
-          <CurrencyProvider>
-            <CartProvider>{children}</CartProvider>
-          </CurrencyProvider>
-        </SettingsProvider>
+        <UserProvider>
+          <SettingsProvider>
+            <CurrencyProvider>
+              <CartProvider>
+                {children}
+              </CartProvider>
+            </CurrencyProvider>
+          </SettingsProvider>
+        </UserProvider>
       </body>
     </html>
   )
