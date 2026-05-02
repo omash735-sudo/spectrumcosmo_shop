@@ -1,61 +1,88 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { CurrencyCode } from '@/lib/currency'
+import type { CurrencyCode } from '@/lib/currency'
 
 type Settings = {
   currency: CurrencyCode
   darkMode: boolean
   language: string
+  emailNotifications: boolean
+  smsAlerts: boolean
+  twoFactor: boolean
 }
 
 type SettingsContextType = {
   settings: Settings
+  setSettings: (s: Settings) => void
+  update: (patch: Partial<Settings>) => void
+
+  // backward compatibility (so your old code still works)
   setCurrency: (c: CurrencyCode) => void
   setDarkMode: (v: boolean) => void
   setLanguage: (v: string) => void
 }
 
-const SettingsContext = createContext<SettingsContextType | null>(null)
+const STORAGE_KEY = 'spectrumcosmo_settings'
 
-const DEFAULT_SETTINGS: Settings = {
+const defaultSettings: Settings = {
   currency: 'USD',
   darkMode: false,
   language: 'English',
+  emailNotifications: true,
+  smsAlerts: false,
+  twoFactor: false,
 }
 
-export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+const SettingsContext = createContext<SettingsContextType | null>(null)
 
-  // load from localStorage
+export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const [settings, setSettings] = useState<Settings>(defaultSettings)
+  const [hydrated, setHydrated] = useState(false)
+
+  // LOAD
   useEffect(() => {
-    const saved = localStorage.getItem('sc-settings')
-    if (saved) {
-      setSettings(JSON.parse(saved))
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        setSettings({ ...defaultSettings, ...JSON.parse(stored) })
+      }
+    } catch (e) {
+      console.log('Settings parse error, using defaults')
     }
+    setHydrated(true)
   }, [])
 
-  // persist
+  // SAVE
   useEffect(() => {
-    localStorage.setItem('sc-settings', JSON.stringify(settings))
-  }, [settings])
+    if (!hydrated) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  }, [settings, hydrated])
 
-  const setCurrency = (currency: CurrencyCode) => {
-    setSettings(prev => ({ ...prev, currency }))
+  const update = (patch: Partial<Settings>) => {
+    setSettings(prev => ({ ...prev, ...patch }))
   }
 
+  // legacy helpers (so old components don’t break)
+  const setCurrency = (currency: CurrencyCode) => update({ currency })
+
   const setDarkMode = (darkMode: boolean) => {
-    setSettings(prev => ({ ...prev, darkMode }))
+    update({ darkMode })
     document.documentElement.classList.toggle('dark', darkMode)
   }
 
-  const setLanguage = (language: string) => {
-    setSettings(prev => ({ ...prev, language }))
-  }
+  const setLanguage = (language: string) => update({ language })
 
   return (
     <SettingsContext.Provider
-      value={{ settings, setCurrency, setDarkMode, setLanguage }}
+      value={{
+        settings,
+        setSettings,
+        update,
+        setCurrency,
+        setDarkMode,
+        setLanguage,
+      }}
     >
       {children}
     </SettingsContext.Provider>
