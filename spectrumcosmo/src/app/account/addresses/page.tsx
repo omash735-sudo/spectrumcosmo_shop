@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Navbar from '@/components/storefront/Navbar'
-import Footer from '@/components/storefront/Footer'
-import { Loader2 } from 'lucide-react'
+import AccountLayout from '@/components/account/AccountLayout'
+import { Loader2, MapPin, Trash2 } from 'lucide-react'
 
 type Address = {
   id: string
@@ -78,137 +77,161 @@ export default function AddressesPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <main className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin text-gray-600" />
-        </main>
-        <Footer />
-      </>
+      <AccountLayout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="animate-spin text-orange-500" />
+        </div>
+      </AccountLayout>
     )
   }
 
   return (
-    <>
-      <Navbar />
+    <AccountLayout>
 
-      <main className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-6">
+      <h1 className="text-2xl font-bold text-[#111] mb-2">
+        Addresses
+      </h1>
 
-          {/* ADD NEW ADDRESS */}
-          <section className="bg-white p-6 rounded-2xl border">
-            <h2 className="text-xl font-bold mb-4">Add New Address</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Manage delivery locations for your orders
+      </p>
 
-            <form onSubmit={addAddress} className="space-y-3">
+      <div className="grid md:grid-cols-2 gap-6">
 
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="input"
-                  placeholder="First Name"
-                  value={form.first_name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, first_name: e.target.value }))
-                  }
-                />
+        {/* ADD NEW ADDRESS */}
+        <section className="bg-white p-6 rounded-xl border">
 
-                <input
-                  className="input"
-                  placeholder="Last Name"
-                  value={form.last_name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, last_name: e.target.value }))
-                  }
-                />
-              </div>
+          <h2 className="text-lg font-bold mb-4">
+            Add New Address
+          </h2>
 
+          <form onSubmit={addAddress} className="space-y-3">
+
+            <div className="grid grid-cols-2 gap-2">
               <input
-                className="input"
-                placeholder="Phone"
-                value={form.phone}
+                className="border rounded-lg p-2 text-sm"
+                placeholder="First Name"
+                value={form.first_name}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, phone: e.target.value }))
+                  setForm((p) => ({ ...p, first_name: e.target.value }))
                 }
               />
 
               <input
-                className="input"
-                placeholder="Email"
-                value={form.email}
+                className="border rounded-lg p-2 text-sm"
+                placeholder="Last Name"
+                value={form.last_name}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, email: e.target.value }))
+                  setForm((p) => ({ ...p, last_name: e.target.value }))
                 }
               />
+            </div>
 
-              <input
-                className="input"
-                placeholder="Address Line"
-                value={form.address_line}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, address_line: e.target.value }))
-                }
-              />
+            <input
+              className="border rounded-lg p-2 text-sm w-full"
+              placeholder="Phone"
+              value={form.phone}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, phone: e.target.value }))
+              }
+            />
 
-              <input
-                className="input"
-                placeholder="City / Area"
-                value={form.city}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, city: e.target.value }))
-                }
-              />
+            <input
+              className="border rounded-lg p-2 text-sm w-full"
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, email: e.target.value }))
+              }
+            />
 
-              <button className="btn-primary w-full" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Address'}
-              </button>
-            </form>
-          </section>
+            <input
+              className="border rounded-lg p-2 text-sm w-full"
+              placeholder="Address Line"
+              value={form.address_line}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, address_line: e.target.value }))
+              }
+            />
 
-          {/* SAVED ADDRESSES */}
-          <section className="bg-white p-6 rounded-2xl border">
-            <h2 className="text-xl font-bold mb-4">Saved Addresses</h2>
+            <input
+              className="border rounded-lg p-2 text-sm w-full"
+              placeholder="City"
+              value={form.city}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, city: e.target.value }))
+              }
+            />
 
-            {addresses.length === 0 ? (
-              <p className="text-sm text-gray-500">No addresses saved yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {addresses.map((a) => (
-                  <div
-                    key={a.id}
-                    className="border rounded-lg p-3 flex justify-between items-start"
+            <button
+              disabled={saving}
+              className="w-full bg-orange-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-orange-600"
+            >
+              {saving ? 'Saving...' : 'Save Address'}
+            </button>
+
+          </form>
+
+        </section>
+
+        {/* SAVED ADDRESSES */}
+        <section className="bg-white p-6 rounded-xl border">
+
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <MapPin size={18} />
+            Saved Addresses
+          </h2>
+
+          {addresses.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No addresses saved yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+
+              {addresses.map((a) => (
+                <div
+                  key={a.id}
+                  className="border rounded-lg p-4 relative"
+                >
+
+                  {/* DEFAULT TAG */}
+                  {a.is_default && (
+                    <span className="absolute top-2 right-2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded">
+                      Default
+                    </span>
+                  )}
+
+                  <p className="font-medium text-sm text-[#111]">
+                    {a.first_name} {a.last_name}
+                  </p>
+
+                  <p className="text-xs text-gray-600">{a.phone}</p>
+                  <p className="text-xs text-gray-600">{a.email}</p>
+
+                  <p className="text-xs text-gray-600 mt-1">
+                    {a.address_line}, {a.city}
+                  </p>
+
+                  {/* ACTIONS */}
+                  <button
+                    onClick={() => deleteAddress(a.id)}
+                    className="mt-3 text-xs text-red-500 flex items-center gap-1 hover:underline"
                   >
-                    <div>
-                      <p className="font-medium text-sm">
-                        {a.first_name} {a.last_name}
-                      </p>
-                      <p className="text-xs text-gray-600">{a.phone}</p>
-                      <p className="text-xs text-gray-600">{a.email}</p>
-                      <p className="text-xs text-gray-600">
-                        {a.address_line}, {a.city}
-                      </p>
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
 
-                      {a.is_default && (
-                        <span className="text-xs text-green-600 font-medium">
-                          Default Address
-                        </span>
-                      )}
-                    </div>
+                </div>
+              ))}
 
-                    <button
-                      onClick={() => deleteAddress(a.id)}
-                      className="text-xs text-red-500"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+            </div>
+          )}
 
-        </div>
-      </main>
+        </section>
 
-      <Footer />
-    </>
+      </div>
+
+    </AccountLayout>
   )
 }
