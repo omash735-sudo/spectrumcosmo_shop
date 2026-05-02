@@ -31,7 +31,7 @@ export default function SupportPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
 
   const openWhatsApp = () => {
-    const phone = '265999186666' // your support number
+    const phone = '265893160202' // your support number
     const message = encodeURIComponent(
       'Hello SpectrumCosmo support, I need help with my order.'
     )
@@ -107,7 +107,7 @@ export default function SupportPage() {
           </p>
 
           <a
-            href="tel:+265999186666"
+            href="tel:+265893160202"
             className="btn-ghost w-full mt-4 justify-center"
           >
             Call Now
