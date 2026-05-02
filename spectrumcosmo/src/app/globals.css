@@ -1,20 +1,134 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { --font-display: 'Playfair Display', serif; --font-body: 'DM Sans', sans-serif; }
-* { box-sizing: border-box; }
-body { font-family: var(--font-body); color: #111111; background: #ffffff; }
-h1,h2,h3,h4,h5 { font-family: var(--font-display); }
+/* =========================
+   BASE THEME VARIABLES
+========================= */
+:root {
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
 
-@layer components {
-  .btn-primary { @apply bg-[#F97316] text-white px-6 py-3 rounded-full font-medium hover:bg-[#ea6c0f] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2; }
-  .btn-secondary { @apply border-2 border-[#F97316] text-[#F97316] px-6 py-3 rounded-full font-medium hover:bg-[#F97316] hover:text-white transition-all duration-200 inline-flex items-center gap-2; }
-  .btn-ghost { @apply text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-150 inline-flex items-center gap-2; }
-  .card { @apply bg-white rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all duration-300; }
-  .input { @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 outline-none transition-all duration-200 text-[#111111]; }
-  .label { @apply block text-sm font-medium text-gray-700 mb-1.5; }
-  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  --bg: #ffffff;
+  --text: #111111;
+  --card: #ffffff;
+  --border: #e5e7eb;
 }
-html { scroll-behavior: smooth; }
+
+html.dark {
+  --bg: #0b0b0f;
+  --text: #f5f5f5;
+  --card: #15151c;
+  --border: #2a2a35;
+}
+
+/* =========================
+   GLOBAL RESET
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+/* =========================
+   COMPONENTS
+========================= */
+@layer components {
+
+  .btn-primary {
+    @apply bg-[#F97316] text-white px-6 py-3 rounded-full font-medium hover:bg-[#ea6c0f] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-[#F97316] text-[#F97316] px-6 py-3 rounded-full font-medium hover:bg-[#F97316] hover:text-white transition-all duration-200 inline-flex items-center gap-2;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-150 inline-flex items-center gap-2;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    @apply rounded-2xl transition-all duration-300 hover:shadow-xl;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border outline-none transition-all duration-200;
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .input::placeholder {
+    color: #9ca3af;
+  }
+
+  .input:focus {
+    @apply ring-2 ring-orange-200 border-[#F97316];
+  }
+
+  .label {
+    @apply block text-sm font-medium mb-1.5;
+    color: var(--text);
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+/* =========================
+   DARK MODE ENHANCEMENTS
+========================= */
+html.dark body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* better contrast tweaks */
+html.dark .btn-ghost {
+  color: #d1d5db;
+}
+
+html.dark .btn-ghost:hover {
+  background: #1f1f2a;
+}
+
+html.dark .bg-white {
+  background-color: var(--card) !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #0f0f16 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-gray-600 {
+  color: #a1a1aa !important;
+}
+
+html.dark .border {
+  border-color: var(--border) !important;
+}
