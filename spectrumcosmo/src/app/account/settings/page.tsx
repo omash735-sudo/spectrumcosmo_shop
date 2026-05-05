@@ -97,8 +97,8 @@ export default function SettingsPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin text-gray-600" />
+        <main className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+          <Loader2 className="animate-spin text-gray-600 dark:text-gray-300" />
         </main>
         <Footer />
       </>
@@ -109,12 +109,12 @@ export default function SettingsPage() {
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-gray-50 py-10">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
         <div className="max-w-5xl mx-auto px-4 grid md:grid-cols-2 gap-6">
 
-          {/* PROFILE SETTINGS */}
-          <section className="bg-white rounded-2xl border p-6">
-            <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
+          {/* PROFILE */}
+          <section className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Profile Settings</h2>
 
             <form onSubmit={updateProfile} className="space-y-4">
 
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                 }
               />
 
-              <input className="input bg-gray-100" value={user.email} readOnly />
+              <input className="input bg-gray-100 dark:bg-gray-700" value={user.email} readOnly />
 
               <input
                 className="input"
@@ -136,7 +136,7 @@ export default function SettingsPage() {
                 }
               />
 
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-sm dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={form.newsletterSubscribed}
@@ -156,14 +156,14 @@ export default function SettingsPage() {
             </form>
           </section>
 
-          {/* SETTINGS PANEL (REAL FUNCTIONAL SETTINGS) */}
-          <section className="bg-white rounded-2xl border p-6 space-y-4">
+          {/* APP SETTINGS */}
+          <section className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-6 space-y-4">
 
-            <h2 className="text-xl font-bold">App Settings</h2>
+            <h2 className="text-xl font-bold dark:text-white">App Settings</h2>
 
-            {/* CURRENCY */}
+            {/* Currency */}
             <div>
-              <p className="text-sm font-medium mb-1">Currency</p>
+              <p className="text-sm font-medium mb-1 dark:text-gray-300">Currency</p>
               <select
                 className="input"
                 value={settings.currency}
@@ -178,18 +178,26 @@ export default function SettingsPage() {
               </select>
             </div>
 
-            {/* DARK MODE */}
-            <label className="flex justify-between items-center">
-              Dark Mode
-              <input
-                type="checkbox"
-                checked={settings.darkMode}
-                onChange={(e) => update({ darkMode: e.target.checked })}
-              />
-            </label>
+            {/* Dark Mode Toggle */}
+            <div className="flex justify-between items-center">
+              <span className="dark:text-gray-300">Dark Mode</span>
 
-            {/* EMAIL */}
-            <label className="flex justify-between items-center">
+              <button
+                onClick={() => update({ darkMode: !settings.darkMode })}
+                className={`w-12 h-6 flex items-center rounded-full p-1 transition ${
+                  settings.darkMode ? 'bg-[#F97316]' : 'bg-gray-300'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 bg-white rounded-full shadow-md transform transition ${
+                    settings.darkMode ? 'translate-x-6' : ''
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Email */}
+            <label className="flex justify-between items-center dark:text-gray-300">
               Email Notifications
               <input
                 type="checkbox"
@@ -201,7 +209,7 @@ export default function SettingsPage() {
             </label>
 
             {/* SMS */}
-            <label className="flex justify-between items-center">
+            <label className="flex justify-between items-center dark:text-gray-300">
               SMS Alerts
               <input
                 type="checkbox"
@@ -210,7 +218,7 @@ export default function SettingsPage() {
               />
             </label>
 
-            {/* LANGUAGE */}
+            {/* Language */}
             <select
               className="input"
               value={settings.language}
@@ -224,9 +232,9 @@ export default function SettingsPage() {
           </section>
 
           {/* PASSWORD */}
-          <section className="bg-white rounded-2xl border p-6 md:col-span-2">
+          <section className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-6 md:col-span-2">
 
-            <h2 className="text-xl font-bold mb-4">Security</h2>
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Security</h2>
 
             <form onSubmit={updatePassword} className="grid gap-3">
 
