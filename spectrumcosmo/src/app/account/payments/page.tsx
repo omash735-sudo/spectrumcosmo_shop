@@ -9,10 +9,10 @@ type Order = {
   name?: string
   phone?: string
   location?: string
-  amount: number
+  amount?: number          // optional
   status: 'pending' | 'paid' | 'failed' | 'approved'
   payment_method: string
-  created_at: string
+  created_at?: string      // optional
   tx_ref?: string
   proof_of_payment_url?: string
   payment_note?: string
@@ -20,7 +20,7 @@ type Order = {
 
 type PaymentOption = {
   id: string
-  type: string      // 'mobile_money', 'bank', etc.
+  type: string
   name: string
   logo_url: string
   account_number: string | null
@@ -52,8 +52,15 @@ export default function AccountPaymentsPage() {
         fetch('/api/orders/list'),
         fetch('/api/payment-options'),
       ])
-      if (ordersRes.ok) setOrders(await ordersRes.json())
-      if (optionsRes.ok) setPaymentOptions(await optionsRes.json())
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json()
+        // Ensure orders is array, and filter any that might be malformed
+        setOrders(Array.isArray(ordersData) ? ordersData : [])
+      }
+      if (optionsRes.ok) {
+        const optsData = await optionsRes.json()
+        setPaymentOptions(Array.isArray(optsData) ? optsData : [])
+      }
     } catch (err) {
       console.error('Failed to load data', err)
     } finally {
@@ -151,9 +158,11 @@ export default function AccountPaymentsPage() {
                   >
                     <p className="font-medium text-gray-900">Order #{order.id.slice(-8)}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {new Date(order.created_at).toLocaleDateString()}
+                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'Unknown date'}
                     </p>
-                    <p className="text-orange-600 font-bold mt-1">MWK {order.amount.toLocaleString()}</p>
+                    <p className="text-orange-600 font-bold mt-1">
+                      MWK {order.amount?.toLocaleString() ?? '0'}
+                    </p>
                     <div className="mt-2">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[order.status]}`}>
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -201,10 +210,10 @@ export default function AccountPaymentsPage() {
                       <AlertCircle size={18} /> Payment Instructions
                     </h3>
                     <p className="text-sm text-amber-700 mb-4">
-                      Please send the exact amount (<strong>MWK {selected.amount.toLocaleString()}</strong>) to one of the following accounts, then fill the form below with your proof.
+                      Please send the exact amount (<strong>MWK {selected.amount?.toLocaleString() ?? '0'}</strong>) to one of the following accounts, then fill the form below with your proof.
                     </p>
 
-                    {/* Active payment options that match the order's payment_method */}
+                    {/* Active payment options */}
                     {paymentOptions
                       .filter(opt => opt.is_active && (opt.name === selected.payment_method || opt.type === selected.payment_method))
                       .map(opt => (
@@ -287,8 +296,8 @@ export default function AccountPaymentsPage() {
                 {/* Order details */}
                 <div className="mt-8 text-sm text-gray-600 border-t pt-4 space-y-1">
                   <p>Method: <b>{selected.payment_method}</b></p>
-                  <p>Amount: <b>MWK {selected.amount.toLocaleString()}</b></p>
-                  <p>Date: {new Date(selected.created_at).toLocaleString()}</p>
+                  <p>Amount: <b>MWK {selected.amount?.toLocaleString() ?? '0'}</b></p>
+                  <p>Date: {selected.created_at ? new Date(selected.created_at).toLocaleString() : 'Unknown'}</p>
                   {selected.tx_ref && <p>TX Ref: {selected.tx_ref}</p>}
                 </div>
               </>
