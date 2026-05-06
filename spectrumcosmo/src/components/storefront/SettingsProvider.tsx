@@ -16,11 +16,10 @@ type SettingsContextType = {
   settings: Settings
   setSettings: (s: Settings) => void
   update: (patch: Partial<Settings>) => void
-
-  // backward compatibility (so your old code still works)
   setCurrency: (c: CurrencyCode) => void
   setDarkMode: (v: boolean) => void
   setLanguage: (v: string) => void
+  hydrated: boolean
 }
 
 const STORAGE_KEY = 'spectrumcosmo_settings'
@@ -40,20 +39,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(defaultSettings)
   const [hydrated, setHydrated] = useState(false)
 
-  // LOAD
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         setSettings({ ...defaultSettings, ...JSON.parse(stored) })
       }
-    } catch (e) {
+    } catch {
       console.log('Settings parse error, using defaults')
     }
     setHydrated(true)
   }, [])
 
-  // SAVE
   useEffect(() => {
     if (!hydrated) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
@@ -63,13 +60,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSettings(prev => ({ ...prev, ...patch }))
   }
 
-  // legacy helpers (so old components don’t break)
   const setCurrency = (currency: CurrencyCode) => update({ currency })
 
-  const setDarkMode = (darkMode: boolean) => {
-    update({ darkMode })
-    document.documentElement.classList.toggle('dark', darkMode)
-  }
+  const setDarkMode = (darkMode: boolean) => update({ darkMode })
 
   const setLanguage = (language: string) => update({ language })
 
@@ -82,6 +75,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setCurrency,
         setDarkMode,
         setLanguage,
+        hydrated,
       }}
     >
       {children}
