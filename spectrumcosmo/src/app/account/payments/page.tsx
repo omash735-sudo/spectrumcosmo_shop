@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, CreditCard, Upload, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { Loader2, CreditCard, Upload, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 
-// ---------- TYPES ----------
 type Order = {
   id: string
   name?: string
@@ -21,10 +20,10 @@ type Order = {
 
 type PaymentOption = {
   id: string
-  type: string
+  type: string      // 'mobile_money', 'bank', etc.
   name: string
   logo_url: string
-  account_number: string | null  // for bank/ mobile money agent code
+  account_number: string | null
   is_active: boolean
   sort_order: number
 }
@@ -46,13 +45,12 @@ export default function AccountPaymentsPage() {
   const [paymentNote, setPaymentNote] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Load orders and payment options
   const loadData = async () => {
     setLoading(true)
     try {
       const [ordersRes, optionsRes] = await Promise.all([
         fetch('/api/orders/list'),
-        fetch('/api/payment-options')
+        fetch('/api/payment-options'),
       ])
       if (ordersRes.ok) setOrders(await ordersRes.json())
       if (optionsRes.ok) setPaymentOptions(await optionsRes.json())
@@ -67,7 +65,6 @@ export default function AccountPaymentsPage() {
     loadData()
   }, [])
 
-  // Upload proof for selected order
   const uploadProof = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selected || !proofFile) {
@@ -77,7 +74,6 @@ export default function AccountPaymentsPage() {
     setUploading(true)
     setMessage(null)
 
-    // 1. Upload image to Cloudinary (or your own endpoint)
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo'
     const formData = new FormData()
@@ -92,8 +88,7 @@ export default function AccountPaymentsPage() {
       const uploadData = await uploadRes.json()
       if (!uploadData.secure_url) throw new Error('Image upload failed')
 
-      // 2. Save proof URL + note to order
-      const updateRes = await fetch(`/api/account/orders`, {   // reuse your existing PATCH
+      const updateRes = await fetch('/api/account/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,13 +102,10 @@ export default function AccountPaymentsPage() {
       setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it.' })
       setProofFile(null)
       setPaymentNote('')
-      // Refresh order list to reflect pending status (still pending until admin approves)
       await loadData()
-      // Reselect the same order to show updated data (if still exists)
       const updatedOrder = orders.find(o => o.id === selected.id)
       if (updatedOrder) setSelected(updatedOrder)
     } catch (err: any) {
-      console.error(err)
       setMessage({ type: 'error', text: err.message || 'Upload failed' })
     } finally {
       setUploading(false)
@@ -130,14 +122,13 @@ export default function AccountPaymentsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Payments & Orders</h1>
         <p className="text-gray-500 mt-1">Track your order payments and submit proof</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* LEFT: ORDER LIST */}
+        {/* Left – Order List */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b bg-gray-50/40 flex items-center gap-2">
@@ -158,7 +149,7 @@ export default function AccountPaymentsPage() {
                         : 'hover:bg-gray-50'
                     }`}
                   >
-                    <p className="font-medium text-gray-900 line-clamp-1">Order #{order.id.slice(-8)}</p>
+                    <p className="font-medium text-gray-900">Order #{order.id.slice(-8)}</p>
                     <p className="text-xs text-gray-400 mt-1">
                       {new Date(order.created_at).toLocaleDateString()}
                     </p>
@@ -175,7 +166,7 @@ export default function AccountPaymentsPage() {
           </div>
         </div>
 
-        {/* RIGHT: DETAILS + PAYMENT INSTRUCTIONS */}
+        {/* Right – Details + Payment Instructions */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
             {!selected ? (
@@ -194,7 +185,7 @@ export default function AccountPaymentsPage() {
                     <p className="text-sm">Order created</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${selected.status !== 'pending' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <div className={`w-3 h-3 rounded-full ${selected.proof_of_payment_url ? 'bg-orange-500' : 'bg-gray-300'}`} />
                     <p className="text-sm">Payment submitted {selected.proof_of_payment_url ? '(proof received)' : ''}</p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -203,21 +194,21 @@ export default function AccountPaymentsPage() {
                   </div>
                 </div>
 
-                {/* Payment Info & Instructions (only for pending orders) */}
+                {/* Payment Instructions (only for pending orders without proof) */}
                 {selected.status === 'pending' && (
                   <div className="bg-amber-50 rounded-xl p-5 mb-6 border border-amber-200">
                     <h3 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
                       <AlertCircle size={18} /> Payment Instructions
                     </h3>
                     <p className="text-sm text-amber-700 mb-4">
-                      Please send the exact amount to one of the following accounts, then fill the form below with your proof.
+                      Please send the exact amount (<strong>MWK {selected.amount.toLocaleString()}</strong>) to one of the following accounts, then fill the form below with your proof.
                     </p>
 
-                    {/* Dynamically show payment options based on selected.payment_method */}
+                    {/* Active payment options that match the order's payment_method */}
                     {paymentOptions
                       .filter(opt => opt.is_active && (opt.name === selected.payment_method || opt.type === selected.payment_method))
                       .map(opt => (
-                        <div key={opt.id} className="flex items-start gap-4 p-3 bg-white rounded-lg shadow-sm mb-3">
+                        <div key={opt.id} className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm mb-3">
                           {opt.logo_url && (
                             <div className="w-12 h-12 relative flex-shrink-0">
                               <Image src={opt.logo_url} alt={opt.name} width={48} height={48} className="object-contain" />
@@ -226,19 +217,18 @@ export default function AccountPaymentsPage() {
                           <div>
                             <p className="font-medium">{opt.name}</p>
                             {opt.type === 'mobile_money' && (
-                              <p className="text-sm text-gray-600">Agent Code: <span className="font-mono">{opt.account_number}</span></p>
+                              <p className="text-sm text-gray-600">Agent Code / Number: <span className="font-mono">{opt.account_number}</span></p>
                             )}
                             {opt.type === 'bank' && (
-                              <p className="text-sm text-gray-600">Account: <span className="font-mono">{opt.account_number}</span></p>
+                              <p className="text-sm text-gray-600">Account Number: <span className="font-mono">{opt.account_number}</span></p>
                             )}
                           </div>
                         </div>
                       ))}
 
-                    {/* Fallback if no matching option from DB */}
                     {paymentOptions.filter(opt => opt.is_active && (opt.name === selected.payment_method || opt.type === selected.payment_method)).length === 0 && (
-                      <div className="text-sm text-gray-600 bg-white p-2 rounded">
-                        Payment method: <strong>{selected.payment_method}</strong>. Please contact support for details.
+                      <div className="text-sm text-gray-600 bg-white p-3 rounded-lg">
+                        Payment method: <strong>{selected.payment_method}</strong>. Please contact support for instructions.
                       </div>
                     )}
                   </div>
@@ -294,7 +284,7 @@ export default function AccountPaymentsPage() {
                   </div>
                 )}
 
-                {/* Order details table */}
+                {/* Order details */}
                 <div className="mt-8 text-sm text-gray-600 border-t pt-4 space-y-1">
                   <p>Method: <b>{selected.payment_method}</b></p>
                   <p>Amount: <b>MWK {selected.amount.toLocaleString()}</b></p>
