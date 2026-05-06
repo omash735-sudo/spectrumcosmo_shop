@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession()
@@ -9,16 +9,14 @@ export async function POST(req: NextRequest) {
   }
 
   const { orderUpdates, promotions } = await req.json()
-  
-  await prisma.user.update({
-    where: { email: session.user.email },
-    data: {
-      notificationPreferences: {
-        orderUpdates,
-        promotions
-      }
-    }
-  })
+  const db = getDb()
+
+  // Assuming you have a column or JSON field for preferences
+  await db`
+    UPDATE users 
+    SET notification_preferences = ${JSON.stringify({ orderUpdates, promotions })}::jsonb
+    WHERE email = ${session.user.email}
+  `
 
   return NextResponse.json({ success: true })
 }
