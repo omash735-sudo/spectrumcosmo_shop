@@ -1,21 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, CreditCard, Upload, AlertCircle } from 'lucide-react'
+import { Loader2, Upload, AlertCircle } from 'lucide-react'
 import Image from 'next/image'
 
 type Order = {
   id: string
-  name?: string
-  phone?: string
-  location?: string
-  amount?: number          // optional
-  status: 'pending' | 'paid' | 'failed' | 'approved'
-  payment_method: string
-  created_at?: string      // optional
-  tx_ref?: string
+  product_name: string
+  status: 'pending' | 'approved' | 'declined' | 'shipped' | 'delivered'
+  created_at?: string
   proof_of_payment_url?: string
   payment_note?: string
+  payment_method?: string
+  custom_details?: string
 }
 
 type PaymentOption = {
@@ -25,41 +22,39 @@ type PaymentOption = {
   logo_url: string
   account_number: string | null
   is_active: boolean
-  sort_order: number
 }
 
 const STATUS_STYLE: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
-  paid: 'bg-green-100 text-green-700',
-  approved: 'bg-blue-100 text-blue-700',
-  failed: 'bg-red-100 text-red-700',
+  approved: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-700',
+  shipped: 'bg-blue-100 text-blue-700',
+  delivered: 'bg-gray-100 text-gray-700',
 }
 
 export default function AccountPaymentsPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<Order | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [proofFile, setProofFile] = useState<File | null>(null)
-  const [paymentNote, setPaymentNote] = useState('')
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [uploading, setUploading] = useState<string | null>(null)
+  const [proofFiles, setProofFiles] = useState<Record<string, File>>({})
+  const [notes, setNotes] = useState<Record<string, string>>({})
+  const [messages, setMessages] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({})
 
   const loadData = async () => {
     setLoading(true)
     try {
       const [ordersRes, optionsRes] = await Promise.all([
-        fetch('/api/orders/list'),
+        fetch('/api/account/orders'),
         fetch('/api/payment-options'),
       ])
       if (ordersRes.ok) {
-        const ordersData = await ordersRes.json()
-        // Ensure orders is array, and filter any that might be malformed
-        setOrders(Array.isArray(ordersData) ? ordersData : [])
+        const data = await ordersRes.json()
+        setOrders(Array.isArray(data) ? data : [])
       }
       if (optionsRes.ok) {
-        const optsData = await optionsRes.json()
-        setPaymentOptions(Array.isArray(optsData) ? optsData : [])
+        const opts = await optionsRes.json()
+        setPaymentOptions(Array.isArray(opts) ? opts.filter((opt: PaymentOption) => opt.is_active) : [])
       }
     } catch (err) {
       console.error('Failed to load data', err)
@@ -72,19 +67,21 @@ export default function AccountPaymentsPage() {
     loadData()
   }, [])
 
-  const uploadProof = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selected || !proofFile) {
-      setMessage({ type: 'error', text: 'Please select a file' })
+  const uploadProof = async (orderId: string) => {
+    const file = proofFiles[orderId]
+    const note = notes[orderId] || ''
+    if (!file) {
+      setMessages(prev => ({ ...prev, [orderId]: { type: 'error', text: 'Please select a file' } }))
       return
     }
-    setUploading(true)
-    setMessage(null)
+
+    setUploading(orderId)
+    setMessages(prev => ({ ...prev, [orderId]: undefined }))
 
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo'
     const formData = new FormData()
-    formData.append('file', proofFile)
+    formData.append('file', file)
     formData.append('upload_preset', uploadPreset)
 
     try {
@@ -93,29 +90,27 @@ export default function AccountPaymentsPage() {
         body: formData,
       })
       const uploadData = await uploadRes.json()
-      if (!uploadData.secure_url) throw new Error('Image upload failed')
+      if (!uploadData.secure_url) throw new Error('Upload failed')
 
       const updateRes = await fetch('/api/account/orders', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: selected.id,
+          id: orderId,
           proofOfPaymentUrl: uploadData.secure_url,
-          paymentNote,
+          paymentNote: note,
         }),
       })
-      if (!updateRes.ok) throw new Error('Failed to save payment proof')
+      if (!updateRes.ok) throw new Error('Failed to save proof')
 
-      setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it.' })
-      setProofFile(null)
-      setPaymentNote('')
+      setMessages(prev => ({ ...prev, [orderId]: { type: 'success', text: 'Proof submitted! Admin will review.' } }))
+      setProofFiles(prev => { const newFiles = { ...prev }; delete newFiles[orderId]; return newFiles })
+      setNotes(prev => { const newNotes = { ...prev }; delete newNotes[orderId]; return newNotes })
       await loadData()
-      const updatedOrder = orders.find(o => o.id === selected.id)
-      if (updatedOrder) setSelected(updatedOrder)
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Upload failed' })
+      setMessages(prev => ({ ...prev, [orderId]: { type: 'error', text: err.message || 'Upload failed' } }))
     } finally {
-      setUploading(false)
+      setUploading(null)
     }
   }
 
@@ -128,183 +123,137 @@ export default function AccountPaymentsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Payments & Orders</h1>
-        <p className="text-gray-500 mt-1">Track your order payments and submit proof</p>
-      </div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-0 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Payments & Orders</h1>
+      <p className="text-gray-500 mt-1 mb-6">Track your orders and submit payment proof</p>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left – Order List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b bg-gray-50/40 flex items-center gap-2">
-              <CreditCard size={18} className="text-gray-500" />
-              <h2 className="font-semibold text-gray-800">Orders</h2>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {orders.length === 0 ? (
-                <div className="p-6 text-center text-gray-500 text-sm">No orders yet.</div>
-              ) : (
-                orders.map((order) => (
-                  <button
-                    key={order.id}
-                    onClick={() => setSelected(order)}
-                    className={`w-full text-left p-5 transition-all duration-200 ${
-                      selected?.id === order.id
-                        ? 'bg-orange-50/40 border-l-4 border-orange-500'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <p className="font-medium text-gray-900">Order #{order.id.slice(-8)}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'Unknown date'}
-                    </p>
-                    <p className="text-orange-600 font-bold mt-1">
-                      MWK {order.amount?.toLocaleString() ?? '0'}
-                    </p>
-                    <div className="mt-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[order.status]}`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+      {orders.length === 0 ? (
+        <div className="bg-white rounded-xl border p-8 text-center text-gray-500">No orders found.</div>
+      ) : (
+        <div className="space-y-6">
+          {orders.map((order) => {
+            const selectedOption = paymentOptions.find(
+              opt => opt.name === order.payment_method || opt.type === order.payment_method
+            )
+            const isPending = order.status === 'pending'
+            const hasProof = !!order.proof_of_payment_url
 
-        {/* Right – Details + Payment Instructions */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
-            {!selected ? (
-              <div className="text-center py-12 text-gray-500">Select an order to view details.</div>
-            ) : (
-              <>
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Payment Details</h2>
-                  <p className="text-sm text-gray-500 mt-1">Order ID: {selected.id}</p>
+            return (
+              <div key={order.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-5 border-b bg-gray-50/30 flex flex-wrap justify-between items-start gap-2">
+                  <div>
+                    <p className="font-semibold text-gray-900">{order.product_name}</p>
+                    <p className="text-xs text-gray-500">
+                      {order.created_at ? new Date(order.created_at).toLocaleString() : 'Unknown date'}
+                    </p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_STYLE[order.status]}`}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </span>
                 </div>
 
-                {/* Simple Timeline */}
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-orange-500" />
-                    <p className="text-sm">Order created</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${selected.proof_of_payment_url ? 'bg-orange-500' : 'bg-gray-300'}`} />
-                    <p className="text-sm">Payment submitted {selected.proof_of_payment_url ? '(proof received)' : ''}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${selected.status === 'paid' || selected.status === 'approved' ? 'bg-green-500' : selected.status === 'failed' ? 'bg-red-500' : 'bg-gray-300'}`} />
-                    <p className="text-sm">Payment verified</p>
-                  </div>
-                </div>
+                <div className="p-5 space-y-4">
+                  {order.custom_details && <p className="text-sm text-gray-600">{order.custom_details}</p>}
 
-                {/* Payment Instructions (only for pending orders without proof) */}
-                {selected.status === 'pending' && (
-                  <div className="bg-amber-50 rounded-xl p-5 mb-6 border border-amber-200">
-                    <h3 className="font-semibold text-amber-800 flex items-center gap-2 mb-3">
-                      <AlertCircle size={18} /> Payment Instructions
-                    </h3>
-                    <p className="text-sm text-amber-700 mb-4">
-                      Please send the exact amount (<strong>MWK {selected.amount?.toLocaleString() ?? '0'}</strong>) to one of the following accounts, then fill the form below with your proof.
-                    </p>
-
-                    {/* Active payment options */}
-                    {paymentOptions
-                      .filter(opt => opt.is_active && (opt.name === selected.payment_method || opt.type === selected.payment_method))
-                      .map(opt => (
-                        <div key={opt.id} className="flex items-center gap-4 p-3 bg-white rounded-lg shadow-sm mb-3">
-                          {opt.logo_url && (
-                            <div className="w-12 h-12 relative flex-shrink-0">
-                              <Image src={opt.logo_url} alt={opt.name} width={48} height={48} className="object-contain" />
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-medium">{opt.name}</p>
-                            {opt.type === 'mobile_money' && (
-                              <p className="text-sm text-gray-600">Agent Code / Number: <span className="font-mono">{opt.account_number}</span></p>
-                            )}
-                            {opt.type === 'bank' && (
-                              <p className="text-sm text-gray-600">Account Number: <span className="font-mono">{opt.account_number}</span></p>
-                            )}
+                  {isPending && !hasProof && selectedOption && (
+                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                      <div className="flex items-start gap-3">
+                        {selectedOption.logo_url && (
+                          <div className="w-10 h-10 relative flex-shrink-0">
+                            <Image src={selectedOption.logo_url} alt={selectedOption.name} width={40} height={40} className="object-contain" />
                           </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-amber-800">Payment Instructions</p>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Send the exact amount to:{' '}
+                            {selectedOption.type === 'mobile_money' && (
+                              <span className="font-mono ml-1">{selectedOption.account_number}</span>
+                            )}
+                            {selectedOption.type === 'bank' && (
+                              <span className="font-mono ml-1">{selectedOption.account_number}</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-amber-600 mt-1">After payment, upload proof below.</p>
                         </div>
-                      ))}
-
-                    {paymentOptions.filter(opt => opt.is_active && (opt.name === selected.payment_method || opt.type === selected.payment_method)).length === 0 && (
-                      <div className="text-sm text-gray-600 bg-white p-3 rounded-lg">
-                        Payment method: <strong>{selected.payment_method}</strong>. Please contact support for instructions.
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                {/* Proof Upload Form (only if pending and no proof yet) */}
-                {selected.status === 'pending' && !selected.proof_of_payment_url && (
-                  <form onSubmit={uploadProof} className="space-y-4 mt-4 border-t pt-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Upload payment proof (screenshot or receipt)</label>
+                  {isPending && !hasProof && (
+                    <div className="border-t pt-4 space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">Upload Payment Proof</label>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-                        required
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) setProofFiles(prev => ({ ...prev, [order.id]: file }))
+                        }}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
                       <textarea
-                        value={paymentNote}
-                        onChange={(e) => setPaymentNote(e.target.value)}
+                        placeholder="Optional note (e.g., transaction reference)"
+                        value={notes[order.id] || ''}
+                        onChange={(e) => setNotes(prev => ({ ...prev, [order.id]: e.target.value }))}
                         rows={2}
-                        className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
-                        placeholder="e.g., Payment from John, TNM reference 12345"
+                        className="w-full border border-gray-200 rounded-xl p-2 text-sm focus:ring-orange-500"
                       />
+                      {messages[order.id] && (
+                        <div className={`p-2 rounded-lg text-sm ${messages[order.id].type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                          {messages[order.id].text}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => uploadProof(order.id)}
+                        disabled={uploading === order.id}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50"
+                      >
+                        {uploading === order.id ? <Loader2 className="animate-spin w-4 h-4" /> : <Upload size={16} />}
+                        {uploading === order.id ? 'Uploading...' : 'Submit Proof'}
+                      </button>
                     </div>
-                    {message && (
-                      <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                        {message.text}
+                  )}
+
+                  {hasProof && (
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-sm font-medium text-gray-700">Submitted proof:</p>
+                      <a href={order.proof_of_payment_url} target="_blank" rel="noopener noreferrer" className="text-orange-500 text-sm underline break-all">
+                        View image
+                      </a>
+                      {order.payment_note && <p className="text-xs text-gray-500 mt-1">Note: {order.payment_note}</p>}
+                    </div>
+                  )}
+
+                  <div className="border-t pt-4">
+                    <p className="font-semibold text-sm mb-3">Tracking</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <p className="text-xs">Order placed</p>
                       </div>
-                    )}
-                    <button
-                      type="submit"
-                      disabled={uploading || !proofFile}
-                      className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium disabled:opacity-50"
-                    >
-                      {uploading ? <Loader2 className="animate-spin w-4 h-4" /> : <Upload size={16} />}
-                      {uploading ? 'Uploading...' : 'Submit Payment Proof'}
-                    </button>
-                  </form>
-                )}
-
-                {/* Show existing proof if already uploaded */}
-                {selected.proof_of_payment_url && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Submitted proof:</p>
-                    <a href={selected.proof_of_payment_url} target="_blank" rel="noopener noreferrer" className="text-orange-500 underline break-all text-sm">
-                      View image
-                    </a>
-                    {selected.payment_note && <p className="text-xs text-gray-500 mt-2">Note: {selected.payment_note}</p>}
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${hasProof ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <p className="text-xs">Proof submitted {hasProof ? '✓' : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${order.status === 'approved' ? 'bg-green-500' : order.status === 'declined' ? 'bg-red-500' : 'bg-gray-300'}`} />
+                        <p className="text-xs">
+                          {order.status === 'approved' ? 'Payment approved' : order.status === 'declined' ? 'Payment rejected' : 'Waiting for admin approval'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                {/* Order details */}
-                <div className="mt-8 text-sm text-gray-600 border-t pt-4 space-y-1">
-                  <p>Method: <b>{selected.payment_method}</b></p>
-                  <p>Amount: <b>MWK {selected.amount?.toLocaleString() ?? '0'}</b></p>
-                  <p>Date: {selected.created_at ? new Date(selected.created_at).toLocaleString() : 'Unknown'}</p>
-                  {selected.tx_ref && <p>TX Ref: {selected.tx_ref}</p>}
+                  {order.payment_method && (
+                    <p className="text-xs text-gray-500 border-t pt-3">Method: {order.payment_method}</p>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            )
+          })}
         </div>
-      </div>
+      )}
     </div>
   )
 }
