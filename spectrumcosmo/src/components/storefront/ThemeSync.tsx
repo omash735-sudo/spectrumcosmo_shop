@@ -4,15 +4,19 @@ import { useEffect } from 'react'
 import { useSettings } from './SettingsProvider'
 
 export default function ThemeSync({ children }: { children: React.ReactNode }) {
-  const { settings } = useSettings()
+  const { settings, hydrated } = useSettings()
 
   useEffect(() => {
+    if (!hydrated) return
+
+    const root = document.documentElement
+
+    root.classList.remove('dark')
+
     if (settings.darkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+      root.classList.add('dark')
     }
-  }, [settings.darkMode])
+  }, [settings.darkMode, hydrated])
 
   return <>{children}</>
 }
