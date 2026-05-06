@@ -129,7 +129,7 @@ export default function Navbar() {
   // FIXED: settings now points to /account/account/settings
   const bottomItems = [
     { type: 'link' as const, href: '/contact', label: 'Help centre', icon: HelpCircle },
-    { type: 'link' as const, href: '/account/account/settings', label: 'Settings', icon: Settings },
+    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
   ]
 
   return (
