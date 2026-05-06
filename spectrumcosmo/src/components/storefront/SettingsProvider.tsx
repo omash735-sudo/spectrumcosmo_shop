@@ -5,7 +5,6 @@ import type { CurrencyCode } from '@/lib/currency'
 
 type Settings = {
   currency: CurrencyCode
-  darkMode: boolean
   language: string
   emailNotifications: boolean
   smsAlerts: boolean
@@ -17,7 +16,6 @@ type SettingsContextType = {
   setSettings: (s: Settings) => void
   update: (patch: Partial<Settings>) => void
   setCurrency: (c: CurrencyCode) => void
-  setDarkMode: (v: boolean) => void
   setLanguage: (v: string) => void
   hydrated: boolean
 }
@@ -26,7 +24,6 @@ const STORAGE_KEY = 'spectrumcosmo_settings'
 
 const defaultSettings: Settings = {
   currency: 'USD',
-  darkMode: false,
   language: 'English',
   emailNotifications: true,
   smsAlerts: false,
@@ -62,8 +59,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrency = (currency: CurrencyCode) => update({ currency })
 
-  const setDarkMode = (darkMode: boolean) => update({ darkMode })
-
   const setLanguage = (language: string) => update({ language })
 
   return (
@@ -73,7 +68,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setSettings,
         update,
         setCurrency,
-        setDarkMode,
         setLanguage,
         hydrated,
       }}
