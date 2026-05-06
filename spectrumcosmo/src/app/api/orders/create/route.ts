@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // 1. Insert order – returns UUID (orders.id is UUID)
+    // 1. Insert order
     const [order] = await sql`
       INSERT INTO orders (
         customer_name,
@@ -44,17 +44,22 @@ export async function POST(req: NextRequest) {
         ${payment_method},
         ${total_amount},
         'pending',
-        ${user?.id || null},   -- user.id should be UUID (e.g., from Clerk/Supabase)
+        ${user?.id || null},
         NOW()
       )
-      RETURNING id::text   -- explicitly return as text (UUID string)
+      RETURNING id::text
     `;
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
-    // 2. Insert order items (order_items.order_id must be UUID)
+    // 2. Insert order items with fallback for price
     for (const item of items) {
-      const unitPriceUsd = item.price_usd;
+      // Safely get price_usd, fallback to price, then to 0
+      let unitPriceUsd = item.price_usd ?? item.price ?? 0;
+      
+      // Ensure it's a number
+      if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
+      
       const subtotalUsd = item.quantity * unitPriceUsd;
 
       await sql`
@@ -66,7 +71,7 @@ export async function POST(req: NextRequest) {
           subtotal_usd,
           custom_details
         ) VALUES (
-          ${order.id}::uuid,   -- explicitly cast to UUID
+          ${order.id}::uuid,
           ${item.name},
           ${item.quantity},
           ${unitPriceUsd},
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: order.id,        // UUID string
+      id: order.id,
       total_amount,
     });
   } catch (err: any) {
