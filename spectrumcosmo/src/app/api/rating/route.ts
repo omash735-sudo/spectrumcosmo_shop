@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession()
@@ -13,30 +13,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid rating' }, { status: 400 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email }
-  })
+  const db = getDb()
 
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  await prisma.rating.create({
-    data: {
-      userId: user.id,
-      stars,
-      comment: comment || null
-    }
-  })
+  // Insert rating – directly use session.email as user_email
+  await db`
+    INSERT INTO ratings (id, user_email, stars, comment)
+    VALUES (gen_random_uuid()::text, ${session.user.email}, ${stars}, ${comment || null})
+  `
 
   return NextResponse.json({ success: true })
 }
 
 export async function GET() {
-  // For admin view - add role check in production
-  const ratings = await prisma.rating.findMany({
-    include: { user: { select: { email: true, name: true } } },
-    orderBy: { createdAt: 'desc' }
-  })
+  const db = getDb()
+  const ratings = await db`
+    SELECT r.*, u.name, u.email
+    FROM ratings r
+    JOIN users u ON r.user_email = u.email
+    ORDER BY r.created_at DESC
+  `
   return NextResponse.json(ratings)
 }
