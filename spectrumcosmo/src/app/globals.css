@@ -104,7 +104,6 @@ html.dark body {
   color: var(--text);
 }
 
-/* better contrast tweaks */
 html.dark .btn-ghost {
   color: #d1d5db;
 }
@@ -132,3 +131,25 @@ html.dark .text-gray-600 {
 html.dark .border {
   border-color: var(--border) !important;
 }
+
+/* =========================
+   GLOBAL TEXT SAFETY FIX
+========================= */
+
+body {
+  color: var(--text);
+}
+
+html.dark .text-black,
+html.dark .text-gray-800,
+html.dark .text-gray-900 {
+  color: var(--text) !important;
+}
+
+html.dark .text-gray-600 {
+  color: #a1a1aa !important;
+}
+
+html.dark .bg-white {
+  background-color: var(--card) !important;
+     }
