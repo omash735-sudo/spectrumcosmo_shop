@@ -39,7 +39,7 @@ const isActiveLink = (pathname: string, href: string) => {
   return pathname.startsWith(href)
 }
 
-/* ---------------- USER DROPDOWN (CLEANED) ---------------- */
+/* ---------------- USER DROPDOWN (Login + Sign Up) ---------------- */
 const UserDropdown = ({ user }: { user: any }) => {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -70,18 +70,29 @@ const UserDropdown = ({ user }: { user: any }) => {
     window.location.href = '/'
   }
 
+  // Not logged in: show both Login and Sign Up links
   if (!user) {
     return (
-      <Link
-        href="/login"
-        className="flex items-center gap-2 text-gray-700 hover:text-orange-500"
-      >
-        <User size={18} />
-        Login
-      </Link>
+      <div className="flex flex-col gap-1">
+        <Link
+          href="/login"
+          className="flex items-center gap-2 text-gray-700 hover:text-orange-500 px-2 py-1 rounded"
+        >
+          <User size={18} />
+          Login
+        </Link>
+        <Link
+          href="/register"
+          className="flex items-center gap-2 text-gray-700 hover:text-orange-500 px-2 py-1 rounded"
+        >
+          <User size={18} />
+          Sign Up
+        </Link>
+      </div>
     )
   }
 
+  // Logged in: show user avatar + dropdown
   return (
     <div className="relative" ref={ref}>
       <button
@@ -211,7 +222,7 @@ export default function UnifiedLayout({ children }: { children: React.ReactNode 
   const Sidebar = () => (
     <aside className="w-72 border-r bg-white flex flex-col h-full sticky top-0">
       <div className="flex items-center gap-2 border-b px-4 py-5">
-        <Image src={logo} alt="logo" width={32} height={32} className="h-8 w-auto" />
+        <Image src={logo} alt="SpectrumCosmo logo" width={32} height={32} className="h-8 w-auto" />
         <span className="font-semibold">
           Spectrum<span className="text-orange-500">Cosmo</span>
         </span>
@@ -224,7 +235,8 @@ export default function UnifiedLayout({ children }: { children: React.ReactNode 
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full border rounded-lg pl-9 py-2 text-sm"
+            className="w-full border rounded-lg pl-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-300"
+            aria-label="Search"
           />
         </form>
       </div>
@@ -271,7 +283,7 @@ export default function UnifiedLayout({ children }: { children: React.ReactNode 
             <Menu />
           </button>
 
-          <Image src={logo} alt="logo" width={28} height={28} />
+          <Image src={logo} alt="SpectrumCosmo logo" width={28} height={28} />
 
           <button
             onClick={() => setCartOpen(true)}
@@ -311,7 +323,8 @@ export default function UnifiedLayout({ children }: { children: React.ReactNode 
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full border rounded-lg pl-9 py-2 text-sm"
+                    className="w-full border rounded-lg pl-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-300"
+                    aria-label="Search"
                   />
                 </form>
               </div>
@@ -338,4 +351,4 @@ export default function UnifiedLayout({ children }: { children: React.ReactNode 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   )
-  }
+                                }
