@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getUserFromRequest } from '@/lib/getUserFromRequest'
 import { getDb } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession()
-  if (!session?.user?.email) {
+  const user = await getUserFromRequest(req)
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -14,17 +14,19 @@ export async function POST(req: NextRequest) {
   }
 
   const db = getDb()
-
-  // Insert rating – directly use session.email as user_email
   await db`
     INSERT INTO ratings (id, user_email, stars, comment)
-    VALUES (gen_random_uuid()::text, ${session.user.email}, ${stars}, ${comment || null})
+    VALUES (gen_random_uuid()::text, ${user.email}, ${stars}, ${comment || null})
   `
 
   return NextResponse.json({ success: true })
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Optional: only allow admin – check a role field if you have one
+  const user = await getUserFromRequest(req)
+  // if (!user?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const db = getDb()
   const ratings = await db`
     SELECT r.*, u.name, u.email
