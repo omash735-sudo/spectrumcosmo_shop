@@ -33,6 +33,23 @@ const desktopLinks = [
   { href: '/about', label: 'About Us' }
 ]
 
+// WhatsApp configuration
+const WHATSAPP_NUMBER = '265893160202'
+const WHATSAPP_MESSAGE = 'Hi, I’m interested in purchasing products from SpectrumCosmo. Kindly assist me with catalog and ordering details.'
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+
+// Pages where the WhatsApp button should NOT appear
+const HIDE_WHATSAPP_PATHS = [
+  '/checkout',
+  '/login',
+  '/register',
+  '/admin',
+  '/dashboard',
+  '/account/payments',
+  '/account/settings',
+  '/account/profile',
+]
+
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
@@ -45,6 +62,9 @@ export default function Navbar() {
   const { settings } = useSettings()
   const pathname = usePathname()
   const router = useRouter()
+
+  // Determine if WhatsApp button should be visible
+  const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path))
 
   // Logo based on dark mode setting (light/dark variant) – but navbar itself stays light
   const logoSrc = settings.darkMode
@@ -97,7 +117,7 @@ export default function Navbar() {
   const isLoggedIn = !!user
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
 
-  // Mobile drawer items (same as longer code)
+  // Mobile drawer items
   const alwaysItems = [
     { type: 'link' as const, href: '/', label: 'Home', icon: Home },
     { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
@@ -106,17 +126,36 @@ export default function Navbar() {
     { type: 'link' as const, href: '/my-reviews', label: 'My reviews', icon: Star },
     { type: 'link' as const, href: '/account/payments', label: 'Order history', icon: Clock },
   ]
+  // FIXED: settings now points to /account/account/settings
   const bottomItems = [
     { type: 'link' as const, href: '/contact', label: 'Help centre', icon: HelpCircle },
-    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
+    { type: 'link' as const, href: '/account/account/settings', label: 'Settings', icon: Settings },
   ]
 
   return (
     <>
+      <style>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+          100% { transform: translateY(0px); }
+        }
+        @keyframes pulse-ring {
+          0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+          80% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        .whatsapp-float {
+          animation: float 2s ease-in-out infinite;
+        }
+        .whatsapp-pulse {
+          animation: pulse-ring 1.5s infinite;
+        }
+      `}</style>
+
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        {/* ========== DESKTOP (horizontal top bar, no dark mode classes) ========== */}
+        {/* ========== DESKTOP (horizontal top bar) ========== */}
         <div className="hidden md:flex max-w-7xl mx-auto px-5 py-4 items-center justify-between">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-10" />
             <span className="text-lg font-semibold text-gray-800">
@@ -124,7 +163,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav links */}
           <nav className="flex items-center gap-8 text-sm">
             {desktopLinks.map(link => (
               <Link
@@ -140,7 +178,6 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Right side: currency, cart, auth */}
           <div className="flex items-center gap-4">
             <CurrencySelector />
 
@@ -153,7 +190,6 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Auth section: guest badge + sign in / user dropdown */}
             <div className="flex items-center gap-3">
               {!isLoggedIn ? (
                 <>
@@ -224,7 +260,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* ========== MOBILE DRAWER (full featured, light colors) ========== */}
+      {/* ========== MOBILE DRAWER ========== */}
       {mobileMenuOpen &&
         typeof window !== 'undefined' &&
         createPortal(
@@ -237,7 +273,6 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* User status */}
               <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <User size={16} />
@@ -262,12 +297,10 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Currency selector */}
               <div className="mt-3 py-2 border-t border-b border-gray-100">
                 <CurrencySelector />
               </div>
 
-              {/* "show now" promo */}
               <div className="my-3 bg-orange-50 p-2 rounded flex justify-between">
                 <span className="font-semibold">show now</span>
                 <Link
@@ -279,7 +312,6 @@ export default function Navbar() {
                 </Link>
               </div>
 
-              {/* Main nav items */}
               <div className="flex flex-col gap-2 mt-2 flex-grow">
                 {alwaysItems.map(item => {
                   const Icon = item.icon
@@ -331,7 +363,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Bottom items (help, settings, logout/signin) */}
               <div className="mt-6 pt-3 border-t border-gray-200">
                 {bottomItems.map(item => {
                   const Icon = item.icon
@@ -370,6 +401,31 @@ export default function Navbar() {
         )}
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+
+      {/* Floating WhatsApp Button */}
+      {showWhatsApp && (
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-[9999] whatsapp-float"
+          aria-label="Chat on WhatsApp"
+        >
+          <div className="relative">
+            <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
+            <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="white"
+                className="w-6 h-6"
+              >
+                <path d="M12.032 2.5C6.49 2.5 2 6.99 2 12.532c0 2.12.65 4.09 1.76 5.73L2 21.5l3.42-.98c1.57.93 3.4 1.48 5.36 1.48 5.54 0 10.03-4.49 10.03-10.03S17.57 2.5 12.032 2.5zm0 18.48c-1.75 0-3.38-.5-4.78-1.38l-.34-.2-2.03.58.58-2.02-.22-.35a7.86 7.86 0 0 1-1.4-4.44c0-4.33 3.53-7.85 7.85-7.85 4.33 0 7.85 3.52 7.85 7.85-.01 4.32-3.53 7.85-7.86 7.85zm4.21-5.88c-.23-.12-1.38-.68-1.6-.76-.21-.08-.37-.12-.52.12-.15.24-.59.76-.72.92-.13.15-.27.17-.5.05-.23-.12-.97-.36-1.85-1.14-.68-.6-1.14-1.34-1.28-1.57-.13-.23-.01-.36.1-.48.1-.1.23-.26.34-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.52-1.26-.72-1.73-.18-.45-.37-.37-.52-.38-.13-.01-.29-.01-.44-.01s-.4.06-.61.29c-.21.23-.8.78-.8 1.9s.82 2.2.93 2.36c.11.15 1.6 2.44 3.88 3.42.54.23.96.37 1.29.47.54.17 1.03.14 1.42.09.43-.05 1.38-.56 1.57-1.11.19-.54.19-1 .13-1.1-.06-.1-.22-.16-.46-.28z" />
+              </svg>
+            </div>
+          </div>
+        </a>
+      )}
     </>
   )
-}
+  }
