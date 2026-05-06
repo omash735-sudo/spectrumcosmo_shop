@@ -1,6 +1,7 @@
+// src/app/checkout/page.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'   // useEffect added
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { useCart } from '@/components/storefront/CartProvider'
