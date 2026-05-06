@@ -1,354 +1,137 @@
 'use client'
 
-import { useEffect, useState, useRef, FormEvent } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import Image from 'next/image'
-import {
-  Menu,
-  X,
-  ShoppingCart,
-  User,
-  Home,
-  Package,
-  Star,
-  Mail,
-  Info,
-  LogOut,
-  ChevronDown,
-  Search,
-} from 'lucide-react'
+import { Menu, X, ShoppingCart } from 'lucide-react'
 import clsx from 'clsx'
 
 import CurrencySelector from '@/components/storefront/CurrencySelector'
 import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 
-/* ---------------- LINKS ---------------- */
 const links = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/products', label: 'Products', icon: Package },
-  { href: '/reviews', label: 'Reviews', icon: Star },
-  { href: '/contact', label: 'Contact', icon: Mail },
-  { href: '/about', label: 'About Us', icon: Info },
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Products' },
+  { href: '/reviews', label: 'Reviews' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/about', label: 'About Us' }
 ]
 
-/* ---------------- ACTIVE LINK ---------------- */
-const isActiveLink = (pathname: string, href: string) => {
-  if (href === '/') return pathname === '/'
-  return pathname.startsWith(href)
-}
-
-/* ---------------- USER DROPDOWN (Login + Sign Up) ---------------- */
-const UserDropdown = ({ user }: { user: any }) => {
+export default function Navbar() {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const router = useRouter()
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    if (open) {
-      document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
-    }
-  }, [open])
-
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/'
-  }
-
-  // Not logged in: show both Login and Sign Up links
-  if (!user) {
-    return (
-      <div className="flex flex-col gap-1">
-        <Link
-          href="/login"
-          className="flex items-center gap-2 text-gray-700 hover:text-orange-500 px-2 py-1 rounded"
-        >
-          <User size={18} />
-          Login
-        </Link>
-        <Link
-          href="/register"
-          className="flex items-center gap-2 text-gray-700 hover:text-orange-500 px-2 py-1 rounded"
-        >
-          <User size={18} />
-          Sign Up
-        </Link>
-      </div>
-    )
-  }
-
-  // Logged in: show user avatar + dropdown
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 focus:outline-none"
-        aria-label="User menu"
-      >
-        <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-700">
-          {user.name?.charAt(0) || user.email?.charAt(0)}
-        </div>
-        <ChevronDown size={16} />
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 mt-2 w-44 bg-white border rounded-md shadow-lg z-20"
-          role="menu"
-        >
-          <Link
-            href="/account"
-            className="block px-4 py-2 text-sm hover:bg-gray-100"
-            onClick={() => setOpen(false)}
-          >
-            Account
-          </Link>
-          <Link
-            href="/account/settings"
-            className="block px-4 py-2 text-sm hover:bg-gray-100"
-            onClick={() => setOpen(false)}
-          >
-            Settings
-          </Link>
-          <button
-            onClick={logout}
-            className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100 flex items-center gap-2"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ---------------- MAIN LAYOUT ---------------- */
-export default function UnifiedLayout({ children }: { children: React.ReactNode }) {
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const [search, setSearch] = useState('')
+  const [userMenu, setUserMenu] = useState(false)
+
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const { totalItems } = useCart()
   const pathname = usePathname()
   const router = useRouter()
 
-  const logo =
-    'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'
+  const logoSrc =
+    "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
-  /* ---------------- USER FETCH ---------------- */
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => (r.ok ? r.json() : null))
       .then(data => setUser(data?.user || null))
-      .catch(() => setUser(null))
+      .catch(() => null)
   }, [])
 
-  /* ---------------- LOCK SCROLL ---------------- */
   useEffect(() => {
-    if (!mobileOpen) return
-
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false)
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenu(false)
+      }
     }
 
-    window.addEventListener('keydown', esc)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-    return () => {
-      document.body.style.overflow = prev
-      window.removeEventListener('keydown', esc)
-    }
-  }, [mobileOpen])
-
-  useEffect(() => {
-    setMobileOpen(false)
-  }, [pathname])
-
-  /* ---------------- SEARCH ---------------- */
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault()
-    if (!search.trim()) return
-    router.push(`/products?search=${encodeURIComponent(search)}`)
-    setSearch('')
-    setMobileOpen(false)
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setUser(null)
+    router.push('/')
+    router.refresh()
   }
 
-  /* ---------------- NAV ITEM ---------------- */
-  const NavItem = ({
-    link,
-    onClick,
-  }: {
-    link: (typeof links)[0]
-    onClick?: () => void
-  }) => {
-    const Icon = link.icon
-    const active = isActiveLink(pathname, link.href)
-
-    return (
-      <Link
-        href={link.href}
-        onClick={onClick}
-        className={clsx(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
-          active ? 'bg-orange-50 text-orange-500' : 'text-gray-700 hover:bg-gray-100'
-        )}
-      >
-        <Icon size={18} />
-        {link.label}
-      </Link>
-    )
-  }
-
-  /* ---------------- SIDEBAR ---------------- */
-  const Sidebar = () => (
-    <aside className="w-72 border-r bg-white flex flex-col h-full sticky top-0">
-      <div className="flex items-center gap-2 border-b px-4 py-5">
-        <Image src={logo} alt="SpectrumCosmo logo" width={32} height={32} className="h-8 w-auto" />
-        <span className="font-semibold">
-          Spectrum<span className="text-orange-500">Cosmo</span>
-        </span>
-      </div>
-
-      <div className="p-3">
-        <form onSubmit={handleSearch} className="relative">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search products..."
-            className="w-full border rounded-lg pl-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-300"
-            aria-label="Search"
-          />
-        </form>
-      </div>
-
-      <nav className="flex-1 px-3 space-y-1">
-        {links.map(l => (
-          <NavItem key={l.href} link={l} />
-        ))}
-      </nav>
-
-      <div className="border-t p-4 space-y-4">
-        <CurrencySelector />
-
-        <button
-          onClick={() => setCartOpen(true)}
-          className="flex items-center gap-2 relative"
-          aria-label={`Shopping cart, ${totalItems} items`}
-        >
-          <ShoppingCart size={18} />
-          Cart
-          {totalItems > 0 && (
-            <span className="absolute -top-2 -right-4 bg-orange-500 text-white text-xs rounded-full px-1.5">
-              {totalItems}
-            </span>
-          )}
-        </button>
-
-        <UserDropdown user={user} />
-      </div>
-    </aside>
-  )
-
-  /* ---------------- MOBILE ---------------- */
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="hidden lg:flex w-full">
-        <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
+    <>
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-4">
 
-      <div className="lg:hidden w-full">
-        <header className="flex items-center justify-between border-b p-4 bg-white">
-          <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
-            <Menu />
-          </button>
+          <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2">
+            <img src={logoSrc} alt="Logo" className="h-10" />
+            <span className="text-lg font-semibold text-gray-800">
+              Spectrum<span className="text-[#F97316]">Cosmo</span>
+            </span>
+          </Link>
 
-          <Image src={logo} alt="SpectrumCosmo logo" width={28} height={28} />
+          <nav className="hidden md:flex items-center gap-8 text-sm">
+            {links.map(l => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={clsx(
+                  'text-gray-600 hover:text-[#F97316]',
+                  pathname === l.href && 'text-[#F97316] font-semibold'
+                )}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
 
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative"
-            aria-label={`Shopping cart, ${totalItems} items`}
-          >
-            <ShoppingCart />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full px-1.5">
-                {totalItems}
-              </span>
-            )}
-          </button>
-        </header>
+          <div className="flex items-center gap-4">
 
-        <main className="p-4">{children}</main>
-
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setMobileOpen(false)}
-            />
-
-            <div className="absolute left-0 top-0 w-80 h-full bg-white flex flex-col">
-              <div className="flex justify-end p-4">
-                <button onClick={() => setMobileOpen(false)} aria-label="Close menu">
-                  <X />
-                </button>
-              </div>
-
-              {/* Mobile search */}
-              <div className="px-4 pb-4">
-                <form onSubmit={handleSearch} className="relative">
-                  <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full border rounded-lg pl-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-300"
-                    aria-label="Search"
-                  />
-                </form>
-              </div>
-
-              <nav className="flex-1 px-4 space-y-2">
-                {links.map(l => (
-                  <NavItem
-                    key={l.href}
-                    link={l}
-                    onClick={() => setMobileOpen(false)}
-                  />
-                ))}
-              </nav>
-
-              {/* Mobile currency selector */}
-              <div className="p-4 border-t">
-                <CurrencySelector />
-              </div>
+            <div className="hidden md:block">
+              <CurrencySelector />
             </div>
+
+            <button onClick={() => setCartOpen(true)} className="relative">
+              <ShoppingCart size={20} />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+
+            <button onClick={() => setOpen(!open)} className="md:hidden">
+              {open ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      </header>
+
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm md:hidden">
+          <div className="absolute right-0 top-0 w-72 h-full bg-white p-6 flex flex-col gap-6 shadow-xl">
+
+            <button onClick={() => setOpen(false)} className="self-end">
+              <X size={24} />
+            </button>
+
+            <nav className="flex flex-col gap-4 text-lg">
+              {links.map(l => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="text-gray-800"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
+      )}
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-    </div>
+    </>
   )
-                                }
+}
