@@ -13,15 +13,28 @@ import {
   HelpCircle,
   Menu,
   X,
+  Loader2,
+  Home,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSettings } from '@/components/storefront/SettingsProvider'
 import clsx from 'clsx'
+import Image from 'next/image'
+
+type User = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  profileImage?: string
+}
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loadingUser, setLoadingUser] = useState(true)
   const { settings } = useSettings()
 
   // Logo based on dark mode setting
@@ -30,6 +43,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
   const navItems = [
+    { name: 'Home', href: '/', icon: Home },          // ← Home button added here
     { name: 'Overview', href: '/account', icon: LayoutDashboard },
     { name: 'Orders', href: '/account/orders', icon: Package },
     { name: 'Wishlist', href: '/account/wishlist', icon: Heart },
@@ -40,6 +54,24 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { name: 'Support', href: '/account/support', icon: HelpCircle },
     { name: 'Settings', href: '/account/settings', icon: Settings },
   ]
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.user) setUser(data.user)
+        }
+      } catch (err) {
+        console.error('Failed to load user in layout:', err)
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+    fetchUser()
+  }, [])
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -60,12 +92,29 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
       {/* User Greeting */}
       <div className="mx-4 mt-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-semibold">
-            <User size={20} />
+          {/* Profile picture or fallback */}
+          <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">
+            {loadingUser ? (
+              <Loader2 className="animate-spin text-orange-500 w-4 h-4" />
+            ) : user?.profileImage ? (
+              <Image
+                src={user.profileImage}
+                alt={user.name || 'Profile'}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User size={20} className="text-orange-700" />
+            )}
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-700">Welcome back</p>
-            <p className="text-xs text-orange-600">Spectrum Member</p>
+            <p className="text-sm font-medium text-gray-700">
+              {loadingUser ? 'Loading...' : `Welcome back, ${user?.name?.split(' ')[0] || 'Guest'}`}
+            </p>
+            <p className="text-xs text-orange-600">
+              {loadingUser ? '' : user?.email || 'Spectrum Member'}
+            </p>
           </div>
         </div>
       </div>
@@ -75,7 +124,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         {navItems.map((item) => {
           const active =
             pathname === item.href ||
-            (item.href !== '/account' && pathname?.startsWith(item.href))
+            (item.href !== '/' && item.href !== '/account' && pathname?.startsWith(item.href))
 
           return (
             <Link
