@@ -1,3 +1,4 @@
+// app/api/orders/create/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getUserFromRequest } from '@/lib/userAuth';
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
       notes,
       payment_method,
       items,
-      total_amount,       // already in MWK from frontend
+      total_amount,
     } = body;
 
     if (!customer_name || !phone_number || !location || !items?.length || !total_amount) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // 1. Insert order (order‑level data)
+    // 1. Insert order – returns UUID (orders.id is UUID)
     const [order] = await sql`
       INSERT INTO orders (
         customer_name,
@@ -43,15 +44,15 @@ export async function POST(req: NextRequest) {
         ${payment_method},
         ${total_amount},
         'pending',
-        ${user?.id || null},
+        ${user?.id || null},   -- user.id should be UUID (e.g., from Clerk/Supabase)
         NOW()
       )
-      RETURNING id
+      RETURNING id::text   -- explicitly return as text (UUID string)
     `;
 
-    if (!order) throw new Error('Failed to create order');
+    if (!order || !order.id) throw new Error('Failed to create order');
 
-    // 2. Insert each cart item into order_items (using USD amounts from cart)
+    // 2. Insert order items (order_items.order_id must be UUID)
     for (const item of items) {
       const unitPriceUsd = item.price_usd;
       const subtotalUsd = item.quantity * unitPriceUsd;
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
           subtotal_usd,
           custom_details
         ) VALUES (
-          ${order.id},
+          ${order.id}::uuid,   -- explicitly cast to UUID
           ${item.name},
           ${item.quantity},
           ${unitPriceUsd},
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: order.id,
+      id: order.id,        // UUID string
       total_amount,
     });
   } catch (err: any) {
