@@ -1,7 +1,6 @@
 'use client'
 
 import { ReactNode, useState, useEffect } from 'react'
-import Navbar from '@/components/storefront/Navbar'
 import {
   LayoutDashboard,
   Package,
@@ -25,7 +24,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { settings } = useSettings()
 
-  // Logo based on dark mode setting (matches your Navbar)
+  // Logo based on dark mode setting
   const logoSrc = settings?.darkMode
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
@@ -58,7 +57,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* User Greeting (replace with real user data later) */}
+      {/* User Greeting */}
       <div className="mx-4 mt-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-semibold">
@@ -107,8 +106,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <Navbar />
-
       <div className="flex relative">
         {/* DESKTOP SIDEBAR */}
         <aside className="hidden md:flex md:w-72 flex-col bg-white/80 backdrop-blur-sm border-r border-gray-100 sticky top-0 h-screen shadow-sm">
