@@ -13,6 +13,7 @@ async function ensureUsersTable() {
       phone TEXT,
       password_hash TEXT NOT NULL,
       newsletter_subscribed BOOLEAN NOT NULL DEFAULT true,
+      profile_image TEXT,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `
@@ -24,18 +25,23 @@ export async function PATCH(req: NextRequest) {
 
   try {
     await ensureUsersTable()
-    const { name, phone, newsletterSubscribed } = await req.json()
+    const { name, phone, newsletterSubscribed, profileImage } = await req.json()
     const sql = getDb()
-    const [updated] = await sql`
-      UPDATE users
-      SET
+
+    // Build dynamic update query
+    let query = sql`
+      UPDATE users SET
         name = COALESCE(${name}, name),
         phone = COALESCE(${phone}, phone),
-        newsletter_subscribed = COALESCE(${newsletterSubscribed}, newsletter_subscribed)
+        newsletter_subscribed = COALESCE(${newsletterSubscribed}, newsletter_subscribed),
+        profile_image = COALESCE(${profileImage}, profile_image)
       WHERE id = ${user.id}
-      RETURNING id, name, email, phone, newsletter_subscribed
+      RETURNING id, name, email, phone, newsletter_subscribed, profile_image AS "profileImage"
     `
 
+    const [updated] = await query
+
+    // Send email only on unsubscribe
     if (newsletterSubscribed === false) {
       await sendMail({
         to: updated.email,
@@ -49,4 +55,3 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
-
