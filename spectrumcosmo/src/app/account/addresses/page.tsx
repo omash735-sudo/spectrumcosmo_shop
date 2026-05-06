@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import AccountLayout from '@/components/account/AccountLayout'
 import { Loader2, MapPin, Trash2, Plus } from 'lucide-react'
 
 type Address = {
