@@ -5,7 +5,6 @@ import { SettingsProvider } from '@/components/storefront/SettingsProvider'
 import { CurrencyProvider } from '@/components/storefront/CurrencyProvider'
 import { CartProvider } from '@/components/storefront/CartProvider'
 import { UserProvider } from '@/components/storefront/UserProvider'
-import ThemeSync from '@/components/storefront/ThemeSync'
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -22,13 +21,11 @@ export default function RootLayout({
       <body className="antialiased">
         <UserProvider>
           <SettingsProvider>
-            <ThemeSync>
-              <CurrencyProvider>
-                <CartProvider>
-                  {children}
-                </CartProvider>
-              </CurrencyProvider>
-            </ThemeSync>
+            <CurrencyProvider>
+              <CartProvider>
+                {children}
+              </CartProvider>
+            </CurrencyProvider>
           </SettingsProvider>
         </UserProvider>
       </body>
