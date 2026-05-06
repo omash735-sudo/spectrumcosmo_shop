@@ -12,6 +12,7 @@ async function ensureUsersTable() {
       phone TEXT,
       password_hash TEXT NOT NULL,
       newsletter_subscribed BOOLEAN NOT NULL DEFAULT true,
+      profile_image TEXT,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `
@@ -24,12 +25,20 @@ export async function GET(req: NextRequest) {
   try {
     await ensureUsersTable()
     const sql = getDb()
-    const users =
-      await sql`SELECT id, name, email, phone, newsletter_subscribed FROM users WHERE id = ${userToken.id}`
+    const users = await sql`
+      SELECT 
+        id, 
+        name, 
+        email, 
+        phone, 
+        newsletter_subscribed,
+        profile_image AS "profileImage"
+      FROM users 
+      WHERE id = ${userToken.id}
+    `
     if (users.length === 0) return NextResponse.json({ user: null }, { status: 404 })
     return NextResponse.json({ user: users[0] })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
-
