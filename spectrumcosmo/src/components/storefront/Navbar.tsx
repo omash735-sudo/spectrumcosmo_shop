@@ -24,10 +24,6 @@ import CurrencySelector from '@/components/storefront/CurrencySelector'
 import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 
-type NavItem =
-  | { type: 'link'; href: string; label: string; icon: any }
-  | { type: 'action'; label: string; icon: any; onClick: () => void }
-
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
@@ -67,7 +63,7 @@ export default function Navbar() {
     setMobileMenuOpen(false)
   }
 
-  const isActive = (href: string) => pathname.startsWith(href)
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   const openCart = () => {
     setCartOpen(true)
@@ -75,35 +71,41 @@ export default function Navbar() {
   }
 
   const isLoggedIn = !!user
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User'
 
-  // Navigation items – SPACE removed, added Profile link
-  const mainNavItems: NavItem[] = [
-    { type: 'link', href: '/', label: 'Home', icon: Home },
-    { type: 'action', label: 'Cart', icon: ShoppingCart, onClick: openCart },
-    { type: 'link', href: '/orders', label: 'Order history', icon: Clock },
-    { type: 'link', href: '/my-reviews', label: 'My reviews', icon: Star },
-    // Profile link – goes to /account/profile
-    { type: 'link', href: '/account/profile', label: 'Profile', icon: User },
-    { type: 'link', href: '/contact', label: 'Help centre', icon: HelpCircle },
-    { type: 'link', href: '/account/settings', label: 'Settings', icon: Settings },
+  // Always-visible items (for both logged in and out)
+  const alwaysItems = [
+    { type: 'link' as const, href: '/', label: 'Home', icon: Home },
+    { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
+  ]
+
+  // Items shown only when logged in
+  const loggedInItems = [
+    { type: 'link' as const, href: '/my-reviews', label: 'My reviews', icon: Star },
+    { type: 'link' as const, href: '/account/payments', label: 'Order history', icon: Clock },
+  ]
+
+  // Bottom items: Help centre, Settings, and Logout/Signin
+  const bottomItems = [
+    { type: 'link' as const, href: '/contact', label: 'Help centre', icon: HelpCircle },
+    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
   ]
 
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-
-        {/* ================= DESKTOP ================= */}
+        {/* ================= DESKTOP LAYOUT ================= */}
         <div className="hidden md:block max-w-7xl mx-auto px-5 py-4">
-          {/* Row: Logo + "not Signed" badge */}
+          {/* Logo + "not Signed" badge */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <img src={logoSrc} alt="Logo" className="h-8" />
               <span className="text-xl font-semibold">
                 Spectrum<span className="text-[#F97316]">Cosmo</span>
               </span>
-            </div>
+            </Link>
             <div className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-              {!isLoggedIn ? 'not Signed' : `Signed: ${user?.name || user?.email}`}
+              {!isLoggedIn ? 'not Signed' : `Signed: ${displayName}`}
             </div>
           </div>
 
@@ -124,18 +126,22 @@ export default function Navbar() {
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </form>
 
-          {/* Guest / Visitor line */}
+          {/* Guest / Visitor line (clickable avatar or name to profile if logged in) */}
           <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-2 rounded-lg flex items-center gap-2">
             <User size={16} />
-            <span>{!isLoggedIn ? 'Guest / Visitor' : `Signed in as ${user?.name || user?.email}`}</span>
-            {!isLoggedIn && (
+            <span>{!isLoggedIn ? 'Guest / Visitor' : `Signed in as ${displayName}`}</span>
+            {isLoggedIn ? (
+              <Link href="/account/profile" className="ml-auto text-[#F97316] text-xs font-medium hover:underline">
+                View profile →
+              </Link>
+            ) : (
               <Link href="/login" className="ml-auto text-[#F97316] text-xs font-medium hover:underline">
                 Sign in
               </Link>
             )}
           </div>
 
-          {/* "show now – view" promo block (from sketch) */}
+          {/* "show now – view" promo */}
           <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 p-3 rounded-xl flex justify-between items-center">
             <span className="font-semibold text-gray-800">✨ show now</span>
             <Link href="/products" className="text-[#F97316] text-sm font-medium hover:underline flex items-center gap-1">
@@ -143,11 +149,10 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Main vertical navigation */}
+          {/* Main navigation stack */}
           <nav className="flex flex-col gap-1">
-            {mainNavItems.map((item, idx) => {
+            {alwaysItems.map(item => {
               const Icon = item.icon
-
               if (item.type === 'action') {
                 return (
                   <button
@@ -160,17 +165,12 @@ export default function Navbar() {
                   </button>
                 )
               }
-
-              // Add extra margin-top between "My reviews" and "Help centre"
-              const extraMargin = item.label === 'Help centre' ? 'mt-3' : ''
-
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={clsx(
                     'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-                    extraMargin,
                     isActive(item.href)
                       ? 'bg-[#F97316]/10 text-[#F97316] font-semibold'
                       : 'text-gray-700 hover:bg-gray-100 hover:text-[#F97316]'
@@ -181,27 +181,71 @@ export default function Navbar() {
                 </Link>
               )
             })}
+
+            {isLoggedIn && (
+              <>
+                {loggedInItems.map(item => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                        isActive(item.href)
+                          ? 'bg-[#F97316]/10 text-[#F97316] font-semibold'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-[#F97316]'
+                      )}
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </>
+            )}
           </nav>
 
-          {/* Log out / Sign in at the bottom */}
-          <div className="pt-3 mt-3 border-t border-gray-100">
-            {isLoggedIn ? (
-              <button
-                onClick={logout}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-left"
-              >
-                <LogOut size={18} />
-                <span className="text-sm font-medium">Log out</span>
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
-              >
-                <User size={18} />
-                <span className="text-sm font-medium">Sign in</span>
-              </Link>
-            )}
+          {/* Bottom section with separator */}
+          <div className="mt-6 pt-3 border-t border-gray-200">
+            <nav className="flex flex-col gap-1">
+              {bottomItems.map(item => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={clsx(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                      isActive(item.href)
+                        ? 'bg-[#F97316]/10 text-[#F97316] font-semibold'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-[#F97316]'
+                    )}
+                  >
+                    <Icon size={18} />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+
+              {isLoggedIn ? (
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-left"
+                >
+                  <LogOut size={18} />
+                  <span className="text-sm font-medium">Log out</span>
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+                >
+                  <User size={18} />
+                  <span className="text-sm font-medium">Sign in</span>
+                </Link>
+              )}
+            </nav>
           </div>
         </div>
 
@@ -210,14 +254,12 @@ export default function Navbar() {
           <button onClick={() => setMobileMenuOpen(true)}>
             <Menu size={24} />
           </button>
-
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-8" />
             <span className="text-lg font-semibold">
               Spectrum<span className="text-[#F97316]">Cosmo</span>
             </span>
           </Link>
-
           <button onClick={() => setCartOpen(true)} className="relative">
             <ShoppingCart size={22} />
             {totalItems > 0 && (
@@ -234,7 +276,7 @@ export default function Navbar() {
         typeof window !== 'undefined' &&
         createPortal(
           <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden">
-            <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl">
+            <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col">
               <div className="flex justify-between items-center border-b pb-3">
                 <span className="font-semibold">Menu</span>
                 <button onClick={() => setMobileMenuOpen(false)}>
@@ -242,10 +284,29 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Mobile: Guest status & promo (simplified) */}
-              <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                {!isLoggedIn ? '🔓 Guest / Visitor' : `👋 ${user?.name || user?.email}`}
+              {/* User status */}
+              <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <User size={16} />
+                  {!isLoggedIn ? 'Guest / Visitor' : displayName}
+                </span>
+                {isLoggedIn ? (
+                  <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                    Profile
+                  </Link>
+                ) : (
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                    Sign in
+                  </Link>
+                )}
               </div>
+
+              {/* Currency Converter button (no label) */}
+              <div className="mt-3 py-2 border-t border-b border-gray-100">
+                <CurrencySelector />
+              </div>
+
+              {/* "show now" promo */}
               <div className="my-3 bg-orange-50 p-2 rounded flex justify-between">
                 <span className="font-semibold">show now</span>
                 <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">
@@ -253,8 +314,9 @@ export default function Navbar() {
                 </Link>
               </div>
 
-              <div className="flex flex-col gap-2 mt-2">
-                {mainNavItems.map(item => {
+              {/* Main nav items for mobile */}
+              <div className="flex flex-col gap-2 mt-2 flex-grow">
+                {alwaysItems.map(item => {
                   const Icon = item.icon
                   if (item.type === 'action') {
                     return (
@@ -283,15 +345,49 @@ export default function Navbar() {
                     </Link>
                   )
                 })}
+
+                {isLoggedIn && (
+                  <>
+                    {loggedInItems.map(item => {
+                      const Icon = item.icon
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-2 py-2"
+                        >
+                          <Icon size={18} />
+                          {item.label}
+                        </Link>
+                      )
+                    })}
+                  </>
+                )}
               </div>
 
-              <div className="mt-4 border-t pt-3">
+              {/* Bottom items in mobile drawer */}
+              <div className="mt-6 pt-3 border-t border-gray-200">
+                {bottomItems.map(item => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2"
+                    >
+                      <Icon size={18} />
+                      {item.label}
+                    </Link>
+                  )
+                })}
                 {isLoggedIn ? (
-                  <button onClick={logout} className="text-red-600 flex items-center gap-2">
+                  <button onClick={logout} className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left">
                     <LogOut size={18} /> Log out
                   </button>
                 ) : (
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-2 py-2">
                     <User size={18} /> Sign in
                   </Link>
                 )}
