@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
+import { getUserFromRequest } from '@/lib/userAuth';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getUserFromRequest(req) // optional – may not be logged in
-    const body = await req.json()
+    const user = getUserFromRequest(req);
+    const body = await req.json();
 
     const {
       customer_name,
@@ -14,17 +14,16 @@ export async function POST(req: NextRequest) {
       notes,
       payment_method,
       items,
-      total_amount,
-    } = body
+      total_amount,       // already in MWK from frontend
+    } = body;
 
-    // Validation
     if (!customer_name || !phone_number || !location || !items?.length || !total_amount) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const sql = getDb()
+    const sql = getDb();
 
-    // 1. Insert the order
+    // 1. Insert order (order‑level data)
     const [order] = await sql`
       INSERT INTO orders (
         customer_name,
@@ -47,37 +46,42 @@ export async function POST(req: NextRequest) {
         ${user?.id || null},
         NOW()
       )
-      RETURNING id, total_amount
-    `
+      RETURNING id
+    `;
 
-    if (!order) throw new Error('Failed to create order')
+    if (!order) throw new Error('Failed to create order');
 
-    // 2. Insert order items
+    // 2. Insert each cart item into order_items (using USD amounts from cart)
     for (const item of items) {
+      const unitPriceUsd = item.price_usd;
+      const subtotalUsd = item.quantity * unitPriceUsd;
+
       await sql`
         INSERT INTO order_items (
           order_id,
           product_name,
           quantity,
-          unit_price,
-          subtotal
+          unit_price_usd,
+          subtotal_usd,
+          custom_details
         ) VALUES (
           ${order.id},
           ${item.name},
           ${item.quantity},
-          ${item.price},
-          ${item.quantity * item.price}
+          ${unitPriceUsd},
+          ${subtotalUsd},
+          ${item.custom_details || null}
         )
-      `
+      `;
     }
 
     return NextResponse.json({
       success: true,
       id: order.id,
-      total_amount: order.total_amount,
-    })
+      total_amount,
+    });
   } catch (err: any) {
-    console.error('Order creation error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('Order creation error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
