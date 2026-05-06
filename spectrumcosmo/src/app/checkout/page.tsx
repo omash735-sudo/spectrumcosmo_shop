@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Navbar from '@/components/storefront/Navbar'
-import Footer from '@//storefront/Footer'
+import Footer from '@/components/storefront/Footer'
 import { useCart } from '@/components/storefront/CartProvider'
 import { useCurrency } from '@/components/storefront/CurrencyProvider'
 import { formatCurrencyAmount } from '@/lib/currency'
