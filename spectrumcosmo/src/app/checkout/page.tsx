@@ -1,7 +1,8 @@
-// src/app/checkout/page.tsx
+// app/checkout/page.tsx (updated)
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'   // useEffect added
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'   // add useRouter
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { useCart } from '@/components/storefront/CartProvider'
@@ -22,6 +23,7 @@ type PaymentOption = {
 export default function CheckoutPage() {
   const { items, subtotalUsd, clearCart } = useCart()
   const { currency, rates } = useCurrency()
+  const router = useRouter()
   const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([])
   const [loadingOptions, setLoadingOptions] = useState(true)
 
@@ -30,12 +32,11 @@ export default function CheckoutPage() {
     phone: '',
     location: '',
     notes: '',
-    payment_method: 'tnm_mpamba', // default
+    payment_method: 'tnm_mpamba',
   })
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [orderSuccess, setOrderSuccess] = useState<{ id: string; amount: number } | null>(null)
 
   const subtotal = useMemo(
     () => subtotalUsd * (rates[currency] ?? 1),
@@ -45,7 +46,6 @@ export default function CheckoutPage() {
   const deliveryFee = 1500
   const total = subtotal + deliveryFee
 
-  // Fetch active payment options on mount
   useEffect(() => {
     const fetchPaymentOptions = async () => {
       try {
@@ -74,7 +74,6 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
-      // Create order in database – status = 'pending'
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,76 +91,14 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error('Order creation failed')
       const order = await res.json()
 
-      // Clear cart after successful order
       clearCart()
-
-      // Show success with payment instructions
-      setOrderSuccess({ id: order.id, amount: order.total_amount })
+      // Redirect to the dedicated payment page for this order
+      router.push(`/checkout/payment?orderId=${order.id}`)
     } catch (err) {
       setError('Could not place order. Please try again.')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (orderSuccess) {
-    // Find the selected payment option details
-    const selectedOption = paymentOptions.find(
-      opt => opt.name === form.payment_method || opt.type === form.payment_method
-    )
-
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen bg-gray-50 py-10">
-          <div className="max-w-2xl mx-auto px-4">
-            <div className="bg-white rounded-2xl border p-6 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Order Placed!</h2>
-              <p className="text-gray-500 mt-2">Order #{orderSuccess.id.slice(-8)}</p>
-              <p className="text-gray-600 mt-2">Amount to pay: <strong>MWK {orderSuccess.amount.toLocaleString()}</strong></p>
-
-              <div className="mt-6 p-4 bg-amber-50 rounded-xl text-left">
-                <h3 className="font-semibold text-amber-800 flex items-center gap-2">
-                  📌 Payment Instructions
-                </h3>
-                <p className="text-sm text-amber-700 mt-2">
-                  Send the exact amount to one of the following accounts, then go to <strong>Payments & Orders</strong> in your account to upload proof.
-                </p>
-
-                {selectedOption ? (
-                  <div className="mt-3 p-3 bg-white rounded-lg">
-                    <p className="font-medium">{selectedOption.name}</p>
-                    {selectedOption.type === 'mobile_money' && (
-                      <p className="text-sm text-gray-600">Agent Code: <span className="font-mono">{selectedOption.account_number}</span></p>
-                    )}
-                    {selectedOption.type === 'bank' && (
-                      <p className="text-sm text-gray-600">Account: <span className="font-mono">{selectedOption.account_number}</span></p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm mt-2">Use the payment method you selected. Contact support if you need details.</p>
-                )}
-              </div>
-
-              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="/account/payments" className="bg-orange-500 text-white px-6 py-2 rounded-xl hover:bg-orange-600">
-                  Go to Payments
-                </a>
-                <a href="/" className="border border-gray-300 px-6 py-2 rounded-xl hover:bg-gray-50">
-                  Continue Shopping
-                </a>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </>
-    )
   }
 
   return (
@@ -175,7 +112,6 @@ export default function CheckoutPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Order Form */}
             <form onSubmit={handleCheckout} className="bg-white p-6 rounded-2xl border space-y-4">
               <input
                 className="w-full border rounded-xl px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
@@ -206,7 +142,6 @@ export default function CheckoutPage() {
                 onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
               />
 
-              {/* Payment Method selection – from DB options */}
               <div>
                 <p className="text-sm font-semibold mb-2">Payment Method</p>
                 {loadingOptions ? (
@@ -246,7 +181,6 @@ export default function CheckoutPage() {
               {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>}
             </form>
 
-            {/* Order Summary */}
             <div className="bg-white p-6 rounded-2xl border h-fit">
               <h2 className="font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
@@ -258,7 +192,7 @@ export default function CheckoutPage() {
                   <span>{formatCurrencyAmount(total, currency)}</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-4">You will receive payment instructions after placing the order.</p>
+              <p className="text-xs text-gray-500 mt-4">You will be redirected to upload payment proof.</p>
             </div>
           </div>
         </div>
