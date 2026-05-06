@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -24,18 +25,8 @@ import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 
 type NavItem =
-  | {
-      type: 'link'
-      href: string
-      label: string
-      icon: any
-    }
-  | {
-      type: 'action'
-      label: string
-      icon: any
-      onClick: () => void
-    }
+  | { type: 'link'; href: string; label: string; icon: any }
+  | { type: 'action'; label: string; icon: any; onClick: () => void }
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -104,14 +95,12 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
 
-        {/* ================= DESKTOP NAV ================= */}
+        {/* ================= DESKTOP ================= */}
         <div className="hidden md:block max-w-7xl mx-auto px-5 py-4">
-
-          {/* Top Row */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <img src={logoSrc} alt="Logo" className="h-8" />
-              <span className="text-xl font-semibold text-gray-800">
+              <img src={logoSrc} className="h-8" />
+              <span className="text-xl font-semibold">
                 Spectrum<span className="text-[#F97316]">Cosmo</span>
               </span>
             </div>
@@ -121,45 +110,21 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Currency */}
           <div className="mb-4 flex items-center gap-2 text-sm">
-            <span className="font-medium text-gray-700">Currency convert</span>
+            <span className="font-medium">Currency convert</span>
             <CurrencySelector />
           </div>
 
-          {/* Search */}
-          <form onSubmit={handleSearch} className="mb-4">
-            <div className="relative">
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-              />
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
+          <form onSubmit={handleSearch} className="mb-4 relative">
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </form>
 
-          {/* Guest */}
-          {!isLoggedIn && (
-            <div className="mb-4 text-sm text-gray-600 bg-amber-50 p-2 rounded-lg flex items-center gap-2">
-              <User size={16} className="text-amber-600" />
-              Guest / Visitor —{' '}
-              <Link href="/login" className="text-[#F97316] hover:underline">
-                Sign in
-              </Link>
-            </div>
-          )}
-
-          {/* CTA */}
-          <div className="mb-6 flex items-center justify-between bg-gradient-to-r from-orange-50 to-amber-50 p-3 rounded-xl">
-            <span className="font-semibold">✨ Shop now</span>
-            <Link href="/products" className="text-[#F97316] text-sm font-medium flex items-center gap-1">
-              view <ChevronRight size={14} />
-            </Link>
-          </div>
-
-          {/* NAV LIST */}
           <nav className="flex flex-col gap-1">
             {mainNavItems.map(item => {
               const Icon = item.icon
@@ -169,7 +134,7 @@ export default function Navbar() {
                   <button
                     key={item.label}
                     onClick={item.onClick}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
+                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-lg"
                   >
                     <Icon size={18} />
                     {item.label}
@@ -183,9 +148,7 @@ export default function Navbar() {
                   href={item.href}
                   className={clsx(
                     'flex items-center gap-3 px-3 py-2 rounded-lg',
-                    isActive(item.href)
-                      ? 'bg-[#F97316]/10 text-[#F97316] font-semibold'
-                      : 'hover:bg-gray-100'
+                    isActive(item.href) && 'bg-[#F97316]/10 text-[#F97316]'
                   )}
                 >
                   <Icon size={18} />
@@ -193,24 +156,6 @@ export default function Navbar() {
                 </Link>
               )
             })}
-
-            {/* auth */}
-            <div className="pt-2 mt-2 border-t">
-              {isLoggedIn ? (
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-3 px-3 py-2 text-red-600"
-                >
-                  <LogOut size={18} />
-                  Log out
-                </button>
-              ) : (
-                <Link href="/login" className="flex items-center gap-3 px-3 py-2">
-                  <User size={18} />
-                  Sign in
-                </Link>
-              )}
-            </div>
           </nav>
         </div>
 
@@ -222,9 +167,6 @@ export default function Navbar() {
 
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} className="h-8" />
-            <span className="font-semibold">
-              Spectrum<span className="text-[#F97316]">Cosmo</span>
-            </span>
           </Link>
 
           <button onClick={() => setCartOpen(true)} className="relative">
@@ -236,11 +178,14 @@ export default function Navbar() {
             )}
           </button>
         </div>
+      </header>
 
-        {/* ================= MOBILE DRAWER ================= */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-black/40 md:hidden">
-            <div className="w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto">
+      {/* ================= FIXED MOBILE MENU (PORTAL FIX) ================= */}
+      {mobileMenuOpen &&
+        typeof window !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden">
+            <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl">
 
               <div className="flex justify-between items-center border-b pb-3">
                 <span className="font-semibold">Menu</span>
@@ -296,11 +241,11 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
-      </header>
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   )
-    }
+          }
