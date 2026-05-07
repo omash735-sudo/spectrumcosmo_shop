@@ -2,19 +2,22 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Pencil, Trash2, X, Loader2, Package, Star, Upload, CloudUpload } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Loader2, Package, Star, Upload } from 'lucide-react';
+import { formatCurrencyAmount } from '@/lib/currency';
+import { useCurrency } from '@/components/storefront/CurrencyProvider';
 
 const CATEGORIES = ['T-Shirts', 'Hoodies', 'Pendants', 'Bracelets'];
 const EMPTY = {
   name: '',
   description: '',
-  price: '',
+  price_mwk: '',
   image_url: '',
   category: 'T-Shirts',
   is_featured: false,
 };
 
 export default function AdminProductsPage() {
+  const { currency, rates } = useCurrency();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -50,7 +53,7 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name,
       description: p.description || '',
-      price: String(p.price),
+      price_mwk: String(p.price),
       image_url: p.image_url || '',
       category: p.category,
       is_featured: p.is_featured || false,
@@ -66,7 +69,7 @@ export default function AdminProductsPage() {
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
     if (!cloudName || !uploadPreset) {
-      setError('Cloudinary not configured. Please add NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to .env.local');
+      setError('Cloudinary not configured.');
       setUploadingImage(false);
       return null;
     }
@@ -132,8 +135,9 @@ export default function AdminProductsPage() {
     fetchProducts();
   };
 
-  const formatMWK = (amount: number) => {
-    return `MWK ${amount.toLocaleString()}`;
+  // Display price in MWK (admin sees MWK directly from DB)
+  const displayPrice = (price: number) => {
+    return `MWK ${price.toLocaleString()}`;
   };
 
   return (
@@ -142,7 +146,7 @@ export default function AdminProductsPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#111111]">Products</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {products.length} products in your store
+            {products.length} products in your store • Prices are in MWK (Malawi Kwacha)
           </p>
         </div>
         <button onClick={openAdd} className="btn-primary text-sm">
@@ -208,7 +212,7 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-semibold text-[#F97316]">
-                      {formatMWK(Number(p.price ?? 0))}
+                      {displayPrice(Number(p.price ?? 0))}
                     </td>
                     <td className="px-6 py-4">
                       {p.is_featured ? (
@@ -264,7 +268,7 @@ export default function AdminProductsPage() {
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   required
                   className="input"
-                  placeholder="e.g., Anime MUG"
+                  placeholder="e.g., Anime Mug"
                 />
               </div>
 
@@ -286,12 +290,13 @@ export default function AdminProductsPage() {
                     type="number"
                     step="100"
                     min="0"
-                    value={form.price}
-                    onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+                    value={form.price_mwk}
+                    onChange={(e) => setForm((p) => ({ ...p, price_mwk: e.target.value }))}
                     required
                     className="input"
                     placeholder="e.g., 25000"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Enter price in Malawi Kwacha (MWK)</p>
                 </div>
                 <div>
                   <label className="label">Category *</label>
@@ -319,7 +324,7 @@ export default function AdminProductsPage() {
                     className="w-4 h-4 text-[#F97316] rounded border-gray-300 focus:ring-[#F97316]"
                   />
                   <span className="text-sm text-gray-600">
-                    Mark as featured (appears in featured section on products page)
+                    Mark as featured (appears in featured section)
                   </span>
                 </label>
               </div>
