@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getUserFromRequest } from '@/lib/userAuth';
 import { sendMail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getUserFromRequest(req);
     const body = await req.json();
 
     const {
@@ -27,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Insert order with delivery fields
+    // Insert order – set user_id to NULL (to avoid UUID/int mismatch) and cast delivery_method_id to integer
     const [order] = await sql`
       INSERT INTO orders (
         customer_name, customer_email, phone_number, delivery_address,
@@ -36,8 +34,9 @@ export async function POST(req: NextRequest) {
       ) VALUES (
         ${customer_name}, ${customer_email}, ${phone_number}, ${location},
         ${notes || ''}, ${payment_method}, ${total_amount}, 'pending',
-        ${user?.id || null}, NOW(),
-        ${delivery_method_id || null}, ${delivery_fee || 0}
+        NULL, NOW(),
+        ${delivery_method_id ? Number(delivery_method_id) : null}, 
+        ${delivery_fee ? Number(delivery_fee) : 0}
       )
       RETURNING id::text
     `;
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    // Send invoice email
+    // Send invoice email (optional)
     const orderItemsHtml = items.map(item => `
       <tr>
         <td style="padding:8px; border-bottom:1px solid #eee;">${item.name} x ${item.quantity}</td>
