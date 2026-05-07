@@ -17,17 +17,14 @@ export default function StarRating({
   size = 20,
 }: StarRatingProps) {
   const [hoverRating, setHoverRating] = useState(0);
-
   const displayRating = hoverRating || rating;
 
   const handleMouseEnter = (star: number) => {
     if (interactive) setHoverRating(star);
   };
-
   const handleMouseLeave = () => {
     if (interactive) setHoverRating(0);
   };
-
   const handleClick = (star: number) => {
     if (interactive && onRate) onRate(star);
   };
