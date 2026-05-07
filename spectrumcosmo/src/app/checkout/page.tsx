@@ -21,9 +21,7 @@ type PaymentOption = {
 type DeliveryMethod = {
   id: number;
   name: string;
-  logo_url: string | null;
   price: number;
-  is_active: boolean;
 };
 
 export default function CheckoutPage() {
@@ -41,7 +39,7 @@ export default function CheckoutPage() {
     phone: '',
     location: '',
     notes: '',
-    payment_method: 'tnm_mpamba',
+    payment_method: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,14 +48,10 @@ export default function CheckoutPage() {
     () => subtotalUsd * (rates[currency] ?? 1),
     [subtotalUsd, rates, currency]
   );
-
-  const deliveryFee = useMemo(() => {
-    const method = deliveryMethods.find(m => m.id === selectedDeliveryId);
-    return method?.price ?? 0;
-  }, [deliveryMethods, selectedDeliveryId]);
-
+  const deliveryFee = deliveryMethods.find(m => m.id === selectedDeliveryId)?.price || 0;
   const total = subtotal + deliveryFee;
 
+  // Load payment options and delivery methods
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -68,25 +62,28 @@ export default function CheckoutPage() {
 
         if (payRes.ok) {
           const data = await payRes.json();
-          setPaymentOptions(data.filter((opt: PaymentOption) => opt.is_active));
+          const active = data.filter((opt: PaymentOption) => opt.is_active);
+          setPaymentOptions(active);
+          if (active.length) setForm(f => ({ ...f, payment_method: active[0].name }));
         } else {
           console.error('Payment options failed', payRes.status);
         }
 
         if (delRes.ok) {
           const data = await delRes.json();
-          const safeData = data.map((m: any) => ({
-            ...m,
+          const safe = data.map((m: any) => ({
             id: Number(m.id),
+            name: m.name,
             price: Number(m.price),
           }));
-          setDeliveryMethods(safeData);
-          if (safeData.length) {
-            setSelectedDeliveryId(safeData[0].id);
-            console.log('Initial delivery ID set to:', safeData[0].id);
-          }
+          setDeliveryMethods(safe);
+          if (safe.length) setSelectedDeliveryId(safe[0].id);
         } else {
           console.error('Delivery methods failed', delRes.status);
+          // Fallback in case API fails
+          const fallback = [{ id: 1, name: 'Standard Delivery', price: 1500 }];
+          setDeliveryMethods(fallback);
+          setSelectedDeliveryId(1);
         }
       } catch (err) {
         console.error('Failed to load options', err);
@@ -105,6 +102,7 @@ export default function CheckoutPage() {
     if (items.length === 0) return setError('Cart is empty');
     if (!form.name || !form.email || !form.phone || !form.location)
       return setError('Fill in name, email, phone, and location');
+    if (!form.payment_method) return setError('Select a payment method');
 
     setLoading(true);
 
@@ -166,6 +164,7 @@ export default function CheckoutPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <form onSubmit={handleCheckout} className="bg-white p-6 rounded-2xl border space-y-4">
+              {/* Customer details */}
               <input
                 type="text"
                 placeholder="Full Name"
@@ -206,28 +205,23 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods */}
+              {/* Delivery Methods (Dropdown – guaranteed to work) */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 {deliveryMethods.length === 0 ? (
                   <p className="text-xs text-gray-400">Loading delivery options...</p>
                 ) : (
-                  deliveryMethods.map(m => (
-                    <label key={m.id} className="flex items-center gap-2 text-sm mb-1 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="delivery"
-                        value={m.id}
-                        checked={selectedDeliveryId === m.id}
-                        onChange={() => {
-                          console.log('Selected delivery ID:', m.id);
-                          setSelectedDeliveryId(m.id);
-                        }}
-                        className="cursor-pointer"
-                      />
-                      <span>{m.name} – {m.price.toLocaleString()} MWK</span>
-                    </label>
-                  ))
+                  <select
+                    value={selectedDeliveryId ?? ''}
+                    onChange={(e) => setSelectedDeliveryId(Number(e.target.value))}
+                    className="w-full border rounded-xl px-3 py-2"
+                  >
+                    {deliveryMethods.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} – {m.price.toLocaleString()} MWK
+                      </option>
+                    ))}
+                  </select>
                 )}
               </div>
 
@@ -239,19 +233,21 @@ export default function CheckoutPage() {
                 ) : paymentOptions.length === 0 ? (
                   <p className="text-xs text-gray-400">No payment methods available.</p>
                 ) : (
-                  paymentOptions.map(opt => (
-                    <label key={opt.id} className="flex items-center gap-2 text-sm mb-1 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value={opt.name}
-                        checked={form.payment_method === opt.name}
-                        onChange={() => setForm(p => ({ ...p, payment_method: opt.name }))}
-                        className="cursor-pointer"
-                      />
-                      <span>{opt.name}</span>
-                    </label>
-                  ))
+                  <div className="space-y-2">
+                    {paymentOptions.map(opt => (
+                      <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="payment_method"
+                          value={opt.name}
+                          checked={form.payment_method === opt.name}
+                          onChange={() => setForm(p => ({ ...p, payment_method: opt.name }))}
+                          className="cursor-pointer"
+                        />
+                        <span>{opt.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -267,24 +263,21 @@ export default function CheckoutPage() {
               {error && <div className="text-red-600 bg-red-50 p-2 rounded">{error}</div>}
             </form>
 
+            {/* Order Summary */}
             <div className="bg-white p-6 rounded-2xl border h-fit">
               <h2 className="font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Items</span>
-                  <span>{items.length}</span>
+                  <span>Items</span> <span>{items.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatCurrencyAmount(subtotal, currency)}</span>
+                  <span>Subtotal</span> <span>{formatCurrencyAmount(subtotal, currency)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>{deliveryFee.toLocaleString()} MWK</span>
+                  <span>Delivery</span> <span>{deliveryFee.toLocaleString()} MWK</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrencyAmount(total, currency)}</span>
+                  <span>Total</span> <span>{formatCurrencyAmount(total, currency)}</span>
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
