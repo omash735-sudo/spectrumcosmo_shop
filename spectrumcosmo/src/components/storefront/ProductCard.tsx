@@ -9,6 +9,9 @@ import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 
 export default function ProductCard({ product }: { product: any }) {
+  // Early return if product is missing
+  if (!product) return null;
+
   const priceUsd = Number(product.price ?? 0);
   const { addItem } = useCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -83,17 +86,15 @@ export default function ProductCard({ product }: { product: any }) {
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
-      {/* Image container - compact for normal cards */}
-      <div className="relative aspect-[3/4] sm:aspect-square bg-gray-100 overflow-hidden">
+      <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
         <Link href={`/products/${product.id}`}>
           <Image
             src={product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'}
-            alt={product.name}
+            alt={product.name || 'Product'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </Link>
-        {/* Wishlist heart */}
         <button
           onClick={toggleWishlist}
           disabled={loadingWishlist}
@@ -102,7 +103,6 @@ export default function ProductCard({ product }: { product: any }) {
         >
           <Heart size={16} className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'} />
         </button>
-        {/* Category tag */}
         {product.category && (
           <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
             {product.category}
@@ -111,7 +111,7 @@ export default function ProductCard({ product }: { product: any }) {
       </div>
       <div className="p-2.5 sm:p-3">
         <Link href={`/products/${product.id}`}>
-          <h3 className="font-semibold text-gray-800 line-clamp-1 text-xs sm:text-sm">{product.name}</h3>
+          <h3 className="font-semibold text-gray-800 truncate text-xs sm:text-sm">{product.name || 'Unnamed Product'}</h3>
         </Link>
         {reviewCount > 0 && (
           <div className="flex items-center gap-1 mt-1">
@@ -125,7 +125,12 @@ export default function ProductCard({ product }: { product: any }) {
           </span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => addItem({ id: String(product.id), name: product.name, image_url: product.image_url, priceUsd })}
+              onClick={() => addItem({ 
+                id: String(product.id), 
+                name: product.name || 'Product', 
+                image_url: product.image_url, 
+                priceUsd 
+              })}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1 rounded-full transition"
               aria-label="Add to cart"
             >
