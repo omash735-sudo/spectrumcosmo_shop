@@ -51,13 +51,14 @@ export default function CheckoutPage() {
     [subtotalUsd, rates, currency]
   );
 
-  // Ensure delivery fee is a number (parseFloat as safety)
+  // Ensure delivery fee is a number (never NaN)
   const deliveryFee = useMemo(() => {
     const method = deliveryMethods.find(m => m.id === selectedDeliveryId);
-    return method ? Number(method.price) : 0;
+    const fee = method?.price ?? 0;
+    return typeof fee === 'number' && !isNaN(fee) ? fee : 0;
   }, [deliveryMethods, selectedDeliveryId]);
 
-  const total = subtotal + deliveryFee; // both numbers, no string concatenation
+  const total = subtotal + deliveryFee;
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -70,16 +71,17 @@ export default function CheckoutPage() {
         if (payRes.ok) {
           const data = await payRes.json();
           setPaymentOptions(data.filter((opt: PaymentOption) => opt.is_active));
-        } else {
-          console.error('Payment options failed', payRes.status);
         }
-
         if (delRes.ok) {
           const data = await delRes.json();
-          setDeliveryMethods(data);
-          if (data.length) setSelectedDeliveryId(data[0].id);
-        } else {
-          console.error('Delivery methods failed', delRes.status);
+          // Ensure each delivery method has price as number and id as number
+          const safeData = data.map((m: any) => ({
+            ...m,
+            id: Number(m.id),
+            price: Number(m.price),
+          }));
+          setDeliveryMethods(safeData);
+          if (safeData.length) setSelectedDeliveryId(safeData[0].id);
         }
       } catch (err) {
         console.error('Failed to load options', err);
@@ -105,10 +107,16 @@ export default function CheckoutPage() {
       const mappedItems = items.map(item => ({
         id: item.id,
         name: item.name,
-        quantity: item.quantity,
-        price_usd: item.priceUsd ?? 0,
+        quantity: Number(item.quantity),
+        price_usd: Number(item.priceUsd ?? 0),
         custom_details: item.custom_details || null,
       }));
+
+      // Safely convert delivery method ID and fee
+      const deliveryMethodId = selectedDeliveryId ? Number(selectedDeliveryId) : null;
+      const safeDeliveryFee = typeof deliveryFee === 'number' && !isNaN(deliveryFee) ? deliveryFee : 0;
+
+      console.log('Sending order:', { deliveryMethodId, safeDeliveryFee }); // debug
 
       const res = await fetch('/api/orders/create', {
         method: 'POST',
@@ -121,9 +129,9 @@ export default function CheckoutPage() {
           notes: form.notes,
           payment_method: form.payment_method,
           items: mappedItems,
-          total_amount: total,
-          delivery_method_id: selectedDeliveryId,
-          delivery_fee: deliveryFee,
+          total_amount: Number(total),
+          delivery_method_id: deliveryMethodId,
+          delivery_fee: safeDeliveryFee,
         }),
       });
 
@@ -212,7 +220,6 @@ export default function CheckoutPage() {
                         onChange={() => setSelectedDeliveryId(m.id)}
                       />
                       {m.name} – {m.price.toLocaleString()} MWK
-                      {m.logo_url && <img src={m.logo_url} alt={m.name} className="w-6 h-6 ml-2" />}
                     </label>
                   ))
                 )}
