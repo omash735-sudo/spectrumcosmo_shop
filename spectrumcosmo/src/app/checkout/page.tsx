@@ -43,7 +43,6 @@ export default function CheckoutPage() {
   const deliveryFee = 1500
   const total = subtotal + deliveryFee
 
-  // Fetch active payment options on mount
   useEffect(() => {
     const fetchPaymentOptions = async () => {
       try {
@@ -77,6 +76,17 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
+      // CRITICAL FIX: map priceUsd → price_usd, fallback to 0
+      const mappedItems = items.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price_usd: item.priceUsd ?? 0,   // ← the fix
+        custom_details: item.custom_details || null,
+      }))
+
+      console.log('Sending items:', mappedItems) // debug
+
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,13 +96,7 @@ export default function CheckoutPage() {
           location: form.location,
           notes: form.notes,
           payment_method: form.payment_method,
-          items: items.map(item => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price_usd: item.price_usd,
-            custom_details: item.custom_details || null,
-          })),
+          items: mappedItems,
           total_amount: total,
         }),
       })
@@ -130,7 +134,6 @@ export default function CheckoutPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Order Form */}
             <form onSubmit={handleCheckout} className="bg-white p-6 rounded-2xl border space-y-4">
               <input
                 type="text"
@@ -211,7 +214,6 @@ export default function CheckoutPage() {
               )}
             </form>
 
-            {/* Order Summary */}
             <div className="bg-white p-6 rounded-2xl border h-fit">
               <h2 className="font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
