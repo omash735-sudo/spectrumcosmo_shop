@@ -9,9 +9,6 @@ import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 
 export default function ProductCard({ product }: { product: any }) {
-  // Early return if product is missing
-  if (!product) return null;
-
   const priceUsd = Number(product.price ?? 0);
   const { addItem } = useCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -19,6 +16,7 @@ export default function ProductCard({ product }: { product: any }) {
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
 
+  // Check if product is in wishlist
   useEffect(() => {
     const checkWishlist = async () => {
       try {
@@ -36,6 +34,7 @@ export default function ProductCard({ product }: { product: any }) {
     };
     checkWishlist();
 
+    // Fetch rating
     fetch(`/api/reviews?product_id=${product.id}`)
       .then(res => res.json())
       .then(data => {
@@ -52,6 +51,7 @@ export default function ProductCard({ product }: { product: any }) {
     e.preventDefault();
     e.stopPropagation();
 
+    // Check if user is logged in
     const userRes = await fetch('/api/auth/me');
     if (!userRes.ok) {
       alert('Please login to add items to wishlist');
@@ -62,6 +62,7 @@ export default function ProductCard({ product }: { product: any }) {
     setLoadingWishlist(true);
     try {
       if (isWishlisted) {
+        // Remove from wishlist
         await fetch('/api/account/wishlist', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -69,6 +70,7 @@ export default function ProductCard({ product }: { product: any }) {
         });
         setIsWishlisted(false);
       } else {
+        // Add to wishlist
         await fetch('/api/account/wishlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -86,62 +88,64 @@ export default function ProductCard({ product }: { product: any }) {
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
-      <div className="relative h-48 sm:h-56 bg-gray-100 overflow-hidden">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-50">
         <Link href={`/products/${product.id}`}>
           <Image
             src={product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'}
-            alt={product.name || 'Product'}
+            alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </Link>
+        {/* Wishlist heart button */}
         <button
           onClick={toggleWishlist}
           disabled={loadingWishlist}
-          className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50"
+          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
-          <Heart size={16} className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'} />
+          <Heart
+            size={18}
+            className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}
+          />
         </button>
+        {/* Category tag */}
         {product.category && (
-          <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
+          <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm">
             {product.category}
           </span>
         )}
       </div>
-      <div className="p-2.5 sm:p-3">
+      <div className="p-3 sm:p-4">
         <Link href={`/products/${product.id}`}>
-          <h3 className="font-semibold text-gray-800 truncate text-xs sm:text-sm">{product.name || 'Unnamed Product'}</h3>
+          <h3 className="font-semibold text-gray-800 line-clamp-1 text-sm sm:text-base">
+            {product.name}
+          </h3>
         </Link>
         {reviewCount > 0 && (
           <div className="flex items-center gap-1 mt-1">
-            <StarRating rating={avgRating} size={12} />
-            <span className="text-[10px] sm:text-xs text-gray-500">({reviewCount})</span>
+            <StarRating rating={avgRating} size={14} />
+            <span className="text-xs text-gray-500">({reviewCount})</span>
           </div>
         )}
-        <div className="mt-1.5 flex items-center justify-between">
-          <span className="text-sm sm:text-base font-bold text-[#F97316]">
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-lg sm:text-xl font-bold text-[#F97316]">
             <CurrencyPrice amountUsd={priceUsd} />
           </span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => addItem({ 
-                id: String(product.id), 
-                name: product.name || 'Product', 
-                image_url: product.image_url, 
-                priceUsd 
-              })}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1 rounded-full transition"
+              onClick={() => addItem({ id: String(product.id), name: product.name, image_url: product.image_url, priceUsd })}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-full transition"
               aria-label="Add to cart"
             >
-              <Plus size={14} />
+              <Plus size={16} />
             </button>
             <Link
               href={`/products/${product.id}`}
-              className="bg-[#F97316] hover:bg-orange-600 text-white p-1 rounded-full transition"
+              className="bg-[#F97316] hover:bg-orange-600 text-white p-1.5 rounded-full transition"
               aria-label="Buy now"
             >
-              <ShoppingCart size={14} />
+              <ShoppingCart size={16} />
             </Link>
           </div>
         </div>
