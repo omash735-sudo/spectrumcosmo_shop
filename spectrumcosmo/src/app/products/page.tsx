@@ -50,7 +50,12 @@ export default async function ProductsPage({
         baseQuery = sql`SELECT * FROM products WHERE category=${params.category} AND name ILIKE ${'%' + params.q + '%'} ORDER BY created_at DESC`;
       }
     }
-    products = await baseQuery;
+    const rawProducts = await baseQuery;
+    // Ensure every product has a price (fallback to 0)
+    products = rawProducts.map((p: any) => ({
+      ...p,
+      price: p.price ?? 0,
+    }));
   } catch (err) {
     console.error(err);
   }
