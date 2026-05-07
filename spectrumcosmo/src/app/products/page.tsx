@@ -8,8 +8,6 @@ import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import { getDb } from '@/lib/db';
 import { Search } from 'lucide-react';
 
-const CATEGORIES = ['All', 'T-Shirts', 'Hoodies', 'Pendants', 'Bracelets'];
-
 const carouselSlides = [
   {
     id: 1,
@@ -37,17 +35,62 @@ export default async function ProductsPage({
   searchParams: Promise<{ category?: string; q?: string }>;
 }) {
   const params = await searchParams;
+  
+  const sql = getDb();
+  
+  // Fetch categories dynamically from database
+  let categories = [];
+  try {
+    categories = await sql`
+      SELECT name, slug FROM categories WHERE is_active = true ORDER BY sort_order ASC
+    `;
+  } catch (err) {
+    console.error('Failed to fetch categories:', err);
+    // Fallback to default categories if table doesn't exist yet
+    categories = [];
+  }
+  
+  const categoryNames = ['All', ...categories.map((c: any) => c.name)];
+  
+  // Build product query - only show in_stock products to users
   let products: any[] = [];
   try {
-    const sql = getDb();
-    let baseQuery = params.q
-      ? sql`SELECT * FROM products WHERE name ILIKE ${'%' + params.q + '%'} ORDER BY created_at DESC`
-      : sql`SELECT * FROM products ORDER BY created_at DESC`;
+    let baseQuery;
+    
+    if (params.q) {
+      baseQuery = sql`
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.name ILIKE ${'%' + params.q + '%'} AND p.status = 'in_stock'
+        ORDER BY p.created_at DESC
+      `;
+    } else {
+      baseQuery = sql`
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'in_stock'
+        ORDER BY p.created_at DESC
+      `;
+    }
 
     if (params.category && params.category !== 'All') {
-      baseQuery = sql`SELECT * FROM products WHERE category=${params.category} ORDER BY created_at DESC`;
+      baseQuery = sql`
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE c.name = ${params.category} AND p.status = 'in_stock'
+        ORDER BY p.created_at DESC
+      `;
       if (params.q) {
-        baseQuery = sql`SELECT * FROM products WHERE category=${params.category} AND name ILIKE ${'%' + params.q + '%'} ORDER BY created_at DESC`;
+        baseQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${params.category} AND p.name ILIKE ${'%' + params.q + '%'} AND p.status = 'in_stock'
+          ORDER BY p.created_at DESC
+        `;
       }
     }
     products = await baseQuery;
@@ -82,18 +125,18 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Category filters */}
+          {/* Category filters - dynamic from database */}
           <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-6 sm:mb-8 md:mx-0 md:px-0 md:overflow-visible">
             <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
-              {CATEGORIES.map((cat) => {
+              {categoryNames.map((cat) => {
                 const isActive = (!params.category && cat === 'All') || params.category === cat;
                 const href = params.q
                   ? cat === 'All'
                     ? `/products?q=${encodeURIComponent(params.q)}`
-                    : `/products?category=${cat}&q=${encodeURIComponent(params.q)}`
+                    : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`
                   : cat === 'All'
                   ? '/products'
-                  : `/products?category=${cat}`;
+                  : `/products?category=${encodeURIComponent(cat)}`;
                 return (
                   <a
                     key={cat}
