@@ -28,10 +28,11 @@ export default function CheckoutPage() {
   const [loadingOptions, setLoadingOptions] = useState(true)
   const [form, setForm] = useState({
     name: '',
+    email: '',           // added email field
     phone: '',
     location: '',
     notes: '',
-    payment_method: 'tnm_mpamba', // default fallback
+    payment_method: 'tnm_mpamba',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -68,30 +69,28 @@ export default function CheckoutPage() {
       setError('Cart is empty')
       return
     }
-    if (!form.name || !form.phone || !form.location) {
-      setError('Please fill in name, phone number, and location')
+    if (!form.name || !form.email || !form.phone || !form.location) {
+      setError('Please fill in name, email, phone number, and location')
       return
     }
 
     setLoading(true)
 
     try {
-      // CRITICAL FIX: map priceUsd → price_usd, fallback to 0
       const mappedItems = items.map(item => ({
         id: item.id,
         name: item.name,
         quantity: item.quantity,
-        price_usd: item.priceUsd ?? 0,   // ← the fix
+        price_usd: item.priceUsd ?? 0,
         custom_details: item.custom_details || null,
       }))
-
-      console.log('Sending items:', mappedItems) // debug
 
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customer_name: form.name,
+          customer_email: form.email,   // added
           phone_number: form.phone,
           location: form.location,
           notes: form.notes,
@@ -112,6 +111,7 @@ export default function CheckoutPage() {
 
       const order = await res.json()
       clearCart()
+      // Redirect to a payment upload page (you can also show a success modal)
       router.push(`/checkout/payment?orderId=${order.id}`)
     } catch (err: any) {
       console.error('Checkout error:', err)
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
           <div className="bg-white p-6 rounded-2xl border mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Secure Checkout</h1>
             <p className="text-sm text-gray-500">
-              Place your order – you’ll be guided to upload payment proof
+              Place your order – an invoice will be sent to your email. You'll be guided to upload payment proof.
             </p>
           </div>
 
@@ -141,6 +141,14 @@ export default function CheckoutPage() {
                 placeholder="Full Name"
                 value={form.name}
                 onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                required
+              />
+              <input
+                type="email"
+                className="w-full border rounded-xl px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                placeholder="Email Address (for invoice)"
+                value={form.email}
+                onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))}
                 required
               />
               <input
@@ -235,7 +243,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
-                After placing the order, you will be redirected to upload your payment proof.
+                After placing the order, you will be redirected to upload your payment proof. An invoice will be sent to your email.
               </p>
             </div>
           </div>
