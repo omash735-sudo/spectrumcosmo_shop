@@ -6,7 +6,7 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
 
-// Your 10 images for the carousel
+// Carousel images (your 10 images)
 const images = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470830/zenitsu-agatsuma-3840x2160-24356_g79imh.jpg',
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470912/chisa-wuthering-5120x2880-24840_flwmaf.jpg',
@@ -20,7 +20,6 @@ const images = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777470897/japan-artistic-5120x2880-25406_yboawj.jpg',
 ];
 
-// Build slides array for HeroCarousel – same image repeated but different id, same title
 const carouselSlides = images.map((img, idx) => ({
   id: idx + 1,
   image: img,
@@ -42,32 +41,42 @@ export default function ContactPage() {
     contactNumber: '',
     message: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.fullName || !form.email || !form.contactNumber || !form.message) {
       alert('Please fill all fields');
       return;
     }
-    console.log('Contact form:', form);
-    alert(`Thanks ${form.fullName}, we will get back to you soon.`);
-    setForm({
-      fullName: '',
-      email: '',
-      contactNumber: '',
-      message: '',
-    });
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Submission failed');
+      alert(`Thanks ${form.fullName}, we will get back to you soon.`);
+      setForm({ fullName: '', email: '', contactNumber: '', message: '' });
+    } catch (err: any) {
+      console.error(err);
+      alert('Something went wrong. Please try again later.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-50">
-        {/* Hero Carousel with orange text */}
         <HeroCarousel slides={carouselSlides} textColor="#F97316" autoplayDelay={5000} />
 
         <div className="max-w-5xl mx-auto px-4 py-12">
@@ -112,9 +121,10 @@ export default function ContactPage() {
               />
               <button
                 type="submit"
-                className="w-full bg-[#F97316] text-white py-3 rounded hover:bg-orange-600 transition"
+                disabled={submitting}
+                className="w-full bg-[#F97316] text-white py-3 rounded hover:bg-orange-600 transition disabled:opacity-50"
               >
-                Submit
+                {submitting ? 'Sending...' : 'Submit'}
               </button>
             </form>
           </div>
