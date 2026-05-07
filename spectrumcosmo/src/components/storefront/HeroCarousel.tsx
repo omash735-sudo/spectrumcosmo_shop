@@ -7,35 +7,31 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import Image from 'next/image';
 
-const slides = [
-  {
-    id: 1,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg',
-    title: 'Anime Apparel',
-    subtitle: 'Wear your passion',
-  },
-  {
-    id: 2,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775346088/WhatsApp_Image_2026-04-03_at_16.15.20_bgw3gq.jpg',
-    title: 'Exclusive Hoodies',
-    subtitle: 'Limited collection',
-  },
-  {
-    id: 3,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775339426/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
-    title: 'Signature Pendants',
-    subtitle: 'Complete your look',
-  },
-];
+type Slide = {
+  id: number;
+  image: string;
+  title: string;
+  subtitle?: string;
+};
 
-export default function HeroCarousel() {
+interface HeroCarouselProps {
+  slides: Slide[];
+  textColor?: string; // e.g., '#F97316' or 'text-orange-500'
+  autoplayDelay?: number;
+}
+
+export default function HeroCarousel({
+  slides,
+  textColor = '#F97316',
+  autoplayDelay = 5000,
+}: HeroCarouselProps) {
   return (
     <div className="relative w-full overflow-hidden">
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         spaceBetween={0}
         slidesPerView={1}
-        autoplay={{ delay: 5000, disableOnInteraction: false }}
+        autoplay={{ delay: autoplayDelay, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         navigation
         loop={true}
@@ -52,22 +48,25 @@ export default function HeroCarousel() {
                 priority={slide.id === 1}
                 sizes="100vw"
               />
-              {/* Gradient overlay for text readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-              <div className="absolute bottom-8 left-0 right-0 text-center text-white px-4">
-                <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold drop-shadow-lg">
+              <div className="absolute bottom-8 left-0 right-0 text-center px-4">
+                <h2
+                  className="text-3xl sm:text-5xl md:text-6xl font-bold drop-shadow-lg"
+                  style={{ color: textColor }}
+                >
                   {slide.title}
                 </h2>
-                <p className="text-base sm:text-xl md:text-2xl mt-2 drop-shadow">
-                  {slide.subtitle}
-                </p>
+                {slide.subtitle && (
+                  <p className="text-base sm:text-xl md:text-2xl mt-2 drop-shadow text-white">
+                    {slide.subtitle}
+                  </p>
+                )}
               </div>
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
 
-      {/* Custom styles for pagination and navigation */}
       <style jsx global>{`
         .swiper-button-next,
         .swiper-button-prev {
@@ -98,7 +97,7 @@ export default function HeroCarousel() {
         @media (max-width: 640px) {
           .swiper-button-next,
           .swiper-button-prev {
-            display: none; /* hide arrows on mobile, use pagination dots instead */
+            display: none;
           }
         }
       `}</style>
