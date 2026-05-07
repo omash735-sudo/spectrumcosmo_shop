@@ -9,30 +9,33 @@ export async function GET(
     const { orderId } = params;
     const sql = getDb();
 
-    // 1. Log the ID
-    console.log('🔍 Searching for orderId:', orderId);
-
-    // 2. Get all orders (limit 5) to verify connection
-    const allOrders = await sql`SELECT id::text, customer_name FROM orders LIMIT 5`;
-    console.log('📦 Existing orders:', allOrders);
-
-    // 3. Try to find the specific order
-    const result = await sql`
-      SELECT id::text, customer_name, total_amount, status
+    // Use text comparison (no UUID cast)
+    const orders = await sql`
+      SELECT 
+        id::text, 
+        customer_name, 
+        phone_number, 
+        delivery_address,
+        payment_method, 
+        total_amount, 
+        status, 
+        created_at,
+        proof_of_payment, 
+        payment_note
       FROM orders
       WHERE id::text = ${orderId}
     `;
 
-    if (!result || result.length === 0) {
-      return NextResponse.json({ 
-        error: 'Order not found', 
-        requestedId: orderId,
-        existingIds: allOrders.map(o => o.id)
-      }, { status: 404 });
+    if (!orders || orders.length === 0) {
+      // Optional: log existing IDs for debugging
+      const existing = await sql`SELECT id::text FROM orders LIMIT 5`;
+      console.log('Order not found. Existing IDs:', existing.map(o => o.id));
+      return NextResponse.json({ error: 'Order not found', requestedId: orderId }, { status: 404 });
     }
 
-    // Return full order + items
-    const order = result[0];
+    const order = orders[0];
+
+    // Fetch items (if table exists)
     let items = [];
     try {
       items = await sql`
@@ -40,11 +43,13 @@ export async function GET(
         FROM order_items
         WHERE order_id::text = ${orderId}
       `;
-    } catch (e) {}
+    } catch (err) {
+      console.warn('Could not fetch order_items', err);
+    }
 
     return NextResponse.json({ ...order, items });
   } catch (err: any) {
-    console.error('🔥 API error:', err);
+    console.error('Fetch order error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
