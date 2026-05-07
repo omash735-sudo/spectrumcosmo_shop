@@ -23,9 +23,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // ---------- SAFE NUMBER CONVERSIONS ----------
+    // Total amount
+    const safeTotal = Number(total_amount);
+    if (isNaN(safeTotal)) {
+      return NextResponse.json({ error: 'Invalid total_amount' }, { status: 400 });
+    }
+
+    // Delivery method ID: must be integer or null
+    let safeDeliveryMethodId = delivery_method_id !== undefined && delivery_method_id !== null
+      ? Number(delivery_method_id)
+      : null;
+    if (safeDeliveryMethodId !== null && isNaN(safeDeliveryMethodId)) {
+      console.warn('Invalid delivery_method_id, setting to null');
+      safeDeliveryMethodId = null;
+    }
+
+    // Delivery fee: must be number, default to 0
+    let safeDeliveryFee = Number(delivery_fee);
+    if (isNaN(safeDeliveryFee)) {
+      console.warn('Invalid delivery_fee, setting to 0');
+      safeDeliveryFee = 0;
+    }
+
     const sql = getDb();
 
-    // Insert order – set user_id to NULL (to avoid UUID/int mismatch) and cast delivery_method_id to integer
+    // Insert order
     const [order] = await sql`
       INSERT INTO orders (
         customer_name, customer_email, phone_number, delivery_address,
@@ -33,10 +56,9 @@ export async function POST(req: NextRequest) {
         delivery_method_id, delivery_fee
       ) VALUES (
         ${customer_name}, ${customer_email}, ${phone_number}, ${location},
-        ${notes || ''}, ${payment_method}, ${total_amount}, 'pending',
+        ${notes || ''}, ${payment_method}, ${safeTotal}, 'pending',
         NULL, NOW(),
-        ${delivery_method_id ? Number(delivery_method_id) : null}, 
-        ${delivery_fee ? Number(delivery_fee) : 0}
+        ${safeDeliveryMethodId}, ${safeDeliveryFee}
       )
       RETURNING id::text
     `;
@@ -45,23 +67,27 @@ export async function POST(req: NextRequest) {
 
     // Insert order items
     for (const item of items) {
-      const unitPriceUsd = item.price_usd ?? 0;
-      const subtotalUsd = item.quantity * unitPriceUsd;
+      let unitPriceUsd = Number(item.price_usd);
+      if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
+      const quantity = Number(item.quantity);
+      if (isNaN(quantity)) continue; // skip invalid item
+      const subtotalUsd = quantity * unitPriceUsd;
+
       await sql`
         INSERT INTO order_items (
           order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
         ) VALUES (
-          ${order.id}::uuid, ${item.name}, ${item.quantity}, ${unitPriceUsd}, ${subtotalUsd},
+          ${order.id}::uuid, ${item.name}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
           ${item.custom_details || null}
         )
       `;
     }
 
-    // Send invoice email (optional)
+    // Send invoice email (unchanged, but keep for completeness)
     const orderItemsHtml = items.map(item => `
       <tr>
         <td style="padding:8px; border-bottom:1px solid #eee;">${item.name} x ${item.quantity}</td>
-        <td style="padding:8px; border-bottom:1px solid #eee;">MWK ${(item.price_usd * item.quantity).toLocaleString()}</td>
+        <td style="padding:8px; border-bottom:1px solid #eee;">MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</td>
       </tr>
     `).join('');
 
@@ -75,7 +101,7 @@ export async function POST(req: NextRequest) {
           <p>Hi <strong>${customer_name}</strong>,</p>
           <p>Thank you for your order! Details below:</p>
           <table style="width:100%; border-collapse:collapse;">${orderItemsHtml}</table>
-          <p><strong>Total Amount:</strong> MWK ${total_amount.toLocaleString()}</p>
+          <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
           <p><strong>Payment Method:</strong> ${payment_method}</p>
           <p><strong>Delivery Address:</strong> ${location}</p>
           <p><strong>Estimated Delivery:</strong> 3–5 business days after payment verification.</p>
@@ -88,11 +114,15 @@ export async function POST(req: NextRequest) {
     await sendMail({
       to: customer_email,
       subject: `Order Confirmation #${order.id.slice(-8)}`,
-      text: `Your order total MWK ${total_amount.toLocaleString()}. Track at ${process.env.NEXT_PUBLIC_APP_URL}/account/tracking?order=${order.id}`,
+      text: `Your order total MWK ${safeTotal.toLocaleString()}. Track at ${process.env.NEXT_PUBLIC_APP_URL}/account/tracking?order=${order.id}`,
       html: invoiceHtml,
     }).catch(err => console.error('Email failed:', err));
 
-    return NextResponse.json({ success: true, id: order.id, total_amount });
+    return NextResponse.json({
+      success: true,
+      id: order.id,
+      total_amount: safeTotal,
+    });
   } catch (err: any) {
     console.error('Order creation error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
