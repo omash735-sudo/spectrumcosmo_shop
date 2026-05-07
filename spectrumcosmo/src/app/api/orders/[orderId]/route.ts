@@ -9,12 +9,10 @@ export async function GET(
     const { orderId } = params;
     const sql = getDb();
 
-    // Query using text comparison (most reliable)
     const [order] = await sql`
       SELECT 
-        id, customer_name, phone_number, delivery_address,
-        payment_method, total_amount, status, created_at,
-        proof_of_payment, payment_note
+        id, customer_name, phone_number, delivery_address, payment_method,
+        total_amount, status, created_at, proof_of_payment, payment_note
       FROM orders
       WHERE id::text = ${orderId}
     `;
@@ -23,7 +21,6 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Fetch items (if table exists)
     let items = [];
     try {
       items = await sql`
@@ -32,7 +29,7 @@ export async function GET(
         WHERE order_id::text = ${orderId}
       `;
     } catch {
-      // ignore – items table might not exist yet
+      // ignore
     }
 
     return NextResponse.json({ ...order, items });
