@@ -1,120 +1,122 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2, Upload, AlertCircle } from 'lucide-react'
-import Image from 'next/image'
-import Navbar from '@/components/storefront/Navbar'
-import Footer from '@/components/storefront/Footer'
+import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Loader2, Upload, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 
 type OrderItem = {
-  product_name: string
-  quantity: number
-  unit_price_usd: number
-  custom_details?: string
-}
+  product_name: string;
+  quantity: number;
+  unit_price_usd: number;
+  custom_details?: string;
+};
 
 type Order = {
-  id: string
-  customer_name: string
-  phone_number: string
-  delivery_address: string
-  payment_method: string
-  total_amount: number
-  status: string
-  created_at: string
-  proof_of_payment?: string
-  payment_note?: string
-  items: OrderItem[]
-}
+  id: string;
+  customer_name: string;
+  phone_number: string;
+  delivery_address: string;
+  payment_method: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  proof_of_payment?: string;
+  payment_note?: string;
+  items: OrderItem[];
+};
 
 type PaymentOption = {
-  id: string
-  type: string
-  name: string
-  logo_url: string
-  account_number: string
-  is_active: boolean
-}
+  id: string;
+  type: string;
+  name: string;
+  logo_url: string;
+  account_number: string;
+  is_active: boolean;
+};
 
 export default function PaymentContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const orderId = searchParams.get('orderId')
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const orderId = searchParams.get('orderId');
 
-  const [order, setOrder] = useState<Order | null>(null)
-  const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([])
-  const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [proofFile, setProofFile] = useState<File | null>(null)
-  const [note, setNote] = useState('')
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [order, setOrder] = useState<Order | null>(null);
+  const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [note, setNote] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!orderId) {
-      setMessage({ type: 'error', text: 'No order specified. Please return to checkout.' })
-      setLoading(false)
-      return
+      setMessage({ type: 'error', text: 'No order specified. Please return to checkout.' });
+      setLoading(false);
+      return;
     }
 
-    async function load() {
+    const load = async () => {
       try {
         const [orderRes, optsRes] = await Promise.all([
           fetch(`/api/orders/${orderId}`),
           fetch('/api/payment-options'),
-        ])
+        ]);
 
         if (!orderRes.ok) {
-          const errorData = await orderRes.json().catch(() => ({}))
-          throw new Error(errorData.error || `HTTP ${orderRes.status}`)
+          const errorData = await orderRes.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${orderRes.status}`);
         }
 
-        const orderData = await orderRes.json()
-        setOrder(orderData)
+        const orderData = await orderRes.json();
+        setOrder(orderData);
 
         if (optsRes.ok) {
-          const opts = await optsRes.json()
-          setPaymentOptions(opts.filter((opt: PaymentOption) => opt.is_active))
+          const opts = await optsRes.json();
+          setPaymentOptions(opts.filter((opt: PaymentOption) => opt.is_active));
         }
       } catch (err: any) {
-        console.error('Load error:', err)
-        setMessage({ type: 'error', text: err.message || 'Failed to load order details.' })
+        console.error('Load error:', err);
+        setMessage({ type: 'error', text: err.message || 'Failed to load order details.' });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    load()
-  }, [orderId])
+    load();
+  }, [orderId]);
 
   const uploadProof = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!order || !proofFile) {
-      setMessage({ type: 'error', text: 'Please select a file' })
-      return
+      setMessage({ type: 'error', text: 'Please select a file' });
+      return;
     }
-    setUploading(true)
-    setMessage(null)
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    setUploading(true);
+    setMessage(null);
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
     if (!cloudName || !uploadPreset) {
-      setMessage({ type: 'error', text: 'Cloudinary configuration missing.' })
-      setUploading(false)
-      return
+      setMessage({ type: 'error', text: 'Cloudinary configuration missing.' });
+      setUploading(false);
+      return;
     }
 
-    const formData = new FormData()
-    formData.append('file', proofFile)
-    formData.append('upload_preset', uploadPreset)
+    const formData = new FormData();
+    formData.append('file', proofFile);
+    formData.append('upload_preset', uploadPreset);
 
     try {
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
-      })
-      const uploadData = await uploadRes.json()
-      if (!uploadData.secure_url) throw new Error('Image upload failed')
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url) throw new Error('Image upload failed');
 
       const updateRes = await fetch('/api/account/orders', {
         method: 'PATCH',
@@ -124,17 +126,17 @@ export default function PaymentContent() {
           proofOfPaymentUrl: uploadData.secure_url,
           paymentNote: note,
         }),
-      })
-      if (!updateRes.ok) throw new Error('Failed to save proof')
+      });
+      if (!updateRes.ok) throw new Error('Failed to save proof');
 
-      setMessage({ type: 'success', text: 'Proof submitted! Redirecting...' })
-      setTimeout(() => router.push('/thank-you'), 2000)
+      setMessage({ type: 'success', text: 'Proof submitted! Redirecting...' });
+      setTimeout(() => router.push('/thank-you'), 2000);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message })
+      setMessage({ type: 'error', text: err.message });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -145,7 +147,7 @@ export default function PaymentContent() {
         </main>
         <Footer />
       </>
-    )
+    );
   }
 
   if (!order) {
@@ -156,6 +158,7 @@ export default function PaymentContent() {
           <div className="max-w-md mx-auto bg-white rounded-xl p-6 shadow-sm">
             <AlertCircle className="text-red-500 w-12 h-12 mx-auto mb-3" />
             <p className="text-gray-700">Order not found.</p>
+            <p className="text-xs text-gray-500 mt-2 break-all">Order ID: {orderId || 'missing'}</p>
             <button
               onClick={() => router.push('/')}
               className="mt-4 text-orange-600 hover:underline"
@@ -166,16 +169,15 @@ export default function PaymentContent() {
         </main>
         <Footer />
       </>
-    )
+    );
   }
 
-  // Get the first product name (or join all)
-  const productNames = order.items.map(item => item.product_name).join(', ')
-  const displayProduct = productNames || order.customer_name || 'Order'
+  const productNames = order.items.map((i) => i.product_name).join(', ');
+  const displayProduct = productNames || order.customer_name || 'Order';
 
   const selectedOption = paymentOptions.find(
-    opt => opt.name === order.payment_method || opt.type === order.payment_method
-  )
+    (opt) => opt.name === order.payment_method || opt.type === order.payment_method
+  );
 
   return (
     <>
@@ -193,15 +195,24 @@ export default function PaymentContent() {
                 </h3>
                 <div className="flex items-center gap-3">
                   {selectedOption.logo_url && (
-                    <Image src={selectedOption.logo_url} alt={selectedOption.name} width={48} height={48} />
+                    <Image
+                      src={selectedOption.logo_url}
+                      alt={selectedOption.name}
+                      width={48}
+                      height={48}
+                    />
                   )}
                   <div>
                     <p className="text-sm text-amber-700">
                       Send the exact amount to:
-                      <strong className="block font-mono text-base mt-1">{selectedOption.account_number}</strong>
+                      <strong className="block font-mono text-base mt-1">
+                        {selectedOption.account_number}
+                      </strong>
                     </p>
                     {order.total_amount && (
-                      <p className="text-sm mt-2">Amount: <strong>MWK {order.total_amount.toLocaleString()}</strong></p>
+                      <p className="text-sm mt-2">
+                        Amount: <strong>MWK {order.total_amount.toLocaleString()}</strong>
+                      </p>
                     )}
                   </div>
                 </div>
@@ -210,7 +221,9 @@ export default function PaymentContent() {
 
             <form onSubmit={uploadProof} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Upload payment proof (screenshot/receipt)</label>
+                <label className="block text-sm font-medium mb-1">
+                  Upload payment proof (screenshot/receipt)
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -220,7 +233,9 @@ export default function PaymentContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Optional note (e.g., transaction reference)</label>
+                <label className="block text-sm font-medium mb-1">
+                  Optional note (e.g., transaction reference)
+                </label>
                 <textarea
                   rows={2}
                   className="w-full border rounded-xl p-2 text-sm"
@@ -229,7 +244,13 @@ export default function PaymentContent() {
                 />
               </div>
               {message && (
-                <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                <div
+                  className={`p-3 rounded-xl text-sm ${
+                    message.type === 'success'
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-red-50 text-red-700'
+                  }`}
+                >
                   {message.text}
                 </div>
               )}
@@ -238,7 +259,11 @@ export default function PaymentContent() {
                 disabled={uploading || !proofFile}
                 className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50"
               >
-                {uploading ? <Loader2 className="animate-spin inline mr-2 w-4 h-4" /> : <Upload size={16} className="inline mr-2" />}
+                {uploading ? (
+                  <Loader2 className="animate-spin inline mr-2 w-4 h-4" />
+                ) : (
+                  <Upload className="inline mr-2" size={16} />
+                )}
                 {uploading ? 'Submitting...' : 'Submit Payment Proof'}
               </button>
             </form>
@@ -251,5 +276,5 @@ export default function PaymentContent() {
       </main>
       <Footer />
     </>
-  )
+  );
 }
