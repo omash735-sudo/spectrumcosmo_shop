@@ -51,7 +51,6 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryMethods.find(m => m.id === selectedDeliveryId)?.price || 0;
   const total = subtotal + deliveryFee;
 
-  // Load payment options and delivery methods
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -80,7 +79,7 @@ export default function CheckoutPage() {
           if (safe.length) setSelectedDeliveryId(safe[0].id);
         } else {
           console.error('Delivery methods failed', delRes.status);
-          // Fallback in case API fails
+          // Fallback to a default method
           const fallback = [{ id: 1, name: 'Standard Delivery', price: 1500 }];
           setDeliveryMethods(fallback);
           setSelectedDeliveryId(1);
@@ -103,6 +102,7 @@ export default function CheckoutPage() {
     if (!form.name || !form.email || !form.phone || !form.location)
       return setError('Fill in name, email, phone, and location');
     if (!form.payment_method) return setError('Select a payment method');
+    if (!selectedDeliveryId) return setError('Select a delivery method');
 
     setLoading(true);
 
@@ -114,8 +114,6 @@ export default function CheckoutPage() {
         price_usd: Number(item.priceUsd ?? 0),
         custom_details: item.custom_details || null,
       }));
-
-      const deliveryMethodId = selectedDeliveryId ? Number(selectedDeliveryId) : null;
 
       const res = await fetch('/api/orders/create', {
         method: 'POST',
@@ -129,7 +127,7 @@ export default function CheckoutPage() {
           payment_method: form.payment_method,
           items: mappedItems,
           total_amount: Number(total),
-          delivery_method_id: deliveryMethodId,
+          delivery_method_id: Number(selectedDeliveryId),
           delivery_fee: Number(deliveryFee),
         }),
       });
@@ -164,7 +162,6 @@ export default function CheckoutPage() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <form onSubmit={handleCheckout} className="bg-white p-6 rounded-2xl border space-y-4">
-              {/* Customer details */}
               <input
                 type="text"
                 placeholder="Full Name"
@@ -205,23 +202,27 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods (Dropdown – guaranteed to work) */}
+              {/* Delivery Methods – Radio buttons (proven working) */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 {deliveryMethods.length === 0 ? (
                   <p className="text-xs text-gray-400">Loading delivery options...</p>
                 ) : (
-                  <select
-                    value={selectedDeliveryId ?? ''}
-                    onChange={(e) => setSelectedDeliveryId(Number(e.target.value))}
-                    className="w-full border rounded-xl px-3 py-2"
-                  >
+                  <div className="space-y-2">
                     {deliveryMethods.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} – {m.price.toLocaleString()} MWK
-                      </option>
+                      <label key={m.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="delivery_method"
+                          value={m.id}
+                          checked={selectedDeliveryId === m.id}
+                          onChange={() => setSelectedDeliveryId(m.id)}
+                          className="cursor-pointer"
+                        />
+                        <span>{m.name} – {m.price.toLocaleString()} MWK</span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 )}
               </div>
 
