@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { 
   Plus, Pencil, Trash2, X, Loader2, Package, Star, Upload,
-  CheckCircle, Clock, AlertCircle, Ban, Layers
+  CheckCircle, Clock, AlertCircle, Ban
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
@@ -41,13 +41,20 @@ export default function AdminProductsPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [productsRes, categoriesRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/categories'),
-    ]);
-    setProducts(await productsRes.json());
-    setCategories(await categoriesRes.json());
-    setLoading(false);
+    try {
+      const [productsRes, categoriesRes] = await Promise.all([
+        fetch('/api/products'),
+        fetch('/api/categories'),
+      ]);
+      const productsData = await productsRes.json();
+      const categoriesData = await categoriesRes.json();
+      setProducts(productsData);
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('Failed to fetch data', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -103,9 +110,15 @@ export default function AdminProductsPage() {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
+    if (!cloudName || !uploadPreset) {
+      setError('Cloudinary not configured');
+      setUploadingImage(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', uploadPreset!);
+    formData.append('upload_preset', uploadPreset);
 
     try {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
@@ -116,6 +129,8 @@ export default function AdminProductsPage() {
       if (data.secure_url) {
         setImagePreview(data.secure_url);
         setForm(p => ({ ...p, image_url: data.secure_url }));
+      } else {
+        throw new Error('Upload failed');
       }
     } catch (err) {
       setError('Image upload failed');
@@ -219,12 +234,16 @@ export default function AdminProductsPage() {
                           {p.image_url ? (
                             <Image src={p.image_url} alt={p.name} width={48} height={48} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center"><Package size={18} className="text-gray-300" /></div>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package size={18} className="text-gray-300" />
+                            </div>
                           )}
                         </div>
                         <div>
                           <p className="font-medium text-sm text-[#111111]">{p.name}</p>
-                          {p.description && <p className="text-xs text-gray-400 line-clamp-1 max-w-xs">{p.description}</p>}
+                          {p.description && (
+                            <p className="text-xs text-gray-400 line-clamp-1 max-w-xs">{p.description}</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -239,15 +258,21 @@ export default function AdminProductsPage() {
                         <span className="flex items-center gap-1 text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full w-fit">
                           <Star size={12} fill="currentColor" /> Featured
                         </span>
-                      ) : (<span className="text-xs text-gray-400">—</span>)}
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"><Pencil size={15} /></button>
-                        <button onClick={() => deleteProduct(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><Trash2 size={15} /></button>
+                        <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600">
+                          <Pencil size={15} />
+                        </button>
+                        <button onClick={() => deleteProduct(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500">
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </td>
-                  </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -261,28 +286,54 @@ export default function AdminProductsPage() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b">
               <h2 className="font-bold text-[#111111]">{editing ? 'Edit Product' : 'Add Product'}</h2>
-              <button onClick={() => setShowModal(false)}><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={18} />
+              </button>
             </div>
 
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
                 <label className="label">Product Name *</label>
-                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="input" />
+                <input
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  required
+                  className="input"
+                />
               </div>
 
               <div>
                 <label className="label">Description</label>
-                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} className="input" />
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  className="input"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Price (MWK) *</label>
-                  <input type="number" step="100" min="0" value={form.price_mwk} onChange={e => setForm(p => ({ ...p, price_mwk: e.target.value }))} required className="input" />
+                  <input
+                    type="number"
+                    step="100"
+                    min="0"
+                    value={form.price_mwk}
+                    onChange={e => setForm(p => ({ ...p, price_mwk: e.target.value }))}
+                    required
+                    className="input"
+                  />
                 </div>
                 <div>
                   <label className="label">Stock Quantity</label>
-                  <input type="number" min="0" value={form.stock_quantity} onChange={e => setForm(p => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))} className="input" />
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.stock_quantity}
+                    onChange={e => setForm(p => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))}
+                    className="input"
+                  />
                 </div>
               </div>
 
@@ -290,25 +341,50 @@ export default function AdminProductsPage() {
                 <div>
                   <label className="label">Category</label>
                   <div className="flex gap-2">
-                    <select value={form.category_id} onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))} className="input flex-1">
+                    <select
+                      value={form.category_id}
+                      onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))}
+                      className="input flex-1"
+                    >
                       <option value="">Select category</option>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
                     </select>
-                    <button type="button" onClick={() => setShowCategoryModal(true)} className="px-3 border rounded-xl hover:bg-gray-50"><Plus size={16} /></button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-3 border rounded-xl hover:bg-gray-50"
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
                 </div>
                 <div>
                   <label className="label">Status</label>
-                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="input">
-                    {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
+                    className="input"
+                  >
+                    {STATUS_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="label flex items-center gap-2"><Star size={14} /> Featured Product</label>
+                <label className="label flex items-center gap-2">
+                  <Star size={14} /> Featured Product
+                </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.is_featured} onChange={e => setForm(p => ({ ...p, is_featured: e.target.checked }))} className="w-4 h-4 text-[#F97316] rounded" />
+                  <input
+                    type="checkbox"
+                    checked={form.is_featured}
+                    onChange={e => setForm(p => ({ ...p, is_featured: e.target.checked }))}
+                    className="w-4 h-4 text-[#F97316] rounded"
+                  />
                   <span className="text-sm text-gray-600">Mark as featured</span>
                 </label>
               </div>
@@ -316,23 +392,53 @@ export default function AdminProductsPage() {
               <div>
                 <label className="label">Product Image</label>
                 <div className="space-y-3">
-                  {imagePreview && <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-gray-100"><Image src={imagePreview} alt="Preview" fill className="object-cover" /></div>}
+                  {imagePreview && (
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-gray-100">
+                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <label className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-center gap-2 px-4 py-2 border rounded-xl hover:bg-gray-50"><Upload size={16} /><span className="text-sm">Upload</span></div>
+                      <div className="flex items-center justify-center gap-2 px-4 py-2 border rounded-xl hover:bg-gray-50">
+                        <Upload size={16} />
+                        <span className="text-sm">Upload</span>
+                      </div>
                       <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
-                    <input type="text" value={form.image_url} onChange={e => { setForm(p => ({ ...p, image_url: e.target.value })); setImagePreview(e.target.value); }} className="flex-1 input text-sm" placeholder="Or paste image URL" />
+                    <input
+                      type="text"
+                      value={form.image_url}
+                      onChange={e => {
+                        setForm(p => ({ ...p, image_url: e.target.value }));
+                        setImagePreview(e.target.value);
+                      }}
+                      className="flex-1 input text-sm"
+                      placeholder="Or paste image URL"
+                    />
                   </div>
-                  {uploadingImage && <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="animate-spin" size={16} /> Uploading...</div>}
+                  {uploadingImage && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="animate-spin" size={16} /> Uploading...
+                    </div>
+                  )}
                 </div>
               </div>
 
               {error && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{error}</p>}
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 border rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={saving} className="flex-1 btn-primary justify-center text-sm py-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 border rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 btn-primary justify-center text-sm py-2.5"
+                >
                   {saving ? <Loader2 size={15} className="animate-spin" /> : editing ? 'Save Changes' : 'Add Product'}
                 </button>
               </div>
@@ -346,10 +452,20 @@ export default function AdminProductsPage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h2 className="font-bold text-lg mb-4">Add New Category</h2>
-            <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Category name" className="input mb-4" />
+            <input
+              type="text"
+              value={newCategory}
+              onChange={e => setNewCategory(e.target.value)}
+              placeholder="Category name"
+              className="input mb-4"
+            />
             <div className="flex gap-3">
-              <button onClick={() => setShowCategoryModal(false)} className="flex-1 px-4 py-2 border rounded-xl">Cancel</button>
-              <button onClick={addCategory} className="flex-1 btn-primary">Add Category</button>
+              <button onClick={() => setShowCategoryModal(false)} className="flex-1 px-4 py-2 border rounded-xl">
+                Cancel
+              </button>
+              <button onClick={addCategory} className="flex-1 btn-primary">
+                Add Category
+              </button>
             </div>
           </div>
         </div>
