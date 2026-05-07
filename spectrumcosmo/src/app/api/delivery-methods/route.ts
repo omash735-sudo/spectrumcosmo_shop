@@ -9,5 +9,12 @@ export async function GET() {
     WHERE is_active = true
     ORDER BY price ASC
   `;
-  return NextResponse.json(methods);
+
+  // Convert price to number (PostgreSQL often returns decimal as string)
+  const formatted = methods.map((m: any) => ({
+    ...m,
+    price: Number(m.price),
+  }));
+
+  return NextResponse.json(formatted);
 }
