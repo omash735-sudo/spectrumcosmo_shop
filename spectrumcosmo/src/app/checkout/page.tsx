@@ -63,14 +63,19 @@ export default function CheckoutPage() {
         if (payRes.ok) {
           const data = await payRes.json();
           setPaymentOptions(data.filter((opt: PaymentOption) => opt.is_active));
+        } else {
+          console.error('Payment options failed', payRes.status);
         }
         if (delRes.ok) {
           const data = await delRes.json();
           setDeliveryMethods(data);
           if (data.length) setSelectedDeliveryId(data[0].id);
+        } else {
+          console.error('Delivery methods failed', delRes.status);
         }
       } catch (err) {
         console.error('Failed to load options', err);
+        setError('Could not load payment/delivery options. Please refresh.');
       } finally {
         setLoadingOptions(false);
       }
@@ -187,18 +192,21 @@ export default function CheckoutPage() {
               {/* Delivery Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
-                {deliveryMethods.map(m => (
-                  <label key={m.id} className="flex items-center gap-2 text-sm mb-1">
-                    <input
-                      type="radio"
-                      name="delivery"
-                      checked={selectedDeliveryId === m.id}
-                      onChange={() => setSelectedDeliveryId(m.id)}
-                    />
-                    {m.name} – {m.price.toLocaleString()} MWK
-                    {m.logo_url && <img src={m.logo_url} alt={m.name} className="w-6 h-6 ml-2" />}
-                  </label>
-                ))}
+                {deliveryMethods.length === 0 ? (
+                  <p className="text-xs text-gray-400">Loading delivery options...</p>
+                ) : (
+                  deliveryMethods.map(m => (
+                    <label key={m.id} className="flex items-center gap-2 text-sm mb-1">
+                      <input
+                        type="radio"
+                        name="delivery"
+                        checked={selectedDeliveryId === m.id}
+                        onChange={() => setSelectedDeliveryId(m.id)}
+                      />
+                      {m.name} – {m.price.toLocaleString()} MWK
+                    </label>
+                  ))
+                )}
               </div>
 
               {/* Payment Methods */}
