@@ -14,16 +14,16 @@ export async function POST(req: NextRequest) {
   const authError = requireAdmin(req)
   if (authError) return authError
   
-  const { name, description, price, image_url, category, status, is_featured } = await req.json()
+  const { name, description, price_mwk, image_url, category, status, is_featured } = await req.json()
   
-  if (!name || !price || !category) {
+  if (!name || !price_mwk || !category) {
     return NextResponse.json({ error: 'Name, price and category required' }, { status: 400 })
   }
   
   const sql = getDb()
   const result = await sql`
     INSERT INTO products (name, description, price, currency, image_url, category, status, is_featured)
-    VALUES (${name}, ${description || ''}, ${price}, 'MWK', ${image_url || ''}, ${category}, ${status || 'in_stock'}, ${is_featured || false})
+    VALUES (${name}, ${description || ''}, ${price_mwk}, 'MWK', ${image_url || ''}, ${category}, ${status || 'in_stock'}, ${is_featured || false})
     RETURNING *
   `
   return NextResponse.json(result[0])
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
   const authError = requireAdmin(req)
   if (authError) return authError
   
-  const { id, name, description, price, image_url, category, status, is_featured } = await req.json()
+  const { id, name, description, price_mwk, image_url, category, status, is_featured } = await req.json()
   
   if (!id) {
     return NextResponse.json({ error: 'ID required' }, { status: 400 })
@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest) {
     UPDATE products SET
       name = COALESCE(${name}, name),
       description = COALESCE(${description}, description),
-      price = COALESCE(${price}, price),
+      price = COALESCE(${price_mwk}, price),
       currency = 'MWK',
       image_url = COALESCE(${image_url}, image_url),
       category = COALESCE(${category}, category),
