@@ -9,18 +9,30 @@ export async function GET(
     const { orderId } = params;
     const sql = getDb();
 
-    const [order] = await sql`
-      SELECT 
-        id, customer_name, phone_number, delivery_address, payment_method,
-        total_amount, status, created_at, proof_of_payment, payment_note
+    // 1. Log the ID
+    console.log('🔍 Searching for orderId:', orderId);
+
+    // 2. Get all orders (limit 5) to verify connection
+    const allOrders = await sql`SELECT id::text, customer_name FROM orders LIMIT 5`;
+    console.log('📦 Existing orders:', allOrders);
+
+    // 3. Try to find the specific order
+    const result = await sql`
+      SELECT id::text, customer_name, total_amount, status
       FROM orders
       WHERE id::text = ${orderId}
     `;
 
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    if (!result || result.length === 0) {
+      return NextResponse.json({ 
+        error: 'Order not found', 
+        requestedId: orderId,
+        existingIds: allOrders.map(o => o.id)
+      }, { status: 404 });
     }
 
+    // Return full order + items
+    const order = result[0];
     let items = [];
     try {
       items = await sql`
@@ -28,13 +40,11 @@ export async function GET(
         FROM order_items
         WHERE order_id::text = ${orderId}
       `;
-    } catch {
-      // ignore
-    }
+    } catch (e) {}
 
     return NextResponse.json({ ...order, items });
   } catch (err: any) {
-    console.error('Fetch order error:', err);
+    console.error('🔥 API error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
