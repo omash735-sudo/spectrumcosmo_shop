@@ -7,13 +7,25 @@ import Image from 'next/image'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 
+type OrderItem = {
+  product_name: string
+  quantity: number
+  unit_price_usd: number
+  custom_details?: string
+}
+
 type Order = {
   id: string
-  product_name: string
-  status: string
+  customer_name: string
+  phone_number: string
+  delivery_address: string
   payment_method: string
-  amount?: number
-  custom_details?: string
+  total_amount: number
+  status: string
+  created_at: string
+  proof_of_payment?: string
+  payment_note?: string
+  items: OrderItem[]
 }
 
 type PaymentOption = {
@@ -40,7 +52,7 @@ export default function PaymentContent() {
 
   useEffect(() => {
     if (!orderId) {
-      setMessage({ type: 'error', text: 'No order specified.' })
+      setMessage({ type: 'error', text: 'No order specified. Please return to checkout.' })
       setLoading(false)
       return
     }
@@ -51,18 +63,27 @@ export default function PaymentContent() {
           fetch(`/api/orders/${orderId}`),
           fetch('/api/payment-options'),
         ])
-        if (orderRes.ok) setOrder(await orderRes.json())
+
+        if (!orderRes.ok) {
+          const errorData = await orderRes.json().catch(() => ({}))
+          throw new Error(errorData.error || `HTTP ${orderRes.status}`)
+        }
+
+        const orderData = await orderRes.json()
+        setOrder(orderData)
+
         if (optsRes.ok) {
           const opts = await optsRes.json()
           setPaymentOptions(opts.filter((opt: PaymentOption) => opt.is_active))
         }
-      } catch (err) {
-        console.error(err)
-        setMessage({ type: 'error', text: 'Failed to load order details.' })
+      } catch (err: any) {
+        console.error('Load error:', err)
+        setMessage({ type: 'error', text: err.message || 'Failed to load order details.' })
       } finally {
         setLoading(false)
       }
     }
+
     load()
   }, [orderId])
 
@@ -77,9 +98,15 @@ export default function PaymentContent() {
 
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    if (!cloudName || !uploadPreset) {
+      setMessage({ type: 'error', text: 'Cloudinary configuration missing.' })
+      setUploading(false)
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', proofFile)
-    formData.append('upload_preset', uploadPreset!)
+    formData.append('upload_preset', uploadPreset)
 
     try {
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
@@ -87,7 +114,7 @@ export default function PaymentContent() {
         body: formData,
       })
       const uploadData = await uploadRes.json()
-      if (!uploadData.secure_url) throw new Error('Upload failed')
+      if (!uploadData.secure_url) throw new Error('Image upload failed')
 
       const updateRes = await fetch('/api/account/orders', {
         method: 'PATCH',
@@ -98,7 +125,7 @@ export default function PaymentContent() {
           paymentNote: note,
         }),
       })
-      if (!updateRes.ok) throw new Error('Failed to save')
+      if (!updateRes.ok) throw new Error('Failed to save proof')
 
       setMessage({ type: 'success', text: 'Proof submitted! Redirecting...' })
       setTimeout(() => router.push('/thank-you'), 2000)
@@ -125,11 +152,26 @@ export default function PaymentContent() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen p-6 text-center">Order not found.</main>
+        <main className="min-h-screen p-6 text-center">
+          <div className="max-w-md mx-auto bg-white rounded-xl p-6 shadow-sm">
+            <AlertCircle className="text-red-500 w-12 h-12 mx-auto mb-3" />
+            <p className="text-gray-700">Order not found.</p>
+            <button
+              onClick={() => router.push('/')}
+              className="mt-4 text-orange-600 hover:underline"
+            >
+              Return to home
+            </button>
+          </div>
+        </main>
         <Footer />
       </>
     )
   }
+
+  // Get the first product name (or join all)
+  const productNames = order.items.map(item => item.product_name).join(', ')
+  const displayProduct = productNames || order.customer_name || 'Order'
 
   const selectedOption = paymentOptions.find(
     opt => opt.name === order.payment_method || opt.type === order.payment_method
@@ -142,7 +184,7 @@ export default function PaymentContent() {
         <div className="max-w-2xl mx-auto px-4">
           <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8">
             <h1 className="text-2xl font-bold mb-2">Complete Payment</h1>
-            <p className="text-gray-500 mb-6">Order: {order.product_name}</p>
+            <p className="text-gray-500 mb-6">Order: {displayProduct}</p>
 
             {selectedOption && (
               <div className="bg-amber-50 rounded-xl p-5 mb-6 border border-amber-200">
@@ -158,8 +200,8 @@ export default function PaymentContent() {
                       Send the exact amount to:
                       <strong className="block font-mono text-base mt-1">{selectedOption.account_number}</strong>
                     </p>
-                    {order.amount && (
-                      <p className="text-sm mt-2">Amount: <strong>MWK {order.amount.toLocaleString()}</strong></p>
+                    {order.total_amount && (
+                      <p className="text-sm mt-2">Amount: <strong>MWK {order.total_amount.toLocaleString()}</strong></p>
                     )}
                   </div>
                 </div>
