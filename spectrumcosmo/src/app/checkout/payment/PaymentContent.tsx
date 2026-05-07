@@ -204,15 +204,16 @@ export default function PaymentContent() {
                   )}
                   <div>
                     <p className="text-sm text-amber-700">
-                      Send the exact amount to:
-                      <strong className="block font-mono text-base mt-1">
-                        {selectedOption.account_number}
-                      </strong>
+                      {selectedOption.type === 'mobile_money' ? (
+                        <>Send the exact amount to this mobile money number: <strong className="block font-mono text-base mt-1">{selectedOption.account_number}</strong></>
+                      ) : selectedOption.type === 'bank' ? (
+                        <>Transfer to this bank account: <strong className="block font-mono text-base mt-1">{selectedOption.account_number}</strong></>
+                      ) : (
+                        <>Send the exact amount to: <strong className="block font-mono text-base mt-1">{selectedOption.account_number}</strong></>
+                      )}
                     </p>
                     {order.total_amount && (
-                      <p className="text-sm mt-2">
-                        Amount: <strong>MWK {order.total_amount.toLocaleString()}</strong>
-                      </p>
+                      <p className="text-sm mt-2">Amount: <strong>MWK {order.total_amount.toLocaleString()}</strong></p>
                     )}
                   </div>
                 </div>
