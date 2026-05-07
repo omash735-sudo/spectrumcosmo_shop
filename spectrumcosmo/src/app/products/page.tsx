@@ -20,7 +20,7 @@ const carouselSlides = [
   {
     id: 2,
     image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775346088/WhatsApp_Image_2026-04-03_at_16.15.20_bgw3gq.jpg',
-    title: 'Exclusive Hoodies',
+    title: 'Exclusive Posters',
     subtitle: 'Limited collection',
   },
   {
