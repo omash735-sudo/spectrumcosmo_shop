@@ -15,7 +15,8 @@ export default function ProductCard({ product }: { product: any }) {
     return null;
   }
 
-  const priceUsd = Number(product.price ?? 0);
+  // IMPORTANT: product.price is now stored in MWK (base currency)
+  const priceMwk = Number(product.price ?? 0);
   const { addItem } = useCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [loadingWishlist, setLoadingWishlist] = useState(true);
@@ -177,7 +178,7 @@ export default function ProductCard({ product }: { product: any }) {
         <div className="mt-2 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-lg sm:text-xl font-bold text-[#F97316]">
-              <CurrencyPrice amountUsd={priceUsd} />
+              <CurrencyPrice amountUsd={priceMwk} />
             </span>
             {/* Small stock indicator for in-stock items */}
             {!isOutOfStock && !isComingSoon && product.stock_quantity > 0 && product.stock_quantity < 10 && (
@@ -189,7 +190,12 @@ export default function ProductCard({ product }: { product: any }) {
             {!isOutOfStock && !isComingSoon ? (
               <>
                 <button
-                  onClick={() => addItem({ id: String(product.id), name: productName, image_url: productImage, priceUsd })}
+                  onClick={() => addItem({ 
+                    id: String(product.id), 
+                    name: productName, 
+                    image_url: productImage, 
+                    priceUsd: priceMwk  // priceMwk is now MWK value
+                  })}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-full transition"
                   aria-label="Add to cart"
                 >
