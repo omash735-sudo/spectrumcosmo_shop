@@ -51,11 +51,9 @@ export default function CheckoutPage() {
     [subtotalUsd, rates, currency]
   );
 
-  // Ensure delivery fee is a number (never NaN)
   const deliveryFee = useMemo(() => {
     const method = deliveryMethods.find(m => m.id === selectedDeliveryId);
-    const fee = method?.price ?? 0;
-    return typeof fee === 'number' && !isNaN(fee) ? fee : 0;
+    return method?.price ?? 0;
   }, [deliveryMethods, selectedDeliveryId]);
 
   const total = subtotal + deliveryFee;
@@ -71,17 +69,24 @@ export default function CheckoutPage() {
         if (payRes.ok) {
           const data = await payRes.json();
           setPaymentOptions(data.filter((opt: PaymentOption) => opt.is_active));
+        } else {
+          console.error('Payment options failed', payRes.status);
         }
+
         if (delRes.ok) {
           const data = await delRes.json();
-          // Ensure each delivery method has price as number and id as number
           const safeData = data.map((m: any) => ({
             ...m,
             id: Number(m.id),
             price: Number(m.price),
           }));
           setDeliveryMethods(safeData);
-          if (safeData.length) setSelectedDeliveryId(safeData[0].id);
+          if (safeData.length) {
+            setSelectedDeliveryId(safeData[0].id);
+            console.log('Initial delivery ID set to:', safeData[0].id);
+          }
+        } else {
+          console.error('Delivery methods failed', delRes.status);
         }
       } catch (err) {
         console.error('Failed to load options', err);
@@ -112,11 +117,7 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
-      // Safely convert delivery method ID and fee
       const deliveryMethodId = selectedDeliveryId ? Number(selectedDeliveryId) : null;
-      const safeDeliveryFee = typeof deliveryFee === 'number' && !isNaN(deliveryFee) ? deliveryFee : 0;
-
-      console.log('Sending order:', { deliveryMethodId, safeDeliveryFee }); // debug
 
       const res = await fetch('/api/orders/create', {
         method: 'POST',
@@ -131,7 +132,7 @@ export default function CheckoutPage() {
           items: mappedItems,
           total_amount: Number(total),
           delivery_method_id: deliveryMethodId,
-          delivery_fee: safeDeliveryFee,
+          delivery_fee: Number(deliveryFee),
         }),
       });
 
@@ -212,14 +213,19 @@ export default function CheckoutPage() {
                   <p className="text-xs text-gray-400">Loading delivery options...</p>
                 ) : (
                   deliveryMethods.map(m => (
-                    <label key={m.id} className="flex items-center gap-2 text-sm mb-1">
+                    <label key={m.id} className="flex items-center gap-2 text-sm mb-1 cursor-pointer">
                       <input
                         type="radio"
                         name="delivery"
+                        value={m.id}
                         checked={selectedDeliveryId === m.id}
-                        onChange={() => setSelectedDeliveryId(m.id)}
+                        onChange={() => {
+                          console.log('Selected delivery ID:', m.id);
+                          setSelectedDeliveryId(m.id);
+                        }}
+                        className="cursor-pointer"
                       />
-                      {m.name} – {m.price.toLocaleString()} MWK
+                      <span>{m.name} – {m.price.toLocaleString()} MWK</span>
                     </label>
                   ))
                 )}
@@ -234,15 +240,16 @@ export default function CheckoutPage() {
                   <p className="text-xs text-gray-400">No payment methods available.</p>
                 ) : (
                   paymentOptions.map(opt => (
-                    <label key={opt.id} className="flex items-center gap-2 text-sm mb-1">
+                    <label key={opt.id} className="flex items-center gap-2 text-sm mb-1 cursor-pointer">
                       <input
                         type="radio"
                         name="payment"
                         value={opt.name}
                         checked={form.payment_method === opt.name}
                         onChange={() => setForm(p => ({ ...p, payment_method: opt.name }))}
+                        className="cursor-pointer"
                       />
-                      {opt.name}
+                      <span>{opt.name}</span>
                     </label>
                   ))
                 )}
