@@ -155,6 +155,7 @@ export default function AccountPaymentsPage() {
                 <div className="p-5 space-y-4">
                   {order.custom_details && <p className="text-sm text-gray-600">{order.custom_details}</p>}
 
+                  {/* Updated payment instructions with conditional text */}
                   {isPending && !hasProof && selectedOption && (
                     <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
                       <div className="flex items-start gap-3">
@@ -166,12 +167,12 @@ export default function AccountPaymentsPage() {
                         <div>
                           <p className="font-medium text-amber-800">Payment Instructions</p>
                           <p className="text-sm text-amber-700 mt-1">
-                            Send the exact amount to:{' '}
-                            {selectedOption.type === 'mobile_money' && (
-                              <span className="font-mono ml-1">{selectedOption.account_number}</span>
-                            )}
-                            {selectedOption.type === 'bank' && (
-                              <span className="font-mono ml-1">{selectedOption.account_number}</span>
+                            {selectedOption.type === 'mobile_money' ? (
+                              <>Send the exact amount to this mobile money number: <strong className="font-mono">{selectedOption.account_number}</strong></>
+                            ) : selectedOption.type === 'bank' ? (
+                              <>Transfer to this bank account: <strong className="font-mono">{selectedOption.account_number}</strong></>
+                            ) : (
+                              <>Send the exact amount to: <strong className="font-mono">{selectedOption.account_number}</strong></>
                             )}
                           </p>
                           <p className="text-xs text-amber-600 mt-1">After payment, upload proof below.</p>
