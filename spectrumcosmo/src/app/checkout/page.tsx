@@ -50,8 +50,14 @@ export default function CheckoutPage() {
     () => subtotalUsd * (rates[currency] ?? 1),
     [subtotalUsd, rates, currency]
   );
-  const deliveryFee = deliveryMethods.find(m => m.id === selectedDeliveryId)?.price || 0;
-  const total = subtotal + deliveryFee;
+
+  // Ensure delivery fee is a number (parseFloat as safety)
+  const deliveryFee = useMemo(() => {
+    const method = deliveryMethods.find(m => m.id === selectedDeliveryId);
+    return method ? Number(method.price) : 0;
+  }, [deliveryMethods, selectedDeliveryId]);
+
+  const total = subtotal + deliveryFee; // both numbers, no string concatenation
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -60,12 +66,14 @@ export default function CheckoutPage() {
           fetch('/api/payment-options'),
           fetch('/api/delivery-methods'),
         ]);
+
         if (payRes.ok) {
           const data = await payRes.json();
           setPaymentOptions(data.filter((opt: PaymentOption) => opt.is_active));
         } else {
           console.error('Payment options failed', payRes.status);
         }
+
         if (delRes.ok) {
           const data = await delRes.json();
           setDeliveryMethods(data);
@@ -204,6 +212,7 @@ export default function CheckoutPage() {
                         onChange={() => setSelectedDeliveryId(m.id)}
                       />
                       {m.name} – {m.price.toLocaleString()} MWK
+                      {m.logo_url && <img src={m.logo_url} alt={m.name} className="w-6 h-6 ml-2" />}
                     </label>
                   ))
                 )}
@@ -214,6 +223,8 @@ export default function CheckoutPage() {
                 <p className="text-sm font-semibold mb-2">Payment Method</p>
                 {loadingOptions ? (
                   <Loader2 className="animate-spin" size={20} />
+                ) : paymentOptions.length === 0 ? (
+                  <p className="text-xs text-gray-400">No payment methods available.</p>
                 ) : (
                   paymentOptions.map(opt => (
                     <label key={opt.id} className="flex items-center gap-2 text-sm mb-1">
@@ -233,7 +244,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={loading || items.length === 0}
-                className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium"
+                className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium disabled:opacity-50"
               >
                 {loading ? <Loader2 className="animate-spin inline mr-2" size={16} /> : null}
                 {loading ? 'Placing order...' : 'Place Order'}
