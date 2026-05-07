@@ -12,7 +12,6 @@ async function ensureUsersTable() {
       email TEXT UNIQUE NOT NULL,
       phone TEXT,
       password_hash TEXT NOT NULL,
-      newsletter_subscribed BOOLEAN NOT NULL DEFAULT true,
       profile_image TEXT,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
@@ -28,30 +27,45 @@ export async function PATCH(req: NextRequest) {
     const { name, phone, newsletterSubscribed, profileImage } = await req.json()
     const sql = getDb()
 
-    // Build dynamic update query
+    // Update user profile (excluding newsletter_subscribed column – it's gone)
     let query = sql`
       UPDATE users SET
         name = COALESCE(${name}, name),
         phone = COALESCE(${phone}, phone),
-        newsletter_subscribed = COALESCE(${newsletterSubscribed}, newsletter_subscribed),
         profile_image = COALESCE(${profileImage}, profile_image)
       WHERE id = ${user.id}
-      RETURNING id, name, email, phone, newsletter_subscribed, profile_image AS "profileImage"
+      RETURNING id, name, email, phone, profile_image AS "profileImage"
     `
 
     const [updated] = await query
 
-    // Send email only on unsubscribe
-    if (newsletterSubscribed === false) {
-      await sendMail({
-        to: updated.email,
-        subject: 'Newsletter preferences updated',
-        text: 'You have unsubscribed from SpectrumCosmo newsletters.',
-      }).catch(() => null)
+    // Handle newsletter subscription in the unified table
+    if (newsletterSubscribed !== undefined) {
+      const normalizedEmail = updated.email.toLowerCase()
+      // Insert or update the unified table
+      await sql`
+        INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
+        VALUES (${normalizedEmail}, ${user.id}, ${newsletterSubscribed}, NOW())
+        ON CONFLICT (email) DO UPDATE SET
+          user_id = EXCLUDED.user_id,
+          is_subscribed = EXCLUDED.is_subscribed,
+          updated_at = NOW()
+      `
+
+      // Send unsubscribe email (only when explicitly unsubscribing)
+      if (newsletterSubscribed === false) {
+        await sendMail({
+          to: updated.email,
+          subject: 'Newsletter preferences updated',
+          text: 'You have unsubscribed from SpectrumCosmo newsletters.',
+        }).catch(() => null)
+      }
     }
 
+    // Return user without newsletter_subscribed (or add it from unified table if needed)
     return NextResponse.json({ user: updated })
   } catch (err: any) {
+    console.error('Profile update error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
