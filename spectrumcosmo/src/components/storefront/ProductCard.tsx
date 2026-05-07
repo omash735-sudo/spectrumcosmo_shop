@@ -1,38 +1,155 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { ShoppingCart, Plus } from 'lucide-react'
-import CurrencyPrice from '@/components/storefront/CurrencyPrice'
-import { useCart } from '@/components/storefront/CartProvider'
+import Image from 'next/image';
+import Link from 'next/link';
+import { ShoppingCart, Heart, Plus } from 'lucide-react';
+import CurrencyPrice from '@/components/storefront/CurrencyPrice';
+import { useCart } from '@/components/storefront/CartProvider';
+import { useState, useEffect } from 'react';
+import StarRating from '@/components/ui/StarRating';
+
 export default function ProductCard({ product }: { product: any }) {
-  const priceUsd = Number(product.price ?? 0)
-  const { addItem } = useCart()
+  const priceUsd = Number(product.price ?? 0);
+  const { addItem } = useCart();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [loadingWishlist, setLoadingWishlist] = useState(true);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  // Check if product is in wishlist
+  useEffect(() => {
+    const checkWishlist = async () => {
+      try {
+        const res = await fetch('/api/account/wishlist');
+        if (res.ok) {
+          const wishlist = await res.json();
+          const exists = wishlist.some((item: any) => item.id === product.id || item.product_id === product.id);
+          setIsWishlisted(exists);
+        }
+      } catch (err) {
+        console.error('Failed to fetch wishlist', err);
+      } finally {
+        setLoadingWishlist(false);
+      }
+    };
+    checkWishlist();
+
+    // Fetch rating
+    fetch(`/api/reviews?product_id=${product.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.length) {
+          const sum = data.reduce((s: number, r: any) => s + r.rating, 0);
+          setAvgRating(sum / data.length);
+          setReviewCount(data.length);
+        }
+      })
+      .catch(console.error);
+  }, [product.id]);
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Check if user is logged in
+    const userRes = await fetch('/api/auth/me');
+    if (!userRes.ok) {
+      alert('Please login to add items to wishlist');
+      window.location.href = '/login';
+      return;
+    }
+
+    setLoadingWishlist(true);
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        await fetch('/api/account/wishlist', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id }),
+        });
+        setIsWishlisted(false);
+      } else {
+        // Add to wishlist
+        await fetch('/api/account/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id }),
+        });
+        setIsWishlisted(true);
+      }
+    } catch (err) {
+      console.error('Wishlist error:', err);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setLoadingWishlist(false);
+    }
+  };
 
   return (
-    <div className="card group overflow-hidden">
-      <div className="relative h-64 overflow-hidden bg-gray-50">
-        <Image src={product.image_url||'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 100vw, 33vw" />
-        <div className="absolute top-3 right-3">
-          <span className="bg-white/90 backdrop-blur-sm text-xs font-medium text-gray-600 px-2.5 py-1 rounded-full">{product.category}</span>
-        </div>
+    <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-50">
+        <Link href={`/products/${product.id}`}>
+          <Image
+            src={product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </Link>
+        {/* Wishlist heart button */}
+        <button
+          onClick={toggleWishlist}
+          disabled={loadingWishlist}
+          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50"
+          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <Heart
+            size={18}
+            className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}
+          />
+        </button>
+        {/* Category tag */}
+        {product.category && (
+          <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm">
+            {product.category}
+          </span>
+        )}
       </div>
-      <div className="p-5">
-        <h3 className="font-bold text-lg text-[#111111] mb-1 leading-snug" style={{fontFamily:'var(--font-display)'}}>{product.name}</h3>
-        {product.description && <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{product.description}</p>}
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-[#F97316]"><CurrencyPrice amountUsd={priceUsd} /></span>
-          <div className="flex items-center gap-2">
+      <div className="p-3 sm:p-4">
+        <Link href={`/products/${product.id}`}>
+          <h3 className="font-semibold text-gray-800 line-clamp-1 text-sm sm:text-base">
+            {product.name}
+          </h3>
+        </Link>
+        {reviewCount > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <StarRating rating={avgRating} size={14} />
+            <span className="text-xs text-gray-500">({reviewCount})</span>
+          </div>
+        )}
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-lg sm:text-xl font-bold text-[#F97316]">
+            <CurrencyPrice amountUsd={priceUsd} />
+          </span>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => addItem({ id: String(product.id), name: product.name, image_url: product.image_url, priceUsd })}
-              className="btn-secondary text-sm py-2 px-3"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-full transition"
+              aria-label="Add to cart"
             >
-              <Plus size={14} />Add
+              <Plus size={16} />
             </button>
-            <Link href={`/products/${product.id}`} className="btn-primary text-sm py-2 px-4"><ShoppingCart size={15} />Order</Link>
+            <Link
+              href={`/products/${product.id}`}
+              className="bg-[#F97316] hover:bg-orange-600 text-white p-1.5 rounded-full transition"
+              aria-label="Buy now"
+            >
+              <ShoppingCart size={16} />
+            </Link>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
