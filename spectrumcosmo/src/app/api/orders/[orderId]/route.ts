@@ -1,0 +1,45 @@
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { orderId: string } }
+) {
+  try {
+    const { orderId } = params;
+    const sql = getDb();
+
+    const [order] = await sql`
+      SELECT 
+        id, 
+        customer_name, 
+        phone_number, 
+        delivery_address, 
+        payment_method, 
+        total_amount, 
+        status, 
+        created_at,
+        proof_of_payment,
+        payment_note
+      FROM orders 
+      WHERE id = ${orderId}::uuid
+    `;
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Also fetch order items if needed
+    const items = await sql`
+      SELECT product_name, quantity, unit_price_usd, custom_details
+      FROM order_items
+      WHERE order_id = ${orderId}::uuid
+    `;
+
+    return NextResponse.json({ ...order, items });
+  } catch (err: any) {
+    console.error('Fetch order error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
