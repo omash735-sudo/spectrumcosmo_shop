@@ -35,10 +35,8 @@ export default async function ProductsPage({
   searchParams: Promise<{ category?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  
   const sql = getDb();
-  
-  // Fetch categories dynamically from database
+
   let categories = [];
   try {
     categories = await sql`
@@ -46,23 +44,20 @@ export default async function ProductsPage({
     `;
   } catch (err) {
     console.error('Failed to fetch categories:', err);
-    // Fallback to default categories if table doesn't exist yet
-    categories = [];
   }
-  
   const categoryNames = ['All', ...categories.map((c: any) => c.name)];
-  
-  // Build product query - only show in_stock products to users
+
   let products: any[] = [];
   try {
     let baseQuery;
-    
+
     if (params.q) {
       baseQuery = sql`
         SELECT p.*, c.name as category_name 
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.name ILIKE ${'%' + params.q + '%'} AND p.status = 'in_stock'
+        WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+          AND p.status = 'in_stock'
         ORDER BY p.created_at DESC
       `;
     } else {
@@ -76,19 +71,22 @@ export default async function ProductsPage({
     }
 
     if (params.category && params.category !== 'All') {
-      baseQuery = sql`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        JOIN categories c ON p.category_id = c.id
-        WHERE c.name = ${params.category} AND p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
       if (params.q) {
         baseQuery = sql`
           SELECT p.*, c.name as category_name 
           FROM products p
           JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category} AND p.name ILIKE ${'%' + params.q + '%'} AND p.status = 'in_stock'
+          WHERE c.name = ${params.category}
+            AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+          ORDER BY p.created_at DESC
+        `;
+      } else {
+        baseQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${params.category} AND p.status = 'in_stock'
           ORDER BY p.created_at DESC
         `;
       }
@@ -125,7 +123,6 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Category filters - dynamic from database */}
           <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-6 sm:mb-8 md:mx-0 md:px-0 md:overflow-visible">
             <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
               {categoryNames.map((cat) => {
