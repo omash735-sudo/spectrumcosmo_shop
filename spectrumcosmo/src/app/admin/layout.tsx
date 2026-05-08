@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   LogOut,
+  Layout, // Hero icon
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -31,6 +32,7 @@ const navItems = [
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
+  { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' }, // Added Hero option
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
