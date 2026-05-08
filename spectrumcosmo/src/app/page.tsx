@@ -4,10 +4,6 @@ import Image from 'next/image';
 import { ArrowRight, Sparkles, Shield, Truck } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import ProductCard from '@/components/storefront/ProductCard';
-import StarRating from '@/components/ui/StarRating';
-import LiveProducts from '@/components/storefront/LiveProducts';
-import LiveReviews from '@/components/storefront/LiveReviews';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
 import { getDb } from '@/lib/db';
 
@@ -18,8 +14,6 @@ const CATEGORY_IMAGES = {
   'Bracelets': 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
 };
 
-const ABOUT_IMAGE = 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
-
 export default async function HomePage() {
   let products: any[] = [];
   let reviews: any[] = [];
@@ -29,7 +23,7 @@ export default async function HomePage() {
     const sql = getDb();
     [products, reviews, hero] = await Promise.all([
       sql`SELECT * FROM products ORDER BY created_at DESC LIMIT 6`,
-      sql`SELECT * FROM reviews WHERE approved=true ORDER BY created_at DESC LIMIT 8`,
+      sql`SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 8`,
       sql`SELECT * FROM hero_sections WHERE page = 'home' AND active = true LIMIT 1`
     ]);
     hero = hero[0];
@@ -81,26 +75,25 @@ export default async function HomePage() {
           )
         )}
 
-        {/* Rest of the home page (unchanged) */}
+        {/* Secondary Section – Optional: You can keep the two‑column layout below if you wish */}
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          {/* Add back your other sections (featured products, categories, CTA) if needed */}
+        </div>
+
+        {/* Final CTA Section (unchanged) */}
         <section className="bg-gradient-to-br from-[#111111] to-gray-900 py-24">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
               Ready to wear your <span className="text-[#F97316]">excitement?</span>
             </h2>
-
             <p className="text-gray-400 text-lg mb-10 max-w-xl mx-auto">
               Browse our full collection and find the piece that speaks to your passion.
             </p>
-
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/products" className="btn-primary text-base px-8 py-4">
+              <Link href="/products" className="bg-[#F97316] text-white px-8 py-4 rounded-full font-medium hover:bg-[#e0650f] transition inline-flex items-center gap-2">
                 Explore Products <ArrowRight size={18} />
               </Link>
-
-              <Link
-                href="/reviews/submit"
-                className="border-2 border-white/20 text-white px-8 py-4 rounded-full font-medium hover:border-white/40 hover:bg-white/5 transition-all inline-flex items-center gap-2"
-              >
+              <Link href="/reviews/submit" className="border-2 border-white/20 text-white px-8 py-4 rounded-full font-medium hover:border-white/40 hover:bg-white/5 transition-all inline-flex items-center gap-2">
                 Share Your Story
               </Link>
             </div>
