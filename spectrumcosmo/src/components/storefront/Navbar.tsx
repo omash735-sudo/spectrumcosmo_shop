@@ -16,6 +16,8 @@ import {
   Star,
   Home,
   Clock,
+  Package,
+  Info,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -24,12 +26,13 @@ import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 import { useSettings } from '@/components/storefront/SettingsProvider'
 
+// Desktop navigation – same for all users
 const desktopLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products' },
   { href: '/reviews', label: 'Reviews' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/about', label: 'About Us' }
+  { href: '/about', label: 'About Us' },
+  { href: '/contact', label: 'Help Centre' },
 ]
 
 // WhatsApp config
@@ -42,7 +45,7 @@ const HIDE_WHATSAPP_PATHS = [
   '/account/payments', '/account/settings', '/account/profile',
 ]
 
-// Links that should be protected for guests
+// Links that should redirect to login if accessed directly (guest modal removed)
 const PROTECTED_LINKS = [
   '/account/profile',
   '/account/settings',
@@ -60,8 +63,6 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [loadingUser, setLoadingUser] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [showGuestModal, setShowGuestModal] = useState(false)
-  const [pendingHref, setPendingHref] = useState<string | null>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   const { totalItems } = useCart()
@@ -120,38 +121,28 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
   const profileImage = user?.profileImage
 
-  // Handle protected link click (for both desktop and mobile)
-  const handleProtectedLinkClick = (e: React.MouseEvent, href: string) => {
+  // For direct access to protected pages, redirect to login
+  const handleProtectedClick = (e: React.MouseEvent, href: string) => {
     if (!isLoggedIn && PROTECTED_LINKS.includes(href)) {
       e.preventDefault()
-      setPendingHref(href)
-      setShowGuestModal(true)
-      setMobileMenuOpen(false)
+      router.push('/login')
     }
   }
 
-  const closeModal = () => {
-    setShowGuestModal(false)
-    setPendingHref(null)
-  }
-
-  const goToSignup = () => {
-    router.push('/signup')
-    closeModal()
-  }
-
-  // Mobile drawer items
+  // Mobile drawer items: only show account‑specific links when logged in
   const alwaysItems = [
-    { type: 'link' as const, href: '/', label: 'Home', icon: Home, protected: false },
-    { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart, protected: false },
+    { type: 'link' as const, href: '/', label: 'Home', icon: Home },
+    { type: 'link' as const, href: '/products', label: 'Products', icon: Package },
+    { type: 'link' as const, href: '/reviews', label: 'Reviews', icon: Star },
+    { type: 'link' as const, href: '/about', label: 'About Us', icon: Info },
+    { type: 'link' as const, href: '/contact', label: 'Help Centre', icon: HelpCircle },
+    { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
   ]
-  const loggedInItems = [
-    { type: 'link' as const, href: '/my-reviews', label: 'My reviews', icon: Star, protected: true },
-    { type: 'link' as const, href: '/account/payments', label: 'Order history', icon: Clock, protected: true },
-  ]
-  const bottomItems = [
-    { type: 'link' as const, href: '/contact', label: 'Help centre', icon: HelpCircle, protected: false },
-    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings, protected: true },
+
+  const loggedInOnlyItems = [
+    { type: 'link' as const, href: '/my-reviews', label: 'My Reviews', icon: Star },
+    { type: 'link' as const, href: '/account/payments', label: 'Order History', icon: Clock },
+    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
   ]
 
   return (
@@ -173,7 +164,14 @@ export default function Navbar() {
 
           <nav className="flex items-center gap-8 text-sm">
             {desktopLinks.map(link => (
-              <Link key={link.href} href={link.href} className={clsx('text-gray-600 hover:text-[#F97316]', pathname === link.href && 'text-[#F97316] font-semibold')}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={clsx(
+                  'text-gray-600 hover:text-[#F97316] transition',
+                  pathname === link.href && 'text-[#F97316] font-semibold'
+                )}
+              >
                 {link.label}
               </Link>
             ))}
@@ -183,15 +181,19 @@ export default function Navbar() {
             <CurrencySelector />
             <button onClick={openCart} className="relative">
               <ShoppingCart size={20} />
-              {totalItems > 0 && <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">{totalItems}</span>}
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
+                  {totalItems}
+                </span>
+              )}
             </button>
 
             <div className="flex items-center gap-3">
               {!isLoggedIn ? (
-                <>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">not Signed</span>
-                  <Link href="/login" className="text-sm text-gray-600 hover:text-[#F97316]">Sign in</Link>
-                </>
+                <Link href="/login" className="flex items-center gap-1 text-sm text-gray-600 hover:text-[#F97316]">
+                  <User size={16} />
+                  <span>Sign in</span>
+                </Link>
               ) : (
                 <div className="relative" ref={userMenuRef}>
                   <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#F97316]">
@@ -237,7 +239,11 @@ export default function Navbar() {
           </Link>
           <button onClick={openCart} className="relative">
             <ShoppingCart size={22} />
-            {totalItems > 0 && <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">{totalItems}</span>}
+            {totalItems > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
+                {totalItems}
+              </span>
+            )}
           </button>
         </div>
       </header>
@@ -251,7 +257,7 @@ export default function Navbar() {
               <button onClick={() => setMobileMenuOpen(false)}><X size={22} /></button>
             </div>
 
-            {/* User info with profile picture */}
+            {/* User info area – guests see "Guest / Visitor" with a Sign in button */}
             <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {profileImage ? (
@@ -264,7 +270,7 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">Profile</Link>
               ) : (
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">Sign in</Link>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">Sign in / Register</Link>
               )}
             </div>
 
@@ -273,11 +279,13 @@ export default function Navbar() {
               <CurrencySelector />
             </div>
 
+            {/* Call to action – View Products */}
             <div className="my-3 bg-orange-50 p-2 rounded flex justify-between">
-              <span className="font-semibold">Shop now</span>
+              <span className="font-semibold">View Products</span>
               <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">view →</Link>
             </div>
 
+            {/* Main navigation – visible to everyone */}
             <div className="flex flex-col gap-2 mt-2 flex-grow">
               {alwaysItems.map(item => {
                 const Icon = item.icon
@@ -292,82 +300,39 @@ export default function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={(e) => {
-                      if (item.protected) handleProtectedLinkClick(e, item.href);
-                      else setMobileMenuOpen(false);
-                    }}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-2 py-2"
                   >
                     <Icon size={18} /> {item.label}
                   </Link>
                 )
               })}
-              {isLoggedIn && loggedInItems.map(item => {
+              {/* Account-specific links – only when logged in */}
+              {isLoggedIn && loggedInOnlyItems.map(item => {
                 const Icon = item.icon
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={(e) => {
-                      if (item.protected && !isLoggedIn) handleProtectedLinkClick(e, item.href);
-                      else setMobileMenuOpen(false);
-                    }}
+                    onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-2 py-2"
                   >
                     <Icon size={18} /> {item.label}
                   </Link>
-                )
-              })}
-              {!isLoggedIn && loggedInItems.map(item => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.href}
-                    onClick={(e) => handleProtectedLinkClick(e as any, item.href)}
-                    className="flex items-center gap-3 px-2 py-2 w-full text-left"
-                  >
-                    <Icon size={18} /> {item.label}
-                  </button>
                 )
               })}
             </div>
 
+            {/* Bottom area – logout (if logged in) or no extra items */}
             <div className="mt-6 pt-3 border-t border-gray-200">
-              {bottomItems.map(item => {
-                const Icon = item.icon
-                if (!isLoggedIn && item.protected) {
-                  return (
-                    <button
-                      key={item.href}
-                      onClick={(e) => handleProtectedLinkClick(e as any, item.href)}
-                      className="flex items-center gap-3 px-2 py-2 w-full text-left"
-                    >
-                      <Icon size={18} /> {item.label}
-                    </button>
-                  )
-                }
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.protected && !isLoggedIn) handleProtectedLinkClick(e, item.href);
-                      else setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-3 px-2 py-2"
-                  >
-                    <Icon size={18} /> {item.label}
-                  </Link>
-                )
-              })}
               {isLoggedIn ? (
                 <button onClick={logout} className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left">
                   <LogOut size={18} /> Log out
                 </button>
               ) : (
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-2 py-2">
-                  <User size={18} /> Sign in
-                </Link>
+                <div className="text-xs text-gray-400 text-center py-2">
+                  <Link href="/signup" className="text-[#F97316]">Create an account</Link> to enjoy order history and more.
+                </div>
               )}
             </div>
           </div>
@@ -379,7 +344,13 @@ export default function Navbar() {
 
       {/* Floating WhatsApp Button */}
       {showWhatsApp && (
-        <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-[9999] whatsapp-float" aria-label="Chat on WhatsApp">
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-[9999] whatsapp-float"
+          aria-label="Chat on WhatsApp"
+        >
           <div className="relative">
             <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
             <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center">
@@ -389,36 +360,6 @@ export default function Navbar() {
             </div>
           </div>
         </a>
-      )}
-
-      {/* Guest Modal */}
-      {showGuestModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl text-center">
-            <div className="flex justify-center mb-4">
-              <img src={logoSrc} alt="SpectrumCosmo" className="h-16 w-auto" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Create an Account</h3>
-            <p className="text-gray-600 mb-6">
-              Sorry, you don't have an account yet.<br />
-              Would you like to create one with us?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={goToSignup}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-xl transition shadow-md"
-              >
-                Create Account
-              </button>
-              <button
-                onClick={closeModal}
-                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 rounded-xl transition"
-              >
-                Maybe Later
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </>
   )
