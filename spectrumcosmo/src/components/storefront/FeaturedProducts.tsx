@@ -12,7 +12,7 @@ export default async function FeaturedProducts() {
   return (
     <div className="mb-8 sm:mb-12">
       <div className="flex justify-between items-center mb-3 sm:mb-4">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900">🔥 Featured Products</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Featured Products</h2>
         <Link href="/products" className="text-xs sm:text-sm text-[#F97316] hover:underline">
           See all →
         </Link>
