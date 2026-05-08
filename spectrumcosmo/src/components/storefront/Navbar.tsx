@@ -50,7 +50,6 @@ const PROTECTED_LINKS = [
   '/account/profile',
   '/account/settings',
   '/account/payments',
-  '/my-reviews',
   '/account/wishlist',
   '/account/tracking',
   '/account/addresses',
