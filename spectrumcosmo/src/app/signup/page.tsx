@@ -41,6 +41,7 @@ export default function SignupPage() {
     }
   }
 
+  // Use the dark mode logo (white/orange) for better visibility on dark background
   const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   return (
