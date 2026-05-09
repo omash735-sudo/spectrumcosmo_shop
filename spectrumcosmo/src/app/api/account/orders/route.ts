@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { getVerifiedUser } from '@/lib/auth'
 import { sendMail } from '@/lib/mailer'
 
 async function ensureOrdersSchema() {
@@ -23,8 +23,8 @@ async function ensureOrdersSchema() {
 }
 
 export async function GET(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     await ensureOrdersSchema()
@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     await ensureOrdersSchema()
@@ -76,4 +76,3 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
-
