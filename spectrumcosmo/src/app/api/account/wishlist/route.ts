@@ -1,12 +1,10 @@
-// src/app/api/account/wishlist/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { getVerifiedUser } from '@/lib/auth'
 
-// GET /api/account/wishlist – fetch user's wishlist
 export async function GET(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     const sql = getDb()
@@ -30,17 +28,15 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/account/wishlist – add item to wishlist
 export async function POST(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     const { productId } = await req.json()
     if (!productId) {
       return NextResponse.json({ error: 'productId required' }, { status: 400 })
     }
-
     const sql = getDb()
     await sql`
       INSERT INTO wishlist (user_id, product_id)
@@ -53,17 +49,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/account/wishlist – remove item (optional)
 export async function DELETE(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     const { productId } = await req.json()
     if (!productId) {
       return NextResponse.json({ error: 'productId required' }, { status: 400 })
     }
-
     const sql = getDb()
     await sql`
       DELETE FROM wishlist
