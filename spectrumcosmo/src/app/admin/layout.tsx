@@ -18,7 +18,7 @@ import {
   X,
   LogOut,
   Layout,        // Hero icon
-  FileText,      // About Page icon
+  FileText,      // About Page & Contact Page icon
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -34,8 +34,8 @@ const navItems = [
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
-  { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' }, // NEW
-  // Add Contact Page later if needed
+  { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' },
+  { name: 'Contact Page', href: '/admin/contact', icon: FileText, section: 'SYSTEM' }, // Added Contact Page
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
