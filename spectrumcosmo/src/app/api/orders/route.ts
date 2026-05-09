@@ -1,78 +1,75 @@
+// src/app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/auth'
 import { getDb } from '@/lib/db'
-import { getVerifiedUser } from '@/lib/auth'
-import { sendMail } from '@/lib/mailer'
 
-async function ensureOrdersSchema() {
-  const sql = getDb()
-  await sql`
-    CREATE TABLE IF NOT EXISTS orders (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      customer_name TEXT NOT NULL,
-      phone_number TEXT NOT NULL,
-      product_name TEXT NOT NULL,
-      custom_details TEXT DEFAULT '',
-      status TEXT NOT NULL DEFAULT 'pending',
-      created_at TIMESTAMP NOT NULL DEFAULT NOW()
-    )
-  `
-  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID`
-  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email TEXT`
-  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS proof_of_payment_url TEXT`
-  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_note TEXT`
-}
-
+// GET – fetch all orders (admin only)
 export async function GET(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req)
-  if (error) return error
+  const authError = requireAdmin(req)
+  if (authError) return authError
 
   try {
-    await ensureOrdersSchema()
     const sql = getDb()
-    const orders = await sql`SELECT * FROM orders WHERE user_id = ${user.id} ORDER BY created_at DESC`
+    const orders = await sql`
+      SELECT 
+        o.*,
+        json_agg(oi.*) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `
     return NextResponse.json(orders)
   } catch (err: any) {
+    console.error('Orders fetch error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
 
+// PATCH – update order status (admin only)
 export async function PATCH(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req)
-  if (error) return error
+  const authError = requireAdmin(req)
+  if (authError) return authError
 
   try {
-    await ensureOrdersSchema()
-    const { id, proofOfPaymentUrl, paymentNote } = await req.json()
-    if (!id || !proofOfPaymentUrl) {
-      return NextResponse.json({ error: 'id and proofOfPaymentUrl required' }, { status: 400 })
+    const { id, status } = await req.json()
+    if (!id || !status) {
+      return NextResponse.json({ error: 'id and status required' }, { status: 400 })
     }
 
     const sql = getDb()
-    const [order] = await sql`
+    const [updatedOrder] = await sql`
       UPDATE orders
-      SET proof_of_payment_url = ${proofOfPaymentUrl}, payment_note = ${paymentNote || ''}
-      WHERE id = ${id} AND user_id = ${user.id}
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${id}
       RETURNING *
     `
-    if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-
-    await sendMail({
-      to: user.email,
-      subject: 'Payment proof received',
-      text: `We received your payment proof for order ${order.product_name}.`,
-    }).catch(() => null)
-
-    const adminEmail = process.env.ADMIN_EMAIL
-    if (adminEmail) {
-      await sendMail({
-        to: adminEmail,
-        subject: 'New payment proof uploaded',
-        text: `${user.name} uploaded payment proof for ${order.product_name}: ${proofOfPaymentUrl}`,
-      }).catch(() => null)
+    if (!updatedOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
-
-    return NextResponse.json(order)
+    return NextResponse.json(updatedOrder)
   } catch (err: any) {
+    console.error('Order update error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
+// DELETE – delete order (admin only)
+export async function DELETE(req: NextRequest) {
+  const authError = requireAdmin(req)
+  if (authError) return authError
+
+  try {
+    const id = new URL(req.url).searchParams.get('id')
+    if (!id) {
+      return NextResponse.json({ error: 'id required' }, { status: 400 })
+    }
+
+    const sql = getDb()
+    await sql`DELETE FROM orders WHERE id = ${id}`
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('Order delete error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+  }
