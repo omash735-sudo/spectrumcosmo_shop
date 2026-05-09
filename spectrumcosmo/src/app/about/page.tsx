@@ -1,20 +1,15 @@
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
+import AboutImageViewer from '@/components/storefront/AboutImageViewer';
 
 export default async function AboutPage() {
   const sql = getDb();
   const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
   const content = row?.content || {};
 
-  // Fallback values
+  // Fallback defaults
   const history = content.history || '';
   const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
   const mission = content.mission || 'Celebrate anime passion and help fans express themselves proudly.';
@@ -34,38 +29,10 @@ export default async function AboutPage() {
     <>
       <Navbar />
       <main className="bg-white">
-        {/* Hero Section with dynamic image */}
+        {/* Hero Section */}
         <section className="py-16 md:py-24 bg-orange-50">
           <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-            {/* Left: Image / Carousel */}
-            <div className="relative rounded-2xl overflow-hidden shadow-xl">
-              {imageMode === 'carousel' && carouselImages.length > 0 ? (
-                <Swiper
-                  modules={[Autoplay, Pagination, Navigation]}
-                  spaceBetween={0}
-                  slidesPerView={1}
-                  autoplay={{ delay: 5000, disableOnInteraction: false }}
-                  pagination={{ clickable: true }}
-                  navigation
-                  loop
-                  className="w-full h-96"
-                >
-                  {carouselImages.map((img: string, idx: number) => (
-                    <SwiperSlide key={idx}>
-                      <div className="relative w-full h-96">
-                        <Image src={img} alt={`Slide ${idx + 1}`} fill className="object-cover" priority={idx === 0} />
-                      </div>
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              ) : (
-                <div className="relative h-96">
-                  <Image src={singleImage} alt="SpectrumCosmo community" fill className="object-cover" />
-                </div>
-              )}
-            </div>
-
-            {/* Right: Text */}
+            <AboutImageViewer mode={imageMode} singleImage={singleImage} carouselImages={carouselImages} />
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About SpectrumCosmo</h1>
               <div className="text-gray-600 leading-relaxed whitespace-pre-line">{history}</div>
@@ -73,7 +40,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Vision & Mission (unchanged) */}
+        {/* Vision & Mission */}
         <section className="py-16 max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-8 text-center md:text-left">
           <div className="bg-gray-50 p-8 rounded-2xl">
             <h2 className="text-2xl font-bold text-[#F97316] mb-3">Vision</h2>
@@ -85,7 +52,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Statistics (unchanged) */}
+        {/* Statistics */}
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Our Impact</h2>
@@ -100,7 +67,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section (unchanged, but dynamic) */}
+        {/* Team */}
         {team.length > 0 && (
           <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4">
@@ -110,7 +77,7 @@ export default async function AboutPage() {
                   <div key={idx} className="bg-white p-6 rounded-2xl text-center shadow-sm">
                     <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden mb-4">
                       {member.image ? (
-                        <Image src={member.image} alt={member.name} fill className="object-cover" />
+                        <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No image</div>
                       )}
@@ -124,7 +91,7 @@ export default async function AboutPage() {
           </section>
         )}
 
-        {/* Future Plans & CTA (unchanged) */}
+        {/* Future Plans */}
         <section className="py-16 bg-white">
           <div className="max-w-4xl mx-auto text-center px-4">
             <h2 className="text-3xl font-bold mb-6">What's Next</h2>
@@ -132,6 +99,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
+        {/* CTA */}
         <section className="py-20 bg-[#111111] text-center">
           <div className="max-w-3xl mx-auto px-4">
             <h2 className="text-4xl font-bold text-white mb-6">Join Our Community</h2>
@@ -145,4 +113,4 @@ export default async function AboutPage() {
       <Footer />
     </>
   );
-}
+                      }
