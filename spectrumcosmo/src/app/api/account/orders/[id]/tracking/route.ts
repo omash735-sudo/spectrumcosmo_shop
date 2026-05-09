@@ -1,21 +1,18 @@
-// app/api/account/orders/[id]/tracking/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { getVerifiedUser } from '@/lib/auth'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   const orderId = params.id
 
   try {
     const sql = getDb()
-
-    // Your detailed tracking query
     const [tracking] = await sql`
       SELECT 
         o.id AS order_id,
@@ -27,25 +24,20 @@ export async function GET(
         o.payment_method,
         o.paid_at,
         o.created_at AS order_placed_at,
-        
         p.name AS product_name,
         p.price AS unit_price,
         o.quantity,
         o.total_amount,
-        
         d.status AS delivery_status,
         d.tracking_number,
         d.delivery_notes,
         d.delivery_address,
         d.created_at AS delivery_created_at,
-        
         dm.name AS delivery_method_name,
         dm.logo_url AS delivery_logo,
-        
         po.type AS payment_type,
         po.name AS payment_provider,
         po.account_number AS payment_account
-
       FROM orders o
       LEFT JOIN products p ON p.name = o.product_name
       LEFT JOIN delivery d ON d.order_id::text = o.id::text
