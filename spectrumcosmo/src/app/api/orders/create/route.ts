@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
+import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // Check authenticated user – if frozen/banned, reject.
+    const { user, error: authError } = await getVerifiedUser(req);
+    if (authError && authError.status === 403) {
+      return authError;
+    }
+    // user may be null (guest) or active user
 
+    const body = await req.json();
     const {
       customer_name,
       customer_email,
@@ -23,32 +30,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // ---------- SAFE NUMBER CONVERSIONS ----------
-    // Total amount
     const safeTotal = Number(total_amount);
     if (isNaN(safeTotal)) {
       return NextResponse.json({ error: 'Invalid total_amount' }, { status: 400 });
     }
 
-    // Delivery method ID: must be integer or null
-    let safeDeliveryMethodId = delivery_method_id !== undefined && delivery_method_id !== null
-      ? Number(delivery_method_id)
-      : null;
+    let safeDeliveryMethodId = delivery_method_id !== undefined && delivery_method_id !== null ? Number(delivery_method_id) : null;
     if (safeDeliveryMethodId !== null && isNaN(safeDeliveryMethodId)) {
-      console.warn('Invalid delivery_method_id, setting to null');
       safeDeliveryMethodId = null;
     }
 
-    // Delivery fee: must be number, default to 0
     let safeDeliveryFee = Number(delivery_fee);
-    if (isNaN(safeDeliveryFee)) {
-      console.warn('Invalid delivery_fee, setting to 0');
-      safeDeliveryFee = 0;
-    }
+    if (isNaN(safeDeliveryFee)) safeDeliveryFee = 0;
 
     const sql = getDb();
 
-    // Insert order
     const [order] = await sql`
       INSERT INTO orders (
         customer_name, customer_email, phone_number, delivery_address,
@@ -57,7 +53,7 @@ export async function POST(req: NextRequest) {
       ) VALUES (
         ${customer_name}, ${customer_email}, ${phone_number}, ${location},
         ${notes || ''}, ${payment_method}, ${safeTotal}, 'pending',
-        NULL, NOW(),
+        ${user?.id || null}, NOW(),
         ${safeDeliveryMethodId}, ${safeDeliveryFee}
       )
       RETURNING id::text
@@ -65,14 +61,12 @@ export async function POST(req: NextRequest) {
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
-    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
       const quantity = Number(item.quantity);
-      if (isNaN(quantity)) continue; // skip invalid item
+      if (isNaN(quantity)) continue;
       const subtotalUsd = quantity * unitPriceUsd;
-
       await sql`
         INSERT INTO order_items (
           order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
@@ -83,7 +77,7 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    // Send invoice email (unchanged, but keep for completeness)
+    // Invoice email (unchanged)
     const orderItemsHtml = items.map(item => `
       <tr>
         <td style="padding:8px; border-bottom:1px solid #eee;">${item.name} x ${item.quantity}</td>
@@ -100,7 +94,7 @@ export async function POST(req: NextRequest) {
         <div style="padding:20px;">
           <p>Hi <strong>${customer_name}</strong>,</p>
           <p>Thank you for your order! Details below:</p>
-          <table style="width:100%; border-collapse:collapse;">${orderItemsHtml}</table>
+          <table style="width:100%; border-collapse:collapse;">${orderItemsHtml}<table>
           <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
           <p><strong>Payment Method:</strong> ${payment_method}</p>
           <p><strong>Delivery Address:</strong> ${location}</p>
