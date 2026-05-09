@@ -16,15 +16,39 @@ type Slide = {
 
 interface HeroCarouselProps {
   slides: Slide[];
-  textColor?: string; // e.g., '#F97316' or 'text-orange-500'
+  // Styling options (now fully configurable)
+  titleColor?: string;
+  subtitleColor?: string;
+  titleAlignment?: 'left' | 'center' | 'right';
+  subtitleAlignment?: 'left' | 'center' | 'right';
+  verticalPosition?: 'top' | 'center' | 'bottom';
+  buttonBgColor?: string;
+  buttonTextColor?: string;
+  buttonLabel?: string;
+  buttonLink?: string;
   autoplayDelay?: number;
 }
 
 export default function HeroCarousel({
   slides,
-  textColor = '#F97316',
+  titleColor = '#FFFFFF',
+  subtitleColor = '#FFFFFF',
+  titleAlignment = 'center',
+  subtitleAlignment = 'center',
+  verticalPosition = 'bottom',
+  buttonBgColor = '#F97316',
+  buttonTextColor = '#FFFFFF',
+  buttonLabel = '',
+  buttonLink = '',
   autoplayDelay = 5000,
 }: HeroCarouselProps) {
+  // Map vertical position to Tailwind classes
+  const verticalClass = {
+    top: 'items-start',
+    center: 'items-center',
+    bottom: 'items-end',
+  }[verticalPosition];
+
   return (
     <div className="relative w-full overflow-hidden">
       <Swiper
@@ -48,20 +72,40 @@ export default function HeroCarousel({
                 priority={slide.id === 1}
                 sizes="100vw"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-              <div className="absolute bottom-8 left-0 right-0 text-center px-4">
-                <h2
-                  className="text-3xl sm:text-5xl md:text-6xl font-bold drop-shadow-lg"
-                  style={{ color: textColor }}
-                >
-                  {slide.title}
-                </h2>
-                {slide.subtitle && (
-                  <p className="text-base sm:text-xl md:text-2xl mt-2 drop-shadow text-white">
-                    {slide.subtitle}
-                  </p>
-                )}
+              {/* Overlay with dynamic positioning */}
+              <div className={`absolute inset-0 flex flex-col ${verticalClass} justify-center p-6`}>
+                <div className="container mx-auto px-4 text-center">
+                  {slide.title && (
+                    <h2
+                      className="text-3xl sm:text-5xl md:text-6xl font-bold drop-shadow-lg mb-4"
+                      style={{ color: titleColor, textAlign: titleAlignment }}
+                    >
+                      {slide.title}
+                    </h2>
+                  )}
+                  {slide.subtitle && (
+                    <p
+                      className="text-base sm:text-xl md:text-2xl drop-shadow"
+                      style={{ color: subtitleColor, textAlign: subtitleAlignment }}
+                    >
+                      {slide.subtitle}
+                    </p>
+                  )}
+                  {buttonLabel && buttonLink && (
+                    <div className="mt-6" style={{ textAlign: titleAlignment }}>
+                      <a
+                        href={buttonLink}
+                        className="inline-block px-6 py-3 rounded-full font-medium transition hover:opacity-90"
+                        style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                      >
+                        {buttonLabel}
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
+              {/* Gradient overlay (optional – can be controlled later) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent pointer-events-none" />
             </div>
           </SwiperSlide>
         ))}
