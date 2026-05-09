@@ -3,15 +3,18 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const DEFAULT_IMAGE = 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 
 export default async function AboutPage() {
   const sql = getDb();
   const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
   const content = row?.content || {};
 
-  // Fallbacks
+  // Fallback values
   const history = content.history || '';
   const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
   const mission = content.mission || 'Celebrate anime passion and help fans express themselves proudly.';
@@ -23,25 +26,54 @@ export default async function AboutPage() {
   ];
   const team = content.team || [];
   const futurePlans = content.future_plans || 'Participate in conventions, host watch parties, support local anime culture.';
+  const imageMode = content.image_mode || 'single';
+  const singleImage = content.single_image_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
+  const carouselImages = content.carousel_images || [];
 
   return (
     <>
       <Navbar />
       <main className="bg-white">
-        {/* Hero Section */}
+        {/* Hero Section with dynamic image */}
         <section className="py-16 md:py-24 bg-orange-50">
           <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-            <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-              <Image src={DEFAULT_IMAGE} alt="SpectrumCosmo community" fill className="object-cover" />
+            {/* Left: Image / Carousel */}
+            <div className="relative rounded-2xl overflow-hidden shadow-xl">
+              {imageMode === 'carousel' && carouselImages.length > 0 ? (
+                <Swiper
+                  modules={[Autoplay, Pagination, Navigation]}
+                  spaceBetween={0}
+                  slidesPerView={1}
+                  autoplay={{ delay: 5000, disableOnInteraction: false }}
+                  pagination={{ clickable: true }}
+                  navigation
+                  loop
+                  className="w-full h-96"
+                >
+                  {carouselImages.map((img: string, idx: number) => (
+                    <SwiperSlide key={idx}>
+                      <div className="relative w-full h-96">
+                        <Image src={img} alt={`Slide ${idx + 1}`} fill className="object-cover" priority={idx === 0} />
+                      </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              ) : (
+                <div className="relative h-96">
+                  <Image src={singleImage} alt="SpectrumCosmo community" fill className="object-cover" />
+                </div>
+              )}
             </div>
+
+            {/* Right: Text */}
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About SpectrumCosmo</h1>
-              <p className="text-gray-600 leading-relaxed whitespace-pre-line">{history}</p>
+              <div className="text-gray-600 leading-relaxed whitespace-pre-line">{history}</div>
             </div>
           </div>
         </section>
 
-        {/* Vision & Mission */}
+        {/* Vision & Mission (unchanged) */}
         <section className="py-16 max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-8 text-center md:text-left">
           <div className="bg-gray-50 p-8 rounded-2xl">
             <h2 className="text-2xl font-bold text-[#F97316] mb-3">Vision</h2>
@@ -53,7 +85,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Statistics Grid */}
+        {/* Statistics (unchanged) */}
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Our Impact</h2>
@@ -68,7 +100,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section (only if team members exist) */}
+        {/* Team Section (unchanged, but dynamic) */}
         {team.length > 0 && (
           <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4">
@@ -92,7 +124,7 @@ export default async function AboutPage() {
           </section>
         )}
 
-        {/* Future Plans */}
+        {/* Future Plans & CTA (unchanged) */}
         <section className="py-16 bg-white">
           <div className="max-w-4xl mx-auto text-center px-4">
             <h2 className="text-3xl font-bold mb-6">What's Next</h2>
@@ -100,7 +132,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Call to Action */}
         <section className="py-20 bg-[#111111] text-center">
           <div className="max-w-3xl mx-auto px-4">
             <h2 className="text-4xl font-bold text-white mb-6">Join Our Community</h2>
@@ -114,4 +145,4 @@ export default async function AboutPage() {
       <Footer />
     </>
   );
-    }
+}
