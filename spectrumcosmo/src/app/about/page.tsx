@@ -4,12 +4,13 @@ import Footer from '@/components/storefront/Footer';
 import Link from 'next/link';
 import DynamicImageViewer from '@/components/storefront/DynamicImageViewer';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AboutPage() {
   const sql = getDb();
   const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
   const content = row?.content || {};
 
-  // Fallback defaults
   const history = content.history || '';
   const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
   const mission = content.mission || 'Celebrate anime passion and help fans express themselves proudly.';
@@ -29,7 +30,6 @@ export default async function AboutPage() {
     <>
       <Navbar />
       <main className="bg-white">
-        {/* Hero Section */}
         <section className="py-16 md:py-24 bg-orange-50">
           <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
             <DynamicImageViewer mode={imageMode} singleImage={singleImage} carouselImages={carouselImages} />
@@ -40,7 +40,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Vision & Mission */}
         <section className="py-16 max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-8 text-center md:text-left">
           <div className="bg-gray-50 p-8 rounded-2xl">
             <h2 className="text-2xl font-bold text-[#F97316] mb-3">Vision</h2>
@@ -52,12 +51,11 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Statistics */}
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Our Impact</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map((stat: any, idx: number) => (
+              {stats.map((stat, idx) => (
                 <div key={idx} className="text-center bg-orange-50 p-6 rounded-2xl">
                   <div className="text-4xl font-bold text-[#F97316]">{stat.value}</div>
                   <div className="text-gray-600 mt-2">{stat.label}</div>
@@ -67,13 +65,12 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section */}
         {team.length > 0 && (
           <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4">
               <h2 className="text-3xl font-bold text-center mb-12">Meet the Team</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {team.map((member: any, idx: number) => (
+                {team.map((member, idx) => (
                   <div key={idx} className="bg-white p-6 rounded-2xl text-center shadow-sm">
                     <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden mb-4">
                       {member.image ? (
@@ -91,7 +88,6 @@ export default async function AboutPage() {
           </section>
         )}
 
-        {/* Future Plans */}
         <section className="py-16 bg-white">
           <div className="max-w-4xl mx-auto text-center px-4">
             <h2 className="text-3xl font-bold mb-6">What's Next</h2>
@@ -99,7 +95,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* CTA */}
         <section className="py-20 bg-[#111111] text-center">
           <div className="max-w-3xl mx-auto px-4">
             <h2 className="text-4xl font-bold text-white mb-6">Join Our Community</h2>
@@ -113,4 +108,4 @@ export default async function AboutPage() {
       <Footer />
     </>
   );
-}
+                  }
