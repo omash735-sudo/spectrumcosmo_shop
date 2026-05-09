@@ -1,14 +1,13 @@
 export const dynamic = 'force-dynamic'
-
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { verifyToken } from '@/lib/auth'
 import { getDb } from '@/lib/db'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default async function AnalyticsPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('admin_token')?.value
-
   if (!token || !verifyToken(token)) redirect('/admin/login')
 
   const sql = getDb()
@@ -18,142 +17,124 @@ export default async function AnalyticsPage() {
     totalRevenue: 0,
     confirmedOrders: 0,
     pendingOrders: 0,
-    failedOrders: 0,
+    declinedOrders: 0,
   }
-
+  let monthlyData: any[] = []
   let topProducts: any[] = []
+  let customerStats: { repeatCustomers: number, newCustomers: number } = { repeatCustomers: 0, newCustomers: 0 }
 
   try {
-    const [orders, revenue, confirmed, pending, failed, products] =
-      await Promise.all([
-        sql`SELECT COUNT(*) as count FROM orders`,
-        sql`
-          SELECT SUM(COALESCE(total_amount, total_price)) as total
+    const [ordersCount, revenue, confirmed, pending, declined, monthly, products, repeatData] = await Promise.all([
+      sql`SELECT COUNT(*) as count FROM orders`,
+      sql`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status = 'approved'`,
+      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'approved'`,
+      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'pending'`,
+      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'declined'`,
+      sql`
+        SELECT
+          DATE_TRUNC('month', created_at) as month,
+          COUNT(*) as order_count,
+          COALESCE(SUM(total_amount), 0) as revenue
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        GROUP BY month
+        ORDER BY month ASC
+      `,
+      sql`
+        SELECT product_name, COUNT(*) as sold
+        FROM orders
+        WHERE status = 'approved'
+        GROUP BY product_name
+        ORDER BY sold DESC
+        LIMIT 5
+      `,
+      sql`
+        SELECT
+          COUNT(CASE WHEN order_count > 1 THEN 1 END) as repeat,
+          COUNT(CASE WHEN order_count = 1 THEN 1 END) as new
+        FROM (
+          SELECT user_id, COUNT(*) as order_count
           FROM orders
-          WHERE status = 'confirmed'
-        `,
-        sql`SELECT COUNT(*) as count FROM orders WHERE status = 'confirmed'`,
-        sql`SELECT COUNT(*) as count FROM orders WHERE status = 'pending'`,
-        sql`SELECT COUNT(*) as count FROM orders WHERE status = 'failed'`,
-
-        sql`
-          SELECT product_name, COUNT(*) as total_sold
-          FROM orders
-          WHERE status = 'confirmed'
-          GROUP BY product_name
-          ORDER BY total_sold DESC
-          LIMIT 5
-        `,
-      ])
+          WHERE user_id IS NOT NULL
+          GROUP BY user_id
+        ) t
+      `
+    ])
 
     stats = {
-      totalOrders: parseInt(orders[0].count),
-      totalRevenue: parseFloat(revenue[0].total || 0),
+      totalOrders: parseInt(ordersCount[0].count),
+      totalRevenue: parseFloat(revenue[0].total),
       confirmedOrders: parseInt(confirmed[0].count),
       pendingOrders: parseInt(pending[0].count),
-      failedOrders: parseInt(failed[0].count),
+      declinedOrders: parseInt(declined[0].count),
     }
-
+    monthlyData = monthly.map((row: any) => ({
+      month: new Date(row.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      orders: parseInt(row.order_count),
+      revenue: parseFloat(row.revenue),
+    }))
     topProducts = products
+    customerStats = {
+      repeatCustomers: parseInt(repeatData[0]?.repeat || 0),
+      newCustomers: parseInt(repeatData[0]?.new || 0),
+    }
   } catch (err) {
     console.error(err)
   }
 
-  const cards = [
-    {
-      label: 'Total Orders',
-      value: stats.totalOrders,
-    },
-    {
-      label: 'Revenue',
-      value: `MK ${stats.totalRevenue}`,
-    },
-    {
-      label: 'Confirmed Orders',
-      value: stats.confirmedOrders,
-    },
-    {
-      label: 'Pending Orders',
-      value: stats.pendingOrders,
-    },
-    {
-      label: 'Failed Orders',
-      value: stats.failedOrders,
-    },
-  ]
-
   return (
-    <div>
-
-      {/* Header */}
+    <div className="pt-16 lg:pt-0">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111111]">Analytics</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Overview of your business performance.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+        <p className="text-gray-500 text-sm mt-1">Overview of your business performance.</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-
-        {cards.map((c, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-2xl p-5 border border-gray-100"
-          >
-            <p className="text-2xl font-bold text-[#111111]">
-              {c.value}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {c.label}
-            </p>
-          </div>
-        ))}
-
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+        <div className="bg-white rounded-2xl p-5 border"><p className="text-2xl font-bold">{stats.totalOrders}</p><p className="text-xs text-gray-500">Total Orders</p></div>
+        <div className="bg-white rounded-2xl p-5 border"><p className="text-2xl font-bold">MK {stats.totalRevenue.toLocaleString()}</p><p className="text-xs text-gray-500">Revenue</p></div>
+        <div className="bg-white rounded-2xl p-5 border"><p className="text-2xl font-bold">{stats.confirmedOrders}</p><p className="text-xs text-gray-500">Confirmed</p></div>
+        <div className="bg-white rounded-2xl p-5 border"><p className="text-2xl font-bold">{stats.pendingOrders}</p><p className="text-xs text-gray-500">Pending</p></div>
+        <div className="bg-white rounded-2xl p-5 border"><p className="text-2xl font-bold">{stats.declinedOrders}</p><p className="text-xs text-gray-500">Declined</p></div>
       </div>
 
-      {/* Top Products */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-[#111111]">Top Products</h2>
+      <div className="bg-white rounded-2xl border p-5 mb-8">
+        <h2 className="font-bold mb-4">Customer Retention</h2>
+        <div className="flex gap-8">
+          <div><p className="text-3xl font-bold text-orange-600">{customerStats.repeatCustomers}</p><p className="text-xs text-gray-500">Repeat Customers</p></div>
+          <div><p className="text-3xl font-bold text-blue-600">{customerStats.newCustomers}</p><p className="text-xs text-gray-500">New Customers</p></div>
         </div>
+      </div>
 
-        {topProducts.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-400 text-sm">
-            No product data available.
-          </div>
-        ) : (
+      <div className="bg-white rounded-2xl border p-5 mb-8">
+        <h2 className="font-bold mb-4">Monthly Sales Trend</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={monthlyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis yAxisId="left" />
+            <YAxis yAxisId="right" orientation="right" />
+            <Tooltip />
+            <Legend />
+            <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#F97316" name="Orders" />
+            <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#3B82F6" name="Revenue (MK)" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="bg-white rounded-2xl border overflow-hidden">
+        <div className="px-6 py-4 border-b"><h2 className="font-bold">Top Selling Products</h2></div>
+        {topProducts.length === 0 ? <div className="p-6 text-center text-gray-400">No data</div> : (
           <table className="w-full">
-
-            <thead>
-              <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
-                <th className="text-left px-6 py-3">Product</th>
-                <th className="text-left px-6 py-3">Sold</th>
-              </tr>
+            <thead className="bg-gray-50 text-xs text-gray-400 uppercase">
+              <tr><th className="text-left px-6 py-3">Product</th><th className="text-left px-6 py-3">Sold</th></tr>
             </thead>
-
-            <tbody className="divide-y divide-gray-50">
-
-              {topProducts.map((p: any, i: number) => (
-                <tr key={i} className="hover:bg-gray-50">
-
-                  <td className="px-6 py-4 text-sm text-[#111111]">
-                    {p.product_name}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {p.total_sold}
-                  </td>
-
-                </tr>
+            <tbody>
+              {topProducts.map((p, i) => (
+                <tr key={i} className="border-t"><td className="px-6 py-4">{p.product_name}</td><td className="px-6 py-4">{p.sold}</td></tr>
               ))}
-
             </tbody>
-
           </table>
         )}
-
       </div>
     </div>
   )
