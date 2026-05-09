@@ -2,7 +2,7 @@ import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import Link from 'next/link';
-import AboutImageViewer from '@/components/storefront/AboutImageViewer';
+import DynamicImageViewer from '@/components/storefront/DynamicImageViewer';
 
 export default async function AboutPage() {
   const sql = getDb();
@@ -32,7 +32,7 @@ export default async function AboutPage() {
         {/* Hero Section */}
         <section className="py-16 md:py-24 bg-orange-50">
           <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-            <AboutImageViewer mode={imageMode} singleImage={singleImage} carouselImages={carouselImages} />
+            <DynamicImageViewer mode={imageMode} singleImage={singleImage} carouselImages={carouselImages} />
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About SpectrumCosmo</h1>
               <div className="text-gray-600 leading-relaxed whitespace-pre-line">{history}</div>
@@ -67,7 +67,7 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team */}
+        {/* Team Section */}
         {team.length > 0 && (
           <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4">
@@ -113,4 +113,4 @@ export default async function AboutPage() {
       <Footer />
     </>
   );
-                      }
+}
