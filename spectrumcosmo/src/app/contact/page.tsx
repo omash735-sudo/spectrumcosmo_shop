@@ -1,10 +1,21 @@
+// src/app/contact/page.tsx
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import Link from 'next/link';
-import DynamicImageViewer from '@/components/storefront/DynamicImageViewer';
+import { Handshake, HelpCircle, Users, Briefcase } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+// Map title to icon component (you can extend later)
+const getIconForTitle = (title: string) => {
+  const lower = title.toLowerCase();
+  if (lower.includes('collaboration')) return Handshake;
+  if (lower.includes('support')) return HelpCircle;
+  if (lower.includes('influencer')) return Users;
+  if (lower.includes('business')) return Briefcase;
+  return HelpCircle; // fallback
+};
 
 export default async function ContactPage() {
   const sql = getDb();
@@ -33,20 +44,25 @@ export default async function ContactPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
-        <div className="relative">
-          {hero.mode === 'carousel' && hero.carousel_images?.length > 0 ? (
-            <DynamicImageViewer mode="carousel" singleImage="" carouselImages={hero.carousel_images} />
-          ) : hero.single_image ? (
-            <div className="relative h-96 w-full">
-              <img src={hero.single_image} alt="Contact" className="w-full h-full object-cover" />
+        {/* Hero Section - Using existing component (assume it handles carousel/single) */}
+        {hero.mode === 'carousel' && hero.carousel_images?.length > 0 ? (
+          <div className="relative h-96 w-full bg-gray-800 flex items-center justify-center">
+            {/* Placeholder for carousel – you can reuse HeroCarousel here */}
+            <img src={hero.carousel_images[0]} alt="Hero" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center">
+              <h1 className="text-4xl text-white font-bold">{hero.title}</h1>
+              <p className="text-white">{hero.subtitle}</p>
             </div>
-          ) : null}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4" style={{ color: hero.text_color }}>
-            <h1 className="text-4xl md:text-5xl font-bold">{hero.title}</h1>
-            <p className="text-lg mt-2">{hero.subtitle}</p>
           </div>
-        </div>
+        ) : hero.single_image ? (
+          <div className="relative h-96 w-full">
+            <img src={hero.single_image} alt="Hero" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center">
+              <h1 className="text-4xl text-white font-bold">{hero.title}</h1>
+              <p className="text-white">{hero.subtitle}</p>
+            </div>
+          </div>
+        ) : null}
 
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Contact Form */}
@@ -65,24 +81,41 @@ export default async function ContactPage() {
             </form>
           </div>
 
-          {/* Feature Grid */}
+          {/* Feature Grid with Icons */}
           {featureGrid.length > 0 && (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-              {featureGrid.map((item: any, idx: number) => (
-                <Link key={idx} href={item.link} className="bg-white p-5 rounded-xl shadow hover:shadow-md">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-gray-500">{item.description}</p>
-                </Link>
-              ))}
+              {featureGrid.map((item: any, idx: number) => {
+                const Icon = getIconForTitle(item.title);
+                return (
+                  <Link
+                    key={idx}
+                    href={item.link}
+                    className="bg-white p-5 rounded-xl shadow hover:shadow-md transition group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-orange-100 rounded-full text-[#F97316] group-hover:bg-orange-200 transition">
+                        <Icon size={20} />
+                      </div>
+                      <h3 className="font-semibold text-gray-800">{item.title}</h3>
+                    </div>
+                    <p className="text-sm text-gray-500 ml-2">{item.description}</p>
+                  </Link>
+                );
+              })}
             </div>
           )}
 
-          {/* Contact Details */}
+          {/* Contact Details & Community Link */}
           <div className="bg-white rounded-xl shadow p-6 text-center">
             <h3 className="font-semibold mb-2">Contact Information</h3>
             <p className="text-sm">Email: {contactDetails.email}</p>
             <p className="text-sm">Phone: {contactDetails.phone}</p>
             <p className="text-sm">Address: {contactDetails.address}</p>
+            {contactDetails.whatsapp_link && (
+              <a href={contactDetails.whatsapp_link} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[#F97316] text-sm underline">
+                WhatsApp Community
+              </a>
+            )}
             {communityLink && (
               <a href={communityLink} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block bg-[#F97316] text-white px-4 py-2 rounded-full text-sm">
                 Join Our Community
@@ -94,4 +127,4 @@ export default async function ContactPage() {
       <Footer />
     </>
   );
-            }
+}
