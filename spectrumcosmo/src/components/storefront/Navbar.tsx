@@ -26,16 +26,14 @@ import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 import { useSettings } from '@/components/storefront/SettingsProvider'
 
-// Desktop navigation – same for all users
 const desktopLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products' },
   { href: '/reviews', label: 'Reviews' },
   { href: '/about', label: 'About Us' },
-  { href: '/contact', label: 'Help Centre' },
+  { href: '/contact', label: 'Contact Us' },
 ]
 
-// WhatsApp config
 const WHATSAPP_NUMBER = '265893160202'
 const WHATSAPP_MESSAGE = 'Hi, I’m interested in purchasing products from SpectrumCosmo. Kindly assist me with catalog and ordering details.'
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
@@ -45,7 +43,6 @@ const HIDE_WHATSAPP_PATHS = [
   '/account/payments', '/account/settings', '/account/profile',
 ]
 
-// Links that should redirect to login if accessed directly (guest modal removed)
 const PROTECTED_LINKS = [
   '/account/profile',
   '/account/settings',
@@ -75,7 +72,6 @@ export default function Navbar() {
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
-  // Fetch user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -93,7 +89,6 @@ export default function Navbar() {
     fetchUser()
   }, [])
 
-  // Close user menu
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
@@ -120,7 +115,6 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
   const profileImage = user?.profileImage
 
-  // For direct access to protected pages, redirect to login
   const handleProtectedClick = (e: React.MouseEvent, href: string) => {
     if (!isLoggedIn && PROTECTED_LINKS.includes(href)) {
       e.preventDefault()
@@ -128,18 +122,15 @@ export default function Navbar() {
     }
   }
 
-  // Mobile drawer items: only show account‑specific links when logged in
   const alwaysItems = [
     { type: 'link' as const, href: '/', label: 'Home', icon: Home },
-    { type: 'link' as const, href: '/products', label: 'Products', icon: Package },
     { type: 'link' as const, href: '/reviews', label: 'Reviews', icon: Star },
     { type: 'link' as const, href: '/about', label: 'About Us', icon: Info },
-    { type: 'link' as const, href: '/contact', label: 'Help Centre', icon: HelpCircle },
+    { type: 'link' as const, href: '/contact', label: 'Contact Us', icon: HelpCircle },
     { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
   ]
 
   const loggedInOnlyItems = [
-    { type: 'link' as const, href: '/my-reviews', label: 'My Reviews', icon: Star },
     { type: 'link' as const, href: '/account/payments', label: 'Order History', icon: Clock },
     { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
   ]
@@ -154,7 +145,6 @@ export default function Navbar() {
       `}</style>
 
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        {/* DESKTOP */}
         <div className="hidden md:flex max-w-7xl mx-auto px-5 py-4 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-10" />
@@ -229,7 +219,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE TOP BAR */}
         <div className="md:hidden flex items-center justify-between px-5 py-3">
           <button onClick={() => setMobileMenuOpen(true)}><Menu size={24} /></button>
           <Link href="/" className="flex items-center gap-2">
@@ -247,7 +236,6 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MOBILE DRAWER */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden">
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col">
@@ -256,7 +244,6 @@ export default function Navbar() {
               <button onClick={() => setMobileMenuOpen(false)}><X size={22} /></button>
             </div>
 
-            {/* User info area – guests see "Guest / Visitor" with a Sign in button */}
             <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {profileImage ? (
@@ -273,18 +260,15 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Currency selector */}
             <div className="mt-3 py-2 border-t border-b border-gray-100">
               <CurrencySelector />
             </div>
 
-            {/* Call to action – View Products */}
             <div className="my-3 bg-orange-50 p-2 rounded flex justify-between">
               <span className="font-semibold">View Products</span>
               <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">view →</Link>
             </div>
 
-            {/* Main navigation – visible to everyone */}
             <div className="flex flex-col gap-2 mt-2 flex-grow">
               {alwaysItems.map(item => {
                 const Icon = item.icon
@@ -306,7 +290,6 @@ export default function Navbar() {
                   </Link>
                 )
               })}
-              {/* Account-specific links – only when logged in */}
               {isLoggedIn && loggedInOnlyItems.map(item => {
                 const Icon = item.icon
                 return (
@@ -322,7 +305,6 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* Bottom area – logout (if logged in) or no extra items */}
             <div className="mt-6 pt-3 border-t border-gray-200">
               {isLoggedIn ? (
                 <button onClick={logout} className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left">
@@ -341,7 +323,6 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* Floating WhatsApp Button */}
       {showWhatsApp && (
         <a
           href={WHATSAPP_URL}
