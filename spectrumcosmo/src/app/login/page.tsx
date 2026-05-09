@@ -74,7 +74,7 @@ export default function LoginPage() {
     }
   }
 
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
