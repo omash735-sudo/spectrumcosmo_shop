@@ -18,14 +18,10 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb()
     const [dbUser] = await sql`SELECT password_hash FROM users WHERE id = ${user.id}`
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
+    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
     const isValid = await bcrypt.compare(currentPassword, dbUser.password_hash)
-    if (!isValid) {
-      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
-    }
+    if (!isValid) return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
 
     const hashed = await bcrypt.hash(newPassword, 10)
     await sql`UPDATE users SET password_hash = ${hashed} WHERE id = ${user.id}`
