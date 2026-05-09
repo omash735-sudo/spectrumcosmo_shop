@@ -3,12 +3,9 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { verifyToken } from '@/lib/auth'
 import { getDb } from '@/lib/db'
-import { Package, ShoppingCart, Star, TrendingUp, Users, DollarSign } from 'lucide-react'
+import { Package, ShoppingCart, Users, DollarSign } from 'lucide-react'
 import Link from 'next/link'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, PieChart, Pie, Legend
-} from 'recharts'
+import { MonthlySalesChart } from '@/components/admin/Charts'
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -115,18 +112,7 @@ export default async function DashboardPage() {
         {/* Monthly Sales Chart */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="font-bold text-gray-800 mb-4">Monthly Sales Trend</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={monthlySales}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
-              <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#F97316" name="Orders" />
-              <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#3B82F6" name="Revenue (MK)" />
-            </LineChart>
-          </ResponsiveContainer>
+          <MonthlySalesChart data={monthlySales} />
         </div>
 
         {/* Top Products */}
@@ -197,4 +183,4 @@ export default async function DashboardPage() {
       </div>
     </div>
   )
-  }
+}
