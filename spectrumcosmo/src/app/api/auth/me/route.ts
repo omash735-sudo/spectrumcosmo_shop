@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { getVerifiedUser } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 
 async function ensureUsersTable() {
@@ -19,8 +19,8 @@ async function ensureUsersTable() {
 }
 
 export async function GET(req: NextRequest) {
-  const userToken = getUserFromRequest(req)
-  if (!userToken) return NextResponse.json({ user: null }, { status: 401 })
+  const { user: userToken, error: authError } = await getVerifiedUser(req)
+  if (authError) return authError
 
   try {
     await ensureUsersTable()
@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
 
     const user = users[0]
 
-    // Get subscription status from unified table
     const [subStatus] = await sql`
       SELECT is_subscribed FROM newsletter_subscriptions
       WHERE user_id = ${userToken.id} OR email = ${user.email}
