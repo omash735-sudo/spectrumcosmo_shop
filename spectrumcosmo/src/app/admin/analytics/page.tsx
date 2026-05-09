@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { verifyToken } from '@/lib/auth'
 import { getDb } from '@/lib/db'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { MonthlySalesChart } from '@/components/admin/Charts'
 
 export default async function AnalyticsPage() {
   const cookieStore = await cookies()
@@ -107,18 +107,7 @@ export default async function AnalyticsPage() {
 
       <div className="bg-white rounded-2xl border p-5 mb-8">
         <h2 className="font-bold mb-4">Monthly Sales Trend</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={monthlyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis yAxisId="left" />
-            <YAxis yAxisId="right" orientation="right" />
-            <Tooltip />
-            <Legend />
-            <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#F97316" name="Orders" />
-            <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#3B82F6" name="Revenue (MK)" />
-          </LineChart>
-        </ResponsiveContainer>
+        <MonthlySalesChart data={monthlyData} />
       </div>
 
       <div className="bg-white rounded-2xl border overflow-hidden">
