@@ -25,6 +25,7 @@ export default async function AboutPage() {
   const imageMode = content.image_mode || 'single';
   const singleImage = content.single_image_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
   const carouselImages = content.carousel_images || [];
+  const communityLink = content.community_link || '';
 
   return (
     <>
@@ -99,13 +100,28 @@ export default async function AboutPage() {
           <div className="max-w-3xl mx-auto px-4">
             <h2 className="text-4xl font-bold text-white mb-6">Join Our Community</h2>
             <p className="text-gray-400 mb-8">Be part of the growing anime culture in Malawi.</p>
-            <Link href="/products" className="inline-block bg-[#F97316] text-white px-8 py-4 rounded-full font-medium hover:bg-orange-600 transition">
-              Shop Now
-            </Link>
+            {communityLink ? (
+              <a
+                href={communityLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#F97316] text-white px-8 py-4 rounded-full font-medium hover:bg-orange-600 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Join Community
+              </a>
+            ) : (
+              <p className="text-gray-500 text-sm">Community link not configured in admin.</p>
+            )}
           </div>
         </section>
       </main>
       <Footer />
     </>
   );
-                  }
+}
