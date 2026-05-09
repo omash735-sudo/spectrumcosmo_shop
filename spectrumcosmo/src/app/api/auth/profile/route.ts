@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { getVerifiedUser } from '@/lib/auth'
 import { sendMail } from '@/lib/mailer'
 
 async function ensureUsersTable() {
@@ -18,7 +18,6 @@ async function ensureUsersTable() {
   `
 }
 
-// Helper to fetch recent products for the re‑subscription email
 async function getRecentProducts(limit = 4) {
   const sql = getDb()
   try {
@@ -36,15 +35,14 @@ async function getRecentProducts(limit = 4) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const user = getUserFromRequest(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
 
   try {
     await ensureUsersTable()
     const { name, phone, newsletterSubscribed, profileImage } = await req.json()
     const sql = getDb()
 
-    // Update user profile (excluding newsletter_subscribed column – it's gone)
     const [updated] = await sql`
       UPDATE users SET
         name = COALESCE(${name}, name),
@@ -54,18 +52,14 @@ export async function PATCH(req: NextRequest) {
       RETURNING id, name, email, phone, profile_image AS "profileImage"
     `
 
-    // Handle newsletter subscription change
     if (newsletterSubscribed !== undefined) {
       const normalizedEmail = updated.email.toLowerCase()
-
-      // Get current subscription status before update
       const [current] = await sql`
         SELECT is_subscribed FROM newsletter_subscriptions
         WHERE email = ${normalizedEmail}
       `
       const wasSubscribed = current?.is_subscribed === true
 
-      // Insert or update the unified table
       await sql`
         INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
         VALUES (${normalizedEmail}, ${user.id}, ${newsletterSubscribed}, NOW())
@@ -75,7 +69,6 @@ export async function PATCH(req: NextRequest) {
           updated_at = NOW()
       `
 
-      // Branch: re‑subscription (was not subscribed, now becomes true)
       if (newsletterSubscribed === true && !wasSubscribed) {
         const recentProducts = await getRecentProducts(4)
         const productsHtml = recentProducts.map(p => `
@@ -85,7 +78,6 @@ export async function PATCH(req: NextRequest) {
             <p style="color:#F97316; font-size:12px;">${p.currency || 'MWK'} ${p.price}</p>
           </div>
         `).join('')
-
         const reSubscribeHtml = `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
             <div style="background: #F97316; padding: 20px; text-align: center;">
@@ -109,7 +101,6 @@ export async function PATCH(req: NextRequest) {
             </div>
           </div>
         `
-
         await sendMail({
           to: updated.email,
           subject: 'We missed you! Here’s what’s new at SpectrumCosmo',
@@ -118,7 +109,6 @@ export async function PATCH(req: NextRequest) {
         }).catch(err => console.error('Re-subscription email failed:', err))
       }
 
-      // Branch: unsubscription (was subscribed, now becomes false)
       if (newsletterSubscribed === false && wasSubscribed) {
         await sendMail({
           to: updated.email,
