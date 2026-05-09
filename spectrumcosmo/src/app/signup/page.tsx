@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 
@@ -11,26 +11,37 @@ export default function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setLoading(true)
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    })
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error || 'Signup failed')
-      setLoading(false)
+    if (!acceptedTerms) {
+      setError('You must agree to the Terms & Conditions and Privacy Policy.')
       return
     }
-    window.location.href = '/'
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, acceptedTerms }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Signup failed')
+      }
+      window.location.href = '/account'
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
   return (
     <>
@@ -44,14 +55,7 @@ export default function SignupPage() {
         </div>
         <div className="relative w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#F97316] rounded-xl flex items-center justify-center">
-                <ShoppingBag size={20} className="text-white" />
-              </div>
-              <span className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                SpectrumCosmo
-              </span>
-            </div>
+            <img src={logoSrc} alt="SpectrumCosmo" className="h-12 mx-auto mb-4" />
             <p className="text-gray-400 text-sm">Start your journey</p>
           </div>
           <div className="bg-white rounded-3xl p-8 shadow-2xl">
@@ -60,7 +64,13 @@ export default function SignupPage() {
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
                 <label className="label">Full Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} required className="input" placeholder="Your name" />
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="input"
+                  placeholder="Your name"
+                />
               </div>
               <div>
                 <label className="label">Email</label>
@@ -93,7 +103,33 @@ export default function SignupPage() {
                   </button>
                 </div>
               </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3.5 text-base">
+
+              {/* Terms & Privacy Checkbox */}
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1"
+                />
+                <label htmlFor="terms" className="text-xs text-gray-500">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-[#F97316] hover:underline">
+                    Terms & Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" className="text-[#F97316] hover:underline">
+                    Privacy Policy
+                  </Link>.
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full justify-center py-3.5 text-base disabled:opacity-50"
+              >
                 {loading ? <><Loader2 size={16} className="animate-spin" />Creating...</> : 'Create Account'}
               </button>
               {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</p>}
@@ -111,4 +147,3 @@ export default function SignupPage() {
     </>
   )
 }
-
