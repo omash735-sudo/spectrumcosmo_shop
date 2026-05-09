@@ -17,8 +17,9 @@ import {
   Menu,
   X,
   LogOut,
-  Layout,        // Hero icon
-  FileText,      // About Page & Contact Page icon
+  Layout,
+  FileText,
+  Shield,               // added for Privacy Policy
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -35,14 +36,15 @@ const navItems = [
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
   { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' },
-  { name: 'Contact Page', href: '/admin/contact', icon: FileText, section: 'SYSTEM' }, // Added Contact Page
+  { name: 'Contact Page', href: '/admin/contact', icon: FileText, section: 'SYSTEM' },
+  { name: 'Terms', href: '/admin/terms', icon: FileText, section: 'SYSTEM' },       // NEW
+  { name: 'Privacy', href: '/admin/privacy', icon: Shield, section: 'SYSTEM' },     // NEW
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -53,7 +55,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const NavContent = () => (
     <>
-      {/* Logo */}
       <div className="flex items-center gap-3 mb-8 px-2">
         <div className="relative w-10 h-10">
           <img
@@ -68,7 +69,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1">
         {['CORE', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => (
           <div key={section}>
@@ -98,7 +98,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ))}
       </nav>
 
-      {/* Logout Button */}
       <div className="pt-4 mt-4 border-t border-gray-100">
         <button
           onClick={async () => {
@@ -116,7 +115,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img
@@ -134,7 +132,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           <div
@@ -157,20 +154,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      {/* Desktop Layout */}
       <div className="hidden md:flex">
-        {/* Sidebar */}
         <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-100 min-h-screen sticky top-0 flex flex-col p-5 shadow-sm">
           <NavContent />
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
 
-      {/* Mobile Main Content (with top padding for header) */}
       <div className="md:hidden pt-16">
         <main className="p-4">
           <div className="max-w-7xl mx-auto">{children}</div>
