@@ -1,132 +1,117 @@
-import Image from 'next/image'
-import Navbar from '@/components/storefront/Navbar'
-import Footer from '@/components/storefront/Footer'
+import { getDb } from '@/lib/db';
+import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
+import Image from 'next/image';
+import Link from 'next/link';
 
-const ABOUT_IMAGE =
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg'
+const DEFAULT_IMAGE = 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const sql = getDb();
+  const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
+  const content = row?.content || {};
+
+  // Fallbacks
+  const history = content.history || '';
+  const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
+  const mission = content.mission || 'Celebrate anime passion and help fans express themselves proudly.';
+  const stats = content.stats || [
+    { value: '2024', label: 'Year Started' },
+    { value: '1000+', label: 'Products Sold' },
+    { value: '400+', label: 'Community Members' },
+    { value: '5+', label: 'Countries Served' }
+  ];
+  const team = content.team || [];
+  const futurePlans = content.future_plans || 'Participate in conventions, host watch parties, support local anime culture.';
+
   return (
     <>
       <Navbar />
-
-      <main className="bg-orange-50">
-
-        {/* HERO SECTION */}
-        <section className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
-
-            {/* IMAGE SIDE */}
-            <div className="relative">
-              <div className="relative h-96 rounded-3xl overflow-hidden shadow-2xl">
-                <Image
-                  src={ABOUT_IMAGE}
-                  alt="SpectrumCosmo community"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              {/* FLOATING STATS */}
-              <div className="absolute -bottom-6 -right-6 bg-[#F97316] text-white rounded-2xl p-6 shadow-xl max-w-[200px]">
-                <p className="text-3xl font-bold">500+</p>
-                <p className="text-sm text-orange-100 mt-1">
-                  Happy customers worldwide
-                </p>
-              </div>
+      <main className="bg-white">
+        {/* Hero Section */}
+        <section className="py-16 md:py-24 bg-orange-50">
+          <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+            <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
+              <Image src={DEFAULT_IMAGE} alt="SpectrumCosmo community" fill className="object-cover" />
             </div>
-
-            {/* TEXT SIDE */}
             <div>
-              <p className="text-[#F97316] font-medium text-sm mb-3 uppercase tracking-widest">
-                About SpectrumCosmo
-              </p>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About SpectrumCosmo</h1>
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">{history}</p>
+            </div>
+          </div>
+        </section>
 
-              <h1 className="text-4xl font-bold text-[#111111] mb-6 leading-tight">
-                Wear your excitement with pride
-              </h1>
+        {/* Vision & Mission */}
+        <section className="py-16 max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-8 text-center md:text-left">
+          <div className="bg-gray-50 p-8 rounded-2xl">
+            <h2 className="text-2xl font-bold text-[#F97316] mb-3">Vision</h2>
+            <p className="text-gray-600">{vision}</p>
+          </div>
+          <div className="bg-gray-50 p-8 rounded-2xl">
+            <h2 className="text-2xl font-bold text-[#F97316] mb-3">Mission</h2>
+            <p className="text-gray-600">{mission}</p>
+          </div>
+        </section>
 
-              <p className="text-gray-600 leading-relaxed mb-5">
-                SpectrumCosmo was created from a passion for anime culture and streetwear fashion.
-                We believe clothing is not just fabric — it is identity, emotion, and expression.
-              </p>
+        {/* Statistics Grid */}
+        <section className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12">Our Impact</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {stats.map((stat: any, idx: number) => (
+                <div key={idx} className="text-center bg-orange-50 p-6 rounded-2xl">
+                  <div className="text-4xl font-bold text-[#F97316]">{stat.value}</div>
+                  <div className="text-gray-600 mt-2">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-              <p className="text-gray-600 leading-relaxed mb-8">
-                Every product we design is carefully crafted with quality materials, bold designs,
-                and attention to detail so you can express yourself without limits.
-              </p>
-
-              {/* STATS GRID */}
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { number: '100%', label: 'Premium Quality' },
-                  { number: '48h', label: 'Fast Processing' },
-                  { number: 'Nationwide', label: 'Delivery' },
-                  { number: '5★', label: 'Customer Rating' }
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="bg-white rounded-xl p-4 border border-gray-100"
-                  >
-                    <p className="text-2xl font-bold text-[#F97316]">
-                      {item.number}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {item.label}
-                    </p>
+        {/* Team Section (only if team members exist) */}
+        {team.length > 0 && (
+          <section className="py-16 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4">
+              <h2 className="text-3xl font-bold text-center mb-12">Meet the Team</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {team.map((member: any, idx: number) => (
+                  <div key={idx} className="bg-white p-6 rounded-2xl text-center shadow-sm">
+                    <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden mb-4">
+                      {member.image ? (
+                        <Image src={member.image} alt={member.name} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">No image</div>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-semibold">{member.name}</h3>
+                    <p className="text-gray-500">{member.role}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* BRAND STATEMENT SECTION */}
-        <section className="py-20 bg-white">
+        {/* Future Plans */}
+        <section className="py-16 bg-white">
           <div className="max-w-4xl mx-auto text-center px-4">
-
-            <h2 className="text-3xl font-bold text-[#111111] mb-6">
-              More than a brand — a lifestyle
-            </h2>
-
-            <p className="text-gray-600 leading-relaxed mb-6">
-              At SpectrumCosmo, we don’t just sell clothing. We build identity.
-              Every drop is designed for people who want to stand out, not blend in.
-            </p>
-
-            <p className="text-gray-600 leading-relaxed">
-              From anime-inspired designs to modern streetwear, our goal is simple:
-              help you wear what represents your passion.
-            </p>
-
+            <h2 className="text-3xl font-bold mb-6">What's Next</h2>
+            <p className="text-gray-600 leading-relaxed whitespace-pre-line">{futurePlans}</p>
           </div>
         </section>
 
-        {/* CTA SECTION */}
+        {/* Call to Action */}
         <section className="py-20 bg-[#111111] text-center">
           <div className="max-w-3xl mx-auto px-4">
-
-            <h2 className="text-4xl font-bold text-white mb-6">
-              Ready to wear your excitement?
-            </h2>
-
-            <p className="text-gray-400 mb-8">
-              Explore our collection and find the piece that represents you.
-            </p>
-
-            <a
-              href="/products"
-              className="inline-block bg-[#F97316] text-white px-8 py-4 rounded-full font-medium hover:bg-orange-600 transition"
-            >
+            <h2 className="text-4xl font-bold text-white mb-6">Join Our Community</h2>
+            <p className="text-gray-400 mb-8">Be part of the growing anime culture in Malawi.</p>
+            <Link href="/products" className="inline-block bg-[#F97316] text-white px-8 py-4 rounded-full font-medium hover:bg-orange-600 transition">
               Shop Now
-            </a>
-
+            </Link>
           </div>
         </section>
-
       </main>
-
       <Footer />
     </>
-  )
-}
+  );
+    }
