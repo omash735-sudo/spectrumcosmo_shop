@@ -6,7 +6,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 
-function ResetPasswordFormContent() {
+export default function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -54,7 +54,8 @@ function ResetPasswordFormContent() {
     }
   }
 
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+  // Dark mode logo for dark background
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   return (
     <>
@@ -116,5 +117,3 @@ function ResetPasswordFormContent() {
     </>
   )
 }
-
-export default ResetPasswordFormContent
