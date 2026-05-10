@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { amount, currency, phoneNumber, paymentMethod, orderId, customerName, items } = body;
+    const { amount, currency, orderId, customerName, phoneNumber, paymentMethod } = body;
 
     // Build absolute URL for internal API calls
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -19,20 +19,10 @@ export async function POST(req: NextRequest) {
     }
     const accessToken = tokenData.accessToken;
 
-    // 2. Fetch connector_id from database (optional – not used in the new payload structure, but we keep for reference)
-    const sql = getDb();
-    const [option] = await sql`
-      SELECT connector_id FROM payment_options
-      WHERE name = ${paymentMethod} AND is_active = true
-    `;
-    if (!option?.connector_id) {
-      return NextResponse.json({ error: `Unsupported payment method: ${paymentMethod}` }, { status: 400 });
-    }
-
-    // 3. Generate unique source reference number (used for idempotency)
+    // 2. Generate a unique source reference number
     const sourceReferenceNumber = `SRN-${orderId.slice(-8)}-${Date.now().toString().slice(-4)}`;
 
-    // 4. Build the correct payload for OneKhusa (as per the documentation example)
+    // 3. Build payload (as per OneKhusa documentation)
     const payload = {
       authentication: {
         apiKey: process.env.ONEKHUSA_API_KEY,
@@ -55,34 +45,31 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    // 5. Call OneKhusa's checkout initiate endpoint
+    // 4. Call OneKhusa
     const endpoint = `https://api.onekhusa.com/sandbox/v1/checkout/rtp/initiate`;
-    console.log('[onekhusa-charge] Calling endpoint:', endpoint);
-    console.log('[onekhusa-charge] Payload:', JSON.stringify(payload, null, 2));
-
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
-        'X-Idempotency-Key': sourceReferenceNumber,   // Required header
+        'X-Idempotency-Key': sourceReferenceNumber,
       },
       body: JSON.stringify(payload),
     });
 
     const data = await response.json();
-    console.log('[onekhusa-charge] OneKhusa response status:', response.status);
-    console.log('[onekhusa-charge] OneKhusa response data:', data);
+    console.log('[onekhusa-charge] OneKhusa response:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
-      // Return the error detail from OneKhusa if available
       return NextResponse.json({ error: data.detail || data.message || 'Payment initiation failed' }, { status: response.status });
     }
 
-    const redirectUrl = data.redirectUrl || data.checkoutUrl || null;
-    const transactionId = data.transactionId || null;
+    // Try to extract a redirect URL from common field names
+    let redirectUrl = data.redirectUrl || data.checkoutUrl || data.paymentUrl || data.url || null;
+    const transactionId = data.transactionId || data.id || data.reference || null;
 
-    // Store the transaction ID in the order
+    // Store transaction ID in the order
+    const sql = getDb();
     if (transactionId) {
       await sql`
         UPDATE orders SET onekhusa_transaction_id = ${transactionId}
@@ -90,8 +77,10 @@ export async function POST(req: NextRequest) {
       `;
     }
 
+    // If no redirect URL, we must rely on webhook – redirect user to a pending page
     if (!redirectUrl) {
-      return NextResponse.json({ error: 'No payment URL returned' }, { status: 500 });
+      // Redirect to order tracking page with a message that payment is being processed
+      redirectUrl = `${baseUrl}/account/orders?pending=true`;
     }
 
     return NextResponse.json({ redirectUrl, transactionId });
@@ -99,4 +88,4 @@ export async function POST(req: NextRequest) {
     console.error('[onekhusa-charge] Unhandled error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
-        }
+}
