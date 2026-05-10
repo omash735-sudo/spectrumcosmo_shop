@@ -4,14 +4,11 @@ import { getDb } from '@/lib/db';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { amount, currency, phoneNumber, orderId, customerName } = body;
+    const { amount, currency, orderId, customerName, customerEmail, phoneNumber } = body;
 
     // Validate required fields
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
-    }
-    if (!phoneNumber) {
-      return NextResponse.json({ error: 'Phone number required' }, { status: 400 });
     }
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
@@ -20,7 +17,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-    // Get access token
+    // 1. Get access token
     const tokenRes = await fetch(`${baseUrl}/api/payments/onekhusa-token`);
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.accessToken) {
@@ -29,35 +26,50 @@ export async function POST(req: NextRequest) {
     }
     const accessToken = tokenData.accessToken;
 
-    // Generate unique reference number (must be unique per transaction)
-    const referenceNumber = `REF-${orderId.slice(-8)}-${Date.now()}`;
+    // 2. Unique reference (must be unique per request)
+    const sourceReferenceNumber = `SRN-${orderId.slice(-8)}-${Date.now().toString().slice(-6)}`;
 
-    // Build payload for OneKhusa (using the simple request-to-pay endpoint)
+    // 3. Build payload as per the working example (without customer object to avoid validation issues)
     const payload = {
-      merchantAccountNumber: parseInt(process.env.ONEKHUSA_MERCHANT_ACCOUNT!),
-      transactionAmount: Number(amount),
-      transactionDescription: `Order ${orderId}`,
-      referenceNumber: referenceNumber,
-      capturedBy: customerName || 'customer@checkout',
+      authentication: {
+        apiKey: process.env.ONEKHUSA_API_KEY,
+        apiSecret: process.env.ONEKHUSA_API_SECRET,
+      },
+      merchant: {
+        organisationId: process.env.ONEKHUSA_ORG_ID,
+        merchantAccountNumber: parseInt(process.env.ONEKHUSA_MERCHANT_ACCOUNT!),
+      },
+      payment: {
+        sourceReferenceNumber,
+        description: `Order ${orderId}`,
+        amount: Number(amount),
+        currency: currency || 'MWK',
+      },
+      route: {
+        successRedirectionUrl: `${baseUrl}/account/orders`,
+        failureRedirectionUrl: `${baseUrl}/checkout/payment?orderId=${orderId}`,
+        callbackApiUrl: `${baseUrl}/api/payments/onekhusa-webhook`,
+      },
     };
 
-    console.log('OneKhusa payload:', payload);
-
-    const response = await fetch('https://api.onekhusa.com/sandbox/v1/collections/requestToPay/initiate', {
+    // 4. Call OneKhusa
+    const response = await fetch('https://api.onekhusa.com/sandbox/v1/checkout/rtp/initiate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
-        'X-Idempotency-Key': referenceNumber,
+        'X-Idempotency-Key': sourceReferenceNumber,
       },
       body: JSON.stringify(payload),
     });
 
     const data = await response.json();
-    console.log('OneKhusa response:', data);
+    console.log('OneKhusa response:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
-      return NextResponse.json({ error: data.detail || 'Payment initiation failed' }, { status: response.status });
+      // Return the validation error details
+      const errorMsg = data.detail || data.message || (data.errors ? data.errors.join(', ') : 'Payment initiation failed');
+      return NextResponse.json({ error: errorMsg }, { status: response.status });
     }
 
     const paymentTransactionId = data.paymentTransactionId || null;
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    // Return success (no redirect needed)
+    // Even without a redirect URL, the payment request has been queued.
     return NextResponse.json({ success: true, paymentTransactionId });
   } catch (err: any) {
     console.error('OneKhusa charge error:', err);
