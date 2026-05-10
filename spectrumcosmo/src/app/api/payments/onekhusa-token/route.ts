@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export async function GET() {
-  // Return cached token if still valid (5 min expiry)
   if (cachedToken && cachedToken.expiresAt > Date.now()) {
     return NextResponse.json({ accessToken: cachedToken.token });
   }
@@ -13,8 +12,13 @@ export async function GET() {
   const organisationId = process.env.ONEKHUSA_ORG_ID;
   const merchantAccountNumber = process.env.ONEKHUSA_MERCHANT_ACCOUNT;
 
-  if (!apiKey || !apiSecret || !organisationId || !merchantAccountNumber) {
-    return NextResponse.json({ error: 'Missing OneKhusa config' }, { status: 500 });
+  const missing = [];
+  if (!apiKey) missing.push('ONEKHUSA_API_KEY');
+  if (!apiSecret) missing.push('ONEKHUSA_API_SECRET');
+  if (!organisationId) missing.push('ONEKHUSA_ORG_ID');
+  if (!merchantAccountNumber) missing.push('ONEKHUSA_MERCHANT_ACCOUNT');
+  if (missing.length) {
+    return NextResponse.json({ error: `Missing: ${missing.join(', ')}` }, { status: 500 });
   }
 
   try {
@@ -28,22 +32,15 @@ export async function GET() {
         merchantAccountNumber: parseInt(merchantAccountNumber),
       }),
     });
-
     const data = await response.json();
-    if (!response.ok) {
-      console.error('OneKhusa token error:', data);
-      return NextResponse.json({ error: 'Failed to get access token' }, { status: response.status });
-    }
-
-    // Cache token for 4.5 minutes (less than 5 min expiry)
+    if (!response.ok) throw new Error(data.detail || 'Token fetch failed');
     cachedToken = {
       token: data.accessToken,
       expiresAt: Date.now() + 4.5 * 60 * 1000,
     };
-
     return NextResponse.json({ accessToken: data.accessToken });
   } catch (err: any) {
-    console.error('Token fetch error:', err);
+    console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-      }
+}
