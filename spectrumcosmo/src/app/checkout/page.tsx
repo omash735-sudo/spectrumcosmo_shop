@@ -123,11 +123,15 @@ export default function CheckoutPage() {
         throw new Error(`Payment API error: ${text.slice(0, 100)}`);
       }
 
+      // Debug: show the full response in an alert
+      alert('OneKhusa response:\n' + JSON.stringify(paymentData, null, 2));
+
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
       if (paymentData.redirectUrl) {
         window.location.href = paymentData.redirectUrl;
       } else {
+        // Fallback to manual payment page
         router.push(`/checkout/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
@@ -249,4 +253,4 @@ export default function CheckoutPage() {
       <Footer />
     </>
   );
-}
+    }
