@@ -79,7 +79,6 @@ export default function CheckoutPage() {
           if (safe.length) setSelectedDeliveryId(safe[0].id);
         } else {
           console.error('Delivery methods failed', delRes.status);
-          // Fallback to a default method
           const fallback = [{ id: 1, name: 'Standard Delivery', price: 1500 }];
           setDeliveryMethods(fallback);
           setSelectedDeliveryId(1);
@@ -115,7 +114,8 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
-      const res = await fetch('/api/orders/create', {
+      // 1. Create order
+      const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,14 +132,38 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+      if (!orderRes.ok) {
+        const errorData = await orderRes.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${orderRes.status}`);
       }
 
-      const order = await res.json();
+      const order = await orderRes.json();
       clearCart();
-      router.push(`/checkout/payment?orderId=${order.id}`);
+
+      // 2. Initiate OneKhusa payment
+      const paymentRes = await fetch('/api/payments/onekhusa-charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total,
+          currency: 'MWK',
+          phoneNumber: form.phone,
+          paymentMethod: form.payment_method,
+          orderId: order.id,
+          customerName: form.name,
+        }),
+      });
+
+      const paymentData = await paymentRes.json();
+      if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
+
+      // 3. Redirect to OneKhusa hosted payment page
+      if (paymentData.redirectUrl) {
+        window.location.href = paymentData.redirectUrl;
+      } else {
+        // Fallback (should not happen)
+        router.push(`/checkout/payment?orderId=${order.id}`);
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Could not place order. Try again.');
@@ -156,7 +180,7 @@ export default function CheckoutPage() {
           <div className="bg-white p-6 rounded-2xl border mb-6">
             <h1 className="text-2xl font-bold">Secure Checkout</h1>
             <p className="text-sm text-gray-500">
-              Place your order – an invoice will be sent to your email.
+              Place your order – you will be redirected to the secure payment page.
             </p>
           </div>
 
@@ -202,7 +226,7 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods – Radio buttons (proven working) */}
+              {/* Delivery Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 {deliveryMethods.length === 0 ? (
@@ -258,7 +282,7 @@ export default function CheckoutPage() {
                 className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium disabled:opacity-50"
               >
                 {loading ? <Loader2 className="animate-spin inline mr-2" size={16} /> : null}
-                {loading ? 'Placing order...' : 'Place Order'}
+                {loading ? 'Processing...' : 'Place Order'}
               </button>
 
               {error && <div className="text-red-600 bg-red-50 p-2 rounded">{error}</div>}
@@ -282,7 +306,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
-                After ordering, you will upload payment proof.
+                You will be redirected to the payment gateway after placing the order.
               </p>
             </div>
           </div>
