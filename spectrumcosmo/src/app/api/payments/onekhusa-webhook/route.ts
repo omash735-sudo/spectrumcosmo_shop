@@ -4,24 +4,30 @@ import { getDb } from '@/lib/db';
 export async function POST(req: NextRequest) {
   try {
     const payload = await req.json();
-    console.log('OneKhusa webhook payload:', payload);
+    console.log('OneKhusa webhook payload:', JSON.stringify(payload, null, 2));
 
-    // Optional: verify webhook signature if OneKhusa provides one
-    // const signature = req.headers.get('x-webhook-signature');
-    // if (signature !== process.env.ONEKHUSA_WEBHOOK_SECRET) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    // }
-
-    const { status, transactionReference } = payload;
+    // Map webhook fields (adjust based on actual payload)
+    const { status, transactionId, amount, paymentMethod, referenceNumber } = payload;
     const isSuccess = status === 'SUCCESS' || status === 'SUCCESSFUL';
 
-    if (isSuccess && transactionReference) {
+    if (isSuccess && transactionId) {
       const sql = getDb();
-      await sql`
-        UPDATE orders
-        SET status = 'approved', paid_at = NOW()
-        WHERE id = ${transactionReference} AND status = 'pending'
+      const [order] = await sql`
+        SELECT id FROM orders WHERE onekhusa_transaction_id = ${transactionId}
       `;
+      if (order) {
+        await sql`
+          UPDATE orders
+          SET status = 'approved',
+              paid_at = NOW(),
+              payment_method = COALESCE(${paymentMethod}, payment_method),
+              total_amount = COALESCE(${amount}, total_amount)
+          WHERE id = ${order.id}
+        `;
+      } else {
+        // If transactionId not found, try to match by sourceReferenceNumber
+        console.warn('Order not found for transactionId:', transactionId);
+      }
     }
 
     return NextResponse.json({ received: true });
