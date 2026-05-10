@@ -61,11 +61,21 @@ export async function POST(req: NextRequest) {
     }
 
     const redirectUrl = data.redirectUrl || data.checkoutUrl || null;
+    const transactionId = data.transactionId || null;
+
+    // 7. Store the transaction ID in the order
+    if (transactionId) {
+      await sql`
+        UPDATE orders SET onekhusa_transaction_id = ${transactionId}
+        WHERE id = ${orderId}
+      `;
+    }
+
     if (!redirectUrl) {
       return NextResponse.json({ error: 'No payment URL returned' }, { status: 500 });
     }
 
-    return NextResponse.json({ redirectUrl, transactionId: data.transactionId });
+    return NextResponse.json({ redirectUrl, transactionId });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
