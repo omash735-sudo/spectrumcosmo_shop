@@ -99,8 +99,6 @@ export default function CheckoutPage() {
       if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
       const orderId = orderData.id;
 
-      clearCart();
-
       // 2. Initiate OneKhusa payment
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
@@ -109,9 +107,10 @@ export default function CheckoutPage() {
           amount: total,
           currency: 'MWK',
           phoneNumber: form.phone,
-          paymentMethod: 'Airtel Money', // default; user will choose on OneKhusa
+          paymentMethod: 'Airtel Money',
           orderId: orderId,
           customerName: form.name,
+          items: mappedItems,
         }),
       });
 
