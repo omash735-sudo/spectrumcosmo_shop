@@ -9,15 +9,6 @@ import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import { formatCurrencyAmount } from '@/lib/currency';
 import { Loader2 } from 'lucide-react';
 
-type PaymentOption = {
-  id: string;
-  type: string;
-  name: string;
-  logo_url: string;
-  account_number: string;
-  is_active: boolean;
-};
-
 type DeliveryMethod = {
   id: number;
   name: string;
@@ -29,7 +20,6 @@ export default function CheckoutPage() {
   const { currency, rates } = useCurrency();
   const router = useRouter();
 
-  const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([]);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -39,7 +29,6 @@ export default function CheckoutPage() {
     phone: '',
     location: '',
     notes: '',
-    payment_method: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,46 +41,23 @@ export default function CheckoutPage() {
   const total = subtotal + deliveryFee;
 
   useEffect(() => {
-    const fetchOptions = async () => {
+    const fetchDeliveryMethods = async () => {
       try {
-        const [payRes, delRes] = await Promise.all([
-          fetch('/api/payment-options'),
-          fetch('/api/delivery-methods'),
-        ]);
-
-        if (payRes.ok) {
-          const data = await payRes.json();
-          const active = data.filter((opt: PaymentOption) => opt.is_active);
-          setPaymentOptions(active);
-          if (active.length) setForm(f => ({ ...f, payment_method: active[0].name }));
+        const res = await fetch('/api/delivery-methods');
+        if (res.ok) {
+          const data = await res.json();
+          setDeliveryMethods(data);
+          if (data.length > 0) setSelectedDeliveryId(data[0].id);
         } else {
-          console.error('Payment options failed', payRes.status);
-        }
-
-        if (delRes.ok) {
-          const data = await delRes.json();
-          const safe = data.map((m: any) => ({
-            id: Number(m.id),
-            name: m.name,
-            price: Number(m.price),
-          }));
-          setDeliveryMethods(safe);
-          if (safe.length) setSelectedDeliveryId(safe[0].id);
-        } else {
-          console.error('Delivery methods failed', delRes.status);
-          // Fallback
-          const fallback = [{ id: 1, name: 'Standard Delivery', price: 1500 }];
-          setDeliveryMethods(fallback);
-          setSelectedDeliveryId(1);
+          console.error('Failed to load delivery methods');
         }
       } catch (err) {
-        console.error('Failed to load options', err);
-        setError('Could not load payment/delivery options. Please refresh.');
+        console.error(err);
       } finally {
         setLoadingOptions(false);
       }
     };
-    fetchOptions();
+    fetchDeliveryMethods();
   }, []);
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -101,7 +67,6 @@ export default function CheckoutPage() {
     if (items.length === 0) return setError('Cart is empty');
     if (!form.name || !form.email || !form.phone || !form.location)
       return setError('Fill in name, email, phone, and location');
-    if (!form.payment_method) return setError('Select a payment method');
     if (!selectedDeliveryId) return setError('Select a delivery method');
 
     setLoading(true);
@@ -115,7 +80,6 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
-      // 1. Create order
       const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,7 +89,6 @@ export default function CheckoutPage() {
           phone_number: form.phone,
           location: form.location,
           notes: form.notes,
-          payment_method: form.payment_method,
           items: mappedItems,
           total_amount: Number(total),
           delivery_method_id: Number(selectedDeliveryId),
@@ -133,15 +96,11 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!orderRes.ok) {
-        const errorData = await orderRes.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${orderRes.status}`);
-      }
-
+      if (!orderRes.ok) throw new Error('Order creation failed');
       const order = await orderRes.json();
       clearCart();
 
-      // 2. Initiate OneKhusa payment
+      // Initiate OneKhusa payment (using a default payment method; user will still choose on OneKhusa)
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,7 +108,7 @@ export default function CheckoutPage() {
           amount: total,
           currency: 'MWK',
           phoneNumber: form.phone,
-          paymentMethod: form.payment_method,
+          paymentMethod: 'Airtel Money', // can be any active method; OneKhusa shows all
           orderId: order.id,
           customerName: form.name,
         }),
@@ -158,11 +117,9 @@ export default function CheckoutPage() {
       const paymentData = await paymentRes.json();
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
-      // 3. Redirect to OneKhusa hosted payment page
       if (paymentData.redirectUrl) {
         window.location.href = paymentData.redirectUrl;
       } else {
-        // Fallback to manual payment page (should not happen)
         router.push(`/checkout/payment?orderId=${order.id}`);
       }
     } catch (err: any) {
@@ -180,9 +137,7 @@ export default function CheckoutPage() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white p-6 rounded-2xl border mb-6">
             <h1 className="text-2xl font-bold">Secure Checkout</h1>
-            <p className="text-sm text-gray-500">
-              Place your order – you will be redirected to the secure payment page.
-            </p>
+            <p className="text-sm text-gray-500">You will be redirected to the payment gateway.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -227,11 +182,13 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods - same as test (proven working) */}
+              {/* Delivery Methods - now reliable */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
-                {deliveryMethods.length === 0 ? (
-                  <p className="text-xs text-gray-400">Loading delivery options...</p>
+                {loadingOptions ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : deliveryMethods.length === 0 ? (
+                  <p className="text-xs text-red-500">No delivery methods available. Please contact support.</p>
                 ) : (
                   <div className="space-y-2">
                     {deliveryMethods.map(m => (
@@ -244,35 +201,6 @@ export default function CheckoutPage() {
                           className="cursor-pointer"
                         />
                         <span>{m.name} – {m.price.toLocaleString()} MWK</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-                {deliveryMethods.length === 0 && !loadingOptions && (
-                  <p className="text-xs text-red-500 mt-1">No delivery methods available. Please contact support.</p>
-                )}
-              </div>
-
-              {/* Payment Methods */}
-              <div>
-                <p className="text-sm font-semibold mb-2">Payment Method</p>
-                {loadingOptions ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : paymentOptions.length === 0 ? (
-                  <p className="text-xs text-gray-400">No payment methods available.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {paymentOptions.map(opt => (
-                      <label key={opt.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input
-                          type="radio"
-                          name="payment_method"
-                          value={opt.name}
-                          checked={form.payment_method === opt.name}
-                          onChange={() => setForm(p => ({ ...p, payment_method: opt.name }))}
-                          className="cursor-pointer"
-                        />
-                        <span>{opt.name}</span>
                       </label>
                     ))}
                   </div>
@@ -307,9 +235,6 @@ export default function CheckoutPage() {
                   <span>Total</span> <span>{formatCurrencyAmount(total, currency)}</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-4">
-                You will be redirected to the payment gateway after placing the order.
-              </p>
             </div>
           </div>
         </div>
@@ -317,4 +242,4 @@ export default function CheckoutPage() {
       <Footer />
     </>
   );
-}
+     }
