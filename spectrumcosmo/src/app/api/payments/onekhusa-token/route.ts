@@ -18,6 +18,7 @@ export async function GET() {
   if (!organisationId) missing.push('ONEKHUSA_ORG_ID');
   if (!merchantAccountNumber) missing.push('ONEKHUSA_MERCHANT_ACCOUNT');
   if (missing.length) {
+    console.error('Missing OneKhusa config:', missing);
     return NextResponse.json({ error: `Missing: ${missing.join(', ')}` }, { status: 500 });
   }
 
@@ -40,7 +41,7 @@ export async function GET() {
     };
     return NextResponse.json({ accessToken: data.accessToken });
   } catch (err: any) {
-    console.error(err);
+    console.error('Token fetch error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
