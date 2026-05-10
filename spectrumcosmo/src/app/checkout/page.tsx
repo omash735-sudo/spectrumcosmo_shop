@@ -99,7 +99,7 @@ export default function CheckoutPage() {
       if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
       const orderId = orderData.id;
 
-      // 2. Initiate OneKhusa hosted checkout
+      // 2. Initiate OneKhusa mobile money payment
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +107,7 @@ export default function CheckoutPage() {
           amount: total,
           currency: 'MWK',
           phoneNumber: form.phone,
-          customerEmail: form.email,
+          paymentMethod: 'Airtel Money', // default; user will receive prompt on phone
           orderId: orderId,
           customerName: form.name,
         }),
@@ -124,13 +124,12 @@ export default function CheckoutPage() {
 
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
-      // 3. Redirect to OneKhusa hosted payment page
-      if (paymentData.redirectUrl) {
-        window.location.href = paymentData.redirectUrl;
-      } else {
-        // Fallback to manual payment page (should not happen)
-        router.push(`/checkout/payment?orderId=${orderId}`);
-      }
+      // 3. Clear cart and show success
+      clearCart();
+
+      // Show message and redirect to orders page
+      alert('Payment request sent to your phone. Please check your mobile money app and authorize the payment.');
+      router.push(`/account/orders?payment=pending&order=${orderId}`);
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Could not place order. Please try again.');
@@ -145,7 +144,7 @@ export default function CheckoutPage() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white p-6 rounded-2xl border mb-6">
             <h1 className="text-2xl font-bold">Secure Checkout</h1>
-            <p className="text-sm text-gray-500">You will be redirected to the secure payment page.</p>
+            <p className="text-sm text-gray-500">Payment request will be sent to your mobile money.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
