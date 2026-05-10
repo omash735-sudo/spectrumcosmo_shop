@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
-
-// OneKhusa API configuration
-const ONEXHUSA_API = {
-  baseUrl: 'https://api.onekhusa.com/sandbox/v1',
-  initiateCheckout: '/checkout/rtp/initiate',
-  oauthToken: '/account/getAccessToken',
-};
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { amount, currency, orderId, customerName, phoneNumber, paymentMethod, items } = body;
-
-    // Validate required fields
-    if (!amount || !orderId) {
-      return NextResponse.json({ error: 'Missing required fields: amount, orderId' }, { status: 400 });
-    }
+    const { amount, currency, phoneNumber, paymentMethod, orderId, customerName, items } = body;
 
     // Build absolute URL for internal API calls
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -32,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
     const accessToken = tokenData.accessToken;
 
-    // 2. Fetch connector_id from database
+    // 2. Fetch connector_id from database (optional – not used in the new payload structure, but we keep for reference)
     const sql = getDb();
     const [option] = await sql`
       SELECT connector_id FROM payment_options
@@ -41,12 +28,11 @@ export async function POST(req: NextRequest) {
     if (!option?.connector_id) {
       return NextResponse.json({ error: `Unsupported payment method: ${paymentMethod}` }, { status: 400 });
     }
-    const connectorId = option.connector_id;
 
-    // 3. Generate a unique source reference number
+    // 3. Generate unique source reference number (used for idempotency)
     const sourceReferenceNumber = `SRN-${orderId.slice(-8)}-${Date.now().toString().slice(-4)}`;
 
-    // 4. Build the correct payload for OneKhusa
+    // 4. Build the correct payload for OneKhusa (as per the documentation example)
     const payload = {
       authentication: {
         apiKey: process.env.ONEKHUSA_API_KEY,
@@ -70,7 +56,7 @@ export async function POST(req: NextRequest) {
     };
 
     // 5. Call OneKhusa's checkout initiate endpoint
-    const endpoint = `${ONEXHUSA_API.baseUrl}${ONEXHUSA_API.initiateCheckout}`;
+    const endpoint = `https://api.onekhusa.com/sandbox/v1/checkout/rtp/initiate`;
     console.log('[onekhusa-charge] Calling endpoint:', endpoint);
     console.log('[onekhusa-charge] Payload:', JSON.stringify(payload, null, 2));
 
@@ -78,7 +64,8 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Idempotency-Key': sourceReferenceNumber,   // Required header
       },
       body: JSON.stringify(payload),
     });
@@ -88,7 +75,8 @@ export async function POST(req: NextRequest) {
     console.log('[onekhusa-charge] OneKhusa response data:', data);
 
     if (!response.ok) {
-      return NextResponse.json({ error: data.detail || 'Payment initiation failed' }, { status: 400 });
+      // Return the error detail from OneKhusa if available
+      return NextResponse.json({ error: data.detail || data.message || 'Payment initiation failed' }, { status: response.status });
     }
 
     const redirectUrl = data.redirectUrl || data.checkoutUrl || null;
@@ -111,4 +99,4 @@ export async function POST(req: NextRequest) {
     console.error('[onekhusa-charge] Unhandled error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
-      }
+        }
