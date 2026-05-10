@@ -48,11 +48,9 @@ export default function CheckoutPage() {
           const data = await res.json();
           setDeliveryMethods(data);
           if (data.length > 0) setSelectedDeliveryId(data[0].id);
-        } else {
-          console.error('Failed to load delivery methods');
         }
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load delivery methods', err);
       } finally {
         setLoadingOptions(false);
       }
@@ -80,6 +78,7 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
+      // 1. Create order
       const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,11 +95,13 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!orderRes.ok) throw new Error('Order creation failed');
-      const order = await orderRes.json();
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
+      const orderId = orderData.id;
+
       clearCart();
 
-      // Initiate OneKhusa payment (using a default payment method; user will still choose on OneKhusa)
+      // 2. Initiate OneKhusa payment
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,24 +109,31 @@ export default function CheckoutPage() {
           amount: total,
           currency: 'MWK',
           phoneNumber: form.phone,
-          paymentMethod: 'Airtel Money', // can be any active method; OneKhusa shows all
-          orderId: order.id,
+          paymentMethod: 'Airtel Money', // default; user will choose on OneKhusa
+          orderId: orderId,
           customerName: form.name,
         }),
       });
 
-      const paymentData = await paymentRes.json();
+      let paymentData;
+      try {
+        paymentData = await paymentRes.json();
+      } catch (parseErr) {
+        const text = await paymentRes.text();
+        console.error('Payment response not JSON:', text);
+        throw new Error(`Payment API error: ${text.slice(0, 100)}`);
+      }
+
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
       if (paymentData.redirectUrl) {
         window.location.href = paymentData.redirectUrl;
       } else {
-        router.push(`/checkout/payment?orderId=${order.id}`);
+        router.push(`/checkout/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Could not place order. Try again.');
-    } finally {
+      console.error('Checkout error:', err);
+      setError(err.message || 'Could not place order. Please try again.');
       setLoading(false);
     }
   };
@@ -182,13 +190,13 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods - now reliable */}
+              {/* Delivery Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 {loadingOptions ? (
                   <Loader2 className="animate-spin" size={20} />
                 ) : deliveryMethods.length === 0 ? (
-                  <p className="text-xs text-red-500">No delivery methods available. Please contact support.</p>
+                  <p className="text-xs text-red-500">No delivery methods available.</p>
                 ) : (
                   <div className="space-y-2">
                     {deliveryMethods.map(m => (
@@ -242,4 +250,4 @@ export default function CheckoutPage() {
       <Footer />
     </>
   );
-     }
+}
