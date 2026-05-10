@@ -1,30 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Map your exact payment method names (from your `payment_options` table) to OneKhusa connector IDs
-const connectorMap: Record<string, string> = {
-  'Airtel Money': '112400',
-  'TNM Mpamba': '112500',
-  'National Bank of Malawi': '221300',
-  'NBS Bank': '221400',
-};
+import { getDb } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
     const { amount, currency, phoneNumber, paymentMethod, orderId, customerName } = await req.json();
 
-    // Get access token
+    // 1. Get access token
     const tokenRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/onekhusa-token`);
     const tokenData = await tokenRes.json();
     if (!tokenData.accessToken) throw new Error('Failed to get access token');
 
-    const connectorId = connectorMap[paymentMethod];
-    if (!connectorId) {
+    // 2. Fetch connector_id from database
+    const sql = getDb();
+    const [option] = await sql`
+      SELECT connector_id FROM payment_options
+      WHERE name = ${paymentMethod} AND is_active = true
+    `;
+    if (!option?.connector_id) {
       return NextResponse.json({ error: `Unsupported payment method: ${paymentMethod}` }, { status: 400 });
     }
+    const connectorId = option.connector_id;
 
-    // Transaction reference must be exactly 12 characters
+    // 3. Transaction reference (must be exactly 12 characters)
     const transactionReference = orderId.slice(-12).padStart(12, '0');
 
+    // 4. Build payload
     const payload: any = {
       amount: amount.toString(),
       currency: currency || 'MWK',
@@ -37,12 +37,13 @@ export async function POST(req: NextRequest) {
       description: `Order ${orderId}`,
     };
 
-    // For mobile money, add payer phone number and name (banks use hosted page only)
+    // 5. For mobile money, add payer phone number and name
     if (paymentMethod.toLowerCase().includes('airtel') || paymentMethod.toLowerCase().includes('tnm')) {
       payload.payerPhoneNumber = phoneNumber;
       payload.payerName = customerName;
     }
 
+    // 6. Call OneKhusa
     const endpoint = `${process.env.ONEKHUSA_BASE_URL}/collections/requestToPayCheckout`;
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     if (!response.ok) {
-      console.error('OneKhusa charge error:', data);
+      console.error('OneKhusa error:', data);
       return NextResponse.json({ error: data.detail || 'Payment initiation failed' }, { status: 400 });
     }
 
