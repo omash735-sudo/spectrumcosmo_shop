@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
               total_amount = COALESCE(${amount}, total_amount)
           WHERE id = ${order.id}
         `;
+        console.log(`Order ${order.id} marked as approved via webhook`);
       } else {
-        // If transactionId not found, try to match by sourceReferenceNumber
         console.warn('Order not found for transactionId:', transactionId);
       }
     }
