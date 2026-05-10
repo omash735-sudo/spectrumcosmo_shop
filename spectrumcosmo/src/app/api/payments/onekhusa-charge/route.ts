@@ -13,14 +13,15 @@ export async function POST(req: NextRequest) {
     const tokenRes = await fetch(`${baseUrl}/api/payments/onekhusa-token`);
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.accessToken) {
+      console.error('Token fetch failed:', tokenData);
       return NextResponse.json({ error: 'Failed to get access token' }, { status: 500 });
     }
     const accessToken = tokenData.accessToken;
 
-    // 2. Unique reference (used as idempotency key)
+    // 2. Unique reference (idempotency key)
     const sourceReferenceNumber = `SRN-${orderId.slice(-8)}-${Date.now().toString().slice(-4)}`;
 
-    // 3. Payload as per OneKhusa example
+    // 3. Payload for hosted checkout (as per OneKhusa example)
     const payload = {
       authentication: {
         apiKey: process.env.ONEKHUSA_API_KEY,
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
         description: `Order ${orderId}`,
         amount: Number(amount),
         currency: currency || 'MWK',
-        // Optional customer details (some versions accept them)
+        // Optional: add customer details if your API supports it
         customer: {
           name: customerName,
           email: customerEmail,
@@ -67,16 +68,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.detail || data.message || 'Payment initiation failed' }, { status: response.status });
     }
 
+    // 5. Extract redirect URL and transaction ID
     const redirectUrl = data.redirectUrl || data.checkoutUrl || null;
     const transactionId = data.transactionId || data.paymentTransactionId || null;
 
     if (transactionId) {
       const sql = getDb();
-      await sql`UPDATE orders SET onekhusa_transaction_id = ${transactionId} WHERE id = ${orderId}`;
+      await sql`
+        UPDATE orders SET onekhusa_transaction_id = ${transactionId}
+        WHERE id = ${orderId}
+      `;
     }
 
     if (!redirectUrl) {
-      // If still no URL, fallback to polling via getTransaction endpoint
       return NextResponse.json({ error: 'No payment URL returned by OneKhusa' }, { status: 500 });
     }
 
