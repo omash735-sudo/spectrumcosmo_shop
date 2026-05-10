@@ -5,8 +5,12 @@ export async function POST(req: NextRequest) {
   try {
     const { amount, currency, phoneNumber, paymentMethod, orderId, customerName } = await req.json();
 
-    // Get access token using relative URL
-    const tokenRes = await fetch('/api/payments/onekhusa-token');
+    // Build absolute URL for internal API calls
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+    // Get access token using absolute URL
+    const tokenRes = await fetch(`${baseUrl}/api/payments/onekhusa-token`);
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.accessToken) {
       console.error('Token fetch failed:', tokenData);
@@ -36,8 +40,8 @@ export async function POST(req: NextRequest) {
       merchantAccountNumber: parseInt(process.env.ONEKHUSA_MERCHANT_ACCOUNT!),
       organisationId: process.env.ONEKHUSA_ORG_ID,
       transactionReference,
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/onekhusa-webhook`,
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`,
+      callbackUrl: `${baseUrl}/api/payments/onekhusa-webhook`,
+      returnUrl: `${baseUrl}/account/orders`,
       description: `Order ${orderId}`,
     };
 
