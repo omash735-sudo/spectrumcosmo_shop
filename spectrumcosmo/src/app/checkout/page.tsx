@@ -114,7 +114,6 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
-      // 1. Create order
       const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,7 +139,6 @@ export default function CheckoutPage() {
       const order = await orderRes.json();
       clearCart();
 
-      // 2. Initiate OneKhusa payment
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,11 +155,9 @@ export default function CheckoutPage() {
       const paymentData = await paymentRes.json();
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
-      // 3. Redirect to OneKhusa hosted payment page
       if (paymentData.redirectUrl) {
         window.location.href = paymentData.redirectUrl;
       } else {
-        // Fallback (should not happen)
         router.push(`/checkout/payment?orderId=${order.id}`);
       }
     } catch (err: any) {
@@ -226,7 +222,7 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods */}
+              {/* UPDATED DELIVERY METHODS SECTION */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 {deliveryMethods.length === 0 ? (
@@ -240,7 +236,10 @@ export default function CheckoutPage() {
                           name="delivery_method"
                           value={m.id}
                           checked={selectedDeliveryId === m.id}
-                          onChange={() => setSelectedDeliveryId(m.id)}
+                          onChange={() => {
+                            console.log('Selected delivery ID:', m.id);
+                            setSelectedDeliveryId(m.id);
+                          }}
                           className="cursor-pointer"
                         />
                         <span>{m.name} – {m.price.toLocaleString()} MWK</span>
@@ -248,9 +247,12 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 )}
+                {deliveryMethods.length === 0 && !loadingOptions && (
+                  <p className="text-xs text-red-500 mt-1">No delivery methods available. Please contact support.</p>
+                )}
               </div>
 
-              {/* Payment Methods */}
+              {/* Payment Methods (unchanged) */}
               <div>
                 <p className="text-sm font-semibold mb-2">Payment Method</p>
                 {loadingOptions ? (
@@ -288,7 +290,6 @@ export default function CheckoutPage() {
               {error && <div className="text-red-600 bg-red-50 p-2 rounded">{error}</div>}
             </form>
 
-            {/* Order Summary */}
             <div className="bg-white p-6 rounded-2xl border h-fit">
               <h2 className="font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
