@@ -14,25 +14,39 @@ export default async function PaymentsPage() {
   const sql = getDb()
 
   const payments = await sql`
-    SELECT *
+    SELECT 
+      id,
+      customer_name,
+      phone_number,
+      customer_email,
+      payment_method,
+      total_amount,
+      status,
+      created_at,
+      onekhusa_transaction_id
     FROM orders
     WHERE payment_method IS NOT NULL
+    ORDER BY created_at DESC
   `
+
+  const statusColors: Record<string, string> = {
+    pending: 'text-yellow-600 bg-yellow-50',
+    approved: 'text-green-600 bg-green-50',
+    declined: 'text-red-600 bg-red-50',
+  }
 
   return (
     <div className="pt-16 lg:pt-0">
-
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111111]">Payments</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Approve or reject customer payments.
+          Payment records are automatically updated by the payment gateway. Manual approval is not required.
         </p>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-[#111111]">Payment Records</h2>
+          <h2 className="font-bold text-gray-800">Payment Records</h2>
         </div>
 
         {payments.length === 0 ? (
@@ -41,67 +55,45 @@ export default async function PaymentsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-
             <table className="w-full">
-
               <thead>
-                <tr className="text-xs text-gray-400 uppercase bg-gray-50">
-                  <th className="px-6 py-3 text-left">Customer</th>
-                  <th className="px-6 py-3 text-left">Method</th>
-                  <th className="px-6 py-3 text-left">Amount</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                  <th className="px-6 py-3 text-left">Action</th>
+                <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
+                  <th className="text-left px-6 py-3">Customer</th>
+                  <th className="text-left px-6 py-3">Method</th>
+                  <th className="text-left px-6 py-3">Amount</th>
+                  <th className="text-left px-6 py-3">Status</th>
+                  <th className="text-left px-6 py-3">Transaction ID</th>
+                  <th className="text-left px-6 py-3">Date</th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-50">
-
-                {payments.map((p: any, i: number) => (
-                  <tr key={i} className="hover:bg-gray-50">
-
+                {payments.map((p: any) => (
+                  <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-sm">{p.customer_name}</p>
+                      <p className="font-medium text-sm text-gray-900">{p.customer_name}</p>
                       <p className="text-xs text-gray-400">{p.phone_number}</p>
                     </td>
-
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {p.payment_method}
+                    <td className="px-6 py-4 text-sm text-gray-600">{p.payment_method}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                      MK {Number(p.total_amount).toLocaleString()}
                     </td>
-
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      MK {p.total_amount || p.total_price}
-                    </td>
-
-                    <td className="px-6 py-4 text-sm">
-                      <span className="text-yellow-600">
-                        {p.status || 'pending'}
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status] || 'text-gray-600 bg-gray-100'}`}>
+                        {p.status}
                       </span>
                     </td>
-
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex gap-2">
-
-                        <button className="px-3 py-1 bg-green-500 text-white rounded-lg text-xs">
-                          Approve
-                        </button>
-
-                        <button className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs">
-                          Reject
-                        </button>
-
-                      </div>
+                    <td className="px-6 py-4 text-xs font-mono text-gray-500">
+                      {p.onekhusa_transaction_id || '—'}
                     </td>
-
+                    <td className="px-6 py-4 text-xs text-gray-400 whitespace-nowrap">
+                      {new Date(p.created_at).toLocaleDateString()}
+                    </td>
                   </tr>
                 ))}
-
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </div>
     </div>
   )
