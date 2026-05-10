@@ -99,7 +99,7 @@ export default function CheckoutPage() {
       if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
       const orderId = orderData.id;
 
-      // 2. Initiate OneKhusa payment
+      // 2. Initiate OneKhusa hosted checkout
       const paymentRes = await fetch('/api/payments/onekhusa-charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,10 +107,9 @@ export default function CheckoutPage() {
           amount: total,
           currency: 'MWK',
           phoneNumber: form.phone,
-          paymentMethod: 'Airtel Money',
+          customerEmail: form.email,
           orderId: orderId,
           customerName: form.name,
-          items: mappedItems,
         }),
       });
 
@@ -123,15 +122,13 @@ export default function CheckoutPage() {
         throw new Error(`Payment API error: ${text.slice(0, 100)}`);
       }
 
-      // Debug: show the full response in an alert
-      alert('OneKhusa response:\n' + JSON.stringify(paymentData, null, 2));
-
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initiation failed');
 
+      // 3. Redirect to OneKhusa hosted payment page
       if (paymentData.redirectUrl) {
         window.location.href = paymentData.redirectUrl;
       } else {
-        // Fallback to manual payment page
+        // Fallback to manual payment page (should not happen)
         router.push(`/checkout/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
@@ -148,7 +145,7 @@ export default function CheckoutPage() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white p-6 rounded-2xl border mb-6">
             <h1 className="text-2xl font-bold">Secure Checkout</h1>
-            <p className="text-sm text-gray-500">You will be redirected to the payment gateway.</p>
+            <p className="text-sm text-gray-500">You will be redirected to the secure payment page.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -253,4 +250,4 @@ export default function CheckoutPage() {
       <Footer />
     </>
   );
-    }
+}
