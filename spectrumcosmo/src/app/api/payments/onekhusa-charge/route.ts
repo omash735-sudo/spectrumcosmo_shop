@@ -5,12 +5,16 @@ export async function POST(req: NextRequest) {
   try {
     const { amount, currency, phoneNumber, paymentMethod, orderId, customerName } = await req.json();
 
-    // 1. Get access token
-    const tokenRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/onekhusa-token`);
+    // Get access token using relative URL
+    const tokenRes = await fetch('/api/payments/onekhusa-token');
     const tokenData = await tokenRes.json();
-    if (!tokenData.accessToken) throw new Error('Failed to get access token');
+    if (!tokenRes.ok || !tokenData.accessToken) {
+      console.error('Token fetch failed:', tokenData);
+      return NextResponse.json({ error: 'Failed to get access token' }, { status: 500 });
+    }
+    const accessToken = tokenData.accessToken;
 
-    // 2. Fetch connector_id from database
+    // Fetch connector_id from database
     const sql = getDb();
     const [option] = await sql`
       SELECT connector_id FROM payment_options
@@ -21,10 +25,10 @@ export async function POST(req: NextRequest) {
     }
     const connectorId = option.connector_id;
 
-    // 3. Transaction reference (must be exactly 12 characters)
+    // Transaction reference (must be exactly 12 characters)
     const transactionReference = orderId.slice(-12).padStart(12, '0');
 
-    // 4. Build payload
+    // Build payload for OneKhusa
     const payload: any = {
       amount: amount.toString(),
       currency: currency || 'MWK',
@@ -37,19 +41,19 @@ export async function POST(req: NextRequest) {
       description: `Order ${orderId}`,
     };
 
-    // 5. For mobile money, add payer phone number and name
+    // For mobile money, add payer phone number and name
     if (paymentMethod.toLowerCase().includes('airtel') || paymentMethod.toLowerCase().includes('tnm')) {
       payload.payerPhoneNumber = phoneNumber;
       payload.payerName = customerName;
     }
 
-    // 6. Call OneKhusa
+    // Call OneKhusa
     const endpoint = `${process.env.ONEKHUSA_BASE_URL}/collections/requestToPayCheckout`;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${tokenData.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payload),
     });
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
     const redirectUrl = data.redirectUrl || data.checkoutUrl || null;
     const transactionId = data.transactionId || null;
 
-    // 7. Store the transaction ID in the order
+    // Store the transaction ID in the order
     if (transactionId) {
       await sql`
         UPDATE orders SET onekhusa_transaction_id = ${transactionId}
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ redirectUrl, transactionId });
   } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('OneKhusa charge error:', err);
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
