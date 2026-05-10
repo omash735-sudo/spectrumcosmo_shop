@@ -34,7 +34,8 @@ export default function ForgotPasswordForm() {
     }
   }
 
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+  // Dark mode logo for dark background
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   return (
     <>
