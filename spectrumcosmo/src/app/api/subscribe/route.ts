@@ -1,60 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/userAuth'
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
+import { sendMail } from '@/lib/mailer';
+import crypto from 'crypto';
 
-// POST: Subscribe an email (guest or logged-in)
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json()
-    const user = getUserFromRequest(req) // may be null for guests
-
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
-
+    const { email, name } = await req.json();
+    if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
 
-    const sql = getDb()
-    const normalizedEmail = email.toLowerCase()
-    const userId = user?.id || null
+    const sql = getDb();
+    const normalizedEmail = email.toLowerCase();
 
-    // Insert or update the unified table
+    // Check if already confirmed
+    const existing = await sql`SELECT status FROM subscribers WHERE email = ${normalizedEmail}`;
+    if (existing.length && existing[0].status === 'confirmed') {
+      return NextResponse.json({ error: 'Already subscribed' }, { status: 400 });
+    }
+    if (existing.length && existing[0].status === 'pending') {
+      // Resend confirmation
+      const token = crypto.randomBytes(32).toString('hex');
+      await sql`UPDATE subscribers SET token = ${token} WHERE email = ${normalizedEmail}`;
+      const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/subscribe/confirm?token=${token}`;
+      await sendMail({
+        to: normalizedEmail,
+        subject: 'Confirm your subscription to SpectrumCosmo',
+        html: `<h2>Welcome!</h2><p>Please confirm your email:</p><a href="${confirmUrl}">Confirm</a>`,
+        text: `Confirm: ${confirmUrl}`,
+      });
+      return NextResponse.json({ message: 'Confirmation resent' });
+    }
+
+    // Create new pending subscriber
+    const token = crypto.randomBytes(32).toString('hex');
     await sql`
-      INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
-      VALUES (${normalizedEmail}, ${userId}, true, NOW())
-      ON CONFLICT (email) DO UPDATE SET
-        is_subscribed = true,
-        user_id = COALESCE(newsletter_subscriptions.user_id, EXCLUDED.user_id),
-        updated_at = NOW()
-    `
-
-    return NextResponse.json({ success: true, message: 'Subscribed successfully!' })
+      INSERT INTO subscribers (email, name, status, token)
+      VALUES (${normalizedEmail}, ${name || null}, 'pending', ${token})
+    `;
+    const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/subscribe/confirm?token=${token}`;
+    await sendMail({
+      to: normalizedEmail,
+      subject: 'Confirm your subscription',
+      html: `<h2>Thank you!</h2><a href="${confirmUrl}">Click here to confirm</a>`,
+      text: `Confirm: ${confirmUrl}`,
+    });
+    return NextResponse.json({ success: true, message: 'Check your email to confirm' });
   } catch (err: any) {
-    console.error('Subscribe error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error(err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
 
-// GET: Check if an email is already subscribed (and active)
 export async function GET(req: NextRequest) {
-  try {
-    const email = req.nextUrl.searchParams.get('email')
-    if (!email) {
-      return NextResponse.json({ subscribed: false, error: 'Email parameter missing' }, { status: 400 })
-    }
-
-    const sql = getDb()
-    const normalizedEmail = email.toLowerCase()
-    const result = await sql`
-      SELECT email FROM newsletter_subscriptions
-      WHERE email = ${normalizedEmail} AND is_subscribed = true
-    `
-
-    return NextResponse.json({ subscribed: result.length > 0 })
-  } catch (err: any) {
-    console.error('Check subscription error:', err)
-    return NextResponse.json({ subscribed: false, error: 'Internal server error' }, { status: 500 })
-  }
+  const email = req.nextUrl.searchParams.get('email');
+  if (!email) return NextResponse.json({ subscribed: false }, { status: 400 });
+  const sql = getDb();
+  const result = await sql`SELECT 1 FROM subscribers WHERE email = ${email.toLowerCase()} AND status = 'confirmed'`;
+  return NextResponse.json({ subscribed: result.length > 0 });
 }
