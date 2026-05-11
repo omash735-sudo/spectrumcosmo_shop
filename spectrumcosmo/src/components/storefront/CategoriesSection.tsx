@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getDb } from '@/lib/db';
+import { FolderOpen } from 'lucide-react';
 
 export default async function CategoriesSection() {
   const sql = getDb();
@@ -15,30 +16,23 @@ export default async function CategoriesSection() {
   return (
     <div className="mb-8 sm:mb-12">
       <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Shop by Category</h2>
-      <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 scrollbar-hide md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
+      <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 scrollbar-hide md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
         {categories.map((cat: any) => (
           <Link
             key={cat.id}
             href={`/products?category=${encodeURIComponent(cat.name)}`}
-            className="min-w-[120px] md:min-w-0 bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition group"
+            className="min-w-[90px] md:min-w-0 flex flex-col items-center gap-1 p-2 bg-white border rounded-xl hover:shadow-md transition group"
           >
-            <div className="relative h-28 sm:h-32 bg-gray-100">
-              {cat.image_url ? (
-                <Image
-                  src={cat.image_url}
-                  alt={cat.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-orange-50 text-[#F97316] font-semibold">
-                  {cat.name}
-                </div>
-              )}
-            </div>
-            <div className="p-2 text-center">
-              <h3 className="font-medium text-sm">{cat.name}</h3>
-            </div>
+            {cat.image_url ? (
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                <Image src={cat.image_url} alt={cat.name} fill className="object-cover group-hover:scale-110 transition" />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316]">
+                <FolderOpen size={24} />
+              </div>
+            )}
+            <span className="text-xs font-medium text-gray-700 text-center line-clamp-1">{cat.name}</span>
           </Link>
         ))}
       </div>
