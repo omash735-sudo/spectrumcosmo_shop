@@ -5,7 +5,139 @@ import { redirect } from 'next/navigation';
 import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import Link from 'next/link';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { MailOpen, MailX, Users, Send } from 'lucide-react';
 
+// ---------- Client Components (inline) ----------
+'use client';
+import { useEffect, useState } from 'react';
+
+function SubscriberGrowthChart() {
+  const [data, setData] = useState([]);
+  useEffect(() => {
+    fetch('/api/admin/newsletter/stats')
+      .then(res => res.json())
+      .then(json => setData(json.growth || []))
+      .catch(console.error);
+  }, []);
+  if (!data.length) return <p className="text-gray-400 text-sm">No data yet.</p>;
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={data}>
+        <XAxis dataKey="month" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="new" fill="#F97316" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function NewsletterPerformance() {
+  const [totalActive, setTotalActive] = useState(0);
+  const [campaigns, setCampaigns] = useState([]);
+  const [unsubscribes, setUnsubscribes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/newsletter/stats')
+      .then(res => res.json())
+      .then(data => {
+        setTotalActive(data.totalActive || 0);
+        setCampaigns(data.performance || []);
+        setUnsubscribes(data.unsubscribes || []);
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
+
+  if (loading) return <p className="text-gray-400">Loading analytics...</p>;
+
+  return (
+    <div className="space-y-8">
+      {/* Top stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-orange-50 rounded-xl p-4 flex items-center gap-3">
+          <Users className="text-[#F97316]" size={24} />
+          <div>
+            <p className="text-2xl font-bold">{totalActive.toLocaleString()}</p>
+            <p className="text-xs text-gray-500">Active Subscribers</p>
+          </div>
+        </div>
+        <div className="bg-orange-50 rounded-xl p-4 flex items-center gap-3">
+          <Send className="text-[#F97316]" size={24} />
+          <div>
+            <p className="text-2xl font-bold">{campaigns.length}</p>
+            <p className="text-xs text-gray-500">Campaigns Sent</p>
+          </div>
+        </div>
+        <div className="bg-orange-50 rounded-xl p-4 flex items-center gap-3">
+          <MailOpen className="text-[#F97316]" size={24} />
+          <div>
+            <p className="text-2xl font-bold">{campaigns.reduce((acc, c) => acc + (c.open_count || 0), 0)}</p>
+            <p className="text-xs text-gray-500">Total Opens</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Campaign performance table */}
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <MailOpen size={18} /> Campaign Performance
+        </h3>
+        {campaigns.length === 0 ? (
+          <p className="text-gray-400 text-sm">No campaigns sent yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500">
+                <tr>
+                  <th className="text-left px-4 py-2">Title</th>
+                  <th className="text-left px-4 py-2">Sent</th>
+                  <th className="text-left px-4 py-2">Open</th>
+                  <th className="text-left px-4 py-2">Click</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaigns.map(c => (
+                  <tr key={c.id} className="border-t">
+                    <td className="px-4 py-2 font-medium">{c.title}</td>
+                    <td className="px-4 py-2 text-gray-500">{new Date(c.sent_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-2">{c.open_count} ({c.open_rate}%)</td>
+                    <td className="px-4 py-2">{c.click_count} ({c.click_rate}%)</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Recent unsubscribes */}
+      <div>
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <MailX size={18} /> Recent Unsubscribes
+        </h3>
+        {unsubscribes.length === 0 ? (
+          <p className="text-gray-400 text-sm">No unsubscribes recorded.</p>
+        ) : (
+          <div className="space-y-2">
+            {unsubscribes.map((u, i) => (
+              <div key={i} className="bg-gray-50 rounded-lg p-3 text-sm">
+                <p className="font-medium text-gray-700">{u.email}</p>
+                <p className="text-gray-500 text-xs">Reason: {u.reason || 'Not provided'}</p>
+                {u.details && <p className="text-gray-400 text-xs mt-1">"{u.details}"</p>}
+                <p className="text-gray-400 text-xs mt-1">{new Date(u.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Server Component ----------
 export default async function AdminNewsletterPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
@@ -23,18 +155,29 @@ export default async function AdminNewsletterPage() {
   return (
     <div className="pt-16 lg:pt-0">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#111111]">Newsletter</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage campaigns, preview content, and send emails.</p>
+        <h1 className="text-2xl font-bold text-[#111111]">Newsletter Hub</h1>
+        <p className="text-gray-500 text-sm mt-1">Manage campaigns, view analytics, and track subscriber engagement.</p>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-sm text-gray-400">{campaigns.length} campaigns</p>
-        <Link href="/admin/newsletter/new" className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm font-medium">Create Newsletter</Link>
+      {/* Full analytics section */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-10">
+        <h2 className="font-bold text-gray-800 mb-4">📊 Analytics & Performance</h2>
+        <NewsletterPerformance />
       </div>
 
+      {/* Subscriber growth chart */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-10">
+        <h2 className="font-bold text-gray-800 mb-4">📈 Subscriber Growth (Last 12 Months)</h2>
+        <SubscriberGrowthChart />
+      </div>
+
+      {/* Campaign manager – your existing table */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-[#111111]">All Campaigns</h2>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-bold text-[#111111]">📬 All Campaigns</h2>
+          <Link href="/admin/newsletter/new" className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm font-medium">
+            + Create Newsletter
+          </Link>
         </div>
 
         {campaigns.length === 0 ? (
@@ -94,4 +237,4 @@ export default async function AdminNewsletterPage() {
       </div>
     </div>
   );
-}
+                  }
