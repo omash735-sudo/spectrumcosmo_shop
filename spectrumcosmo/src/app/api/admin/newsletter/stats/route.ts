@@ -8,7 +8,11 @@ export async function GET(req: NextRequest) {
 
   const sql = getDb();
 
-  // Subscriber growth (last 12 months)
+  // 🔹 Total active subscribers
+  const totalActiveResult = await sql`SELECT COUNT(*) as count FROM subscribers WHERE status = 'confirmed'`;
+  const totalActive = totalActiveResult[0]?.count || 0;
+
+  // 🔹 Subscriber growth (last 12 months)
   const growth = await sql`
     SELECT DATE_TRUNC('month', confirmed_at) as month, COUNT(*) as new
     FROM subscribers
@@ -18,7 +22,7 @@ export async function GET(req: NextRequest) {
     LIMIT 12
   `;
 
-  // Campaign performance
+  // 🔹 Campaign performance
   const campaigns = await sql`
     SELECT id, title, sent_at, open_count, click_count,
            (SELECT COUNT(*) FROM subscribers WHERE status='confirmed') as total_subscribers
@@ -32,7 +36,7 @@ export async function GET(req: NextRequest) {
     click_rate: ((c.click_count / c.total_subscribers) * 100).toFixed(1),
   }));
 
-  // Recent unsubscribes
+  // 🔹 Recent unsubscribes
   const unsubscribes = await sql`
     SELECT email, reason, details, created_at
     FROM unsubscribe_feedback
@@ -40,5 +44,5 @@ export async function GET(req: NextRequest) {
     LIMIT 20
   `;
 
-  return NextResponse.json({ growth, performance, unsubscribes });
+  return NextResponse.json({ totalActive, growth, performance, unsubscribes });
 }
