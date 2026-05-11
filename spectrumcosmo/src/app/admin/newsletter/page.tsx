@@ -12,8 +12,6 @@ export default async function AdminNewsletterPage() {
   if (!token || !verifyToken(token)) redirect('/admin/login');
 
   const sql = getDb();
-
-  // Query the renamed table: newsletter_campaigns
   const campaigns = await sql`
     SELECT 
       c.*,
@@ -26,19 +24,12 @@ export default async function AdminNewsletterPage() {
     <div className="pt-16 lg:pt-0">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[#111111]">Newsletter</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Manage campaigns, view performance, and send emails.
-        </p>
+        <p className="text-gray-500 text-sm mt-1">Manage campaigns, preview content, and send emails.</p>
       </div>
 
       <div className="flex justify-between items-center mb-6">
         <p className="text-sm text-gray-400">{campaigns.length} campaigns</p>
-        <Link
-          href="/admin/newsletter/new"
-          className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm font-medium"
-        >
-          Create Newsletter
-        </Link>
+        <Link href="/admin/newsletter/new" className="bg-[#F97316] text-white px-4 py-2 rounded-xl text-sm font-medium">Create Newsletter</Link>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -47,9 +38,7 @@ export default async function AdminNewsletterPage() {
         </div>
 
         {campaigns.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-400 text-sm">
-            No newsletters created yet.
-          </div>
+          <div className="px-6 py-12 text-center text-gray-400 text-sm">No newsletters created yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -64,55 +53,29 @@ export default async function AdminNewsletterPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {campaigns.map((campaign: any) => {
-                  const openRate = campaign.total_subscribers
-                    ? ((campaign.open_count / campaign.total_subscribers) * 100).toFixed(1)
-                    : '0';
-                  const clickRate = campaign.total_subscribers
-                    ? ((campaign.click_count / campaign.total_subscribers) * 100).toFixed(1)
-                    : '0';
+                {campaigns.map((campaign) => {
+                  const total = campaign.total_subscribers || 1;
+                  const openRate = campaign.status === 'sent' ? ((campaign.open_count || 0) / total * 100).toFixed(1) : '0';
+                  const clickRate = campaign.status === 'sent' ? ((campaign.click_count || 0) / total * 100).toFixed(1) : '0';
                   return (
                     <tr key={campaign.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium text-sm text-[#111111]">
-                        {campaign.title}
-                      </td>
+                      <td className="px-6 py-4 font-medium text-sm text-[#111111]">{campaign.title}</td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            campaign.status === 'sent'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
-                        >
+                        <span className={`px-2 py-1 rounded-full text-xs ${campaign.status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                           {campaign.status || 'draft'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {campaign.audience || 'all'}
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{campaign.audience || 'all'}</td>
                       <td className="px-6 py-4 text-xs text-gray-500">
-                        {campaign.status === 'sent'
-                          ? `${campaign.open_count || 0} / ${campaign.click_count || 0} (${openRate}% / ${clickRate}%)`
-                          : '-'}
+                        {campaign.status === 'sent' ? `${campaign.open_count || 0} / ${campaign.click_count || 0} (${openRate}% / ${clickRate}%)` : '-'}
                       </td>
-                      <td className="px-6 py-4 text-xs text-gray-400">
-                        {new Date(campaign.created_at).toLocaleDateString()}
-                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-400">{new Date(campaign.created_at).toLocaleDateString()}</td>
                       <td className="px-6 py-4 flex gap-2">
-                        <Link
-                          href={`/admin/newsletter/${campaign.id}`}
-                          className="bg-gray-800 text-white px-3 py-1 rounded text-xs"
-                        >
-                          Preview
-                        </Link>
+                        <Link href={`/admin/newsletter/${campaign.id}`} className="bg-gray-800 text-white px-3 py-1 rounded text-xs">Preview</Link>
                         {campaign.status !== 'sent' && (
                           <button
                             onClick={async () => {
-                              await fetch('/api/newsletter/send', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id: campaign.id }),
-                              });
+                              await fetch('/api/newsletter/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: campaign.id }) });
                               window.location.reload();
                             }}
                             className="bg-[#F97316] text-white px-3 py-1 rounded text-xs"
@@ -121,7 +84,7 @@ export default async function AdminNewsletterPage() {
                           </button>
                         )}
                       </td>
-                    </table>
+                    </tr>
                   );
                 })}
               </tbody>
