@@ -19,9 +19,9 @@ import {
   LogOut,
   Layout,
   FileText,
-  Shield,               // added for Privacy Policy
+  Shield,
+  Home,               // added icon for Homepage Editor
 } from 'lucide-react';
-import Image from 'next/image';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, section: 'CORE' },
@@ -35,10 +35,11 @@ const navItems = [
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
+  { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },      // NEW
   { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' },
   { name: 'Contact Page', href: '/admin/contact', icon: FileText, section: 'SYSTEM' },
-  { name: 'Terms', href: '/admin/terms', icon: FileText, section: 'SYSTEM' },       // NEW
-  { name: 'Privacy', href: '/admin/privacy', icon: Shield, section: 'SYSTEM' },     // NEW
+  { name: 'Terms', href: '/admin/terms', icon: FileText, section: 'SYSTEM' },
+  { name: 'Privacy', href: '/admin/privacy', icon: Shield, section: 'SYSTEM' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
