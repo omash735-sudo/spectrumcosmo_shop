@@ -5,6 +5,9 @@ import { ArrowRight, Sparkles, Shield, Truck } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import { getDb } from '@/lib/db';
+import CategoriesSection from '@/components/storefront/CategoriesSection';
+import FeaturedProducts from '@/components/storefront/FeaturedProducts';
+import HomepagePopup from '@/components/storefront/HomepagePopup';
 
 export default async function HomePage() {
   let hero: any = null;
@@ -23,7 +26,7 @@ export default async function HomePage() {
     console.error('DB error:', err);
   }
 
-  // Fallback values if hero not set in DB (keeps the site working)
+  // Fallback values if hero not set in DB
   const fallback = {
     badge_text: 'New collection just dropped',
     badge_link: '/newsletter',
@@ -121,8 +124,13 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Rest of your original page (featured products, CTA section, etc.) – unchanged */}
-        {/* You already have the CTA section below. I'll keep it as you originally had. */}
+        {/* NEW: Categories & Featured Products sections */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <CategoriesSection />
+          <FeaturedProducts />
+        </div>
+
+        {/* Original CTA section */}
         <section className="bg-gradient-to-br from-[#111111] to-gray-900 py-24">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
@@ -143,6 +151,7 @@ export default async function HomePage() {
         </section>
       </main>
       <Footer />
+      <HomepagePopup />
     </>
   );
 }
