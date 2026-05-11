@@ -23,6 +23,12 @@ const EMPTY = {
   status: 'in_stock',
   stock_quantity: 0,
   is_featured: false,
+  // Promo badge fields
+  promo_badge_text: '',
+  promo_badge_color: '#F97316',
+  promo_badge_text_color: '#FFFFFF',
+  promo_badge_font_size: 'text-xs',
+  promo_badge_position: 'top-left',
 };
 
 export default function AdminProductsPage() {
@@ -80,6 +86,11 @@ export default function AdminProductsPage() {
       status: p.status || 'in_stock',
       stock_quantity: p.stock_quantity || 0,
       is_featured: p.is_featured || false,
+      promo_badge_text: p.promo_badge_text || '',
+      promo_badge_color: p.promo_badge_color || '#F97316',
+      promo_badge_text_color: p.promo_badge_text_color || '#FFFFFF',
+      promo_badge_font_size: p.promo_badge_font_size || 'text-xs',
+      promo_badge_position: p.promo_badge_position || 'top-left',
     });
     setImagePreview(p.image_url || '');
     setError('');
@@ -387,6 +398,65 @@ export default function AdminProductsPage() {
                   />
                   <span className="text-sm text-gray-600">Mark as featured</span>
                 </label>
+              </div>
+
+              {/* Promo Badge Section */}
+              <div className="border-t pt-4 mt-2">
+                <label className="label text-sm font-medium">Promo Badge (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g., -20%, Flash Sale, BOGO"
+                  value={form.promo_badge_text}
+                  onChange={e => setForm(p => ({ ...p, promo_badge_text: e.target.value }))}
+                  className="input mb-2"
+                />
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="text-xs">Badge Color</label>
+                    <input
+                      type="color"
+                      value={form.promo_badge_color}
+                      onChange={e => setForm(p => ({ ...p, promo_badge_color: e.target.value }))}
+                      className="w-full h-8 border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs">Text Color</label>
+                    <input
+                      type="color"
+                      value={form.promo_badge_text_color}
+                      onChange={e => setForm(p => ({ ...p, promo_badge_text_color: e.target.value }))}
+                      className="w-full h-8 border rounded"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs">Font Size</label>
+                    <select
+                      value={form.promo_badge_font_size}
+                      onChange={e => setForm(p => ({ ...p, promo_badge_font_size: e.target.value }))}
+                      className="input text-sm"
+                    >
+                      <option value="text-xs">Small</option>
+                      <option value="text-sm">Medium</option>
+                      <option value="text-base">Large</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs">Position</label>
+                    <select
+                      value={form.promo_badge_position}
+                      onChange={e => setForm(p => ({ ...p, promo_badge_position: e.target.value }))}
+                      className="input text-sm"
+                    >
+                      <option value="top-left">Top Left</option>
+                      <option value="top-right">Top Right</option>
+                      <option value="bottom-left">Bottom Left</option>
+                      <option value="bottom-right">Bottom Right</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <div>
