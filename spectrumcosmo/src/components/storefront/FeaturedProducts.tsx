@@ -5,7 +5,13 @@ import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 
 export default async function FeaturedProducts() {
   const sql = getDb();
-  const featured = await sql`SELECT * FROM products ORDER BY created_at DESC LIMIT 4`;
+  // Only fetch products marked as featured
+  const featured = await sql`
+    SELECT * FROM products 
+    WHERE is_featured = true 
+    ORDER BY created_at DESC 
+    LIMIT 8
+  `;
 
   if (featured.length === 0) return null;
 
@@ -19,7 +25,7 @@ export default async function FeaturedProducts() {
       </div>
       <div className="flex overflow-x-auto gap-3 pb-2 -mx-4 px-4 scrollbar-hide md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible md:mx-0 md:px-0">
         {featured.map((product: any) => (
-          <div key={product.id} className="min-w-[160px] md:min-w-0 bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
+          <div key={product.id} className="min-w-[160px] md:min-w-0 bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition relative">
             <Link href={`/products/${product.id}`}>
               <div className="relative h-32 sm:h-40 bg-gray-100">
                 <Image
@@ -28,9 +34,24 @@ export default async function FeaturedProducts() {
                   fill
                   className="object-cover"
                 />
-                <span className="absolute top-2 left-2 bg-[#F97316] text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded">
-                  Featured
-                </span>
+                {/* Promo Badge */}
+                {product.promo_badge_text && (
+                  <span
+                    className={`absolute ${product.promo_badge_position || 'top-2 left-2'} ${product.promo_badge_font_size || 'text-xs'} px-1.5 py-0.5 rounded font-medium`}
+                    style={{
+                      backgroundColor: product.promo_badge_color || '#F97316',
+                      color: product.promo_badge_text_color || '#FFFFFF',
+                    }}
+                  >
+                    {product.promo_badge_text}
+                  </span>
+                )}
+                {/* Fallback "Featured" tag if no promo badge */}
+                {!product.promo_badge_text && (
+                  <span className="absolute top-2 left-2 bg-[#F97316] text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded">
+                    Featured
+                  </span>
+                )}
               </div>
               <div className="p-2 sm:p-3">
                 <h3 className="font-semibold text-xs sm:text-sm line-clamp-1">{product.name}</h3>
