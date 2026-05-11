@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Save, ArrowUp, ArrowDown, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Save, ArrowUp, ArrowDown, Eye, EyeOff, Upload, Trash2, Plus } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminHomepage() {
@@ -17,6 +17,9 @@ export default function AdminHomepage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingCatImage, setUploadingCatImage] = useState<number | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -42,6 +45,52 @@ export default function AdminHomepage() {
     setLoading(false);
   };
 
+  const uploadToCloudinary = async (file: File): Promise<string | null> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    if (!cloudName || !uploadPreset) return null;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      return data.secure_url || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handlePopupImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const url = await uploadToCloudinary(file);
+    if (url) setPopup({ ...popup, image_url: url });
+    setUploadingImage(false);
+  };
+
+  const handleCategoryImageUpload = async (catId: number, file: File) => {
+    setUploadingCatImage(catId);
+    const url = await uploadToCloudinary(file);
+    if (url) {
+      const updated = categories.map(c => c.id === catId ? { ...c, image_url: url } : c);
+      setCategories(updated);
+      // Save to backend
+      await fetch('/api/categories', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: catId, image_url: url }),
+      });
+    }
+    setUploadingCatImage(null);
+  };
+
   const toggleFeatured = async (productId: string, current: boolean) => {
     const res = await fetch('/api/products', {
       method: 'PATCH',
@@ -64,6 +113,27 @@ export default function AdminHomepage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ categories: newCategories.map((c, idx) => ({ id: c.id, sort_order: idx })) }),
     });
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!confirm('Delete this category? Products will lose this category.')) return;
+    await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+    fetchData();
+  };
+
+  const addCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newCategoryName }),
+    });
+    if (res.ok) {
+      setNewCategoryName('');
+      fetchData();
+    } else {
+      alert('Failed to add category');
+    }
   };
 
   const savePopup = async () => {
@@ -108,32 +178,66 @@ export default function AdminHomepage() {
         </div>
       </div>
 
-      {/* Categories Order */}
+      {/* Categories Manager with Image Upload & Reorder */}
       <div className="bg-white rounded-2xl border p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Category Order (on homepage)</h2>
-        <div className="space-y-2">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Categories (Homepage Display)</h2>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="New category name"
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              className="border rounded-lg px-2 py-1 text-sm"
+            />
+            <button onClick={addCategory} className="bg-[#F97316] text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1">
+              <Plus size={14} /> Add
+            </button>
+          </div>
+        </div>
+        <div className="space-y-3">
           {categories.map(cat => (
-            <div key={cat.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div key={cat.id} className="flex items-center justify-between p-3 border rounded-lg flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                {cat.image_url ? (
-                  <div className="w-10 h-10 relative rounded overflow-hidden">
+                {/* Category Image Upload */}
+                <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  {cat.image_url ? (
                     <Image src={cat.image_url} alt={cat.name} fill className="object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center text-orange-500">📁</div>
-                )}
-                <span>{cat.name}</span>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No img</div>
+                  )}
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 cursor-pointer transition">
+                    <Upload size={14} className="text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleCategoryImageUpload(cat.id, file);
+                      }}
+                    />
+                  </label>
+                  {uploadingCatImage === cat.id && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="animate-spin text-white" size={16} />
+                    </div>
+                  )}
+                </div>
+                <span className="font-medium">{cat.name}</span>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => updateCategoryOrder(cat.id, 'up')} className="p-1 hover:bg-gray-100 rounded"><ArrowUp size={16} /></button>
                 <button onClick={() => updateCategoryOrder(cat.id, 'down')} className="p-1 hover:bg-gray-100 rounded"><ArrowDown size={16} /></button>
+                <button onClick={() => deleteCategory(cat.id)} className="p-1 hover:bg-red-100 rounded text-red-500"><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
+          {categories.length === 0 && <p className="text-gray-400 text-sm">No categories yet. Add one above.</p>}
         </div>
       </div>
 
-      {/* Popup Settings */}
+      {/* Popup Settings with Image Upload */}
       <div className="bg-white rounded-2xl border p-6">
         <h2 className="text-xl font-semibold mb-4">Homepage Popup Modal</h2>
         <div className="space-y-4">
@@ -143,7 +247,34 @@ export default function AdminHomepage() {
           </label>
           <div><label>Title</label><input className="input w-full" value={popup.title} onChange={e => setPopup({ ...popup, title: e.target.value })} /></div>
           <div><label>Message</label><textarea className="input w-full" rows={2} value={popup.message} onChange={e => setPopup({ ...popup, message: e.target.value })} /></div>
-          <div><label>Image URL (optional)</label><input className="input w-full" value={popup.image_url} onChange={e => setPopup({ ...popup, image_url: e.target.value })} /></div>
+
+          {/* Image upload for popup */}
+          <div>
+            <label>Popup Image (optional)</label>
+            <div className="flex gap-3 items-start mt-1">
+              {popup.image_url && (
+                <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
+                  <Image src={popup.image_url} alt="Popup" fill className="object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setPopup({ ...popup, image_url: '' })}
+                    className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow"
+                  >
+                    <Trash2 size={12} className="text-red-500" />
+                  </button>
+                </div>
+              )}
+              <label className="cursor-pointer">
+                <div className="border-2 border-dashed rounded-lg p-3 text-center hover:bg-gray-50 transition">
+                  <Upload size={20} className="mx-auto text-gray-400" />
+                  <span className="text-xs text-gray-500">Upload</span>
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handlePopupImageUpload} />
+              </label>
+              {uploadingImage && <Loader2 className="animate-spin" />}
+            </div>
+          </div>
+
           <div><label>Button Text</label><input className="input w-full" value={popup.button_text} onChange={e => setPopup({ ...popup, button_text: e.target.value })} /></div>
           <div><label>Button Link</label><input className="input w-full" value={popup.button_link} onChange={e => setPopup({ ...popup, button_link: e.target.value })} /></div>
           <button onClick={savePopup} disabled={saving} className="btn-primary flex items-center gap-2">
@@ -153,4 +284,4 @@ export default function AdminHomepage() {
       </div>
     </div>
   );
-                                                }
+      }
