@@ -6,6 +6,8 @@ import { getDb } from '@/lib/db'
 import { Package, ShoppingCart, Users, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { MonthlySalesChart } from '@/components/admin/Charts'
+import NewsletterGrowthChart from '@/components/admin/NewsletterGrowthChart'
+import NewsletterStats from '@/components/admin/NewsletterStats'
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -138,6 +140,18 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Newsletter Growth Chart – Subscriber growth over time */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-10">
+        <h2 className="font-bold text-gray-800 mb-4">Newsletter Subscriber Growth (Last 12 Months)</h2>
+        <NewsletterGrowthChart />
+      </div>
+
+      {/* Full Newsletter Stats – total active, campaigns, unsubscribes */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-10">
+        <h2 className="font-bold text-gray-800 mb-4">📧 Newsletter Performance & Unsubscribes</h2>
+        <NewsletterStats />
+      </div>
+
       {/* Recent Orders Table */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -183,4 +197,4 @@ export default async function DashboardPage() {
       </div>
     </div>
   )
-}
+  }
