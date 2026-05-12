@@ -7,6 +7,8 @@ import HeroCarousel from '@/components/storefront/HeroCarousel';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import { getDb } from '@/lib/db';
 import { Search } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 const carouselSlides = [
   {
@@ -32,10 +34,24 @@ const carouselSlides = [
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string }>;
+  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const sql = getDb();
+  
+  // Get category from URL or from saved cookie (for Continue Shopping)
+  const cookieStore = cookies();
+  let selectedCategory = params.category;
+  
+  // If no category in URL but we have a saved category cookie, use that
+  if (!selectedCategory && !params.q) {
+    const savedCategory = cookieStore.get('last_category')?.value;
+    if (savedCategory && savedCategory !== 'All') {
+      selectedCategory = savedCategory;
+      // Redirect to include the category in URL
+      redirect(`/products?category=${encodeURIComponent(selectedCategory)}`);
+    }
+  }
 
   let categories = [];
   try {
@@ -48,53 +64,113 @@ export default async function ProductsPage({
   const categoryNames = ['All', ...categories.map((c: any) => c.name)];
 
   let products: any[] = [];
+  let totalCount = 0;
+  const currentPage = parseInt(params.page || '1');
+  const pageSize = 12;
+  const offset = (currentPage - 1) * pageSize;
+
   try {
-    let baseQuery;
+    let countQuery, dataQuery;
 
     if (params.q) {
-      baseQuery = sql`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
-          AND p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    } else {
-      baseQuery = sql`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    }
-
-    if (params.category && params.category !== 'All') {
-      if (params.q) {
-        baseQuery = sql`
+      // Search query
+      if (params.category && params.category !== 'All') {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${params.category}
+            AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+        `;
+        dataQuery = sql`
           SELECT p.*, c.name as category_name 
           FROM products p
           JOIN categories c ON p.category_id = c.id
           WHERE c.name = ${params.category}
             AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
             AND p.status = 'in_stock'
-          ORDER BY p.created_at DESC
+          ORDER BY 
+            CASE 
+              WHEN p.name ILIKE ${params.q + '%'} THEN 1
+              WHEN p.name ILIKE ${'%' + params.q + '%'} THEN 2
+              ELSE 3
+            END
+          LIMIT ${pageSize} OFFSET ${offset}
         `;
       } else {
-        baseQuery = sql`
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+          ORDER BY 
+            CASE 
+              WHEN p.name ILIKE ${params.q + '%'} THEN 1
+              WHEN p.name ILIKE ${'%' + params.q + '%'} THEN 2
+              ELSE 3
+            END
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      }
+    } else {
+      // Regular category browse
+      if (params.category && params.category !== 'All') {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${params.category} AND p.status = 'in_stock'
+        `;
+        dataQuery = sql`
           SELECT p.*, c.name as category_name 
           FROM products p
           JOIN categories c ON p.category_id = c.id
           WHERE c.name = ${params.category} AND p.status = 'in_stock'
           ORDER BY p.created_at DESC
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      } else {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          WHERE p.status = 'in_stock'
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE p.status = 'in_stock'
+          ORDER BY p.created_at DESC
+          LIMIT ${pageSize} OFFSET ${offset}
         `;
       }
     }
-    products = await baseQuery;
+
+    const [countResult, productsResult] = await Promise.all([countQuery, dataQuery]);
+    totalCount = parseInt(countResult[0]?.count || '0');
+    products = productsResult;
   } catch (err) {
     console.error(err);
   }
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Helper function to build pagination URL
+  const getPageUrl = (page: number) => {
+    const params = new URLSearchParams();
+    if (params.q) params.set('q', params.q);
+    if (selectedCategory && selectedCategory !== 'All') params.set('category', selectedCategory);
+    params.set('page', page.toString());
+    return `/products?${params.toString()}`;
+  };
 
   return (
     <>
@@ -105,6 +181,7 @@ export default async function ProductsPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           <FeaturedProducts />
 
+          {/* Search Bar */}
           <div className="mb-6 sm:mb-8">
             <form method="GET" action="/products" className="relative max-w-md mx-auto">
               <input
@@ -123,17 +200,21 @@ export default async function ProductsPage({
             </form>
           </div>
 
+          {/* Category Filter */}
           <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-6 sm:mb-8 md:mx-0 md:px-0 md:overflow-visible">
             <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
               {categoryNames.map((cat) => {
-                const isActive = (!params.category && cat === 'All') || params.category === cat;
-                const href = params.q
-                  ? cat === 'All'
+                const isActive = (!selectedCategory && cat === 'All') || selectedCategory === cat;
+                let href;
+                if (params.q) {
+                  href = cat === 'All'
                     ? `/products?q=${encodeURIComponent(params.q)}`
-                    : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`
-                  : cat === 'All'
-                  ? '/products'
-                  : `/products?category=${encodeURIComponent(cat)}`;
+                    : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
+                } else {
+                  href = cat === 'All'
+                    ? '/products'
+                    : `/products?category=${encodeURIComponent(cat)}`;
+                }
                 return (
                   <a
                     key={cat}
@@ -151,6 +232,7 @@ export default async function ProductsPage({
             </div>
           </div>
 
+          {/* Products Grid */}
           {products.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-gray-400 text-base">No products found.</p>
@@ -159,7 +241,7 @@ export default async function ProductsPage({
             <>
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-gray-400">
-                  {products.length} product{products.length !== 1 ? 's' : ''}
+                  Showing {offset + 1}-{Math.min(offset + pageSize, totalCount)} of {totalCount} products
                 </p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
@@ -167,6 +249,53 @@ export default async function ProductsPage({
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-10 flex-wrap">
+                  {currentPage > 1 && (
+                    <a
+                      href={getPageUrl(currentPage - 1)}
+                      className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 transition"
+                    >
+                      Previous
+                    </a>
+                  )}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <a
+                        key={pageNum}
+                        href={getPageUrl(pageNum)}
+                        className={`px-4 py-2 border rounded-lg text-sm transition ${
+                          currentPage === pageNum
+                            ? 'bg-[#F97316] text-white border-[#F97316]'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </a>
+                    );
+                  })}
+                  {currentPage < totalPages && (
+                    <a
+                      href={getPageUrl(currentPage + 1)}
+                      className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 transition"
+                    >
+                      Next
+                    </a>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -174,4 +303,4 @@ export default async function ProductsPage({
       <Footer />
     </>
   );
-}
+      }
