@@ -7,6 +7,7 @@ import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
+import { saveLastCategory } from '@/lib/recentlyViewedUtils';
 
 export default function ProductCard({ product }: { product: any }) {
   // Guard clause - if product is missing, return nothing
@@ -47,6 +48,14 @@ export default function ProductCard({ product }: { product: any }) {
   const StatusIcon = statusBadge.icon;
   const isOutOfStock = product.status === 'out_of_stock' || product.stock_quantity === 0;
   const isComingSoon = product.status === 'coming_soon';
+
+  // Handle product click - save category for "Continue Shopping"
+  const handleProductClick = () => {
+    const categoryToSave = product.category_name || product.category;
+    if (categoryToSave && categoryToSave !== 'Uncategorized') {
+      saveLastCategory(categoryToSave, 1);
+    }
+  };
 
   // Check if product is in wishlist
   useEffect(() => {
@@ -116,6 +125,17 @@ export default function ProductCard({ product }: { product: any }) {
     }
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({ 
+      id: String(product.id), 
+      name: productName, 
+      image_url: productImage, 
+      priceUsd: priceMwk  // priceMwk is now MWK value
+    });
+  };
+
   const productName = product.name || 'Product';
   const productImage = product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600';
   const categoryName = product.category_name || product.category || 'Uncategorized';
@@ -123,7 +143,7 @@ export default function ProductCard({ product }: { product: any }) {
   return (
     <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-50">
-        <Link href={`/products/${product.id}`}>
+        <Link href={`/products/${product.id}`} onClick={handleProductClick}>
           <Image
             src={productImage}
             alt={productName}
@@ -162,7 +182,7 @@ export default function ProductCard({ product }: { product: any }) {
       </div>
       
       <div className="p-3 sm:p-4">
-        <Link href={`/products/${product.id}`}>
+        <Link href={`/products/${product.id}`} onClick={handleProductClick}>
           <h3 className="font-semibold text-gray-800 line-clamp-1 text-sm sm:text-base">
             {productName}
           </h3>
@@ -190,12 +210,7 @@ export default function ProductCard({ product }: { product: any }) {
             {!isOutOfStock && !isComingSoon ? (
               <>
                 <button
-                  onClick={() => addItem({ 
-                    id: String(product.id), 
-                    name: productName, 
-                    image_url: productImage, 
-                    priceUsd: priceMwk  // priceMwk is now MWK value
-                  })}
+                  onClick={handleAddToCart}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-full transition"
                   aria-label="Add to cart"
                 >
@@ -203,6 +218,7 @@ export default function ProductCard({ product }: { product: any }) {
                 </button>
                 <Link
                   href={`/products/${product.id}`}
+                  onClick={handleProductClick}
                   className="bg-[#F97316] hover:bg-orange-600 text-white p-1.5 rounded-full transition"
                   aria-label="Buy now"
                 >
