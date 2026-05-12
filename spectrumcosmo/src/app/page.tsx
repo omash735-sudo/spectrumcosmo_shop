@@ -8,6 +8,8 @@ import { getDb } from '@/lib/db';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
+import RecentlyViewed from '@/components/storefront/RecentlyViewed';
+import ContinueShopping from '@/components/storefront/ContinueShopping';
 
 export default async function HomePage() {
   let hero: any = null;
@@ -124,10 +126,11 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* NEW: Categories & Featured Products sections */}
+        {/* Categories & Featured Products & Recently Viewed sections */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <CategoriesSection />
           <FeaturedProducts />
+          <RecentlyViewed />
         </div>
 
         {/* Original CTA section */}
@@ -152,6 +155,7 @@ export default async function HomePage() {
       </main>
       <Footer />
       <HomepagePopup />
+      <ContinueShopping />
     </>
   );
-}
+                  }
