@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Save, ArrowUp, ArrowDown, Eye, EyeOff, Upload, Trash2, Plus } from 'lucide-react';
+import { Loader2, Save, ArrowUp, ArrowDown, Eye, EyeOff, Upload, Trash2, Plus, ShoppingBag, Clock, Search } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminHomepage() {
@@ -15,6 +15,23 @@ export default function AdminHomepage() {
     button_text: '',
     button_link: '',
   });
+  
+  // NEW: Feature toggles for recently viewed & continue shopping
+  const [features, setFeatures] = useState({
+    recentlyViewed: {
+      enabled: true,
+      maxItems: 6,
+      title: 'Recently Viewed',
+      showClearButton: true,
+    },
+    continueShopping: {
+      enabled: true,
+      position: 'bottom-right',
+      expiryDays: 7,
+      buttonText: 'Continue',
+    },
+  });
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -23,6 +40,7 @@ export default function AdminHomepage() {
 
   useEffect(() => {
     fetchData();
+    fetchFeatures();
   }, []);
 
   const fetchData = async () => {
@@ -43,6 +61,34 @@ export default function AdminHomepage() {
       console.error(err);
     }
     setLoading(false);
+  };
+
+  const fetchFeatures = async () => {
+    try {
+      const res = await fetch('/api/homepage/features');
+      if (res.ok) {
+        const data = await res.json();
+        setFeatures(data);
+      }
+    } catch (err) {
+      console.error('Failed to load features:', err);
+    }
+  };
+
+  const saveFeatures = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/homepage/features', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(features),
+      });
+      alert('Features saved successfully');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save features');
+    }
+    setSaving(false);
   };
 
   const uploadToCloudinary = async (file: File): Promise<string | null> => {
@@ -81,7 +127,6 @@ export default function AdminHomepage() {
     if (url) {
       const updated = categories.map(c => c.id === catId ? { ...c, image_url: url } : c);
       setCategories(updated);
-      // Save to backend
       await fetch('/api/categories', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +152,6 @@ export default function AdminHomepage() {
     const swapIndex = direction === 'up' ? index - 1 : index + 1;
     [newCategories[index], newCategories[swapIndex]] = [newCategories[swapIndex], newCategories[index]];
     setCategories(newCategories);
-    // Save new order
     await fetch('/api/categories/reorder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -155,7 +199,7 @@ export default function AdminHomepage() {
 
       {/* Featured Products Manager */}
       <div className="bg-white rounded-2xl border p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Featured Products</h2>
+        <h2 className="text-xl font-semibold mb-4">⭐ Featured Products</h2>
         <p className="text-sm text-gray-500 mb-4">Toggle which products appear in the "Featured Products" section on the homepage.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {products.map(p => (
@@ -178,10 +222,161 @@ export default function AdminHomepage() {
         </div>
       </div>
 
-      {/* Categories Manager with Image Upload & Reorder */}
+      {/* NEW: Features Manager (Recently Viewed + Continue Shopping) */}
       <div className="bg-white rounded-2xl border p-6 mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Categories (Homepage Display)</h2>
+          <h2 className="text-xl font-semibold">🛍️ Smart Features</h2>
+          <button onClick={saveFeatures} disabled={saving} className="bg-[#F97316] text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Save Features
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mb-6">Control recently viewed and continue shopping features.</p>
+
+        {/* Recently Viewed Section */}
+        <div className="border-b pb-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock size={20} className="text-[#F97316]" />
+              <h3 className="text-lg font-semibold">Recently Viewed</h3>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={features.recentlyViewed.enabled}
+                onChange={(e) => setFeatures({
+                  ...features,
+                  recentlyViewed: { ...features.recentlyViewed, enabled: e.target.checked }
+                })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F97316]"></div>
+            </label>
+          </div>
+          
+          {features.recentlyViewed.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6 pl-4 border-l-2 border-orange-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Items to Show</label>
+                <select
+                  value={features.recentlyViewed.maxItems}
+                  onChange={(e) => setFeatures({
+                    ...features,
+                    recentlyViewed: { ...features.recentlyViewed, maxItems: parseInt(e.target.value) }
+                  })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value={3}>3 items</option>
+                  <option value={4}>4 items</option>
+                  <option value={6}>6 items</option>
+                  <option value={8}>8 items</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+                <input
+                  type="text"
+                  value={features.recentlyViewed.title}
+                  onChange={(e) => setFeatures({
+                    ...features,
+                    recentlyViewed: { ...features.recentlyViewed, title: e.target.value }
+                  })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="Recently Viewed"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={features.recentlyViewed.showClearButton}
+                    onChange={(e) => setFeatures({
+                      ...features,
+                      recentlyViewed: { ...features.recentlyViewed, showClearButton: e.target.checked }
+                    })}
+                  />
+                  Show "Clear History" button
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Continue Shopping Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={20} className="text-[#F97316]" />
+              <h3 className="text-lg font-semibold">Continue Shopping</h3>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={features.continueShopping.enabled}
+                onChange={(e) => setFeatures({
+                  ...features,
+                  continueShopping: { ...features.continueShopping, enabled: e.target.checked }
+                })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F97316]"></div>
+            </label>
+          </div>
+          
+          {features.continueShopping.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-6 pl-4 border-l-2 border-orange-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                <select
+                  value={features.continueShopping.position}
+                  onChange={(e) => setFeatures({
+                    ...features,
+                    continueShopping: { ...features.continueShopping, position: e.target.value }
+                  })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="bottom-right">Bottom Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry (days)</label>
+                <select
+                  value={features.continueShopping.expiryDays}
+                  onChange={(e) => setFeatures({
+                    ...features,
+                    continueShopping: { ...features.continueShopping, expiryDays: parseInt(e.target.value) }
+                  })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value={1}>1 day</option>
+                  <option value={3}>3 days</option>
+                  <option value={7}>7 days</option>
+                  <option value={14}>14 days</option>
+                  <option value={30}>30 days</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+                <input
+                  type="text"
+                  value={features.continueShopping.buttonText}
+                  onChange={(e) => setFeatures({
+                    ...features,
+                    continueShopping: { ...features.continueShopping, buttonText: e.target.value }
+                  })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="Continue"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Categories Manager */}
+      <div className="bg-white rounded-2xl border p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">📂 Categories (Homepage Display)</h2>
           <div className="flex gap-2">
             <input
               type="text"
@@ -199,7 +394,6 @@ export default function AdminHomepage() {
           {categories.map(cat => (
             <div key={cat.id} className="flex items-center justify-between p-3 border rounded-lg flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                {/* Category Image Upload */}
                 <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   {cat.image_url ? (
                     <Image src={cat.image_url} alt={cat.name} fill className="object-cover" />
@@ -237,20 +431,19 @@ export default function AdminHomepage() {
         </div>
       </div>
 
-      {/* Popup Settings with Image Upload */}
+      {/* Popup Settings */}
       <div className="bg-white rounded-2xl border p-6">
-        <h2 className="text-xl font-semibold mb-4">Homepage Popup Modal</h2>
+        <h2 className="text-xl font-semibold mb-4">🎉 Homepage Popup Modal</h2>
         <div className="space-y-4">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={popup.enabled} onChange={e => setPopup({ ...popup, enabled: e.target.checked })} />
             Enable popup on homepage
           </label>
-          <div><label>Title</label><input className="input w-full" value={popup.title} onChange={e => setPopup({ ...popup, title: e.target.value })} /></div>
-          <div><label>Message</label><textarea className="input w-full" rows={2} value={popup.message} onChange={e => setPopup({ ...popup, message: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1">Title</label><input className="w-full border rounded-lg px-3 py-2" value={popup.title} onChange={e => setPopup({ ...popup, title: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1">Message</label><textarea className="w-full border rounded-lg px-3 py-2" rows={2} value={popup.message} onChange={e => setPopup({ ...popup, message: e.target.value })} /></div>
 
-          {/* Image upload for popup */}
           <div>
-            <label>Popup Image (optional)</label>
+            <label className="block text-sm font-medium mb-1">Popup Image (optional)</label>
             <div className="flex gap-3 items-start mt-1">
               {popup.image_url && (
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
@@ -275,13 +468,13 @@ export default function AdminHomepage() {
             </div>
           </div>
 
-          <div><label>Button Text</label><input className="input w-full" value={popup.button_text} onChange={e => setPopup({ ...popup, button_text: e.target.value })} /></div>
-          <div><label>Button Link</label><input className="input w-full" value={popup.button_link} onChange={e => setPopup({ ...popup, button_link: e.target.value })} /></div>
-          <button onClick={savePopup} disabled={saving} className="btn-primary flex items-center gap-2">
+          <div><label className="block text-sm font-medium mb-1">Button Text</label><input className="w-full border rounded-lg px-3 py-2" value={popup.button_text} onChange={e => setPopup({ ...popup, button_text: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium mb-1">Button Link</label><input className="w-full border rounded-lg px-3 py-2" value={popup.button_link} onChange={e => setPopup({ ...popup, button_link: e.target.value })} /></div>
+          <button onClick={savePopup} disabled={saving} className="bg-[#F97316] text-white px-4 py-2 rounded-lg flex items-center gap-2">
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Save Popup Settings
           </button>
         </div>
       </div>
     </div>
   );
-      }
+}
