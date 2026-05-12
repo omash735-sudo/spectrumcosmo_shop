@@ -10,6 +10,8 @@ import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 import AddToCartButton from '@/components/storefront/AddToCartButton';
 import ProductReviews from '@/components/storefront/ProductReviews';
 import ShareButton from '@/components/storefront/ShareButton';
+import ProductViewTracker from '@/components/storefront/ProductViewTracker';
+import ContinueShopping from '@/components/storefront/ContinueShopping';
 import { getDb } from '@/lib/db';
 
 // Helper to parse JSON fields (if stored as JSONB)
@@ -74,18 +76,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
 
+  // Prepare product object for tracking
+  const productForTracking = {
+    id: product.id,
+    name: product.name,
+    price: Number(product.price ?? 0),
+    image_url: product.image_url,
+  };
+
   return (
     <>
       <Navbar />
+      <ProductViewTracker product={productForTracking} />
       <main className="min-h-screen bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           {/* Breadcrumb */}
           <nav className="text-sm text-gray-500 dark:text-gray-400 mb-6 flex flex-wrap items-center gap-2">
             <Link href="/" className="hover:text-[#F97316] transition">Home</Link>
             <span>/</span>
-            <Link href="/shop" className="hover:text-[#F97316] transition">Shop</Link>
+            <Link href="/products" className="hover:text-[#F97316] transition">Shop</Link>
             <span>/</span>
-            <Link href={`/shop?category=${encodeURIComponent(product.category || '')}`} className="hover:text-[#F97316] transition">
+            <Link href={`/products?category=${encodeURIComponent(product.category || '')}`} className="hover:text-[#F97316] transition">
               {product.category || 'Products'}
             </Link>
             <span>/</span>
@@ -299,6 +310,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
       </main>
       <Footer />
+      <ContinueShopping />
     </>
   );
 }
