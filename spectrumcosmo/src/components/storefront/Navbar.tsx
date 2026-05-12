@@ -25,6 +25,7 @@ import CurrencySelector from '@/components/storefront/CurrencySelector'
 import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 import { useSettings } from '@/components/storefront/SettingsProvider'
+import SearchBar from '@/components/storefront/SearchBar'
 
 const desktopLinks = [
   { href: '/', label: 'Home' },
@@ -145,6 +146,7 @@ export default function Navbar() {
       `}</style>
 
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        {/* DESKTOP HEADER */}
         <div className="hidden md:flex max-w-7xl mx-auto px-5 py-4 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-10" />
@@ -168,6 +170,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-4">
             <CurrencySelector />
+            <SearchBar />
             <button onClick={openCart} className="relative">
               <ShoppingCart size={20} />
               {totalItems > 0 && (
@@ -219,29 +222,40 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* MOBILE HEADER */}
         <div className="md:hidden flex items-center justify-between px-5 py-3">
-          <button onClick={() => setMobileMenuOpen(true)}><Menu size={24} /></button>
+          <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
+            <Menu size={24} />
+          </button>
+          
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-8" />
             <span className="text-lg font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
           </Link>
-          <button onClick={openCart} className="relative">
-            <ShoppingCart size={22} />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
-                {totalItems}
-              </span>
-            )}
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <SearchBar />
+            <button onClick={openCart} className="relative" aria-label="Cart">
+              <ShoppingCart size={22} />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
+      {/* MOBILE MENU (SIDEBAR) */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden">
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col">
             <div className="flex justify-between items-center border-b pb-3">
               <span className="font-semibold">Menu</span>
-              <button onClick={() => setMobileMenuOpen(false)}><X size={22} /></button>
+              <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+                <X size={22} />
+              </button>
             </div>
 
             <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
@@ -254,9 +268,13 @@ export default function Navbar() {
                 {!isLoggedIn ? 'Guest / Visitor' : displayName}
               </div>
               {isLoggedIn ? (
-                <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">Profile</Link>
+                <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                  Profile
+                </Link>
               ) : (
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">Sign in / Register</Link>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                  Sign in / Register
+                </Link>
               )}
             </div>
 
@@ -264,9 +282,16 @@ export default function Navbar() {
               <CurrencySelector />
             </div>
 
-            <div className="my-3 bg-orange-50 p-2 rounded flex justify-between">
+            {/* Search Bar in mobile menu (optional but convenient) */}
+            <div className="my-3">
+              <SearchBar />
+            </div>
+
+            <div className="my-2 bg-orange-50 p-2 rounded flex justify-between">
               <span className="font-semibold">View Products</span>
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">view →</Link>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">
+                view →
+              </Link>
             </div>
 
             <div className="flex flex-col gap-2 mt-2 flex-grow">
@@ -274,7 +299,14 @@ export default function Navbar() {
                 const Icon = item.icon
                 if (item.type === 'action') {
                   return (
-                    <button key={item.label} onClick={() => { item.onClick(); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-2 py-2">
+                    <button 
+                      key={item.label} 
+                      onClick={() => { 
+                        item.onClick(); 
+                        setMobileMenuOpen(false); 
+                      }} 
+                      className="flex items-center gap-3 px-2 py-2"
+                    >
                       <Icon size={18} /> {item.label}
                     </button>
                   )
@@ -307,7 +339,13 @@ export default function Navbar() {
 
             <div className="mt-6 pt-3 border-t border-gray-200">
               {isLoggedIn ? (
-                <button onClick={logout} className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left">
+                <button 
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }} 
+                  className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left"
+                >
                   <LogOut size={18} /> Log out
                 </button>
               ) : (
