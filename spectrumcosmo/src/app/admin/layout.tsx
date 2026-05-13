@@ -20,7 +20,10 @@ import {
   Layout,
   FileText,
   Shield,
-  Home,               // added icon for Homepage Editor
+  Home,
+  Wallet,              // NEW: for Payment Settings
+  Database,            // NEW: for Payment Providers
+  CheckCircle,         // NEW: for Payment Verifications
 } from 'lucide-react';
 
 const navItems = [
@@ -29,13 +32,16 @@ const navItems = [
   { name: 'Products', href: '/admin/products', icon: Package, section: 'CORE' },
   { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'CORE' },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
+  { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },  // NEW
+  { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },  // NEW
+  { name: 'Payment Providers', href: '/admin/payment-providers', icon: Database, section: 'OPERATIONS' },  // NEW
   { name: 'Delivery', href: '/admin/delivery', icon: Truck, section: 'OPERATIONS' },
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
-  { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },      // NEW
+  { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },
   { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' },
   { name: 'Contact Page', href: '/admin/contact', icon: FileText, section: 'SYSTEM' },
   { name: 'Terms', href: '/admin/terms', icon: FileText, section: 'SYSTEM' },
@@ -116,6 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img
@@ -133,6 +140,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           <div
@@ -155,6 +163,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
+      {/* Desktop Layout */}
       <div className="hidden md:flex">
         <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-100 min-h-screen sticky top-0 flex flex-col p-5 shadow-sm">
           <NavContent />
@@ -165,6 +174,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
+      {/* Mobile Main Content */}
       <div className="md:hidden pt-16">
         <main className="p-4">
           <div className="max-w-7xl mx-auto">{children}</div>
