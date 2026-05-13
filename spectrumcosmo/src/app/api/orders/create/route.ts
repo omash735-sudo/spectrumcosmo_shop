@@ -3,6 +3,25 @@ import { getDb } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import { getVerifiedUser } from '@/lib/auth';
 
+// Helper to render email with placeholders
+function renderEmailTemplate(template: string, placeholders: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(placeholders)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  }
+  return result;
+}
+
+// Helper to get email template from database
+async function getEmailTemplate(sql: any, name: string) {
+  const templates = await sql`
+    SELECT html_template, subject FROM email_templates 
+    WHERE name = ${name} AND is_active = true 
+    LIMIT 1
+  `;
+  return templates[0] || null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Check authenticated user – if frozen/banned, reject.
@@ -10,7 +29,6 @@ export async function POST(req: NextRequest) {
     if (authError && authError.status === 403) {
       return authError;
     }
-    // user may be null (guest) or active user
 
     const body = await req.json();
     const {
@@ -19,11 +37,12 @@ export async function POST(req: NextRequest) {
       phone_number,
       location,
       notes,
-      payment_method,
       items,
       total_amount,
       delivery_method_id,
       delivery_fee,
+      payment_provider_id,
+      payment_method,
     } = body;
 
     if (!customer_name || !customer_email || !phone_number || !location || !items?.length || !total_amount) {
@@ -35,32 +54,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid total_amount' }, { status: 400 });
     }
 
-    let safeDeliveryMethodId = delivery_method_id !== undefined && delivery_method_id !== null ? Number(delivery_method_id) : null;
-    if (safeDeliveryMethodId !== null && isNaN(safeDeliveryMethodId)) {
-      safeDeliveryMethodId = null;
-    }
-
-    let safeDeliveryFee = Number(delivery_fee);
-    if (isNaN(safeDeliveryFee)) safeDeliveryFee = 0;
-
     const sql = getDb();
 
+    // Get payment provider details
+    let isAutomatic = false;
+    let paymentInstructions = '';
+    if (payment_provider_id) {
+      const [provider] = await sql`
+        SELECT type, instructions, account_name, account_number, branch 
+        FROM payment_providers 
+        WHERE id = ${payment_provider_id}
+      `;
+      isAutomatic = provider?.type === 'automatic';
+      paymentInstructions = provider?.instructions || '';
+      
+      // Build formatted instructions if it's a manual provider
+      if (!isAutomatic && provider) {
+        paymentInstructions = `
+          <strong>${provider.name}</strong><br/>
+          ${provider.account_name ? `Account Name: ${provider.account_name}<br/>` : ''}
+          ${provider.account_number ? `Account Number: ${provider.account_number}<br/>` : ''}
+          ${provider.branch ? `Branch: ${provider.branch}<br/>` : ''}
+          ${provider.instructions || ''}
+        `;
+      }
+    }
+
+    // Get system settings
+    const settings = await sql`
+      SELECT setting_key, setting_value FROM system_settings
+    `;
+    const settingsMap: Record<string, string> = {};
+    settings.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value; });
+
+    // Insert order
     const [order] = await sql`
       INSERT INTO orders (
         customer_name, customer_email, phone_number, delivery_address,
         payment_note, payment_method, total_amount, status, user_id, created_at,
-        delivery_method_id, delivery_fee
+        delivery_method_id, delivery_fee, payment_provider_id, payment_status
       ) VALUES (
         ${customer_name}, ${customer_email}, ${phone_number}, ${location},
         ${notes || ''}, ${payment_method}, ${safeTotal}, 'pending',
         ${user?.id || null}, NOW(),
-        ${safeDeliveryMethodId}, ${safeDeliveryFee}
+        ${delivery_method_id || null}, ${delivery_fee || 0},
+        ${payment_provider_id || null}, ${isAutomatic ? 'paid' : 'pending'}
       )
       RETURNING id::text
     `;
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
+    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
@@ -77,40 +122,157 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    // Invoice email (unchanged)
+    // Build order items HTML for email
     const orderItemsHtml = items.map(item => `
-      <tr>
-        <td style="padding:8px; border-bottom:1px solid #eee;">${item.name} x ${item.quantity}</td>
-        <td style="padding:8px; border-bottom:1px solid #eee;">MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</td>
-      </tr>
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+        <span>${item.name} x ${item.quantity}</span>
+        <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
+      </div>
     `).join('');
 
-    const invoiceHtml = `
-      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:16px;">
-        <div style="background:#F97316; padding:20px; text-align:center; color:white;">
-          <h2>Order Confirmation</h2>
-          <p>Order #${order.id.slice(-8)}</p>
-        </div>
-        <div style="padding:20px;">
-          <p>Hi <strong>${customer_name}</strong>,</p>
-          <p>Thank you for your order! Details below:</p>
-          <table style="width:100%; border-collapse:collapse;">${orderItemsHtml}<table>
-          <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
-          <p><strong>Payment Method:</strong> ${payment_method}</p>
-          <p><strong>Delivery Address:</strong> ${location}</p>
-          <p><strong>Estimated Delivery:</strong> 3–5 business days after payment verification.</p>
-          <hr />
-          <p style="font-size:12px;">Questions? Reply to this email.</p>
-        </div>
-      </div>
-    `;
+    const orderNumber = order.id.slice(-8);
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/orders/${order.id}/payment`;
+    const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
-    await sendMail({
-      to: customer_email,
-      subject: `Order Confirmation #${order.id.slice(-8)}`,
-      text: `Your order total MWK ${safeTotal.toLocaleString()}. Track at ${process.env.NEXT_PUBLIC_APP_URL}/account/tracking?order=${order.id}`,
-      html: invoiceHtml,
-    }).catch(err => console.error('Email failed:', err));
+    // Common placeholders for all emails
+    const commonPlaceholders = {
+      customer_name,
+      order_number: orderNumber,
+      total_amount: safeTotal.toLocaleString(),
+      delivery_address: location,
+      payment_instructions: paymentInstructions,
+      payment_url: paymentUrl,
+      tracking_url: trackingUrl,
+    };
+
+    if (isAutomatic) {
+      // AUTOMATIC PAYMENT – send order confirmation
+      let emailTemplate = await getEmailTemplate(sql, 'order_confirmation_automatic');
+      
+      if (emailTemplate) {
+        const html = renderEmailTemplate(emailTemplate.html_template, commonPlaceholders);
+        await sendMail({
+          to: customer_email,
+          subject: renderEmailTemplate(emailTemplate.subject, commonPlaceholders),
+          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+          html,
+        }).catch(err => console.error('Email failed:', err));
+      } else {
+        // Fallback email template
+        const fallbackHtml = `
+          <div style="font-family: Arial; max-width:600px;">
+            <h2>Order Confirmed!</h2>
+            <p>Hello ${customer_name},</p>
+            <p>Thank you for your order! Your payment has been processed successfully.</p>
+            <div style="background:#f9fafb; padding:20px; border-radius:12px;">
+              <h3>Order Summary</h3>
+              <p><strong>Order #:</strong> ${orderNumber}</p>
+              <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
+              <p><strong>Delivery Address:</strong> ${location}</p>
+            </div>
+            <a href="${trackingUrl}" style="background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px;">View Order →</a>
+          </div>
+        `;
+        await sendMail({
+          to: customer_email,
+          subject: `Order Confirmation #${orderNumber}`,
+          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+          html: fallbackHtml,
+        }).catch(err => console.error('Email failed:', err));
+      }
+    } else {
+      // MANUAL PAYMENT – send payment instructions email
+      let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
+      
+      // Get promotional banner (if active)
+      const [activeBanner] = await sql`
+        SELECT title, description, discount_code, button_text, button_url 
+        FROM promotional_banners 
+        WHERE is_active = true 
+          AND (starts_at IS NULL OR starts_at <= NOW()) 
+          AND (ends_at IS NULL OR ends_at >= NOW())
+        LIMIT 1
+      `;
+
+      const discountBannerHtml = activeBanner ? `
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+          <p style="margin:0; font-size:14px; color:#92400E;">🎉 ${activeBanner.title || 'Special Offer'} 🎉</p>
+          ${activeBanner.description ? `<p style="margin:5px 0 0; font-size:12px;">${activeBanner.description}</p>` : ''}
+          ${activeBanner.discount_code ? `<p style="margin:10px 0 0; font-weight:bold;">Code: ${activeBanner.discount_code}</p>` : ''}
+          ${activeBanner.button_text && activeBanner.button_url ? `<a href="${activeBanner.button_url}" style="display:inline-block; margin-top:10px; background:#F97316; color:white; padding:8px 20px; text-decoration:none; border-radius:30px;">${activeBanner.button_text}</a>` : ''}
+        </div>
+      ` : (settingsMap.discount_banner_default ? `
+        <div class="discount-banner" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+          <p style="margin:0;">🎉 ${settingsMap.discount_banner_default} 🎉</p>
+        </div>
+      ` : '');
+
+      if (emailTemplate) {
+        const html = renderEmailTemplate(emailTemplate.html_template, {
+          ...commonPlaceholders,
+          discount_banner: discountBannerHtml,
+        });
+        await sendMail({
+          to: customer_email,
+          subject: renderEmailTemplate(emailTemplate.subject, commonPlaceholders),
+          text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
+          html,
+        }).catch(err => console.error('Email failed:', err));
+      } else {
+        // Fallback email template
+        const orderItemsTable = items.map(item => `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
+          </div>
+        `).join('');
+
+        const fallbackHtml = `
+          <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:16px; overflow:hidden;">
+            <div style="background:#F97316; padding:20px; text-align:center;">
+              <img src="${settingsMap.invoice_logo_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'}" style="max-width:150px;" />
+              <h1 style="color:white; margin:10px 0 0;">Complete Your Payment</h1>
+            </div>
+            <div style="padding:24px;">
+              <p>Hello <strong>${customer_name}</strong>,</p>
+              <p>Thank you for your order! To complete your purchase, please follow the instructions below.</p>
+              
+              <div style="background:#f9fafb; padding:20px; border-radius:12px; margin:20px 0;">
+                <h3 style="margin-top:0;">Order Summary</h3>
+                ${orderItemsTable}
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 18px; color: #F97316;">
+                  <span>Total Amount</span>
+                  <span>MWK ${safeTotal.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div style="background:#fef3c7; padding:20px; border-radius:12px; margin:20px 0;">
+                <h3 style="margin-top:0;">Payment Instructions</h3>
+                <div style="font-size:14px;">${paymentInstructions}</div>
+              </div>
+
+              <div style="text-align:center;">
+                <a href="${paymentUrl}" style="display:inline-block; background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px; font-weight:bold;">Complete Payment →</a>
+              </div>
+
+              ${discountBannerHtml}
+            </div>
+            <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#6b7280; border-top:1px solid #e5e7eb;">
+              <p>${settingsMap.company_name || 'SpectrumCosmo'} – Wear your excitement with pride.</p>
+              <p>${settingsMap.company_address || 'Lilongwe, Malawi'} | <a href="mailto:${settingsMap.company_email || 'hello@spectrumcosmo.shop'}" style="color:#F97316;">${settingsMap.company_email || 'hello@spectrumcosmo.shop'}</a></p>
+              <p>© ${new Date().getFullYear()} ${settingsMap.company_name || 'SpectrumCosmo'}. ${settingsMap.footer_copyright || 'All rights reserved.'}</p>
+            </div>
+          </div>
+        `;
+        
+        await sendMail({
+          to: customer_email,
+          subject: `⏳ Complete Your Payment for Order #${orderNumber}`,
+          text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
+          html: fallbackHtml,
+        }).catch(err => console.error('Email failed:', err));
+      }
+    }
 
     return NextResponse.json({
       success: true,
