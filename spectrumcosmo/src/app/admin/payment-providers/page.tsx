@@ -218,7 +218,7 @@ export default function PaymentProvidersPage() {
                 ))
               )}
             </tbody>
-          <td>
+          </table>
         </div>
       </div>
 
