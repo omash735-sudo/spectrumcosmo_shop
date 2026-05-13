@@ -21,9 +21,10 @@ import {
   FileText,
   Shield,
   Home,
-  Wallet,              // NEW: for Payment Settings
-  Database,            // NEW: for Payment Providers
-  CheckCircle,         // NEW: for Payment Verifications
+  Wallet,
+  Database,
+  CheckCircle,
+  Tag,                    // NEW: for Order Status
 } from 'lucide-react';
 
 const navItems = [
@@ -32,9 +33,10 @@ const navItems = [
   { name: 'Products', href: '/admin/products', icon: Package, section: 'CORE' },
   { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'CORE' },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
-  { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },  // NEW
-  { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },  // NEW
-  { name: 'Payment Providers', href: '/admin/payment-providers', icon: Database, section: 'OPERATIONS' },  // NEW
+  { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
+  { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
+  { name: 'Payment Providers', href: '/admin/payment-providers', icon: Database, section: 'OPERATIONS' },
+  { name: 'Order Status', href: '/admin/order-status', icon: Tag, section: 'OPERATIONS' },  // NEW
   { name: 'Delivery', href: '/admin/delivery', icon: Truck, section: 'OPERATIONS' },
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
