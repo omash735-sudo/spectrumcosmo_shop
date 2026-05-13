@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Upload, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, CheckCircle, Clock, XCircle, ArrowLeft, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -30,9 +30,9 @@ type PaymentData = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  awaiting_verification: { label: 'Awaiting Verification', color: 'bg-blue-100 text-blue-700', icon: Clock },
-  paid: { label: 'Paid', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  pending: { label: 'Awaiting Payment', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+  awaiting_verification: { label: 'Verification in Progress', color: 'bg-blue-100 text-blue-700', icon: Clock },
+  paid: { label: 'Payment Confirmed', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   failed: { label: 'Failed', color: 'bg-red-100 text-red-700', icon: XCircle },
 };
 
@@ -113,7 +113,6 @@ export default function OrderPaymentPage() {
       setTransactionRef('');
       setNote('');
       
-      // Refresh payment data
       const refreshed = await fetch(`/api/orders/${orderId}/payment`);
       const newData = await refreshed.json();
       setPaymentData(newData);
@@ -160,6 +159,14 @@ export default function OrderPaymentPage() {
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-10">
         <div className="max-w-3xl mx-auto px-4">
+          {/* Back button */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 mb-4 text-sm"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
           {/* Status Header */}
           <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
@@ -174,7 +181,7 @@ export default function OrderPaymentPage() {
             </div>
           </div>
 
-          {/* Payment Instructions (only for manual payments) */}
+          {/* Payment Instructions (only for manual payments that are not yet paid) */}
           {provider && !isPaid && (
             <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6 mb-6">
               <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-4">
@@ -196,23 +203,23 @@ export default function OrderPaymentPage() {
                 {provider.instructions && (
                   <div className="mt-3 p-3 bg-white rounded-lg">
                     <p className="font-medium">Instructions:</p>
-                    <p className="text-gray-600 whitespace-pre-wrap">{provider.instructions}</p>
+                    <div className="text-gray-600 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: provider.instructions }} />
                   </div>
                 )}
-                <p className="text-amber-700 mt-2">
-                  <strong>Amount to pay:</strong> MWK {order.total_amount.toLocaleString()}
+                <p className="text-amber-700 mt-2 font-medium">
+                  Amount to pay: MWK {order.total_amount.toLocaleString()}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Upload Proof Section */}
+          {/* Upload Proof Section - Only when payment is pending */}
           {canUpload && provider && (
             <div className="bg-white rounded-2xl border p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-4">Upload Payment Proof</h2>
               <form onSubmit={uploadProof} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Screenshot / Receipt</label>
+                  <label className="block text-sm font-medium mb-1">Screenshot / Receipt *</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -220,6 +227,7 @@ export default function OrderPaymentPage() {
                     required
                     className="w-full text-sm"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Upload a clear screenshot of your payment confirmation.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Transaction Reference (optional)</label>
@@ -260,7 +268,7 @@ export default function OrderPaymentPage() {
 
           {/* Existing Proof Display */}
           {existing_proof && (
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-3">Submitted Proof</h2>
               <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline break-all">
                 View uploaded proof image
@@ -272,15 +280,36 @@ export default function OrderPaymentPage() {
             </div>
           )}
 
-          {/* Back Button */}
-          <div className="mt-6">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <button
               onClick={() => router.push('/account/orders')}
-              className="text-gray-500 hover:text-gray-700 text-sm"
+              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition"
             >
-              ← Back to My Orders
+              View My Orders
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition"
+            >
+              Continue Shopping
             </button>
           </div>
+
+          {/* Invoice Download Button - Only shown when payment is confirmed (paid) */}
+          {isPaid && (
+            <div className="bg-white rounded-2xl border p-6">
+              <h2 className="font-semibold text-gray-800 mb-3">Invoice</h2>
+              <p className="text-sm text-gray-500 mb-4">Download your invoice for this order.</p>
+              <a
+                href={`/api/orders/${orderId}/invoice`}
+                download
+                className="inline-flex items-center gap-2 bg-orange-50 text-orange-600 hover:bg-orange-100 px-4 py-2 rounded-xl text-sm font-medium transition"
+              >
+                <FileText size={16} /> Download Invoice
+              </a>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
