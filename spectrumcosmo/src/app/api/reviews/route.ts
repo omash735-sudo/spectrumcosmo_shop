@@ -16,10 +16,14 @@ export async function POST(req: NextRequest) {
     if (r < 1 || r > 5) {
       return NextResponse.json({ error: 'Rating must be 1-5' }, { status: 400 })
     }
+    
+    // FIXED: Provide a fallback for customer_name
+    const customerName = user?.name || user?.email?.split('@')[0] || 'Anonymous User'
+    
     const sql = getDb()
     const [data] = await sql`
       INSERT INTO reviews (customer_name, user_id, review_text, rating, image_url, product_id, status, created_at, updated_at)
-      VALUES (${user.name}, ${user.id}, ${review_text}, ${r}, ${image_url || null}, ${product_id || null}, 'pending', NOW(), NOW())
+      VALUES (${customerName}, ${user.id}, ${review_text}, ${r}, ${image_url || null}, ${product_id || null}, 'pending', NOW(), NOW())
       RETURNING *
     `
     return NextResponse.json(data, { status: 201 })
@@ -118,4 +122,4 @@ export async function DELETE(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
-  }
+}
