@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import {
   Loader2,
-  TrendingUp,
   ShoppingBag,
   Users,
   Eye,
@@ -15,6 +14,16 @@ import {
   Server,
   Database,
   RefreshCw,
+  X,
+  Smartphone,
+  Laptop,
+  Chrome,
+  Firefox,
+  Globe,
+  MapPin,
+  Clock as ClockIcon,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import {
   LineChart,
@@ -27,10 +36,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
+import { useRealtimeActiveUsers } from '@/hooks/useRealtimeActiveUsers';
 
 interface DashboardStats {
   active_users_today: number;
@@ -75,7 +82,9 @@ export default function AdminDashboard() {
   const [recentErrors, setRecentErrors] = useState<ErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [timeRange, setTimeRange] = useState('24h');
+  const [activeUsersModalOpen, setActiveUsersModalOpen] = useState(false);
+  
+  const { data: realtimeUsers, isConnected, error: wsError, refresh: refreshUsers } = useRealtimeActiveUsers();
 
   const fetchDashboardData = async () => {
     setRefreshing(true);
@@ -94,33 +103,58 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
-    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin w-8 h-8 text-[#F97316]" />
-      </div>
-    );
-  }
+  const handleActiveUsersClick = () => {
+    setActiveUsersModalOpen(true);
+    refreshUsers();
+  };
+
+  const timeAgo = (seconds: number) => {
+    if (seconds < 60) return `${Math.floor(seconds)} seconds ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    return `${Math.floor(seconds / 3600)} hours ago`;
+  };
+
+  const DeviceIcon = ({ type }: { type: string }) => {
+    switch (type) {
+      case 'Mobile':
+        return <Smartphone size={14} className="text-blue-500" />;
+      case 'Tablet':
+        return <Smartphone size={14} className="text-green-500" />;
+      default:
+        return <Laptop size={14} className="text-purple-500" />;
+    }
+  };
+
+  const BrowserIcon = ({ browser }: { browser: string }) => {
+    switch (browser) {
+      case 'Chrome':
+        return <Chrome size={14} className="text-green-600" />;
+      case 'Firefox':
+        return <Firefox size={14} className="text-orange-500" />;
+      default:
+        return <Globe size={14} className="text-gray-500" />;
+    }
+  };
 
   const statCards = [
     {
-      title: 'Active Users (24h)',
-      value: stats?.active_users_today || 0,
+      title: 'Active Users (15 min)',
+      value: realtimeUsers.count,
       icon: Users,
       color: 'bg-blue-500',
-      change: '+12%',
+      change: isConnected ? 'Live' : 'Offline',
+      onClick: handleActiveUsersClick,
+      clickable: true,
     },
     {
       title: 'Orders Today',
@@ -130,8 +164,8 @@ export default function AdminDashboard() {
       change: '+5%',
     },
     {
-      title: 'Revenue Today',
-      value: `$${(stats?.revenue_today || 0).toLocaleString()}`,
+      title: 'Revenue Today (MWK)',
+      value: `MK ${(stats?.revenue_today || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-yellow-500',
       change: '+8%',
@@ -182,19 +216,13 @@ export default function AdminDashboard() {
     { hour: '20:00', views: 300, orders: 15 },
   ];
 
-  const statusColors = {
-    success: 'text-green-600 bg-green-100',
-    error: 'text-red-600 bg-red-100',
-    warning: 'text-yellow-600 bg-yellow-100',
-  };
-
-  const severityColors = {
-    error: 'bg-red-100 text-red-700',
-    warning: 'bg-yellow-100 text-yellow-700',
-    critical: 'bg-purple-100 text-purple-700',
-  };
-
-  const COLORS = ['#F97316', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6'];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="animate-spin w-8 h-8 text-[#F97316]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -205,14 +233,23 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-gray-500 mt-1">Real-time analytics and monitoring</p>
           </div>
-          <button
-            onClick={fetchDashboardData}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+              <span>{isConnected ? 'Live' : 'Reconnecting...'}</span>
+            </div>
+            <button
+              onClick={() => {
+                fetchDashboardData();
+                refreshUsers();
+              }}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Stat Cards */}
@@ -220,12 +257,23 @@ export default function AdminDashboard() {
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
+              <div
+                key={index}
+                onClick={stat.onClick}
+                className={`bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition ${
+                  stat.clickable ? 'cursor-pointer hover:border-[#F97316]' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className={`p-2 rounded-lg ${stat.color} bg-opacity-10`}>
                     <Icon size={20} className={`${stat.color.replace('bg-', 'text-')}`} />
                   </div>
-                  <span className={`text-xs font-medium ${stat.change?.startsWith('+') ? 'text-green-600' : stat.change?.startsWith('-') ? 'text-red-600' : 'text-gray-500'}`}>
+                  <span className={`text-xs font-medium ${
+                    stat.change === 'Live' ? 'text-green-600' :
+                    stat.change === 'Offline' ? 'text-red-600' :
+                    stat.change?.startsWith('+') ? 'text-green-600' :
+                    stat.change?.startsWith('-') ? 'text-red-600' : 'text-gray-500'
+                  }`}>
                     {stat.change}
                   </span>
                 </div>
@@ -238,7 +286,6 @@ export default function AdminDashboard() {
 
         {/* Charts Row */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Traffic Chart */}
           <div className="bg-white rounded-xl border p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Traffic & Orders</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -255,11 +302,10 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Top Products Chart */}
           <div className="bg-white rounded-xl border p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Viewed Products</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts.length ? topProducts : [{ name: 'No data', views: 0 }]}>
+              <BarChart data={topProducts.length ? topProducts : [{ product_name: 'No data', view_count: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="product_name" angle={-45} textAnchor="end" height={80} />
                 <YAxis />
@@ -270,9 +316,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Second Row */}
+        {/* API Logs & Errors */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* API Logs */}
           <div className="bg-white rounded-xl border overflow-hidden">
             <div className="p-4 border-b bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">Recent API Calls</h2>
@@ -327,7 +372,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Recent Errors */}
           <div className="bg-white rounded-xl border overflow-hidden">
             <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-900">Recent Errors</h2>
@@ -338,7 +382,11 @@ export default function AdminDashboard() {
                 <div key={error.id} className="p-4 hover:bg-gray-50">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${severityColors[error.severity as keyof typeof severityColors] || 'bg-gray-100 text-gray-700'}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        error.severity === 'critical' ? 'bg-purple-100 text-purple-700' :
+                        error.severity === 'error' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
                         {error.severity || 'error'}
                       </span>
                       <span className="text-sm font-medium text-gray-900">{error.error_type}</span>
@@ -395,13 +443,132 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Database size={20} className="text-gray-500" />
               <div>
-                <p className="text-xs text-gray-500">Cache Status</p>
-                <p className="text-sm font-medium text-green-600">Active</p>
+                <p className="text-xs text-gray-500">Real-time Stream</p>
+                <p className={`text-sm font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {isConnected ? 'Active' : 'Disconnected'}
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Active Users Modal */}
+      {activeUsersModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
+            <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-2">
+                <Users size={20} className="text-[#F97316]" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Active Users (Last 15 Minutes)
+                </h2>
+                <span className="bg-[#F97316]/10 text-[#F97316] text-xs px-2 py-0.5 rounded-full">
+                  {realtimeUsers.count} active
+                </span>
+                {isConnected && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                    Live
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setActiveUsersModalOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[calc(85vh-70px)] p-4">
+              {wsError ? (
+                <div className="text-center py-12 text-red-500">
+                  <AlertTriangle size={48} className="mx-auto mb-3" />
+                  <p>{wsError}</p>
+                  <button
+                    onClick={refreshUsers}
+                    className="mt-4 text-[#F97316] hover:underline text-sm"
+                  >
+                    Try again →
+                  </button>
+                </div>
+              ) : realtimeUsers.users.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Users size={48} className="mx-auto mb-3 text-gray-300" />
+                  <p>No active users in the last 15 minutes</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {realtimeUsers.users.map((user) => (
+                    <div key={user.session_id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="font-medium text-gray-900">
+                            {user.user_name || user.user_email || 'Guest User'}
+                          </span>
+                          {user.user_id && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              Registered
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {timeAgo(user.seconds_ago)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-2">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Globe size={14} />
+                          <span className="truncate">{user.page_url || 'Unknown page'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <DeviceIcon type={user.device_type} />
+                          <span>{user.device_type}</span>
+                          <BrowserIcon browser={user.browser} />
+                          <span>{user.browser}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin size={14} />
+                          <span className="font-mono text-xs">{user.ip_address || 'Unknown IP'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <ClockIcon size={14} />
+                          <span>Session: {user.session_id.slice(0, 8)}...</span>
+                        </div>
+                      </div>
+
+                      {user.seconds_ago < 300 && (
+                        <div className="mt-3">
+                          <div className="w-full bg-gray-100 rounded-full h-1">
+                            <div 
+                              className="bg-green-500 h-1 rounded-full transition-all"
+                              style={{ width: `${Math.max(0, 100 - (user.seconds_ago / 300) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="text-center mt-4 text-xs text-gray-400">
+                {isConnected ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                    Live updates every 5 seconds
+                  </span>
+                ) : (
+                  <span>Reconnecting...</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
