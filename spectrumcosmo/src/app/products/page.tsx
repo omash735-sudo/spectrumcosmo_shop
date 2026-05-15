@@ -181,28 +181,29 @@ export default async function ProductsPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           <FeaturedProducts />
 
-          {/* Search Bar */}
-          <div className="mb-6 sm:mb-8">
+          {/* Search Bar - FIXED ALIGNMENT */}
+          <div className="mb-8 sm:mb-10">
             <form method="GET" action="/products" className="relative max-w-md mx-auto">
               <input
                 type="text"
                 name="q"
                 defaultValue={params.q || ''}
                 placeholder="Search products..."
-                className="w-full border border-gray-200 rounded-full py-2.5 sm:py-3 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent text-sm"
+                className="w-full border border-gray-200 rounded-full py-3 sm:py-3.5 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-transparent text-sm sm:text-base"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#F97316] text-white p-1.5 sm:p-2 rounded-full hover:bg-orange-600 transition"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#F97316] text-white p-2 rounded-full hover:bg-orange-600 transition flex items-center justify-center"
+                aria-label="Search"
               >
-                <Search size={16} />
+                <Search size={18} />
               </button>
             </form>
           </div>
 
-          {/* Category Filter */}
-          <div className="overflow-x-auto pb-2 -mx-4 px-4 mb-6 sm:mb-8 md:mx-0 md:px-0 md:overflow-visible">
-            <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
+          {/* Category Filter - FIXED CENTERING & SPACING */}
+          <div className="mb-8 sm:mb-10">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
               {categoryNames.map((cat) => {
                 const isActive = (!selectedCategory && cat === 'All') || selectedCategory === cat;
                 let href;
@@ -219,10 +220,10 @@ export default async function ProductsPage({
                   <a
                     key={cat}
                     href={href}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition whitespace-nowrap ${
+                    className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium transition whitespace-nowrap flex items-center justify-center ${
                       isActive
-                        ? 'bg-[#F97316] text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-orange-50 hover:text-[#F97316]'
+                        ? 'bg-[#F97316] text-white shadow-md hover:bg-orange-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-orange-50 hover:text-[#F97316]'
                     }`}
                   >
                     {cat}
@@ -240,7 +241,7 @@ export default async function ProductsPage({
           ) : (
             <>
               <div className="flex justify-between items-center mb-4">
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   Showing {offset + 1}-{Math.min(offset + pageSize, totalCount)} of {totalCount} products
                 </p>
               </div>
