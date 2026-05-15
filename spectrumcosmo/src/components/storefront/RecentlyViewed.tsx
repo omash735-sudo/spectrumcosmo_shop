@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Clock, Trash2 } from 'lucide-react';
+import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 
 interface FeatureSettings {
   recentlyViewed: {
@@ -32,9 +34,10 @@ export default function RecentlyViewed() {
 
   return (
     <section className="mt-16 mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-[#111111]">
-          🔄 {title}
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-xl sm:text-2xl font-display font-bold text-gray-900 flex items-center gap-2">
+          <Clock size={22} className="text-[#F97316]" />
+          {title}
         </h2>
         {showClearButton && (
           <button
@@ -44,8 +47,9 @@ export default function RecentlyViewed() {
                 window.location.reload();
               }
             }}
-            className="text-xs text-gray-400 hover:text-red-500 transition"
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition px-2 py-1 rounded-lg hover:bg-red-50"
           >
+            <Trash2 size={12} />
             Clear
           </button>
         )}
@@ -73,11 +77,11 @@ export default function RecentlyViewed() {
                 </div>
               )}
             </div>
-            <p className="text-sm font-medium mt-2 line-clamp-2 group-hover:text-[#F97316] transition">
+            <p className="text-sm font-semibold text-gray-800 mt-2 line-clamp-2 group-hover:text-[#F97316] transition">
               {product.name}
             </p>
-            <p className="text-sm font-semibold text-[#F97316] mt-1">
-              ${product.price}
+            <p className="text-base font-bold text-[#F97316] mt-1">
+              <CurrencyPrice amountUsd={product.price} />
             </p>
           </Link>
         ))}
