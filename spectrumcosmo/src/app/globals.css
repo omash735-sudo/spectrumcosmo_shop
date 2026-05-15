@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,14 +8,18 @@
    BASE THEME VARIABLES
 ========================= */
 :root {
-  /* Change fonts here – replace Playfair Display and DM Sans with your preferred fonts */
-  --font-display: 'Playfair Display', serif;      /* For headings */
-  --font-body: 'DM Sans', sans-serif;             /* For body text */
+  /* Fonts */
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
 
+  /* Colors */
   --bg: #ffffff;
   --text: #111111;
+  --text-light: #4b5563;
   --card: #ffffff;
   --border: #e5e7eb;
+  --primary: #F97316;
+  --primary-dark: #ea6c0f;
 }
 
 /* =========================
@@ -33,12 +37,136 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
-/* Headings */
-h1, h2, h3, h4, h5 {
+/* =========================
+   IMPROVED TYPOGRAPHY
+========================= */
+
+/* Headings - Playfair Display */
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Product titles */
+.product-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+/* Prices */
+.price {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+/* Hero text */
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--text-light);
+}
+
+/* Section titles */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+/* Button text */
+.btn-text {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+
+/* Small text / captions */
+.caption {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-light);
+}
+
+/* Responsive font sizes */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+  
+  .hero-headline {
+    font-size: 2rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .product-title {
+    font-size: 0.875rem;
+  }
+  
+  .price {
+    font-size: 1rem;
+  }
 }
 
 /* =========================
@@ -148,11 +276,11 @@ h1, h2, h3, h4, h5 {
 ========================= */
 @layer components {
   .btn-primary {
-    @apply bg-[#F97316] text-white px-6 py-3 rounded-full font-medium hover:bg-[#ea6c0f] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2;
+    @apply bg-[#F97316] text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-[#ea6c0f] transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center gap-2;
   }
 
   .btn-secondary {
-    @apply border-2 border-[#F97316] text-[#F97316] px-6 py-3 rounded-full font-medium hover:bg-[#F97316] hover:text-white transition-all duration-200 inline-flex items-center gap-2;
+    @apply border-2 border-[#F97316] text-[#F97316] px-6 py-3 rounded-full font-semibold text-sm hover:bg-[#F97316] hover:text-white transition-all duration-200 inline-flex items-center gap-2;
   }
 
   .btn-ghost {
