@@ -287,12 +287,23 @@ export default function Navbar() {
               <SearchBar />
             </div>
 
-            <div className="my-2 bg-orange-50 p-2 rounded flex justify-between">
-              <span className="font-semibold">View Products</span>
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316]">
-                view →
-              </Link>
-            </div>
+            {/* FIXED: View Products Button - Properly Styled & Reactive */}
+            <Link 
+              href="/products" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="my-3 block w-full bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white text-base">View Products</span>
+                <div className="flex items-center gap-1 text-white">
+                  <span className="text-sm font-medium">Shop now</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
+                    <path d="M5 12h14"/>
+                    <path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </div>
+              </div>
+            </Link>
 
             <div className="flex flex-col gap-2 mt-2 flex-grow">
               {alwaysItems.map(item => {
@@ -305,7 +316,7 @@ export default function Navbar() {
                         item.onClick(); 
                         setMobileMenuOpen(false); 
                       }} 
-                      className="flex items-center gap-3 px-2 py-2"
+                      className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
                     >
                       <Icon size={18} /> {item.label}
                     </button>
@@ -316,7 +327,7 @@ export default function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2"
+                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
                   >
                     <Icon size={18} /> {item.label}
                   </Link>
@@ -329,7 +340,7 @@ export default function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2"
+                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
                   >
                     <Icon size={18} /> {item.label}
                   </Link>
@@ -344,7 +355,7 @@ export default function Navbar() {
                     logout();
                     setMobileMenuOpen(false);
                   }} 
-                  className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left"
+                  className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
                 >
                   <LogOut size={18} /> Log out
                 </button>
