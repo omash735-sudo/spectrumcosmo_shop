@@ -142,13 +142,19 @@ export default function ProductCard({ product }: { product: any }) {
 
   return (
     <div className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition">
-      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-50">
-        <Link href={`/products/${product.id}`} onClick={handleProductClick}>
+      {/* FIX: Centered image container */}
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-50 flex items-center justify-center">
+        <Link 
+          href={`/products/${product.id}`} 
+          onClick={handleProductClick} 
+          className="block w-full h-full relative flex items-center justify-center"
+        >
           <Image
             src={productImage}
             alt={productName}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-contain group-hover:scale-105 transition-transform duration-300"
+            style={{ objectPosition: 'center' }}
           />
         </Link>
         
@@ -156,7 +162,7 @@ export default function ProductCard({ product }: { product: any }) {
         <button
           onClick={toggleWishlist}
           disabled={loadingWishlist}
-          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50"
+          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50 z-10"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
@@ -166,13 +172,13 @@ export default function ProductCard({ product }: { product: any }) {
         </button>
         
         {/* Category tag */}
-        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm">
+        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm z-10">
           {categoryName}
         </span>
 
         {/* Status badge - shown prominently on image */}
         {(isOutOfStock || isComingSoon) && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
             <span className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold ${statusBadge.color} shadow-lg`}>
               <StatusIcon size={14} className="inline mr-1" />
               {statusBadge.text}
