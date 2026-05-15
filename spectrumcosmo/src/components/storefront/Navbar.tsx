@@ -222,7 +222,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER */}
+        {/* MOBILE HEADER - FIXED: Search bar removed, Profile icon added */}
         <div className="md:hidden flex items-center justify-between px-5 py-3">
           <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
             <Menu size={24} />
@@ -233,8 +233,93 @@ export default function Navbar() {
             <span className="text-lg font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
           </Link>
           
-          <div className="flex items-center gap-2">
-            <SearchBar />
+          <div className="flex items-center gap-3">
+            {/* Profile Icon - replaces search bar on mobile */}
+            <div className="relative" ref={userMenuRef}>
+              <button 
+                onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors"
+                aria-label="User menu"
+              >
+                {profileImage ? (
+                  <Image 
+                    src={profileImage} 
+                    alt={displayName} 
+                    width={22} 
+                    height={22} 
+                    className="w-5.5 h-5.5 rounded-full object-cover"
+                  />
+                ) : (
+                  <User size={20} className="text-gray-600" />
+                )}
+              </button>
+              
+              {/* User Menu Dropdown for Mobile */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  {!isLoggedIn ? (
+                    <>
+                      <Link
+                        href="/login"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <User size={16} />
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <User size={16} />
+                        Create Account
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/account/profile"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <User size={16} />
+                        My Profile
+                      </Link>
+                      <Link
+                        href="/account/payments"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Clock size={16} />
+                        Order History
+                      </Link>
+                      <Link
+                        href="/account/settings"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </Link>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setUserMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition w-full text-left"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Cart Button - kept as is */}
             <button onClick={openCart} className="relative" aria-label="Cart">
               <ShoppingCart size={22} />
               {totalItems > 0 && (
@@ -280,11 +365,6 @@ export default function Navbar() {
 
             <div className="mt-3 py-2 border-t border-b border-gray-100">
               <CurrencySelector />
-            </div>
-
-            {/* Search Bar in mobile menu (optional but convenient) */}
-            <div className="my-3">
-              <SearchBar />
             </div>
 
             {/* FIXED: View Products Button - Properly Styled & Reactive */}
