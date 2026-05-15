@@ -229,17 +229,17 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER - FIXED: Proper spacing and cart badge */}
+        {/* MOBILE HEADER - FIXED: Proper spacing only, logo unchanged */}
         <div className="md:hidden flex items-center justify-between px-4 py-3">
           {/* Menu Button */}
           <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu" className="p-1">
             <Menu size={24} />
           </button>
           
-          {/* Logo */}
+          {/* Logo - KEPT ORIGINAL SIZE */}
           <Link href="/" className="flex items-center gap-2">
-            <img src={logoSrc} alt="Logo" className="h-7" />
-            <span className="text-base font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
+            <img src={logoSrc} alt="Logo" className="h-8" />
+            <span className="text-lg font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
           </Link>
           
           {/* Right Icons - Tight spacing */}
