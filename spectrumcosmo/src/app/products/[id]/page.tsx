@@ -13,6 +13,7 @@ import ShareButton from '@/components/storefront/ShareButton';
 import ProductViewTracker from '@/components/storefront/ProductViewTracker';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
 import { getDb } from '@/lib/db';
+import { ArrowLeft } from 'lucide-react';
 
 // Helper to parse JSON fields (if stored as JSONB)
 function parseJsonField(field: any, defaultValue: any = []) {
@@ -90,18 +91,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <ProductViewTracker product={productForTracking} />
       <main className="min-h-screen bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-          {/* Breadcrumb */}
-          <nav className="text-sm text-gray-500 dark:text-gray-400 mb-6 flex flex-wrap items-center gap-2">
-            <Link href="/" className="hover:text-[#F97316] transition">Home</Link>
-            <span>/</span>
-            <Link href="/products" className="hover:text-[#F97316] transition">Shop</Link>
-            <span>/</span>
-            <Link href={`/products?category=${encodeURIComponent(product.category || '')}`} className="hover:text-[#F97316] transition">
-              {product.category || 'Products'}
+          
+          {/* FIXED: Back to Products Button - Replaces Breadcrumb */}
+          <div className="mb-6">
+            <Link 
+              href="/products"
+              className="inline-flex items-center gap-2 text-gray-500 hover:text-[#F97316] transition-all duration-200 group"
+            >
+              <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform duration-200" />
+              <span className="text-sm font-medium">Back to Products</span>
             </Link>
-            <span>/</span>
-            <span className="text-gray-800 dark:text-gray-200 font-medium truncate">{product.name}</span>
-          </nav>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16">
             {/* Left column – Image Gallery */}
@@ -313,4 +313,4 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <ContinueShopping />
     </>
   );
-                    }
+}
