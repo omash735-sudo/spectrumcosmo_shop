@@ -24,12 +24,17 @@ export default async function CategoriesSection() {
             className="min-w-[90px] md:min-w-0 flex flex-col items-center gap-1 p-2 bg-white border rounded-xl hover:shadow-md transition group"
           >
             {cat.image_url ? (
-              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100">
-                <Image src={cat.image_url} alt={cat.name} fill className="object-cover group-hover:scale-110 transition" />
+              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                <Image 
+                  src={cat.image_url} 
+                  alt={cat.name} 
+                  fill 
+                  className="object-cover group-hover:scale-110 transition" 
+                />
               </div>
             ) : (
               <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316]">
-                <FolderOpen size={24} />
+                <FolderOpen size={24} className="flex-shrink-0" />
               </div>
             )}
             <span className="text-xs font-medium text-gray-700 text-center line-clamp-1">{cat.name}</span>
