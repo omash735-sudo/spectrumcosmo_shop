@@ -92,13 +92,20 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setUserMenuOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [userMenuOpen])
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -171,11 +178,11 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <CurrencySelector />
             <SearchBar />
-            <button onClick={openCart} className="relative">
+            <button onClick={openCart} className="relative p-1">
               <ShoppingCart size={20} />
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
-                  {totalItems}
+                <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  {totalItems > 99 ? '99+' : totalItems}
                 </span>
               )}
             </button>
@@ -222,46 +229,52 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER - FIXED: Search bar removed, Profile icon added */}
-        <div className="md:hidden flex items-center justify-between px-5 py-3">
-          <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu">
+        {/* MOBILE HEADER - FIXED: Proper spacing and cart badge */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3">
+          {/* Menu Button */}
+          <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu" className="p-1">
             <Menu size={24} />
           </button>
           
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <img src={logoSrc} alt="Logo" className="h-8" />
-            <span className="text-lg font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
+            <img src={logoSrc} alt="Logo" className="h-7" />
+            <span className="text-base font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
           </Link>
           
-          <div className="flex items-center gap-3">
-            {/* Profile Icon - replaces search bar on mobile */}
-            <div className="relative" ref={userMenuRef}>
+          {/* Right Icons - Tight spacing */}
+          <div className="flex items-center gap-2">
+            {/* Profile Icon */}
+            <div className="relative">
               <button 
-                onClick={() => setUserMenuOpen(!userMenuOpen)} 
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setUserMenuOpen(!userMenuOpen)
+                }} 
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors overflow-hidden"
                 aria-label="User menu"
               >
                 {profileImage ? (
                   <Image 
                     src={profileImage} 
                     alt={displayName} 
-                    width={22} 
-                    height={22} 
-                    className="w-5.5 h-5.5 rounded-full object-cover"
+                    width={32} 
+                    height={32} 
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User size={20} className="text-gray-600" />
+                  <User size={18} className="text-gray-600" />
                 )}
               </button>
               
-              {/* User Menu Dropdown for Mobile */}
+              {/* User Menu Dropdown */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50" style={{ top: '100%' }}>
                   {!isLoggedIn ? (
                     <>
                       <Link
                         href="/login"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <User size={16} />
@@ -269,7 +282,7 @@ export default function Navbar() {
                       </Link>
                       <Link
                         href="/signup"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <User size={16} />
@@ -280,7 +293,7 @@ export default function Navbar() {
                     <>
                       <Link
                         href="/account/profile"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <User size={16} />
@@ -288,7 +301,7 @@ export default function Navbar() {
                       </Link>
                       <Link
                         href="/account/payments"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <Clock size={16} />
@@ -296,7 +309,7 @@ export default function Navbar() {
                       </Link>
                       <Link
                         href="/account/settings"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         <Settings size={16} />
@@ -304,11 +317,13 @@ export default function Navbar() {
                       </Link>
                       <div className="border-t border-gray-100 my-1"></div>
                       <button
-                        onClick={() => {
-                          logout();
-                          setUserMenuOpen(false);
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          await logout()
+                          setUserMenuOpen(false)
                         }}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition w-full text-left"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition w-full text-left"
                       >
                         <LogOut size={16} />
                         Logout
@@ -319,12 +334,12 @@ export default function Navbar() {
               )}
             </div>
             
-            {/* Cart Button - kept as is */}
-            <button onClick={openCart} className="relative" aria-label="Cart">
+            {/* Cart Button - Fixed badge position */}
+            <button onClick={openCart} className="relative p-1" aria-label="Cart">
               <ShoppingCart size={22} />
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#F97316] text-white text-xs px-1 rounded-full">
-                  {totalItems}
+                <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  {totalItems > 99 ? '99+' : totalItems}
                 </span>
               )}
             </button>
@@ -367,7 +382,7 @@ export default function Navbar() {
               <CurrencySelector />
             </div>
 
-            {/* FIXED: View Products Button - Properly Styled & Reactive */}
+            {/* View Products Button */}
             <Link 
               href="/products" 
               onClick={() => setMobileMenuOpen(false)}
