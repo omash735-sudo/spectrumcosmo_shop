@@ -14,6 +14,8 @@ import {
   Loader2,
   User,
   Settings,
+  Calendar,
+  DollarSign,
 } from 'lucide-react'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -43,24 +45,20 @@ export default function AccountOverview() {
     async function fetchData() {
       setLoading(true)
       try {
-        // Fetch user info
         const userRes = await fetch('/api/auth/me')
         if (userRes.ok) {
           const userData = await userRes.json()
           setUser(userData.user)
         }
 
-        // Fetch orders
         const ordersRes = await fetch('/api/account/orders')
         const ordersData = ordersRes.ok ? await ordersRes.json() : []
         setOrders(ordersData)
 
-        // Fetch wishlist count
         const wishlistRes = await fetch('/api/account/wishlist')
         const wishlistData = wishlistRes.ok ? await wishlistRes.json() : []
         setWishlistCount(wishlistData.length)
 
-        // Fetch addresses count
         const addressesRes = await fetch('/api/account/addresses')
         const addressesData = addressesRes.ok ? await addressesRes.json() : []
         setAddressesCount(addressesData.length)
@@ -91,7 +89,7 @@ export default function AccountOverview() {
       {/* Welcome banner */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg">
         <h1 className="text-2xl md:text-3xl font-bold">
-          Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'} 👋
+          Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
         </h1>
         <p className="text-gray-300 text-sm mt-1">
           Track your orders and manage your account
@@ -137,7 +135,7 @@ export default function AccountOverview() {
         {recentOrders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingBag className="mx-auto text-gray-300 mb-3" size={48} />
-            <p className="text-gray-400">No orders yet.</p>
+            <p className text-gray-400">No orders yet.</p>
             <Link href="/products" className="inline-block mt-3 text-orange-500 text-sm hover:underline">
               Start Shopping →
             </Link>
@@ -156,8 +154,14 @@ export default function AccountOverview() {
                       Order #{order.order_number || order.id.slice(0, 8)}
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
-                      <span>📅 {new Date(order.created_at).toLocaleDateString()}</span>
-                      <span>💰 Total: ${order.total_amount?.toLocaleString() || 0}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign size={12} />
+                        Total: ${order.total_amount?.toLocaleString() || 0}
+                      </span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${STATUS_STYLE[order.status] || 'text-gray-600 bg-gray-50'}`}>
                         <StatusIcon status={order.status} />
                         {order.status}
