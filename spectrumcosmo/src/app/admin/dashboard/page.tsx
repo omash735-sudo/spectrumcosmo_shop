@@ -5,7 +5,6 @@ import {
   Loader2,
   ShoppingBag,
   Users,
-  Eye,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -75,6 +74,59 @@ interface ErrorLog {
   resolved: boolean;
 }
 
+// Skeleton Loader Component
+const DashboardSkeleton = () => (
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-7xl mx-auto">
+      <div className="animate-pulse">
+        {/* Header */}
+        <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-64 bg-gray-200 rounded mb-8"></div>
+        
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border p-6 h-32">
+              <div className="flex justify-between">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                <div className="w-12 h-4 bg-gray-200 rounded"></div>
+              </div>
+              <div className="h-8 w-20 bg-gray-200 rounded mt-4"></div>
+              <div className="h-3 w-24 bg-gray-200 rounded mt-2"></div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Charts */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-xl border p-6 h-80">
+            <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+            <div className="h-64 bg-gray-100 rounded"></div>
+          </div>
+          <div className="bg-white rounded-xl border p-6 h-80">
+            <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+            <div className="h-64 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+        
+        {/* Tables */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-xl border h-96">
+            <div className="p-4 border-b">
+              <div className="h-6 w-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border h-96">
+            <div className="p-4 border-b">
+              <div className="h-6 w-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
@@ -83,11 +135,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeUsersModalOpen, setActiveUsersModalOpen] = useState(false);
+  const [loadTime, setLoadTime] = useState<number | null>(null);
   
   const { data: realtimeUsers, isConnected, error: wsError, refresh: refreshUsers } = useRealtimeActiveUsers();
 
   const fetchDashboardData = async () => {
+    const start = performance.now();
     setRefreshing(true);
+    
     try {
       const [statsRes, apiLogsRes, productsRes, errorsRes] = await Promise.all([
         fetch('/api/admin/dashboard/stats'),
@@ -100,16 +155,20 @@ export default function AdminDashboard() {
       if (apiLogsRes.ok) setApiLogs(await apiLogsRes.json());
       if (productsRes.ok) setTopProducts(await productsRes.json());
       if (errorsRes.ok) setRecentErrors(await errorsRes.json());
+      
+      const end = performance.now();
+      setLoadTime(end - start);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
+    const interval = setInterval(fetchDashboardData, 60000); // Changed to 60 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -216,13 +275,7 @@ export default function AdminDashboard() {
     { hour: '20:00', views: 300, orders: 15 },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin w-8 h-8 text-[#F97316]" />
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -231,7 +284,14 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-500 mt-1">Real-time analytics and monitoring</p>
+            <p className="text-gray-500 mt-1">
+              Real-time analytics and monitoring
+              {loadTime && (
+                <span className="ml-2 text-xs text-gray-400">
+                  Loaded in {loadTime.toFixed(0)}ms
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -334,7 +394,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {apiLogs.map((log) => (
+                  {apiLogs.slice(0, 10).map((log) => (
                     <tr key={log.id} className="border-t hover:bg-gray-50">
                       <td className="px-4 py-2 truncate max-w-[200px]">{log.endpoint}</td>
                       <td className="px-4 py-2">
@@ -378,7 +438,7 @@ export default function AdminDashboard() {
               <span className="text-xs text-gray-500">Last 24 hours</span>
             </div>
             <div className="divide-y max-h-96 overflow-y-auto">
-              {recentErrors.map((error) => (
+              {recentErrors.slice(0, 10).map((error) => (
                 <div key={error.id} className="p-4 hover:bg-gray-50">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -559,7 +619,7 @@ export default function AdminDashboard() {
                 {isConnected ? (
                   <span className="flex items-center justify-center gap-1">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                    Live updates every 5 seconds
+                    Live updates every 10 seconds
                   </span>
                 ) : (
                   <span>Reconnecting...</span>
