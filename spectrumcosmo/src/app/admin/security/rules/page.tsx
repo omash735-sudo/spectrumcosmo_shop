@@ -15,8 +15,8 @@ interface Rule {
 export default function RulesManager() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<number | null>(null);
-  const [editingRule, setEditingRule] = useState<number | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [editingRule, setEditingRule] = useState<string | null>(null);
   const [editConfig, setEditConfig] = useState<any>({});
 
   const fetchRules = async () => {
@@ -36,12 +36,12 @@ export default function RulesManager() {
     fetchRules();
   }, []);
 
-  const toggleRule = async (ruleId: number, currentEnabled: boolean) => {
+  const toggleRule = async (ruleKey: string, currentEnabled: boolean) => {
     try {
-      await fetch('/api/admin/security/rules/toggle', {
+      await fetch('/api/admin/security/rules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ruleId, enabled: !currentEnabled }),
+        body: JSON.stringify({ ruleKey, enabled: !currentEnabled }),
       });
       fetchRules();
     } catch (err) {
@@ -49,18 +49,13 @@ export default function RulesManager() {
     }
   };
 
-  const startEdit = (rule: Rule) => {
-    setEditingRule(rule.id);
-    setEditConfig(rule.config);
-  };
-
-  const saveRule = async (ruleId: number, ruleKey: string) => {
-    setSaving(ruleId);
+  const saveRule = async (ruleKey: string, config: any) => {
+    setSaving(ruleKey);
     try {
-      await fetch('/api/admin/security/rules/update', {
+      await fetch('/api/admin/security/rules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ruleId, ruleKey, config: editConfig }),
+        body: JSON.stringify({ ruleKey, config }),
       });
       setEditingRule(null);
       fetchRules();
@@ -71,32 +66,37 @@ export default function RulesManager() {
     }
   };
 
+  const startEdit = (rule: Rule) => {
+    setEditingRule(rule.rule_key);
+    setEditConfig(rule.config);
+  };
+
   const getRuleConfigFields = (ruleKey: string) => {
-    const fields: Record<string, { label: string; type: string; min?: number; max?: number }[]> = {
+    const fields: Record<string, { label: string; type: string; min?: number; max?: number; key: string }[]> = {
       login_protection: [
-        { label: 'Max Failed Attempts', type: 'number', min: 1, max: 20 },
-        { label: 'Window (minutes)', type: 'number', min: 1, max: 60 },
-        { label: 'Block Duration (minutes)', type: 'number', min: 1, max: 120 },
+        { label: 'Max Failed Attempts', type: 'number', min: 1, max: 20, key: 'max_attempts' },
+        { label: 'Window (minutes)', type: 'number', min: 1, max: 60, key: 'window_minutes' },
+        { label: 'Block Duration (minutes)', type: 'number', min: 1, max: 120, key: 'block_minutes' },
       ],
       rate_limiting: [
-        { label: 'Max Requests', type: 'number', min: 10, max: 500 },
-        { label: 'Window (seconds)', type: 'number', min: 10, max: 300 },
+        { label: 'Max Requests', type: 'number', min: 10, max: 500, key: 'max_requests' },
+        { label: 'Window (seconds)', type: 'number', min: 10, max: 300, key: 'window_seconds' },
       ],
       suspicious_activity: [
-        { label: 'Max Requests', type: 'number', min: 5, max: 100 },
-        { label: 'Window (seconds)', type: 'number', min: 5, max: 60 },
-        { label: 'Block Duration (minutes)', type: 'number', min: 5, max: 120 },
+        { label: 'Max Requests', type: 'number', min: 5, max: 100, key: 'max_requests' },
+        { label: 'Window (seconds)', type: 'number', min: 5, max: 60, key: 'window_seconds' },
+        { label: 'Block Duration (minutes)', type: 'number', min: 5, max: 120, key: 'block_minutes' },
       ],
       checkout_protection: [
-        { label: 'Max Attempts', type: 'number', min: 1, max: 50 },
-        { label: 'Window (hours)', type: 'number', min: 1, max: 24 },
+        { label: 'Max Attempts', type: 'number', min: 1, max: 50, key: 'max_attempts' },
+        { label: 'Window (hours)', type: 'number', min: 1, max: 24, key: 'window_hours' },
       ],
       auto_block: [
-        { label: 'Risk Threshold', type: 'number', min: 30, max: 100 },
-        { label: 'Block Duration (minutes)', type: 'number', min: 10, max: 120 },
+        { label: 'Risk Threshold', type: 'number', min: 30, max: 100, key: 'risk_threshold' },
+        { label: 'Block Duration (minutes)', type: 'number', min: 10, max: 120, key: 'block_minutes' },
       ],
       captcha_trigger: [
-        { label: 'Failed Attempts Threshold', type: 'number', min: 1, max: 10 },
+        { label: 'Failed Attempts Threshold', type: 'number', min: 1, max: 10, key: 'failed_attempts_threshold' },
       ],
     };
     return fields[ruleKey] || [];
@@ -104,39 +104,25 @@ export default function RulesManager() {
 
   const renderConfigEditor = (rule: Rule) => {
     const fields = getRuleConfigFields(rule.rule_key);
-    const keys = Object.keys(rule.config);
     
     return (
       <div className="space-y-3 mt-3">
-        {fields.map((field, idx) => {
-          const key = keys[idx] || 
-            (field.label === 'Max Failed Attempts' ? 'max_attempts' :
-             field.label === 'Window (minutes)' ? 'window_minutes' :
-             field.label === 'Block Duration (minutes)' ? 'block_minutes' :
-             field.label === 'Max Requests' ? 'max_requests' :
-             field.label === 'Window (seconds)' ? 'window_seconds' :
-             field.label === 'Window (hours)' ? 'window_hours' :
-             field.label === 'Risk Threshold' ? 'risk_threshold' :
-             field.label === 'Failed Attempts Threshold' ? 'failed_attempts_threshold' :
-             'value');
-          
-          return (
-            <div key={idx}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-              <input
-                type={field.type}
-                min={field.min}
-                max={field.max}
-                value={editConfig[key] || ''}
-                onChange={(e) => setEditConfig({
-                  ...editConfig,
-                  [key]: field.type === 'number' ? parseInt(e.target.value) : e.target.value,
-                })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-              />
-            </div>
-          );
-        })}
+        {fields.map((field, idx) => (
+          <div key={idx}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+            <input
+              type={field.type}
+              min={field.min}
+              max={field.max}
+              value={editConfig[field.key] || ''}
+              onChange={(e) => setEditConfig({
+                ...editConfig,
+                [field.key]: field.type === 'number' ? parseInt(e.target.value) : e.target.value,
+              })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F97316]"
+            />
+          </div>
+        ))}
       </div>
     );
   };
@@ -182,16 +168,16 @@ export default function RulesManager() {
                   </div>
                   <p className="text-sm text-gray-500 mb-3">{rule.description}</p>
                   
-                  {editingRule === rule.id ? (
+                  {editingRule === rule.rule_key ? (
                     <div className="border-t pt-4 mt-2">
                       {renderConfigEditor(rule)}
                       <div className="flex gap-2 mt-4">
                         <button
-                          onClick={() => saveRule(rule.id, rule.rule_key)}
-                          disabled={saving === rule.id}
+                          onClick={() => saveRule(rule.rule_key, editConfig)}
+                          disabled={saving === rule.rule_key}
                           className="flex items-center gap-2 px-4 py-2 bg-[#F97316] text-white rounded-lg hover:bg-orange-600"
                         >
-                          {saving === rule.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                          {saving === rule.rule_key ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                           Save
                         </button>
                         <button
@@ -217,7 +203,7 @@ export default function RulesManager() {
                 </div>
                 
                 <div className="flex gap-2 ml-4">
-                  {editingRule !== rule.id && (
+                  {editingRule !== rule.rule_key && (
                     <button
                       onClick={() => startEdit(rule)}
                       className="p-2 text-gray-500 hover:text-[#F97316] hover:bg-orange-50 rounded-lg transition"
@@ -226,7 +212,7 @@ export default function RulesManager() {
                     </button>
                   )}
                   <button
-                    onClick={() => toggleRule(rule.id, rule.is_enabled)}
+                    onClick={() => toggleRule(rule.rule_key, rule.is_enabled)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                       rule.is_enabled ? 'bg-[#F97316]' : 'bg-gray-300'
                     }`}
