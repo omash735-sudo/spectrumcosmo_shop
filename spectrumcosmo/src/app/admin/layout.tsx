@@ -25,6 +25,7 @@ import {
   Database,
   CheckCircle,
   Tag,
+  Sliders,
 } from 'lucide-react';
 
 const navItems = [
@@ -33,6 +34,7 @@ const navItems = [
   { name: 'Products', href: '/admin/products', icon: Package, section: 'CORE' },
   { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'CORE' },
   { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'CORE' },
+  { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'CORE' },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
