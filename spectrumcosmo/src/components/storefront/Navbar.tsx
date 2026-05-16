@@ -18,6 +18,8 @@ import {
   Clock,
   Info,
   MapPin,
+  Heart,
+  Package,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -26,6 +28,8 @@ import { useCart } from '@/components/storefront/CartProvider'
 import CartDrawer from '@/components/storefront/CartDrawer'
 import { useSettings } from '@/components/storefront/SettingsProvider'
 import SearchBar from '@/components/storefront/SearchBar'
+import { getUserMenuItems } from '@/lib/user-menu-config'
+import DynamicIcon from '@/components/ui/DynamicIcon'
 
 const desktopLinks = [
   { href: '/', label: 'Home' },
@@ -132,6 +136,16 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
   const profileImage = user?.profileImage
 
+  // Dynamic menu items from config
+  const menuItems = getUserMenuItems(isLoggedIn, displayName, user?.email)
+
+  const handleMenuItemClick = async (item: any) => {
+    if (item.label === 'Logout') {
+      await logout()
+    }
+    closeUserMenu()
+  }
+
   const alwaysItems = [
     { type: 'link' as const, href: '/', label: 'Home', icon: Home },
     { type: 'link' as const, href: '/reviews', label: 'Reviews', icon: Star },
@@ -144,6 +158,7 @@ export default function Navbar() {
     { type: 'link' as const, href: '/account/payments', label: 'Order History', icon: Clock },
     { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
     { type: 'link' as const, href: '/account/addresses', label: 'Addresses', icon: MapPin },
+    { type: 'link' as const, href: '/account/wishlist', label: 'Wishlist', icon: Heart },
   ]
 
   // Navigation handler for dropdown items
@@ -216,7 +231,7 @@ export default function Navbar() {
                     <span>{displayName}</span>
                   </button>
                   
-                  {/* DESKTOP DROPDOWN - COMPLETELY REWRITTEN */}
+                  {/* DYNAMIC DESKTOP DROPDOWN */}
                   {userMenuOpen && (
                     <div 
                       className="fixed md:absolute right-4 md:right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
@@ -227,56 +242,44 @@ export default function Navbar() {
                         transform: 'translateY(0)',
                       }}
                     >
-                      {/* My Profile */}
-                      <button
-                        onClick={() => handleNavigation('/account/profile')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <User size={16} />
-                        My Profile
-                      </button>
-                      
-                      {/* Addresses */}
-                      <button
-                        onClick={() => handleNavigation('/account/addresses')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <MapPin size={16} />
-                        Addresses
-                      </button>
-                      
-                      {/* Order History */}
-                      <button
-                        onClick={() => handleNavigation('/account/payments')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <Clock size={16} />
-                        Order History
-                      </button>
-                      
-                      {/* Settings */}
-                      <button
-                        onClick={() => handleNavigation('/account/settings')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </button>
-                      
-                      <div className="border-t border-gray-100 my-1"></div>
-                      
-                      {/* Logout */}
-                      <button
-                        onClick={async (e) => {
-                          e.preventDefault()
-                          await logout()
-                          closeUserMenu()
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                      >
-                        <LogOut size={16} />
-                        Logout
-                      </button>
+                      {menuItems.map((item, index) => {
+                        // Welcome header (non-clickable)
+                        if (item.label.startsWith('Hello,')) {
+                          return (
+                            <div key={index} className="px-4 py-2 border-b border-gray-100 mb-2">
+                              <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                              <p className="text-xs text-gray-500">{user?.email}</p>
+                            </div>
+                          )
+                        }
+                        
+                        // Logout button
+                        if (item.label === 'Logout') {
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => handleMenuItemClick(item)}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                            >
+                              <DynamicIcon name={item.icon} size={16} />
+                              {item.label}
+                            </button>
+                          )
+                        }
+                        
+                        // Regular menu items
+                        return (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                            onClick={closeUserMenu}
+                          >
+                            <DynamicIcon name={item.icon} size={16} />
+                            {item.label}
+                          </Link>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -354,11 +357,18 @@ export default function Navbar() {
                         Addresses
                       </button>
                       <button
-                        onClick={() => handleNavigation('/account/payments')}
+                        onClick={() => handleNavigation('/account/orders')}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
-                        <Clock size={16} />
-                        Order History
+                        <Package size={16} />
+                        My Orders
+                      </button>
+                      <button
+                        onClick={() => handleNavigation('/account/wishlist')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <Heart size={16} />
+                        Wishlist
                       </button>
                       <button
                         onClick={() => handleNavigation('/account/settings')}
