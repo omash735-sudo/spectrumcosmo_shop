@@ -28,9 +28,15 @@ const STATUS_STYLE: Record<string, string> = {
 }
 
 const StatusIcon = ({ status }: { status: string }) => {
-  if (status === 'delivered') return <CheckCircle size={14} className="text-green-600" />
-  if (status === 'shipped') return <Truck size={14} className="text-purple-600" />
-  if (status === 'cancelled') return <Clock size={14} className="text-red-600" />
+  if (status === 'delivered') {
+    return <CheckCircle size={14} className="text-green-600" />
+  }
+  if (status === 'shipped') {
+    return <Truck size={14} className="text-purple-600" />
+  }
+  if (status === 'cancelled') {
+    return <Clock size={14} className="text-red-600" />
+  }
   return <Clock size={14} className="text-yellow-600" />
 }
 
@@ -72,9 +78,9 @@ export default function AccountOverview() {
   }, [])
 
   const recentOrders = [...orders].slice(0, 3)
-  const activeOrdersCount = orders.filter(o => 
-    o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
-  ).length
+  const activeOrdersCount = orders.filter((o) => {
+    return o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
+  }).length
 
   if (loading) {
     return (
@@ -86,7 +92,6 @@ export default function AccountOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome banner */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg">
         <h1 className="text-2xl md:text-3xl font-bold">
           Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
@@ -96,7 +101,6 @@ export default function AccountOverview() {
         </p>
       </div>
 
-      {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/account/orders" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
           <ShoppingBag className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
@@ -123,7 +127,6 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      {/* Recent Orders */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-gray-800">Recent Orders</h3>
@@ -135,7 +138,7 @@ export default function AccountOverview() {
         {recentOrders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingBag className="mx-auto text-gray-300 mb-3" size={48} />
-            <p className text-gray-400">No orders yet.</p>
+            <p className="text-gray-400">No orders yet.</p>
             <Link href="/products" className="inline-block mt-3 text-orange-500 text-sm hover:underline">
               Start Shopping →
             </Link>
@@ -181,7 +184,6 @@ export default function AccountOverview() {
         )}
       </div>
 
-      {/* Quick links to other sections */}
       <div className="grid grid-cols-2 gap-3">
         <Link href="/account/profile" className="bg-white p-4 rounded-xl border border-gray-100 text-center hover:border-orange-200 transition group">
           <User className="mx-auto text-gray-400 group-hover:text-orange-500 mb-1 transition" size={22} />
