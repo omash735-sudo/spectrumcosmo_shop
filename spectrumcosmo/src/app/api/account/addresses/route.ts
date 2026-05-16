@@ -10,7 +10,20 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     const addresses = await sql`
-      SELECT * FROM addresses
+      SELECT 
+        id, 
+        full_name, 
+        phone_number, 
+        address_line1, 
+        address_line2,
+        city, 
+        state, 
+        postal_code, 
+        country, 
+        is_default,
+        created_at,
+        updated_at
+      FROM addresses
       WHERE user_id = ${user.id}
       ORDER BY is_default DESC, created_at DESC
     `;
@@ -31,6 +44,7 @@ export async function POST(req: NextRequest) {
     const {
       full_name,
       phone_number,
+      email,
       address_line1,
       address_line2,
       city,
@@ -40,11 +54,15 @@ export async function POST(req: NextRequest) {
       is_default,
     } = await req.json();
 
-    if (!full_name || !phone_number || !address_line1 || !city) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validation
+    const errors: string[] = [];
+    if (!full_name?.trim()) errors.push('Full name is required');
+    if (!phone_number?.trim()) errors.push('Phone number is required');
+    if (!address_line1?.trim()) errors.push('Address line 1 is required');
+    if (!city?.trim()) errors.push('City is required');
+
+    if (errors.length > 0) {
+      return NextResponse.json({ error: errors.join(', ') }, { status: 400 });
     }
 
     const sql = getDb();
@@ -59,12 +77,33 @@ export async function POST(req: NextRequest) {
 
     const [address] = await sql`
       INSERT INTO addresses (
-        user_id, full_name, phone_number, address_line1, address_line2,
-        city, state, postal_code, country, is_default, created_at, updated_at
+        user_id, 
+        full_name, 
+        phone_number, 
+        email,
+        address_line1, 
+        address_line2,
+        city, 
+        state, 
+        postal_code, 
+        country, 
+        is_default, 
+        created_at, 
+        updated_at
       ) VALUES (
-        ${user.id}, ${full_name}, ${phone_number}, ${address_line1}, ${address_line2 || null},
-        ${city}, ${state || null}, ${postal_code || null}, ${country || 'Malawi'},
-        ${is_default || false}, NOW(), NOW()
+        ${user.id}, 
+        ${full_name.trim()}, 
+        ${phone_number.trim()}, 
+        ${email?.trim() || null},
+        ${address_line1.trim()}, 
+        ${address_line2?.trim() || null},
+        ${city.trim()}, 
+        ${state?.trim() || null}, 
+        ${postal_code?.trim() || null}, 
+        ${country?.trim() || 'Malawi'},
+        ${is_default || false}, 
+        NOW(), 
+        NOW()
       )
       RETURNING *
     `;
@@ -89,6 +128,7 @@ export async function PUT(req: NextRequest) {
       id,
       full_name,
       phone_number,
+      email,
       address_line1,
       address_line2,
       city,
@@ -130,14 +170,15 @@ export async function PUT(req: NextRequest) {
 
     const [address] = await sql`
       UPDATE addresses SET
-        full_name = ${full_name},
-        phone_number = ${phone_number},
-        address_line1 = ${address_line1},
-        address_line2 = ${address_line2 || null},
-        city = ${city},
-        state = ${state || null},
-        postal_code = ${postal_code || null},
-        country = ${country || 'Malawi'},
+        full_name = ${full_name?.trim()},
+        phone_number = ${phone_number?.trim()},
+        email = ${email?.trim() || null},
+        address_line1 = ${address_line1?.trim()},
+        address_line2 = ${address_line2?.trim() || null},
+        city = ${city?.trim()},
+        state = ${state?.trim() || null},
+        postal_code = ${postal_code?.trim() || null},
+        country = ${country?.trim() || 'Malawi'},
         is_default = ${is_default || false},
         updated_at = NOW()
       WHERE id = ${id} AND user_id = ${user.id}
@@ -172,10 +213,24 @@ export async function DELETE(req: NextRequest) {
 
     const sql = getDb();
 
+    // Check if this is the only address and it's default
+    const [addressCount] = await sql`
+      SELECT COUNT(*) as count, 
+             SUM(CASE WHEN is_default THEN 1 ELSE 0 END) as default_count
+      FROM addresses 
+      WHERE user_id = ${user.id}
+    `;
+
+    const isOnlyAddress = parseInt(addressCount.count) === 1;
+    const isDeletingDefault = await sql`
+      SELECT is_default FROM addresses 
+      WHERE id = ${id} AND user_id = ${user.id}
+    `;
+
     const [deleted] = await sql`
       DELETE FROM addresses
       WHERE id = ${id} AND user_id = ${user.id}
-      RETURNING id
+      RETURNING id, is_default
     `;
 
     if (!deleted) {
@@ -183,6 +238,17 @@ export async function DELETE(req: NextRequest) {
         { error: 'Address not found' },
         { status: 404 }
       );
+    }
+
+    // If we deleted the default address and there are other addresses, make another one default
+    if (deleted.is_default && !isOnlyAddress) {
+      await sql`
+        UPDATE addresses 
+        SET is_default = TRUE 
+        WHERE user_id = ${user.id} 
+        ORDER BY created_at ASC 
+        LIMIT 1
+      `;
     }
 
     return NextResponse.json({ success: true });
