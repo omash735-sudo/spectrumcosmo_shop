@@ -1,352 +1,197 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Loader2, MapPin, Trash2, Plus, CheckCircle, Edit2 } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import {
+  ShoppingBag,
+  Heart,
+  MapPin,
+  PackageSearch,
+  ChevronRight,
+  CheckCircle,
+  Truck,
+  Clock,
+  Loader2,
+  User,
+  Settings,
+  Calendar,
+  DollarSign,
+} from 'lucide-react'
 
-type Address = {
-  id: string;
-  full_name: string;
-  first_name?: string;
-  last_name?: string;
-  phone_number: string;
-  email?: string;
-  address_line1: string;
-  address_line2?: string;
-  city: string;
-  state?: string;
-  postal_code?: string;
-  zip?: string;
-  country: string;
-  is_default?: boolean;
-};
+const STATUS_STYLE: Record<string, string> = {
+  pending: 'text-yellow-600 bg-yellow-50',
+  processing: 'text-blue-600 bg-blue-50',
+  shipped: 'text-purple-600 bg-purple-50',
+  delivered: 'text-green-600 bg-green-50',
+  cancelled: 'text-red-600 bg-red-50',
+  declined: 'text-red-600 bg-red-50',
+}
 
-export default function AddressesPage() {
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+const StatusIcon = ({ status }: { status: string }) => {
+  if (status === 'delivered') return <CheckCircle size={14} className="text-green-600" />
+  if (status === 'shipped') return <Truck size={14} className="text-purple-600" />
+  if (status === 'cancelled') return <Clock size={14} className="text-red-600" />
+  return <Clock size={14} className="text-yellow-600" />
+}
 
-  const [form, setForm] = useState({
-    full_name: '',
-    phone_number: '',
-    email: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: 'Malawi',
-    is_default: false,
-  });
-
-  const loadAddresses = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/account/addresses');
-      if (res.ok) {
-        const data = await res.json();
-        setAddresses(data);
-      }
-    } catch (err) {
-      console.error('Failed to load addresses:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function AccountOverview() {
+  const [orders, setOrders] = useState<any[]>([])
+  const [wishlistCount, setWishlistCount] = useState(0)
+  const [addressesCount, setAddressesCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    loadAddresses();
-  }, []);
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const userRes = await fetch('/api/auth/me')
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          setUser(userData.user)
+        }
 
-  const resetForm = () => {
-    setForm({
-      full_name: '',
-      phone_number: '',
-      email: '',
-      address_line1: '',
-      address_line2: '',
-      city: '',
-      state: '',
-      postal_code: '',
-      country: 'Malawi',
-      is_default: false,
-    });
-    setEditingId(null);
-  };
+        const ordersRes = await fetch('/api/account/orders')
+        const ordersData = ordersRes.ok ? await ordersRes.json() : []
+        setOrders(ordersData)
 
-  const handleEdit = (address: Address) => {
-    setForm({
-      full_name: address.full_name || `${address.first_name || ''} ${address.last_name || ''}`.trim(),
-      phone_number: address.phone_number,
-      email: address.email || '',
-      address_line1: address.address_line1,
-      address_line2: address.address_line2 || '',
-      city: address.city,
-      state: address.state || '',
-      postal_code: address.postal_code || address.zip || '',
-      country: address.country || 'Malawi',
-      is_default: address.is_default || false,
-    });
-    setEditingId(address.id);
-    setShowForm(true);
-  };
+        const wishlistRes = await fetch('/api/account/wishlist')
+        const wishlistData = wishlistRes.ok ? await wishlistRes.json() : []
+        setWishlistCount(wishlistData.length)
 
-  const addAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    try {
-      const url = editingId ? '/api/account/addresses' : '/api/account/addresses';
-      const method = editingId ? 'PUT' : 'POST';
-      const body = editingId ? { id: editingId, ...form } : form;
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (res.ok) {
-        resetForm();
-        setShowForm(false);
-        loadAddresses();
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to save address');
+        const addressesRes = await fetch('/api/account/addresses')
+        const addressesData = addressesRes.ok ? await addressesRes.json() : []
+        setAddressesCount(addressesData.length)
+      } catch (error) {
+        console.error('Failed to load overview data', error)
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      alert('Something went wrong');
-    } finally {
-      setSaving(false);
     }
-  };
+    fetchData()
+  }, [])
 
-  const deleteAddress = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) return;
-
-    try {
-      const res = await fetch(`/api/account/addresses?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        loadAddresses();
-      } else {
-        alert('Failed to delete address');
-      }
-    } catch (err) {
-      alert('Something went wrong');
-    }
-  };
+  const recentOrders = [...orders].slice(0, 3)
+  const activeOrdersCount = orders.filter(o => 
+    o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
+  ).length
 
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="animate-spin text-orange-500" size={32} />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Addresses</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage delivery locations for your orders</p>
-        </div>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-          >
-            <Plus size={18} />
-            Add Address
-          </button>
-        )}
+    <div className="space-y-6">
+      {/* Welcome banner */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg">
+        <h1 className="text-2xl md:text-3xl font-bold">
+          Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
+        </h1>
+        <p className="text-gray-300 text-sm mt-1">
+          Track your orders and manage your account
+        </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* ADD/EDIT ADDRESS FORM */}
-        {showForm && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Plus size={18} className="text-orange-500" />
-              {editingId ? 'Edit Address' : 'Add New Address'}
-            </h2>
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Link href="/account/orders" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
+          <ShoppingBag className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
+          <p className="text-2xl font-bold">{orders.length}</p>
+          <p className="text-xs text-gray-500">Total orders</p>
+        </Link>
+        
+        <Link href="/account/wishlist" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
+          <Heart className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
+          <p className="text-2xl font-bold">{wishlistCount}</p>
+          <p className="text-xs text-gray-500">Wishlist items</p>
+        </Link>
+        
+        <Link href="/account/addresses" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
+          <MapPin className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
+          <p className="text-2xl font-bold">{addressesCount}</p>
+          <p className="text-xs text-gray-500">Saved addresses</p>
+        </Link>
+        
+        <Link href="/account/orders" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
+          <PackageSearch className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
+          <p className="text-2xl font-bold">{activeOrdersCount}</p>
+          <p className="text-xs text-gray-500">Active orders</p>
+        </Link>
+      </div>
 
-            <form onSubmit={addAddress} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  required
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.phone_number}
-                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                  required
-                />
-              </div>
+      {/* Recent Orders */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold text-gray-800">Recent Orders</h3>
+          <Link href="/account/orders" className="text-sm text-orange-600 flex items-center gap-1 hover:gap-2 transition">
+            View all <ChevronRight size={16} />
+          </Link>
+        </div>
 
-              <input
-                type="email"
-                placeholder="Email (optional)"
-                className="border border-gray-200 rounded-lg p-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-
-              <input
-                type="text"
-                placeholder="Address Line 1"
-                className="border border-gray-200 rounded-lg p-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.address_line1}
-                onChange={(e) => setForm({ ...form, address_line1: e.target.value })}
-                required
-              />
-
-              <input
-                type="text"
-                placeholder="Address Line 2 (optional)"
-                className="border border-gray-200 rounded-lg p-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.address_line2}
-                onChange={(e) => setForm({ ...form, address_line2: e.target.value })}
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="City"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="State / Province"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Postal Code"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.postal_code}
-                  onChange={(e) => setForm({ ...form, postal_code: e.target.value })}
-                />
-                <input
-                  type="text"
-                  placeholder="Country"
-                  className="border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_default"
-                  checked={form.is_default}
-                  onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
-                  className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
-                />
-                <label htmlFor="is_default" className="text-sm text-gray-700">
-                  Set as default address
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 bg-orange-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-orange-700 transition disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : editingId ? 'Update Address' : 'Save Address'}
-                </button>
-              </div>
-            </form>
+        {recentOrders.length === 0 ? (
+          <div className="text-center py-8">
+            <ShoppingBag className="mx-auto text-gray-300 mb-3" size={48} />
+            <p className="text-gray-400">No orders yet.</p>
+            <Link href="/products" className="inline-block mt-3 text-orange-500 text-sm hover:underline">
+              Start Shopping →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentOrders.map((order) => (
+              <Link 
+                key={order.id} 
+                href={`/account/orders/${order.id}`}
+                className="block border border-gray-100 rounded-lg p-3 hover:shadow-md transition group"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-800 group-hover:text-orange-600 transition">
+                      Order #{order.order_number || order.id.slice(0, 8)}
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign size={12} />
+                        Total: ${order.total_amount?.toLocaleString() || 0}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${STATUS_STYLE[order.status] || 'text-gray-600 bg-gray-50'}`}>
+                        <StatusIcon status={order.status} />
+                        {order.status}
+                      </span>
+                    </div>
+                    {order.items && order.items.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
+                </div>
+              </Link>
+            ))}
           </div>
         )}
+      </div>
 
-        {/* SAVED ADDRESSES */}
-        <div className={`bg-white rounded-xl border border-gray-100 shadow-sm p-6 ${!showForm ? 'md:col-span-2' : ''}`}>
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <MapPin size={18} className="text-orange-500" />
-            Saved Addresses ({addresses.length})
-          </h2>
-
-          {addresses.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No addresses saved yet.</p>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              {addresses.map((addr) => (
-                <div key={addr.id} className="border border-gray-100 rounded-lg p-4 relative bg-gray-50/30 hover:shadow-sm transition">
-                  {addr.is_default && (
-                    <span className="absolute top-2 right-2 bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle size={10} />
-                      Default
-                    </span>
-                  )}
-                  <p className="font-medium text-gray-800">
-                    {addr.full_name || `${addr.first_name || ''} ${addr.last_name || ''}`.trim()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{addr.phone_number}</p>
-                  {addr.email && <p className="text-xs text-gray-500">{addr.email}</p>}
-                  <p className="text-xs text-gray-600 mt-2">
-                    {addr.address_line1}
-                    {addr.address_line2 && `, ${addr.address_line2}`}
-                    <br />
-                    {addr.city}
-                    {addr.state && `, ${addr.state}`}
-                    {addr.postal_code && ` ${addr.postal_code}`}
-                    {addr.zip && ` ${addr.zip}`}
-                    <br />
-                    {addr.country}
-                  </p>
-                  <div className="flex gap-3 mt-3">
-                    <button
-                      onClick={() => handleEdit(addr)}
-                      className="text-xs text-gray-500 flex items-center gap-1 hover:text-orange-500 transition"
-                    >
-                      <Edit2 size={12} /> Edit
-                    </button>
-                    <button
-                      onClick={() => deleteAddress(addr.id)}
-                      className="text-xs text-red-500 flex items-center gap-1 hover:underline"
-                    >
-                      <Trash2 size={12} /> Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Quick links to other sections */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/account/profile" className="bg-white p-4 rounded-xl border border-gray-100 text-center hover:border-orange-200 transition group">
+          <User className="mx-auto text-gray-400 group-hover:text-orange-500 mb-1 transition" size={22} />
+          <span className="text-sm">Profile</span>
+        </Link>
+        <Link href="/account/settings" className="bg-white p-4 rounded-xl border border-gray-100 text-center hover:border-orange-200 transition group">
+          <Settings className="mx-auto text-gray-400 group-hover:text-orange-500 mb-1 transition" size={22} />
+          <span className="text-sm">Settings</span>
+        </Link>
       </div>
     </div>
-  );
+  )
 }
