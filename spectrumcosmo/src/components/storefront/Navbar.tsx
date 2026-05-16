@@ -16,7 +16,6 @@ import {
   Star,
   Home,
   Clock,
-  Package,
   Info,
   MapPin,
 } from 'lucide-react'
@@ -62,6 +61,7 @@ export default function Navbar() {
   const [loadingUser, setLoadingUser] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const desktopDropdownRef = useRef<HTMLDivElement>(null)
 
   const { totalItems } = useCart()
   const { settings } = useSettings()
@@ -91,10 +91,11 @@ export default function Navbar() {
     fetchUser()
   }, [])
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(target)) {
         setUserMenuOpen(false)
       }
     }
@@ -109,10 +110,14 @@ export default function Navbar() {
   }, [userMenuOpen])
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    setUser(null)
-    router.push('/')
-    router.refresh()
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setUser(null)
+      router.push('/')
+      router.refresh()
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
   }, [router])
 
   const openCart = () => {
@@ -120,16 +125,12 @@ export default function Navbar() {
     setMobileMenuOpen(false)
   }
 
+  const closeMobileMenu = () => setMobileMenuOpen(false)
+  const closeUserMenu = () => setUserMenuOpen(false)
+
   const isLoggedIn = !!user
   const displayName = user?.name || user?.email?.split('@')[0] || 'User'
   const profileImage = user?.profileImage
-
-  const handleProtectedClick = (e: React.MouseEvent, href: string) => {
-    if (!isLoggedIn && PROTECTED_LINKS.includes(href)) {
-      e.preventDefault()
-      router.push('/login')
-    }
-  }
 
   const alwaysItems = [
     { type: 'link' as const, href: '/', label: 'Home', icon: Home },
@@ -144,6 +145,12 @@ export default function Navbar() {
     { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
     { type: 'link' as const, href: '/account/addresses', label: 'Addresses', icon: MapPin },
   ]
+
+  // Navigation handler for dropdown items
+  const handleNavigation = (href: string) => {
+    closeUserMenu()
+    router.push(href)
+  }
 
   return (
     <>
@@ -196,8 +203,11 @@ export default function Navbar() {
                   <span>Sign in</span>
                 </Link>
               ) : (
-                <div className="relative" ref={userMenuRef}>
-                  <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#F97316]">
+                <div className="relative" ref={desktopDropdownRef}>
+                  <button 
+                    onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                    className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#F97316]"
+                  >
                     {profileImage ? (
                       <Image src={profileImage} alt={displayName} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                     ) : (
@@ -206,52 +216,65 @@ export default function Navbar() {
                     <span>{displayName}</span>
                   </button>
                   
-                  {/* DESKTOP DROPDOWN - FIXED with full menu */}
+                  {/* DESKTOP DROPDOWN - COMPLETELY REWRITTEN */}
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
-                      <Link
-                        href="/account/profile"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setUserMenuOpen(false)}
+                    <div 
+                      className="fixed md:absolute right-4 md:right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
+                      style={{ 
+                        top: 'auto',
+                        position: 'fixed',
+                        marginTop: '8px',
+                        transform: 'translateY(0)',
+                      }}
+                    >
+                      {/* My Profile */}
+                      <button
+                        onClick={() => handleNavigation('/account/profile')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
-                        <User size={14} />
+                        <User size={16} />
                         My Profile
-                      </Link>
-                      <Link
-                        href="/account/addresses"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      
+                      {/* Addresses */}
+                      <button
+                        onClick={() => handleNavigation('/account/addresses')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
-                        <MapPin size={14} />
+                        <MapPin size={16} />
                         Addresses
-                      </Link>
-                      <Link
-                        href="/account/payments"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      
+                      {/* Order History */}
+                      <button
+                        onClick={() => handleNavigation('/account/payments')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
-                        <Clock size={14} />
+                        <Clock size={16} />
                         Order History
-                      </Link>
-                      <Link
-                        href="/account/settings"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      
+                      {/* Settings */}
+                      <button
+                        onClick={() => handleNavigation('/account/settings')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
-                        <Settings size={14} />
+                        <Settings size={16} />
                         Settings
-                      </Link>
+                      </button>
+                      
                       <div className="border-t border-gray-100 my-1"></div>
+                      
+                      {/* Logout */}
                       <button
                         onClick={async (e) => {
                           e.preventDefault()
-                          e.stopPropagation()
                           await logout()
-                          setUserMenuOpen(false)
+                          closeUserMenu()
                         }}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                       >
-                        <LogOut size={14} />
+                        <LogOut size={16} />
                         Logout
                       </button>
                     </div>
@@ -277,10 +300,7 @@ export default function Navbar() {
             {/* Profile Icon - Mobile */}
             <div className="relative">
               <button 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setUserMenuOpen(!userMenuOpen)
-                }} 
+                onClick={() => setUserMenuOpen(!userMenuOpen)} 
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors overflow-hidden"
                 aria-label="User menu"
               >
@@ -297,71 +317,63 @@ export default function Navbar() {
                 )}
               </button>
               
-              {/* MOBILE DROPDOWN - Already correct */}
+              {/* MOBILE DROPDOWN */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50" style={{ top: '100%' }}>
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]">
                   {!isLoggedIn ? (
                     <>
-                      <Link
-                        href="/login"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      <button
+                        onClick={() => handleNavigation('/login')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <User size={16} />
                         Sign In
-                      </Link>
-                      <Link
-                        href="/signup"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => handleNavigation('/signup')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <User size={16} />
                         Create Account
-                      </Link>
+                      </button>
                     </>
                   ) : (
                     <>
-                      <Link
-                        href="/account/profile"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      <button
+                        onClick={() => handleNavigation('/account/profile')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <User size={16} />
                         My Profile
-                      </Link>
-                      <Link
-                        href="/account/addresses"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => handleNavigation('/account/addresses')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <MapPin size={16} />
                         Addresses
-                      </Link>
-                      <Link
-                        href="/account/payments"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => handleNavigation('/account/payments')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <Clock size={16} />
                         Order History
-                      </Link>
-                      <Link
-                        href="/account/settings"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
-                        onClick={() => setUserMenuOpen(false)}
+                      </button>
+                      <button
+                        onClick={() => handleNavigation('/account/settings')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
                       >
                         <Settings size={16} />
                         Settings
-                      </Link>
+                      </button>
                       <div className="border-t border-gray-100 my-1"></div>
                       <button
-                        onClick={async (e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
+                        onClick={async () => {
                           await logout()
-                          setUserMenuOpen(false)
+                          closeUserMenu()
                         }}
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition w-full text-left"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                       >
                         <LogOut size={16} />
                         Logout
@@ -387,11 +399,11 @@ export default function Navbar() {
 
       {/* MOBILE MENU (SIDEBAR) */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden">
-          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col">
+        <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
+          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center border-b pb-3">
               <span className="font-semibold">Menu</span>
-              <button onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+              <button onClick={closeMobileMenu} aria-label="Close menu">
                 <X size={22} />
               </button>
             </div>
@@ -406,13 +418,13 @@ export default function Navbar() {
                 {!isLoggedIn ? 'Guest / Visitor' : displayName}
               </div>
               {isLoggedIn ? (
-                <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                <button onClick={() => handleNavigation('/account/profile')} className="text-[#F97316] text-xs">
                   Profile
-                </Link>
+                </button>
               ) : (
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#F97316] text-xs">
+                <button onClick={() => handleNavigation('/login')} className="text-[#F97316] text-xs">
                   Sign in / Register
-                </Link>
+                </button>
               )}
             </div>
 
@@ -421,9 +433,11 @@ export default function Navbar() {
             </div>
 
             {/* View Products Button */}
-            <Link 
-              href="/products" 
-              onClick={() => setMobileMenuOpen(false)}
+            <button 
+              onClick={() => {
+                handleNavigation('/products');
+                closeMobileMenu();
+              }}
               className="my-3 block w-full bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md"
             >
               <div className="flex items-center justify-between">
@@ -436,7 +450,7 @@ export default function Navbar() {
                   </svg>
                 </div>
               </div>
-            </Link>
+            </button>
 
             <div className="flex flex-col gap-2 mt-2 flex-grow">
               {alwaysItems.map(item => {
@@ -447,36 +461,40 @@ export default function Navbar() {
                       key={item.label} 
                       onClick={() => { 
                         item.onClick(); 
-                        setMobileMenuOpen(false); 
+                        closeMobileMenu(); 
                       }} 
-                      className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
+                      className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
                     >
                       <Icon size={18} /> {item.label}
                     </button>
                   )
                 }
                 return (
-                  <Link
+                  <button
                     key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
+                    onClick={() => {
+                      handleNavigation(item.href);
+                      closeMobileMenu();
+                    }}
+                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
                   >
                     <Icon size={18} /> {item.label}
-                  </Link>
+                  </button>
                 )
               })}
               {isLoggedIn && loggedInOnlyItems.map(item => {
                 const Icon = item.icon
                 return (
-                  <Link
+                  <button
                     key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition"
+                    onClick={() => {
+                      handleNavigation(item.href);
+                      closeMobileMenu();
+                    }}
+                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
                   >
                     <Icon size={18} /> {item.label}
-                  </Link>
+                  </button>
                 )
               })}
             </div>
@@ -486,7 +504,7 @@ export default function Navbar() {
                 <button 
                   onClick={async () => {
                     await logout();
-                    setMobileMenuOpen(false);
+                    closeMobileMenu();
                   }} 
                   className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
                 >
@@ -494,7 +512,7 @@ export default function Navbar() {
                 </button>
               ) : (
                 <div className="text-xs text-gray-400 text-center py-2">
-                  <Link href="/signup" className="text-[#F97316]">Create an account</Link> to enjoy order history and more.
+                  <button onClick={() => handleNavigation('/signup')} className="text-[#F97316]">Create an account</button> to enjoy order history and more.
                 </div>
               )}
             </div>
