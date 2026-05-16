@@ -1,43 +1,78 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Star, ShoppingCart, Heart, Loader2 } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Loader2, Trash2 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useCart } from '@/components/storefront/CartProvider'
 
 interface WishlistItem {
   id: number
   name: string
   price: number
   rating: number
-  image: string  // URL or emoji – adjust based on your data
-  inStock: boolean
+  image: string
+  in_stock: boolean  // Fixed: match API response
 }
 
 export default function WishlistPage() {
   const [items, setItems] = useState<WishlistItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<number | null>(null)
+  const { addItem } = useCart()
+
+  const fetchWishlist = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/account/wishlist')
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login?redirect=/account/wishlist'
+          return
+        }
+        throw new Error('Failed to load wishlist')
+      }
+      const data = await res.json()
+      setItems(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchWishlist = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch('/api/account/wishlist')
-        if (!res.ok) throw new Error('Failed to load wishlist')
-        const data = await res.json()
-        setItems(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchWishlist()
   }, [])
 
-  const handleAddToCart = async (item: WishlistItem) => {
-    // Implement add to cart logic – e.g., POST to /api/cart
-    console.log('Add to cart', item.id)
+  const handleAddToCart = (item: WishlistItem) => {
+    addItem({
+      id: String(item.id),
+      name: item.name,
+      image_url: item.image,
+      priceUsd: item.price,
+    })
+  }
+
+  const handleRemoveFromWishlist = async (itemId: number) => {
+    setRemovingId(itemId)
+    try {
+      const res = await fetch('/api/account/wishlist', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: itemId }),
+      })
+      
+      if (res.ok) {
+        setItems(prev => prev.filter(item => item.id !== itemId))
+      }
+    } catch (err) {
+      console.error('Failed to remove:', err)
+    } finally {
+      setRemovingId(null)
+    }
   }
 
   if (loading) {
@@ -53,7 +88,7 @@ export default function WishlistPage() {
       <div className="max-w-7xl mx-auto px-4 py-12 text-center">
         <p className="text-red-500">Error: {error}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => fetchWishlist()}
           className="mt-4 text-orange-500 underline"
         >
           Try again
@@ -69,36 +104,51 @@ export default function WishlistPage() {
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
           My Wishlist
         </h1>
-        <p className="text-gray-500 mt-1">Items you saved for later</p>
+        <p className="text-gray-500 mt-1">
+          {items.length} {items.length === 1 ? 'item' : 'items'} saved for later
+        </p>
       </div>
 
       {items.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
-          <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Your wishlist is empty.</p>
-          <button
-            onClick={() => (window.location.href = '/shop')}
-            className="mt-4 text-orange-500 text-sm font-medium hover:underline"
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+          <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">Your wishlist is empty.</p>
+          <Link
+            href="/products"
+            className="inline-block mt-4 text-orange-500 text-sm font-medium hover:underline"
           >
-            Browse products
-          </button>
+            Browse products →
+          </Link>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => (
             <div
               key={item.id}
               className="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1"
             >
               {/* Image */}
-              <div className="bg-gray-50 p-6 flex items-center justify-center text-6xl">
-                {item.image}
-              </div>
+              <Link href={`/product/${item.id}`}>
+                <div className="bg-gray-50 h-48 flex items-center justify-center relative overflow-hidden">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition duration-300"
+                    />
+                  ) : (
+                    <div className="text-6xl">📦</div>
+                  )}
+                </div>
+              </Link>
 
-              <div className="p-5">
-                <h3 className="font-semibold text-gray-900 text-lg">
-                  {item.name}
-                </h3>
+              <div className="p-4">
+                <Link href={`/product/${item.id}`}>
+                  <h3 className="font-semibold text-gray-900 text-lg line-clamp-1 hover:text-orange-500 transition">
+                    {item.name}
+                  </h3>
+                </Link>
 
                 {/* Rating */}
                 <div className="flex items-center gap-1 mt-2">
@@ -108,45 +158,59 @@ export default function WishlistPage() {
                       .map((_, i) => (
                         <Star
                           key={i}
-                          size={16}
+                          size={14}
                           className={`${
-                            i < Math.floor(item.rating)
+                            i < Math.floor(item.rating || 0)
                               ? 'text-yellow-400 fill-yellow-400'
                               : 'text-gray-300'
                           }`}
                         />
                       ))}
                   </div>
-                  <span className="text-xs text-gray-400 ml-1">{item.rating}</span>
+                  {item.rating > 0 && (
+                    <span className="text-xs text-gray-400 ml-1">
+                      {item.rating.toFixed(1)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Price */}
-                <p className="text-orange-500 font-bold text-2xl mt-3">
-                  ${item.price.toFixed(2)}
+                <p className="text-orange-500 font-bold text-xl mt-3">
+                  K {item.price.toLocaleString()}
                 </p>
 
                 {/* Stock status */}
                 <p
                   className={`text-xs mt-1 ${
-                    item.inStock ? 'text-green-600' : 'text-red-500'
+                    item.in_stock ? 'text-green-600' : 'text-red-500'
                   }`}
                 >
-                  {item.inStock ? '✓ In stock' : '✗ Out of stock'}
+                  {item.in_stock ? '✓ In stock' : '✗ Out of stock'}
                 </p>
 
-                {/* Add to cart button */}
-                <button
-                  onClick={() => handleAddToCart(item)}
-                  className={`mt-4 w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                    item.inStock
-                      ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                  disabled={!item.inStock}
-                >
-                  <ShoppingCart size={16} />
-                  Add to cart
-                </button>
+                {/* Action buttons */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleAddToCart(item)}
+                    disabled={!item.in_stock}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                      item.in_stock
+                        ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <ShoppingCart size={16} />
+                    Add to cart
+                  </button>
+                  
+                  <button
+                    onClick={() => handleRemoveFromWishlist(item.id)}
+                    disabled={removingId === item.id}
+                    className="p-2.5 rounded-xl border border-gray-200 hover:bg-red-50 hover:border-red-200 transition disabled:opacity-50"
+                  >
+                    <Trash2 size={16} className="text-red-500" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
