@@ -60,7 +60,6 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryMethods.find(m => m.id === selectedDeliveryId)?.price || 0;
   const total = subtotal + deliveryFee;
 
-  // Fetch delivery methods and payment providers
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -78,7 +77,6 @@ export default function CheckoutPage() {
         if (payRes.ok) {
           const data = await payRes.json();
           setPaymentProviders(data);
-          // Auto-select first available payment method
           if (data.automatic.length > 0 && data.automatic_enabled) {
             setSelectedPaymentProvider(data.automatic[0]);
           } else if (data.manual.length > 0 && data.manual_enabled) {
@@ -108,15 +106,15 @@ export default function CheckoutPage() {
 
     try {
       const mappedItems = items.map(item => ({
-        id: item.id,
-        name: item.name,
+        product_id: item.id,
+        product_name: item.name,
         quantity: Number(item.quantity),
-        price_usd: Number(item.priceUsd ?? 0),
+        price: Number(item.priceUsd ?? 0),
         custom_details: item.custom_details || null,
       }));
 
-      // Create order
-      const orderRes = await fetch('/api/orders/create', {
+      // FIXED: Correct API endpoint
+      const orderRes = await fetch('/api/account/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,9 +138,7 @@ export default function CheckoutPage() {
 
       clearCart();
 
-      // Redirect based on payment type
       if (selectedPaymentProvider.type === 'automatic') {
-        // Automatic payment - initiate payment
         const paymentRes = await fetch('/api/payments/onekhusa-charge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -162,7 +158,6 @@ export default function CheckoutPage() {
         alert('Payment request sent to your phone. Please check your mobile money app.');
         router.push(`/account/orders?payment=pending&order=${orderId}`);
       } else {
-        // Manual payment - go to payment page
         router.push(`/orders/${orderId}/payment`);
       }
     } catch (err: any) {
@@ -172,7 +167,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // Show loading state while options are being fetched
   if (loadingOptions) {
     return (
       <>
@@ -241,7 +235,6 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
-              {/* Delivery Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 <div className="space-y-2">
@@ -260,14 +253,12 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Payment Method</p>
                 
-                {/* Automatic Payments Section */}
                 {paymentProviders?.automatic_enabled && paymentProviders.automatic.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">🤖 Automatic Payments</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Automatic Payments</p>
                     <div className="space-y-2">
                       {paymentProviders.automatic.map(p => (
                         <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -288,10 +279,9 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Manual Payments Section */}
                 {paymentProviders?.manual_enabled && paymentProviders.manual.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">📝 Manual Payments</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Manual Payments</p>
                     <div className="space-y-2">
                       {paymentProviders.manual.map(p => (
                         <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
