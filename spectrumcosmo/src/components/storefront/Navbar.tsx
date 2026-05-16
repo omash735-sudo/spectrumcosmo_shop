@@ -18,6 +18,7 @@ import {
   Clock,
   Package,
   Info,
+  MapPin,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -141,6 +142,7 @@ export default function Navbar() {
   const loggedInOnlyItems = [
     { type: 'link' as const, href: '/account/payments', label: 'Order History', icon: Clock },
     { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
+    { type: 'link' as const, href: '/account/addresses', label: 'Addresses', icon: MapPin },
   ]
 
   return (
@@ -203,22 +205,53 @@ export default function Navbar() {
                     )}
                     <span>{displayName}</span>
                   </button>
+                  
+                  {/* DESKTOP DROPDOWN - FIXED with full menu */}
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
                       <Link
                         href="/account/profile"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        Profile
+                        <User size={14} />
+                        My Profile
                       </Link>
-                      <button
-                        onClick={() => {
-                          setUserMenuOpen(false)
-                          logout()
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      <Link
+                        href="/account/addresses"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setUserMenuOpen(false)}
                       >
+                        <MapPin size={14} />
+                        Addresses
+                      </Link>
+                      <Link
+                        href="/account/payments"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Clock size={14} />
+                        Order History
+                      </Link>
+                      <Link
+                        href="/account/settings"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Settings size={14} />
+                        Settings
+                      </Link>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          await logout()
+                          setUserMenuOpen(false)
+                        }}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        <LogOut size={14} />
                         Logout
                       </button>
                     </div>
@@ -229,22 +262,19 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER - FIXED: Proper spacing only, logo unchanged */}
+        {/* MOBILE HEADER */}
         <div className="md:hidden flex items-center justify-between px-4 py-3">
-          {/* Menu Button */}
           <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu" className="p-1">
             <Menu size={24} />
           </button>
           
-          {/* Logo - KEPT ORIGINAL SIZE */}
           <Link href="/" className="flex items-center gap-2">
             <img src={logoSrc} alt="Logo" className="h-8" />
             <span className="text-lg font-semibold text-gray-800">Spectrum<span className="text-[#F97316]">Cosmo</span></span>
           </Link>
           
-          {/* Right Icons - Tight spacing */}
           <div className="flex items-center gap-2">
-            {/* Profile Icon */}
+            {/* Profile Icon - Mobile */}
             <div className="relative">
               <button 
                 onClick={(e) => {
@@ -267,7 +297,7 @@ export default function Navbar() {
                 )}
               </button>
               
-              {/* User Menu Dropdown */}
+              {/* MOBILE DROPDOWN - Already correct */}
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50" style={{ top: '100%' }}>
                   {!isLoggedIn ? (
@@ -298,6 +328,14 @@ export default function Navbar() {
                       >
                         <User size={16} />
                         My Profile
+                      </Link>
+                      <Link
+                        href="/account/addresses"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <MapPin size={16} />
+                        Addresses
                       </Link>
                       <Link
                         href="/account/payments"
@@ -334,7 +372,7 @@ export default function Navbar() {
               )}
             </div>
             
-            {/* Cart Button - Fixed badge position */}
+            {/* Cart Button */}
             <button onClick={openCart} className="relative p-1" aria-label="Cart">
               <ShoppingCart size={22} />
               {totalItems > 0 && (
@@ -392,7 +430,7 @@ export default function Navbar() {
                 <span className="font-bold text-white text-base">View Products</span>
                 <div className="flex items-center gap-1 text-white">
                   <span className="text-sm font-medium">Shop now</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12h14"/>
                     <path d="m12 5 7 7-7 7"/>
                   </svg>
@@ -446,8 +484,8 @@ export default function Navbar() {
             <div className="mt-6 pt-3 border-t border-gray-200">
               {isLoggedIn ? (
                 <button 
-                  onClick={() => {
-                    logout();
+                  onClick={async () => {
+                    await logout();
                     setMobileMenuOpen(false);
                   }} 
                   className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
