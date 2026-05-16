@@ -4,24 +4,12 @@ import { getVerifiedUser } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req)
-  if (error) return error
+  if (error) {
+    return NextResponse.json([], { status: 200 })
+  }
 
   try {
     const sql = getDb()
-    
-    // First check if table exists
-    const tableCheck = await sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'wishlist'
-      ) as exists
-    `
-    
-    if (!tableCheck[0]?.exists) {
-      console.error('Wishlist table does not exist')
-      return NextResponse.json([], { status: 200 }) // Return empty array
-    }
-    
     const wishlist = await sql`
       SELECT 
         w.id,
@@ -36,18 +24,16 @@ export async function GET(req: NextRequest) {
       WHERE w.user_id = ${user.id}
       ORDER BY w.added_at DESC
     `
-    
     return NextResponse.json(wishlist || [])
   } catch (err: any) {
-    console.error('Wishlist API error:', err)
-    // Return empty array instead of error to prevent frontend crash
+    console.error('Wishlist error:', err)
     return NextResponse.json([], { status: 200 })
   }
 }
 
 export async function POST(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req)
-  if (error) return error
+  if (error) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const { productId } = await req.json()
@@ -70,7 +56,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req)
-  if (error) return error
+  if (error) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const { productId } = await req.json()
