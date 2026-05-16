@@ -1,31 +1,19 @@
-import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-
-interface ActiveUser {
-  session_id: string;
-  user_id: number | null;
-  user_name: string | null;
-  user_email: string | null;
-  page_url: string;
-  user_agent: string;
-  ip_address: string;
-  last_seen: string;
-  seconds_ago: number;
-  device_type: string;
-  browser: string;
-}
+export const runtime = 'nodejs';
 
 export async function GET() {
   const encoder = new TextEncoder();
   
-  // Create a readable stream
   const stream = new ReadableStream({
     async start(controller) {
       let interval: NodeJS.Timeout;
+      let isClosed = false;
       
       const fetchActiveUsers = async () => {
+        if (isClosed) return;
+        
         try {
           const sql = getDb();
           
@@ -56,37 +44,41 @@ export async function GET() {
             LEFT JOIN users u ON us.user_id = u.id
             WHERE us.visited_at >= NOW() - INTERVAL '15 minutes'
             ORDER BY us.visited_at DESC
+            LIMIT 50
           `;
           
-          const count = activeUsers.length;
-          const data = { count, users: activeUsers, timestamp: new Date().toISOString() };
+          const data = { 
+            count: activeUsers.length, 
+            users: activeUsers, 
+            timestamp: new Date().toISOString() 
+          };
           
-          // Send as SSE event
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         } catch (err) {
           console.error('SSE error:', err);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to fetch' })}\n\n`));
+          if (!isClosed) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to fetch' })}\n\n`));
+          }
         }
       };
       
-      // Send immediately, then every 5 seconds
       await fetchActiveUsers();
-      interval = setInterval(fetchActiveUsers, 5000);
+      interval = setInterval(fetchActiveUsers, 10000); // 10 seconds instead of 5
       
-      // Clean up on close
-      controller.enqueue = new Proxy(controller.enqueue, {
-        apply(target, thisArg, args) {
-          clearInterval(interval);
-          return Reflect.apply(target, thisArg, args);
-        }
-      });
+      // Clean up
+      const originalClose = controller.close.bind(controller);
+      controller.close = () => {
+        isClosed = true;
+        clearInterval(interval);
+        originalClose();
+      };
     }
   });
   
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
     },
   });
