@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
-import { getAllRules, updateRuleConfig, toggleRule } from '@/lib/rule-engine';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -9,39 +8,89 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const searchParams = req.nextUrl.searchParams;
-  const type = searchParams.get('type');
-
   try {
     const sql = getDb();
     
-    // If type is 'overrides', return rate_limit_rules
-    if (type === 'overrides') {
-      const overrides = await sql`
-        SELECT * FROM rate_limit_rules
-        WHERE expires_at IS NULL OR expires_at > NOW()
-        ORDER BY created_at DESC
-      `;
-      return NextResponse.json(overrides);
+    // Check if protection_rules table exists
+    const tableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'protection_rules'
+      ) as exists
+    `;
+    
+    // If table doesn't exist, return default rules
+    if (!tableCheck[0]?.exists) {
+      return NextResponse.json([
+        {
+          id: 1,
+          rule_key: 'login_protection',
+          rule_name: 'Login Protection',
+          description: 'Blocks IP after multiple failed login attempts',
+          is_enabled: true,
+          config: { max_attempts: 5, window_minutes: 10, block_minutes: 15 }
+        },
+        {
+          id: 2,
+          rule_key: 'rate_limiting',
+          rule_name: 'Rate Limiting',
+          description: 'Limits requests per IP per minute',
+          is_enabled: true,
+          config: { max_requests: 60, window_seconds: 60 }
+        },
+        {
+          id: 3,
+          rule_key: 'suspicious_activity',
+          rule_name: 'Suspicious Activity',
+          description: 'Detects bot-like rapid requests',
+          is_enabled: true,
+          config: { max_requests: 20, window_seconds: 10, block_minutes: 30 }
+        },
+        {
+          id: 4,
+          rule_key: 'checkout_protection',
+          rule_name: 'Checkout Protection',
+          description: 'Limits checkout attempts per IP',
+          is_enabled: true,
+          config: { max_attempts: 10, window_hours: 1 }
+        },
+        {
+          id: 5,
+          rule_key: 'bot_detection',
+          rule_name: 'Bot Detection',
+          description: 'Detects and blocks bot user agents',
+          is_enabled: true,
+          config: { block_bots: true, log_only: false }
+        },
+        {
+          id: 6,
+          rule_key: 'auto_block',
+          rule_name: 'Auto-Block',
+          description: 'Auto-blocks IPs with high risk score',
+          is_enabled: true,
+          config: { risk_threshold: 80, block_minutes: 30 }
+        },
+        {
+          id: 7,
+          rule_key: 'captcha_trigger',
+          rule_name: 'CAPTCHA Trigger',
+          description: 'Shows CAPTCHA after failed attempts',
+          is_enabled: true,
+          config: { failed_attempts_threshold: 3 }
+        },
+        {
+          id: 8,
+          rule_key: 'admin_protection',
+          rule_name: 'Admin Protection',
+          description: 'Protects admin routes from unauthorized access',
+          is_enabled: true,
+          config: { enabled: true }
+        }
+      ]);
     }
     
-    // If type is 'security', return protection_rules
-    if (type === 'security') {
-      const securityRules = await getAllRules();
-      return NextResponse.json(securityRules);
-    }
-    
-    // Default: return both
-    const [overrides, securityRules] = await Promise.all([
-      sql`
-        SELECT * FROM rate_limit_rules
-        WHERE expires_at IS NULL OR expires_at > NOW()
-        ORDER BY created_at DESC
-      `,
-      getAllRules(),
-    ]);
-    
-    return NextResponse.json({ overrides, securityRules });
+    const rules = await sql`SELECT * FROM protection_rules ORDER BY id`;
+    return NextResponse.json(rules);
   } catch (err) {
     console.error('Failed to fetch rules:', err);
     return NextResponse.json({ error: 'Failed to fetch rules' }, { status: 500 });
@@ -55,58 +104,29 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { type, rule_type, max_requests, window_seconds, action, ruleKey, config, enabled } = await req.json();
+    const body = await req.json();
+    const { ruleKey, enabled, config } = body;
     const sql = getDb();
     
-    // Handle rate limit override
-    if (type === 'override' || (rule_type && max_requests)) {
+    if (enabled !== undefined) {
+      // Toggle rule
       await sql`
-        INSERT INTO rate_limit_rules (rule_type, max_requests, window_seconds, action, created_at)
-        VALUES (${rule_type}, ${max_requests}, ${window_seconds}, ${action}, NOW())
+        UPDATE protection_rules 
+        SET is_enabled = ${enabled}, updated_at = NOW()
+        WHERE rule_key = ${ruleKey}
       `;
-      return NextResponse.json({ success: true });
-    }
-    
-    // Handle security rule toggle
-    if (ruleKey && enabled !== undefined) {
-      await toggleRule(ruleKey, enabled);
-      return NextResponse.json({ success: true });
-    }
-    
-    // Handle security rule config update
-    if (ruleKey && config) {
-      await updateRuleConfig(ruleKey, config);
-      return NextResponse.json({ success: true });
-    }
-    
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-  } catch (err) {
-    console.error('Failed to add rule:', err);
-    return NextResponse.json({ error: 'Failed to add rule' }, { status: 500 });
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get('id');
-    const type = url.searchParams.get('type');
-    const sql = getDb();
-    
-    if (type === 'override' && id) {
-      await sql`DELETE FROM rate_limit_rules WHERE id = ${id}`;
-    } else if (id) {
-      await sql`DELETE FROM rate_limit_rules WHERE id = ${id}`;
+    } else if (config) {
+      // Update rule config
+      await sql`
+        UPDATE protection_rules 
+        SET config = ${JSON.stringify(config)}, updated_at = NOW()
+        WHERE rule_key = ${ruleKey}
+      `;
     }
     
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Failed to delete rule:', err);
-    return NextResponse.json({ error: 'Failed to delete rule' }, { status: 500 });
+    console.error('Failed to update rule:', err);
+    return NextResponse.json({ error: 'Failed to update rule' }, { status: 500 });
   }
 }
