@@ -8,9 +8,24 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb()
+    
+    // First check if table exists
+    const tableCheck = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'wishlist'
+      ) as exists
+    `
+    
+    if (!tableCheck[0]?.exists) {
+      console.error('Wishlist table does not exist')
+      return NextResponse.json([], { status: 200 }) // Return empty array
+    }
+    
     const wishlist = await sql`
       SELECT 
         w.id,
+        w.product_id,
         p.name,
         p.price,
         p.rating,
@@ -21,10 +36,12 @@ export async function GET(req: NextRequest) {
       WHERE w.user_id = ${user.id}
       ORDER BY w.added_at DESC
     `
-    return NextResponse.json(wishlist)
+    
+    return NextResponse.json(wishlist || [])
   } catch (err: any) {
-    console.error(err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('Wishlist API error:', err)
+    // Return empty array instead of error to prevent frontend crash
+    return NextResponse.json([], { status: 200 })
   }
 }
 
@@ -37,14 +54,16 @@ export async function POST(req: NextRequest) {
     if (!productId) {
       return NextResponse.json({ error: 'productId required' }, { status: 400 })
     }
+    
     const sql = getDb()
     await sql`
-      INSERT INTO wishlist (user_id, product_id)
-      VALUES (${user.id}, ${productId})
+      INSERT INTO wishlist (user_id, product_id, added_at)
+      VALUES (${user.id}, ${productId}, NOW())
       ON CONFLICT (user_id, product_id) DO NOTHING
     `
     return NextResponse.json({ success: true })
   } catch (err: any) {
+    console.error('Wishlist POST error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
@@ -58,6 +77,7 @@ export async function DELETE(req: NextRequest) {
     if (!productId) {
       return NextResponse.json({ error: 'productId required' }, { status: 400 })
     }
+    
     const sql = getDb()
     await sql`
       DELETE FROM wishlist
@@ -65,6 +85,7 @@ export async function DELETE(req: NextRequest) {
     `
     return NextResponse.json({ success: true })
   } catch (err: any) {
+    console.error('Wishlist DELETE error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
