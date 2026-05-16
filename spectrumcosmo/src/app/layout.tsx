@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 
 import { SettingsProvider } from '@/components/storefront/SettingsProvider'
 import { CurrencyProvider } from '@/components/storefront/CurrencyProvider'
 import { CartProvider } from '@/components/storefront/CartProvider'
 import { UserProvider } from '@/components/storefront/UserProvider'
+import { WishlistProvider } from '@/components/storefront/WishlistProvider'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -33,7 +36,11 @@ export default function RootLayout({
           <SettingsProvider>
             <CurrencyProvider>
               <CartProvider>
-                {children}
+                <WishlistProvider>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    {children}
+                  </Suspense>
+                </WishlistProvider>
               </CartProvider>
             </CurrencyProvider>
           </SettingsProvider>
