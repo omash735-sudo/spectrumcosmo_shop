@@ -8,6 +8,7 @@ import { useCart } from '@/components/storefront/CartProvider';
 import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 import { saveLastCategory } from '@/lib/recentlyViewedUtils';
+import { useWishlist } from '@/components/storefront/WishlistProvider';
 
 export default function ProductCard({ product }: { product: any }) {
   // Guard clause - if product is missing, return nothing
@@ -19,10 +20,13 @@ export default function ProductCard({ product }: { product: any }) {
   // IMPORTANT: product.price is now stored in MWK (base currency)
   const priceMwk = Number(product.price ?? 0);
   const { addItem } = useCart();
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [loadingWishlist, setLoadingWishlist] = useState(true);
+  const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
+  const [localLoading, setLocalLoading] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+
+  const isWishlisted = isInWishlist(product.id);
+  const loading = wishlistLoading || localLoading;
 
   // Get status badge configuration
   const getStatusBadge = () => {
@@ -57,33 +61,8 @@ export default function ProductCard({ product }: { product: any }) {
     }
   };
 
-  // Check if product is in wishlist
+  // Fetch rating
   useEffect(() => {
-    const checkWishlist = async () => {
-      try {
-        const res = await fetch('/api/account/wishlist');
-        if (res.ok) {
-          const wishlist = await res.json();
-          // Check if product exists in wishlist by comparing product_id
-          const exists = wishlist.some((item: any) => {
-            return item.product_id === product.id || item.id === product.id;
-          });
-          setIsWishlisted(exists);
-        } else {
-          // If API fails, default to not wishlisted
-          setIsWishlisted(false);
-        }
-      } catch (err) {
-        console.error('Failed to fetch wishlist:', err);
-        setIsWishlisted(false);
-      } finally {
-        setLoadingWishlist(false);
-      }
-    };
-    
-    checkWishlist();
-
-    // Fetch rating
     fetch(`/api/reviews?product_id=${product.id}`)
       .then(res => res.json())
       .then(data => {
@@ -96,45 +75,21 @@ export default function ProductCard({ product }: { product: any }) {
       .catch(console.error);
   }, [product.id]);
 
-  const toggleWishlist = async (e: React.MouseEvent) => {
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // Check if user is logged in
+    
+    // Check login first
     const userRes = await fetch('/api/auth/me');
     if (!userRes.ok) {
       alert('Please login to add items to wishlist');
       window.location.href = '/login';
       return;
     }
-
-    setLoadingWishlist(true);
-    try {
-      if (isWishlisted) {
-        const res = await fetch('/api/account/wishlist', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId: product.id }),
-        });
-        if (res.ok) {
-          setIsWishlisted(false);
-        }
-      } else {
-        const res = await fetch('/api/account/wishlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId: product.id }),
-        });
-        if (res.ok) {
-          setIsWishlisted(true);
-        }
-      }
-    } catch (err) {
-      console.error('Wishlist error:', err);
-      alert('Something went wrong. Please try again.');
-    } finally {
-      setLoadingWishlist(false);
-    }
+    
+    setLocalLoading(true);
+    await toggleWishlist(product.id);
+    setLocalLoading(false);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -166,8 +121,8 @@ export default function ProductCard({ product }: { product: any }) {
         
         {/* Wishlist heart button */}
         <button
-          onClick={toggleWishlist}
-          disabled={loadingWishlist}
+          onClick={handleToggleWishlist}
+          disabled={loading}
           className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50 flex items-center justify-center z-10"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
