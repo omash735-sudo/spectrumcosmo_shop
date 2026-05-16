@@ -64,15 +64,23 @@ export default function ProductCard({ product }: { product: any }) {
         const res = await fetch('/api/account/wishlist');
         if (res.ok) {
           const wishlist = await res.json();
-          const exists = wishlist.some((item: any) => item.id === product.id || item.product_id === product.id);
+          // Check if product exists in wishlist by comparing product_id
+          const exists = wishlist.some((item: any) => {
+            return item.product_id === product.id || item.id === product.id;
+          });
           setIsWishlisted(exists);
+        } else {
+          // If API fails, default to not wishlisted
+          setIsWishlisted(false);
         }
       } catch (err) {
-        console.error('Failed to fetch wishlist', err);
+        console.error('Failed to fetch wishlist:', err);
+        setIsWishlisted(false);
       } finally {
         setLoadingWishlist(false);
       }
     };
+    
     checkWishlist();
 
     // Fetch rating
@@ -103,19 +111,23 @@ export default function ProductCard({ product }: { product: any }) {
     setLoadingWishlist(true);
     try {
       if (isWishlisted) {
-        await fetch('/api/account/wishlist', {
+        const res = await fetch('/api/account/wishlist', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ productId: product.id }),
         });
-        setIsWishlisted(false);
+        if (res.ok) {
+          setIsWishlisted(false);
+        }
       } else {
-        await fetch('/api/account/wishlist', {
+        const res = await fetch('/api/account/wishlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ productId: product.id }),
         });
-        setIsWishlisted(true);
+        if (res.ok) {
+          setIsWishlisted(true);
+        }
       }
     } catch (err) {
       console.error('Wishlist error:', err);
@@ -156,7 +168,7 @@ export default function ProductCard({ product }: { product: any }) {
         <button
           onClick={toggleWishlist}
           disabled={loadingWishlist}
-          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50 flex items-center justify-center"
+          className="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-sm hover:bg-white transition disabled:opacity-50 flex items-center justify-center z-10"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
@@ -166,13 +178,13 @@ export default function ProductCard({ product }: { product: any }) {
         </button>
         
         {/* Category tag */}
-        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm">
+        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded backdrop-blur-sm z-10">
           {categoryName}
         </span>
 
         {/* Status badge - shown prominently on image */}
         {(isOutOfStock || isComingSoon) && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
             <span className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold ${statusBadge.color} shadow-lg flex items-center gap-1`}>
               <StatusIcon size={14} />
               {statusBadge.text}
@@ -183,7 +195,7 @@ export default function ProductCard({ product }: { product: any }) {
       
       <div className="p-3 sm:p-4">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          <h3 className="font-semibold text-gray-800 line-clamp-1 text-sm sm:text-base">
+          <h3 className="font-semibold text-gray-800 line-clamp-1 text-sm sm:text-base hover:text-[#F97316] transition">
             {productName}
           </h3>
         </Link>
@@ -235,4 +247,4 @@ export default function ProductCard({ product }: { product: any }) {
       </div>
     </div>
   );
-          }
+}
