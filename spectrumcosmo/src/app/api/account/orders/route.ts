@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest) {
   console.log('=== PATCH REQUEST RECEIVED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  
+
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest) {
         SELECT status, order_number FROM orders 
         WHERE id = ${id} AND (user_id = ${user.id} OR customer_email = ${user.email})
       `;
-      
+
       if (!order) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
@@ -76,17 +76,14 @@ export async function POST(req: NextRequest) {
   console.log('=== POST REQUEST RECEIVED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  
+
   const { user, error } = await getVerifiedUser(req);
-  if (error) {
-    console.log('Auth error:', error);
-    return error;
-  }
+  if (error) return error;
 
   try {
     const rawBody = await req.text();
     console.log('Raw request body:', rawBody);
-    
+
     let body;
     try {
       body = JSON.parse(rawBody);
@@ -94,18 +91,18 @@ export async function POST(req: NextRequest) {
       console.error('JSON parse error:', parseErr);
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
-    
+
     console.log('Parsed body:', JSON.stringify(body, null, 2));
-    
+
     const { id, proofOfPaymentUrl, paymentNote, transactionReference } = body;
-    
+
     console.log('Extracted fields:', { id, proofOfPaymentUrl, paymentNote, transactionReference });
-    
+
     if (!id) {
       console.log('Missing order ID');
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
-    
+
     if (!proofOfPaymentUrl) {
       console.log('Missing proof image URL');
       return NextResponse.json({ error: 'Proof image URL is required' }, { status: 400 });
@@ -132,7 +129,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only pending orders can be updated' }, { status: 400 });
     }
 
-    const fullNote = transactionReference 
+    const fullNote = transactionReference
       ? `Transaction Ref: ${transactionReference}\n${paymentNote || ''}`.trim()
       : paymentNote || '';
 
@@ -151,6 +148,21 @@ export async function POST(req: NextRequest) {
 
     console.log('Order updated successfully:', updatedOrder ? 'Yes' : 'No');
 
+    // Insert into payment_confirmations (required for admin verification dashboard)
+    try {
+      await sql`
+        INSERT INTO payment_confirmations (
+          order_id, proof_image_url, transaction_reference, notes, status, submitted_at
+        ) VALUES (
+          ${id}::uuid, ${proofOfPaymentUrl}, ${transactionReference || null}, ${paymentNote || null}, 'pending', NOW()
+        )
+      `;
+      console.log('Payment confirmation record inserted.');
+    } catch (pcErr) {
+      console.error('Failed to insert into payment_confirmations:', pcErr);
+      // Do not fail the whole request – the order is already updated.
+    }
+
     const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
     if (adminEmail) {
       await sendMail({
@@ -160,10 +172,10 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('Admin email failed:', err));
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Payment proof submitted successfully',
-      order: updatedOrder 
+      order: updatedOrder,
     });
   } catch (err: any) {
     console.error('POST error details:', err);
