@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, Upload, AlertCircle, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, Trash2, CheckCircle, Clock, Phone, Landmark, ReceiptText } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -238,12 +238,13 @@ export default function PaymentContent() {
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-3xl mx-auto px-4">
+        <div className="max-w-2xl mx-auto px-4">
+          {/* Status Card */}
           <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h1 className="text-2xl font-bold">Payment for Order #{order.id.slice(-8)}</h1>
-                <p className="text-gray-500 mt-1">Amount: MWK {order.total_amount.toLocaleString()}</p>
+                <h1 className="text-2xl font-bold text-gray-900">Payment for Order #{order.id.slice(-8)}</h1>
+                <p className="text-gray-500 mt-1">Amount: MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</p>
               </div>
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
                 isPaid ? 'bg-green-100 text-green-700' : 
@@ -256,32 +257,83 @@ export default function PaymentContent() {
             </div>
           </div>
 
+          {/* Payment Instructions – modern card style */}
           {provider && !isPaid && (
-            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6 mb-6">
-              <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-4">
-                <AlertCircle size={20} /> Payment Instructions
-              </h2>
-              <div className="space-y-3 text-sm">
-                <p><strong>Provider:</strong> {provider.name}</p>
-                {provider.category === 'mobile_money' && (
-                  <p><strong>Mobile Money Number:</strong> <span className="font-mono bg-white px-2 py-1 rounded">{provider.account_number}</span></p>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+              <div className="bg-orange-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-orange-800 flex items-center gap-2">
+                  <ReceiptText size={20} /> Payment Instructions
+                </h2>
+              </div>
+              <div className="p-6 space-y-5">
+                {/* Provider name */}
+                <div className="flex items-center gap-3">
+                  {provider.category === 'mobile_money' ? (
+                    <Phone className="text-orange-500" size={22} />
+                  ) : (
+                    <Landmark className="text-orange-500" size={22} />
+                  )}
+                  <div>
+                    <p className="text-xs text-gray-500">Provider</p>
+                    <p className="font-medium text-gray-800">{provider.name}</p>
+                  </div>
+                </div>
+
+                {/* Account details card */}
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  {provider.category === 'mobile_money' && provider.account_number && (
+                    <div>
+                      <p className="text-xs text-gray-500">Mobile Money Number</p>
+                      <p className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</p>
+                    </div>
+                  )}
+                  {provider.category === 'bank' && (
+                    <>
+                      {provider.account_number && (
+                        <div>
+                          <p className="text-xs text-gray-500">Account Number</p>
+                          <p className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</p>
+                        </div>
+                      )}
+                      {provider.account_name && (
+                        <div>
+                          <p className="text-xs text-gray-500">Account Name</p>
+                          <p className="text-gray-800">{provider.account_name}</p>
+                        </div>
+                      )}
+                      {provider.branch && (
+                        <div>
+                          <p className="text-xs text-gray-500">Branch</p>
+                          <p className="text-gray-800">{provider.branch}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* HTML instructions (admin editable) */}
+                {provider.instructions ? (
+                  <div className="prose prose-sm max-w-none text-gray-700 border-t pt-4">
+                    <div dangerouslySetInnerHTML={{ __html: provider.instructions }} />
+                  </div>
+                ) : (
+                  <div className="border-t pt-4 text-sm text-gray-500 italic">
+                    No additional instructions. Please use the account details above.
+                  </div>
                 )}
-                {provider.category === 'bank' && (
-                  <>
-                    <p><strong>Bank:</strong> {provider.name}</p>
-                    <p><strong>Account Name:</strong> {provider.account_name}</p>
-                    <p><strong>Account Number:</strong> <span className="font-mono bg-white px-2 py-1 rounded">{provider.account_number}</span></p>
-                    {provider.branch && <p><strong>Branch:</strong> {provider.branch}</p>}
-                  </>
-                )}
-                {provider.instructions && (
-                  <div className="mt-3 p-3 bg-white rounded-lg" dangerouslySetInnerHTML={{ __html: provider.instructions }} />
-                )}
-                <p className="text-amber-700 mt-2 font-medium">Amount to pay: <strong>MWK {order.total_amount.toLocaleString()}</strong></p>
+
+                {/* Total amount */}
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total to pay</span>
+                    <span className="text-2xl font-bold text-orange-600">MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
+          {/* Upload Proof Section (same as before) */}
           {canUpload && (
             <div className="bg-white rounded-2xl border p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-4">Upload Payment Proof</h2>
@@ -334,6 +386,7 @@ export default function PaymentContent() {
             </div>
           )}
 
+          {/* Existing Proof Display */}
           {existing_proof && (
             <div className="bg-gray-50 rounded-2xl p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-3">Submitted Proof</h2>
@@ -357,6 +410,7 @@ export default function PaymentContent() {
             </div>
           )}
 
+          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => router.push('/account/orders')}
