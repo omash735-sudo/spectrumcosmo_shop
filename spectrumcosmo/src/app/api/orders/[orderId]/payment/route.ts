@@ -9,7 +9,7 @@ export async function GET(
     const { orderId } = params;
     const sql = getDb();
 
-    // Get order with payment info
+    // Get order with payment info - using correct column names
     const [order] = await sql`
       SELECT 
         o.id,
@@ -18,7 +18,7 @@ export async function GET(
         o.payment_status,
         o.payment_method,
         o.payment_provider_id,
-        o.proof_of_payment,
+        o.proof_of_payment_url,
         o.payment_note,
         p.name as provider_name,
         p.type as provider_type,
@@ -37,11 +37,16 @@ export async function GET(
     }
 
     // Get payment confirmations
-    const confirmations = await sql`
-      SELECT * FROM payment_confirmations
-      WHERE order_id = ${orderId}
-      ORDER BY submitted_at DESC
-    `;
+    let confirmations = [];
+    try {
+      confirmations = await sql`
+        SELECT * FROM payment_confirmations
+        WHERE order_id = ${orderId}
+        ORDER BY submitted_at DESC
+      `;
+    } catch (err) {
+      console.log('payment_confirmations table not yet created');
+    }
 
     return NextResponse.json({
       order: {
@@ -51,7 +56,7 @@ export async function GET(
         payment_status: order.payment_status,
         payment_method: order.payment_method,
       },
-      provider: {
+      provider: order.provider_name ? {
         name: order.provider_name,
         type: order.provider_type,
         category: order.provider_category,
@@ -59,8 +64,8 @@ export async function GET(
         account_number: order.account_number,
         branch: order.branch,
         instructions: order.instructions,
-      },
-      existing_proof: order.proof_of_payment,
+      } : null,
+      existing_proof: order.proof_of_payment_url,
       existing_note: order.payment_note,
       confirmations,
     });
