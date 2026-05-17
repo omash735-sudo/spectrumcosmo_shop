@@ -20,7 +20,7 @@ export async function GET(
         total_amount, 
         status, 
         created_at,
-        proof_of_payment, 
+        proof_of_payment_url, 
         payment_note
       FROM orders
       WHERE id::text = ${orderId}
