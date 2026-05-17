@@ -43,10 +43,12 @@ export default function OrderStatusesPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/order-statuses');
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setStatuses(data);
     } catch (err) {
       console.error(err);
+      setMessage({ type: 'error', text: 'Failed to load statuses' });
     } finally {
       setLoading(false);
     }
@@ -124,18 +126,26 @@ export default function OrderStatusesPage() {
   };
 
   const toggleActive = async (id: number, currentActive: boolean) => {
-    await fetch('/api/admin/order-statuses', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, is_active: !currentActive }),
-    });
-    fetchStatuses();
+    try {
+      await fetch('/api/admin/order-statuses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !currentActive }),
+      });
+      fetchStatuses();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const deleteStatus = async (id: number) => {
     if (!confirm('Delete this status? This may affect existing orders.')) return;
-    await fetch(`/api/admin/order-statuses?id=${id}`, { method: 'DELETE' });
-    fetchStatuses();
+    try {
+      await fetch(`/api/admin/order-statuses?id=${id}`, { method: 'DELETE' });
+      fetchStatuses();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getColorClass = (color: string) => {
@@ -224,20 +234,22 @@ export default function OrderStatusesPage() {
                       </button>
                     </div>
                   </td>
-                <tr>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="font-bold text-[#111111]">{editing ? 'Edit Status' : 'Add Status'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={18} />
+              </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -317,7 +329,9 @@ export default function OrderStatusesPage() {
                 </label>
               </div>
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-sm">Cancel</button>
+                <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-sm">
+                  Cancel
+                </button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 bg-orange-500 text-white rounded-xl py-2 text-sm font-medium">
                   {saving ? <Loader2 size={16} className="animate-spin mx-auto" /> : (editing ? 'Save Changes' : 'Add Status')}
                 </button>
