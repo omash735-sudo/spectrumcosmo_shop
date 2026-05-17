@@ -78,8 +78,8 @@ export default function AccountPaymentsPage() {
     setUploading(orderId)
     setMessages(prev => ({ ...prev, [orderId]: undefined }))
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo'
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv'
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload'
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', uploadPreset)
@@ -92,13 +92,15 @@ export default function AccountPaymentsPage() {
       const uploadData = await uploadRes.json()
       if (!uploadData.secure_url) throw new Error('Upload failed')
 
+      // FIXED: Changed from PATCH to POST method
       const updateRes = await fetch('/api/account/orders', {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: orderId,
           proofOfPaymentUrl: uploadData.secure_url,
           paymentNote: note,
+          transactionReference: '',
         }),
       })
       if (!updateRes.ok) throw new Error('Failed to save proof')
@@ -155,7 +157,6 @@ export default function AccountPaymentsPage() {
                 <div className="p-5 space-y-4">
                   {order.custom_details && <p className="text-sm text-gray-600">{order.custom_details}</p>}
 
-                  {/* Updated payment instructions with conditional text */}
                   {isPending && !hasProof && selectedOption && (
                     <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
                       <div className="flex items-start gap-3">
