@@ -27,6 +27,7 @@ export default function OrderStatusesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<OrderStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     slug: '',
@@ -37,18 +38,21 @@ export default function OrderStatusesPage() {
     is_active: true,
   });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchStatuses = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/order-statuses');
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
       const data = await res.json();
       setStatuses(data);
-    } catch (err) {
-      console.error(err);
-      setMessage({ type: 'error', text: 'Failed to load statuses' });
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -92,12 +96,11 @@ export default function OrderStatusesPage() {
 
   const handleSave = async () => {
     if (!form.name) {
-      setMessage({ type: 'error', text: 'Status name is required' });
+      alert('Status name is required');
       return;
     }
 
     setSaving(true);
-    setMessage(null);
 
     const method = editing ? 'PATCH' : 'POST';
     const body = editing 
@@ -113,13 +116,12 @@ export default function OrderStatusesPage() {
       if (res.ok) {
         setShowModal(false);
         fetchStatuses();
-        setMessage({ type: 'success', text: `Status ${editing ? 'updated' : 'added'} successfully!` });
       } else {
         const err = await res.json();
-        setMessage({ type: 'error', text: err.error || 'Failed to save' });
+        alert(err.error || 'Failed to save');
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to save' });
+      alert('Failed to save');
     } finally {
       setSaving(false);
     }
@@ -171,6 +173,22 @@ export default function OrderStatusesPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="py-20 text-center">
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl inline-block">
+          <p>Error: {error}</p>
+          <button 
+            onClick={fetchStatuses} 
+            className="mt-3 text-orange-600 hover:underline"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-16 lg:pt-0">
       <div className="flex justify-between items-center mb-8">
@@ -184,12 +202,6 @@ export default function OrderStatusesPage() {
           <Plus size={16} /> Add Status
         </button>
       </div>
-
-      {message && (
-        <div className={`mb-4 p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-          {message.text}
-        </div>
-      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -269,7 +281,7 @@ export default function OrderStatusesPage() {
                   className="input"
                   placeholder="refund-requested"
                 />
-                <p className="text-xs text-gray-400 mt-1">Leave empty to auto-generate from name.</p>
+                <p className="text-xs text-gray-400 mt-1">Leave empty to auto-generate.</p>
               </div>
               <div>
                 <label className="label">Description</label>
@@ -278,7 +290,7 @@ export default function OrderStatusesPage() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
                   className="input"
-                  placeholder="Internal description of this status..."
+                  placeholder="Internal description..."
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -315,7 +327,6 @@ export default function OrderStatusesPage() {
                   onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
                   className="input"
                 />
-                <p className="text-xs text-gray-400 mt-1">Lower numbers appear first.</p>
               </div>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
