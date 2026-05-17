@@ -15,7 +15,7 @@ function replacePlaceholders(template: string, data: Record<string, string>): st
 // Helper to get email template from database
 async function getEmailTemplate(sql: any, templateName: string) {
   const templates = await sql`
-    SELECT html_content, subject, text_content 
+    SELECT html_template, subject, text_content 
     FROM email_templates 
     WHERE name = ${templateName} AND is_active = true 
     LIMIT 1
@@ -108,7 +108,7 @@ export async function POST(
       let emailSubject = 'Payment Proof Received';
       
       if (emailTemplate) {
-        emailHtml = replacePlaceholders(emailTemplate.html_content, placeholders);
+        emailHtml = replacePlaceholders(emailTemplate.html_template, placeholders);
         emailSubject = replacePlaceholders(emailTemplate.subject, placeholders);
       } else {
         // Fallback template (only used if no template exists in DB)
@@ -141,7 +141,7 @@ export async function POST(
       let adminSubject = 'Payment Proof Uploaded';
       
       if (adminTemplate) {
-        adminHtml = replacePlaceholders(adminTemplate.html_content, placeholders);
+        adminHtml = replacePlaceholders(adminTemplate.html_template, placeholders);
         adminSubject = replacePlaceholders(adminTemplate.subject, placeholders);
       } else {
         adminHtml = `
@@ -150,7 +150,7 @@ export async function POST(
             <p><strong>Order:</strong> {{order_number}}</p>
             <p><strong>Customer:</strong> {{customer_name}}</p>
             <p><strong>Amount:</strong> MWK {{total_amount}}</p>
-            {{#if transaction_reference}}<p><strong>Transaction Ref:</strong> {{transaction_reference}}</p>{{/if}}
+            <p><strong>Transaction Reference:</strong> {{transaction_reference}}</p>
             <p><a href="{{app_url}}/admin/payment-verifications">Review Payment</a></p>
           </div>
         `;
