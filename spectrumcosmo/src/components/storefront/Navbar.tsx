@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -51,6 +51,7 @@ const HIDE_WHATSAPP_PATHS = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { totalItems } = useCart();
   const { settings } = useSettings();
   const pathname = usePathname();
@@ -62,12 +63,24 @@ export default function Navbar() {
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
+  // Fetch user for sidebar display only
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setUser(data?.user || null))
+      .catch(() => null);
+  }, []);
+
   const openCart = () => {
     setCartOpen(true);
     setMobileMenuOpen(false);
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const isLoggedIn = !!user;
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User';
+  const profileImage = user?.profileImage;
 
   return (
     <>
@@ -129,22 +142,7 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Mobile UserMenu (reuse same component, but simplified – we'll place a compact version) */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  // For simplicity, we can just reuse the same UserMenu component,
-                  // but we need to make it work on mobile. However, to keep it clean,
-                  // we'll just place a temporary link to login or profile.
-                  // For now, we'll use a simpler solution: show a user icon that links to profile if logged in, else login.
-                  // But since we already have a UserMenu component that works on desktop, we'll just reuse it.
-                  // Actually, the UserMenu component already works on mobile (it's a button that toggles a dropdown).
-                  // So we can simply render <UserMenu /> here.
-                }}
-              >
-                <UserMenu />
-              </button>
-            </div>
+            <UserMenu />
             <button onClick={openCart} className="relative p-1" aria-label="Cart">
               <ShoppingCart size={22} />
               {totalItems > 0 && (
@@ -157,73 +155,112 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MOBILE SIDEBAR (unchanged, already works) */}
+      {/* MOBILE SIDEBAR – restored original style */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
-          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-5 border-b">
+          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center border-b pb-3">
               <span className="font-semibold">Menu</span>
               <button onClick={closeMobileMenu} aria-label="Close menu">
                 <X size={22} />
               </button>
             </div>
 
-            {/* Profile summary (clickable) */}
-            <div
-              onClick={() => {
-                // We need to check login status; we can reuse the user data from UserMenu but that's separate.
-                // For simplicity, we'll just redirect to /login for now, but you can improve later.
-                router.push('/login');
-                closeMobileMenu();
-              }}
-              className="m-4 bg-gray-50 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition"
-            >
+            <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <User size={16} />
-                <span className="font-medium text-gray-700">My Account</span>
+                {profileImage ? (
+                  <Image src={profileImage} alt={displayName} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <User size={16} />
+                )}
+                {!isLoggedIn ? 'Guest / Visitor' : displayName}
               </div>
-              <span className="text-[#F97316] text-xs font-medium">Sign in →</span>
+              {isLoggedIn ? (
+                <Link href="/account/profile" onClick={closeMobileMenu} className="text-[#F97316] text-xs">Profile</Link>
+              ) : (
+                <Link href="/login" onClick={closeMobileMenu} className="text-[#F97316] text-xs">Sign in / Register</Link>
+              )}
             </div>
 
-            <div className="px-4 py-3 border-t border-b border-gray-100">
+            <div className="mt-3 py-2 border-t border-b border-gray-100">
               <CurrencySelector />
             </div>
 
-            <button
+            <button 
               onClick={() => {
                 router.push('/products');
                 closeMobileMenu();
               }}
-              className="mx-4 my-3 bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl shadow-md"
+              className="my-3 block w-full bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white text-base">View Products</span>
-                <span className="text-white text-sm">Shop now →</span>
+                <div className="flex items-center gap-1 text-white">
+                  <span className="text-sm font-medium">Shop now</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </div>
               </div>
             </button>
 
-            <div className="flex-1 overflow-y-auto px-4 space-y-1">
-              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Home</Link>
-              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Reviews</Link>
-              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">About Us</Link>
-              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Contact Us</Link>
-              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">FAQ</Link>
-              <button onClick={openCart} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">Cart</button>
-              <div className="border-t my-2"></div>
-              <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Order History</Link>
-              <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Settings</Link>
-              <Link href="/account/addresses" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Addresses</Link>
-              <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Wishlist</Link>
-              <button
-                onClick={async () => {
-                  await fetch('/api/auth/logout', { method: 'POST' });
-                  router.push('/');
-                  closeMobileMenu();
-                }}
-                className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
-              >
-                <LogOut size={18} /> Log out
+            <div className="flex flex-col gap-2 mt-2 flex-grow">
+              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                <Home size={18} /> Home
+              </Link>
+              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                <Star size={18} /> Reviews
+              </Link>
+              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                <Info size={18} /> About Us
+              </Link>
+              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                <HelpCircle size={18} /> Contact Us
+              </Link>
+              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                <HelpCircle size={18} /> FAQ
+              </Link>
+              <button onClick={openCart} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <ShoppingCart size={18} /> Cart
               </button>
+              
+              {isLoggedIn && (
+                <>
+                  <div className="border-t my-2"></div>
+                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                    <Clock size={18} /> Order History
+                  </Link>
+                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                    <Settings size={18} /> Settings
+                  </Link>
+                  <Link href="/account/addresses" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                    <MapPin size={18} /> Addresses
+                  </Link>
+                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                    <Heart size={18} /> Wishlist
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="mt-6 pt-3 border-t border-gray-200">
+              {isLoggedIn ? (
+                <button 
+                  onClick={async () => {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    router.push('/');
+                    closeMobileMenu();
+                  }} 
+                  className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
+                >
+                  <LogOut size={18} /> Log out
+                </button>
+              ) : (
+                <div className="text-xs text-gray-400 text-center py-2">
+                  <Link href="/signup" onClick={closeMobileMenu} className="text-[#F97316]">Create an account</Link> to enjoy order history and more.
+                </div>
+              )}
             </div>
           </div>
         </div>,
