@@ -3,6 +3,24 @@ import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
 
+function replacePlaceholders(template: string, data: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(data)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  }
+  return result;
+}
+
+async function getEmailTemplate(sql: any, templateName: string) {
+  const templates = await sql`
+    SELECT html_template, subject, text_content 
+    FROM email_templates 
+    WHERE name = ${templateName} AND is_active = true 
+    LIMIT 1
+  `;
+  return templates[0] || null;
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -16,65 +34,51 @@ export async function POST(
 
     const sql = getDb();
 
-    // Get customer details
     const [order] = await sql`
-      SELECT customer_email, customer_name, total_amount FROM orders WHERE id = ${orderId}
+      SELECT customer_email, customer_name, total_amount, id 
+      FROM orders 
+      WHERE id = ${orderId}::uuid
     `;
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Update payment confirmation status
     await sql`
       UPDATE payment_confirmations
       SET status = 'rejected', reviewed_by = 1, reviewed_at = NOW(), rejection_reason = ${reason}
-      WHERE id = ${id}
+      WHERE order_id = ${orderId}::uuid
     `;
 
-    // Update order payment status back to pending (allows resubmission)
     await sql`
       UPDATE orders
-      SET payment_status = 'pending', proof_of_payment = NULL, payment_note = NULL
-      WHERE id = ${orderId}
+      SET payment_status = 'pending', proof_of_payment_url = NULL, payment_note = NULL, status = 'pending'
+      WHERE id = ${orderId}::uuid
     `;
 
     const orderNumber = order.id.slice(-8);
     const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment`;
 
-    // Send rejection email
-    const emailHtml = `
-      <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:16px; overflow:hidden;">
-        <div style="background:#dc2626; padding:20px; text-align:center;">
-          <h1 style="color:white; margin:0;">Payment Update</h1>
-        </div>
-        <div style="padding:24px;">
-          <p>Hello <strong>${order.customer_name}</strong>,</p>
-          <p>Your payment proof for order <strong>#${orderNumber}</strong> could not be verified.</p>
-          
-          <div style="background:#fee2e2; padding:20px; border-radius:12px; margin:20px 0;">
-            <h3 style="margin-top:0; color:#dc2626;">Reason for rejection:</h3>
-            <p style="margin:0;">${reason}</p>
-          </div>
+    const placeholders = {
+      customer_name: order.customer_name,
+      order_number: orderNumber,
+      rejection_reason: reason,
+      payment_url: paymentUrl,
+    };
 
-          <p>Please upload a valid proof of payment using the link below.</p>
-
-          <div style="text-align:center; margin:24px 0;">
-            <a href="${paymentUrl}" style="display:inline-block; background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px; font-weight:bold;">Upload New Proof →</a>
-          </div>
-        </div>
-        <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#6b7280;">
-          <p>SpectrumCosmo – Wear your excitement with pride.</p>
-        </div>
-      </div>
-    `;
-
-    await sendMail({
-      to: order.customer_email,
-      subject: `Payment Update for Order #${orderNumber}`,
-      text: `Hello ${order.customer_name},\n\nYour payment proof was rejected. Reason: ${reason}\n\nPlease upload a valid proof here: ${paymentUrl}`,
-      html: emailHtml,
-    }).catch(err => console.error('Rejection email failed:', err));
+    const emailTemplate = await getEmailTemplate(sql, 'payment_rejected');
+    
+    if (emailTemplate && order.customer_email) {
+      const emailHtml = replacePlaceholders(emailTemplate.html_template, placeholders);
+      const emailSubject = replacePlaceholders(emailTemplate.subject, placeholders);
+      
+      await sendMail({
+        to: order.customer_email,
+        subject: emailSubject,
+        text: `Your payment proof was rejected. Reason: ${reason}. Please upload a valid proof.`,
+        html: emailHtml,
+      }).catch(err => console.error('Email failed:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
