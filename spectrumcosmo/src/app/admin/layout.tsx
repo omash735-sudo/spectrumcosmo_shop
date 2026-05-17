@@ -26,6 +26,7 @@ import {
   CheckCircle,
   Tag,
   Sliders,
+  HelpCircle,
 } from 'lucide-react';
 
 const navItems = [
@@ -44,6 +45,7 @@ const navItems = [
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
+  { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },  // NEW
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
   { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },
