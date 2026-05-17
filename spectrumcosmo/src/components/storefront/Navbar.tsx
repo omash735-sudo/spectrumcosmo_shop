@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import Image from 'next/image'
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Menu,
   X,
@@ -20,16 +20,14 @@ import {
   MapPin,
   Heart,
   Package,
-} from 'lucide-react'
-import clsx from 'clsx'
+} from 'lucide-react';
+import clsx from 'clsx';
 
-import CurrencySelector from '@/components/storefront/CurrencySelector'
-import { useCart } from '@/components/storefront/CartProvider'
-import CartDrawer from '@/components/storefront/CartDrawer'
-import { useSettings } from '@/components/storefront/SettingsProvider'
-import SearchBar from '@/components/storefront/SearchBar'
-import { getUserMenuItems } from '@/lib/user-menu-config'
-import DynamicIcon from '@/components/ui/DynamicIcon'
+import CurrencySelector from '@/components/storefront/CurrencySelector';
+import { useCart } from '@/components/storefront/CartProvider';
+import CartDrawer from '@/components/storefront/CartDrawer';
+import { useSettings } from '@/components/storefront/SettingsProvider';
+import SearchBar from '@/components/storefront/SearchBar';
 
 const desktopLinks = [
   { href: '/', label: 'Home' },
@@ -38,135 +36,97 @@ const desktopLinks = [
   { href: '/about', label: 'About Us' },
   { href: '/contact', label: 'Contact Us' },
   { href: '/faq', label: 'FAQ' },
-]
+];
 
-const WHATSAPP_NUMBER = '265893160202'
-const WHATSAPP_MESSAGE = 'Hi, I’m interested in purchasing products from SpectrumCosmo. Kindly assist me with catalog and ordering details.'
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+const WHATSAPP_NUMBER = '265893160202';
+const WHATSAPP_MESSAGE = 'Hi, I am interested in purchasing products from SpectrumCosmo. Kindly assist me with catalog and ordering details.';
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 const HIDE_WHATSAPP_PATHS = [
   '/checkout', '/login', '/register', '/admin', '/dashboard',
   '/account/payments', '/account/settings', '/account/profile',
-]
-
-const PROTECTED_LINKS = [
-  '/account/profile',
-  '/account/settings',
-  '/account/payments',
-  '/account/wishlist',
-  '/account/tracking',
-  '/account/addresses',
-  '/account/support',
-]
+];
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [cartOpen, setCartOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement>(null)
-  const desktopDropdownRef = useRef<HTMLDivElement>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { totalItems } = useCart()
-  const { settings } = useSettings()
-  const pathname = usePathname()
-  const router = useRouter()
+  const { totalItems } = useCart();
+  const { settings } = useSettings();
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path))
+  const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path));
 
   const logoSrc = settings?.darkMode
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me')
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
-          const data = await res.json()
-          if (data?.user) setUser(data.user)
+          const data = await res.json();
+          if (data?.user) setUser(data.user);
         }
       } catch (err) {
-        console.error('Failed to load user:', err)
+        console.error('Failed to load user:', err);
       } finally {
-        setLoadingUser(false)
+        setLoadingUser(false);
       }
-    }
-    fetchUser()
-  }, [])
+    };
+    fetchUser();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(target)) {
-        setUserMenuOpen(false)
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
-    }
+    };
     
     if (userMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('mousedown', handleClickOutside);
     }
     
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [userMenuOpen])
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      setUser(null)
-      router.push('/')
-      router.refresh()
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      router.push('/');
+      router.refresh();
     } catch (err) {
-      console.error('Logout failed:', err)
+      console.error('Logout failed:', err);
     }
-  }, [router])
+  }, [router]);
 
   const openCart = () => {
-    setCartOpen(true)
-    setMobileMenuOpen(false)
-  }
+    setCartOpen(true);
+    setMobileMenuOpen(false);
+  };
 
-  const closeMobileMenu = () => setMobileMenuOpen(false)
-  const closeUserMenu = () => setUserMenuOpen(false)
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const closeUserMenu = () => setUserMenuOpen(false);
 
-  const isLoggedIn = !!user
-  const displayName = user?.name || user?.email?.split('@')[0] || 'User'
-  const profileImage = user?.profileImage
-
-  // Dynamic menu items from config
-  const menuItems = getUserMenuItems(isLoggedIn, displayName, user?.email)
-
-  const handleMenuItemClick = async (item: any) => {
-    if (item.label === 'Logout') {
-      await logout()
-    }
-    closeUserMenu()
-  }
+  const isLoggedIn = !!user;
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User';
+  const profileImage = user?.profileImage;
 
   const handleNavigation = (href: string) => {
-    closeUserMenu()
-    router.push(href)
-  }
-
-  const alwaysItems = [
-    { type: 'link' as const, href: '/', label: 'Home', icon: Home },
-    { type: 'link' as const, href: '/reviews', label: 'Reviews', icon: Star },
-    { type: 'link' as const, href: '/about', label: 'About Us', icon: Info },
-    { type: 'link' as const, href: '/contact', label: 'Contact Us', icon: HelpCircle },
-    { type: 'link' as const, href: '/faq', label: 'FAQ', icon: HelpCircle },
-    { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
-  ]
-
-  const loggedInOnlyItems = [
-    { type: 'link' as const, href: '/account/payments', label: 'Order History', icon: Clock },
-    { type: 'link' as const, href: '/account/settings', label: 'Settings', icon: Settings },
-    { type: 'link' as const, href: '/account/addresses', label: 'Addresses', icon: MapPin },
-    { type: 'link' as const, href: '/account/wishlist', label: 'Wishlist', icon: Heart },
-  ]
+    closeUserMenu();
+    router.push(href);
+  };
 
   return (
     <>
@@ -232,10 +192,10 @@ export default function Navbar() {
                     <span>{displayName}</span>
                   </button>
                   
-                  {/* DYNAMIC DESKTOP DROPDOWN */}
                   {userMenuOpen && (
                     <div 
                       className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
+                      style={{ top: '100%', right: 0 }}
                     >
                       <div className="px-4 py-2 border-b border-gray-100 mb-2">
                         <p className="text-sm font-medium text-gray-900">{displayName}</p>
@@ -281,8 +241,8 @@ export default function Navbar() {
                       
                       <button
                         onClick={async () => {
-                          await logout()
-                          closeUserMenu()
+                          await logout();
+                          closeUserMenu();
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                       >
@@ -328,7 +288,6 @@ export default function Navbar() {
                 )}
               </button>
               
-              {/* MOBILE DROPDOWN */}
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]">
                   {!isLoggedIn ? (
@@ -388,8 +347,8 @@ export default function Navbar() {
                       <div className="border-t border-gray-100 my-1"></div>
                       <button
                         onClick={async () => {
-                          await logout()
-                          closeUserMenu()
+                          await logout();
+                          closeUserMenu();
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                       >
@@ -402,7 +361,6 @@ export default function Navbar() {
               )}
             </div>
             
-            {/* Cart Button */}
             <button onClick={openCart} className="relative p-1" aria-label="Cart">
               <ShoppingCart size={22} />
               {totalItems > 0 && (
@@ -415,38 +373,43 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MOBILE MENU (SIDEBAR) */}
+      {/* MOBILE MENU (SIDEBAR) - FULLY CLICKABLE PROFILE SECTION */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
-          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white p-5 overflow-y-auto shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center border-b pb-3">
+          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-5 border-b">
               <span className="font-semibold">Menu</span>
               <button onClick={closeMobileMenu} aria-label="Close menu">
                 <X size={22} />
               </button>
             </div>
 
-            <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-2 rounded flex items-center justify-between">
+            {/* ENTIRE PROFILE SECTION - CLICKABLE */}
+            <div 
+              onClick={() => {
+                if (isLoggedIn) {
+                  handleNavigation('/account/profile');
+                } else {
+                  handleNavigation('/login');
+                }
+                closeMobileMenu();
+              }}
+              className="m-4 bg-gray-50 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition"
+            >
               <div className="flex items-center gap-2">
                 {profileImage ? (
                   <Image src={profileImage} alt={displayName} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                 ) : (
                   <User size={16} />
                 )}
-                {!isLoggedIn ? 'Guest / Visitor' : displayName}
+                <span className="font-medium text-gray-700">{!isLoggedIn ? 'Guest / Visitor' : displayName}</span>
               </div>
-              {isLoggedIn ? (
-                <button onClick={() => handleNavigation('/account/profile')} className="text-[#F97316] text-xs">
-                  Profile
-                </button>
-              ) : (
-                <button onClick={() => handleNavigation('/login')} className="text-[#F97316] text-xs">
-                  Sign in / Register
-                </button>
-              )}
+              <span className="text-[#F97316] text-xs font-medium">
+                {isLoggedIn ? 'Profile →' : 'Sign in / Register →'}
+              </span>
             </div>
 
-            <div className="mt-3 py-2 border-t border-b border-gray-100">
+            <div className="px-4 py-3 border-t border-b border-gray-100">
               <CurrencySelector />
             </div>
 
@@ -456,68 +419,54 @@ export default function Navbar() {
                 handleNavigation('/products');
                 closeMobileMenu();
               }}
-              className="my-3 block w-full bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md"
+              className="mx-4 my-3 bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white text-base">View Products</span>
-                <div className="flex items-center gap-1 text-white">
-                  <span className="text-sm font-medium">Shop now</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14"/>
-                    <path d="m12 5 7 7-7 7"/>
-                  </svg>
-                </div>
+                <span className="text-white text-sm">Shop now →</span>
               </div>
             </button>
 
-            <div className="flex flex-col gap-2 mt-2 flex-grow">
-              {alwaysItems.map(item => {
-                const Icon = item.icon
-                if (item.type === 'action') {
-                  return (
-                    <button 
-                      key={item.label} 
-                      onClick={() => { 
-                        item.onClick(); 
-                        closeMobileMenu(); 
-                      }} 
-                      className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
-                    >
-                      <Icon size={18} /> {item.label}
-                    </button>
-                  )
-                }
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => {
-                      handleNavigation(item.href);
-                      closeMobileMenu();
-                    }}
-                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
-                  >
-                    <Icon size={18} /> {item.label}
+            <div className="flex-1 overflow-y-auto px-4 space-y-1">
+              <button onClick={() => { handleNavigation('/'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <Home size={18} /> Home
+              </button>
+              <button onClick={() => { handleNavigation('/reviews'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <Star size={18} /> Reviews
+              </button>
+              <button onClick={() => { handleNavigation('/about'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <Info size={18} /> About Us
+              </button>
+              <button onClick={() => { handleNavigation('/contact'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <HelpCircle size={18} /> Contact Us
+              </button>
+              <button onClick={() => { handleNavigation('/faq'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <HelpCircle size={18} /> FAQ
+              </button>
+              <button onClick={openCart} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                <ShoppingCart size={18} /> Cart
+              </button>
+              
+              {isLoggedIn && (
+                <>
+                  <div className="border-t my-2"></div>
+                  <button onClick={() => { handleNavigation('/account/orders'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                    <Clock size={18} /> Order History
                   </button>
-                )
-              })}
-              {isLoggedIn && loggedInOnlyItems.map(item => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => {
-                      handleNavigation(item.href);
-                      closeMobileMenu();
-                    }}
-                    className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg transition text-left"
-                  >
-                    <Icon size={18} /> {item.label}
+                  <button onClick={() => { handleNavigation('/account/settings'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                    <Settings size={18} /> Settings
                   </button>
-                )
-              })}
+                  <button onClick={() => { handleNavigation('/account/addresses'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                    <MapPin size={18} /> Addresses
+                  </button>
+                  <button onClick={() => { handleNavigation('/account/wishlist'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
+                    <Heart size={18} /> Wishlist
+                  </button>
+                </>
+              )}
             </div>
 
-            <div className="mt-6 pt-3 border-t border-gray-200">
+            <div className="p-4 border-t mt-auto">
               {isLoggedIn ? (
                 <button 
                   onClick={async () => {
@@ -530,7 +479,7 @@ export default function Navbar() {
                 </button>
               ) : (
                 <div className="text-xs text-gray-400 text-center py-2">
-                  <button onClick={() => handleNavigation('/signup')} className="text-[#F97316]">Create an account</button> to enjoy order history and more.
+                  <button onClick={() => { handleNavigation('/signup'); closeMobileMenu(); }} className="text-[#F97316]">Create an account</button> to enjoy order history and more.
                 </div>
               )}
             </div>
@@ -560,5 +509,5 @@ export default function Navbar() {
         </a>
       )}
     </>
-  )
+  );
 }
