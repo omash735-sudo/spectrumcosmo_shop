@@ -123,11 +123,6 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
-  const handleNavigation = (href: string) => {
-    closeUserMenu();
-    router.push(href);
-  };
-
   return (
     <>
       <style>{`
@@ -202,46 +197,52 @@ export default function Navbar() {
                         <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       
-                      <button
-                        onClick={() => handleNavigation('/account/profile')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      {/* All navigation items now use Link – no onClick needed */}
+                      <Link
+                        href="/account/profile"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                        onClick={closeUserMenu}
                       >
                         <User size={16} /> My Profile
-                      </button>
+                      </Link>
                       
-                      <button
-                        onClick={() => handleNavigation('/account/orders')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      <Link
+                        href="/account/orders"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                        onClick={closeUserMenu}
                       >
                         <Package size={16} /> My Orders
-                      </button>
+                      </Link>
                       
-                      <button
-                        onClick={() => handleNavigation('/account/wishlist')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      <Link
+                        href="/account/wishlist"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                        onClick={closeUserMenu}
                       >
                         <Heart size={16} /> Wishlist
-                      </button>
+                      </Link>
                       
-                      <button
-                        onClick={() => handleNavigation('/account/addresses')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      <Link
+                        href="/account/addresses"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                        onClick={closeUserMenu}
                       >
                         <MapPin size={16} /> Addresses
-                      </button>
+                      </Link>
                       
-                      <button
-                        onClick={() => handleNavigation('/account/settings')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      <Link
+                        href="/account/settings"
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+                        onClick={closeUserMenu}
                       >
                         <Settings size={16} /> Settings
-                      </button>
+                      </Link>
                       
                       <div className="border-t border-gray-100 my-1"></div>
                       
                       <button
-                        onClick={async () => {
-                          await logout();
+                        onClick={() => {
+                          logout();
                           closeUserMenu();
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
@@ -256,7 +257,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER */}
+        {/* MOBILE HEADER (unchanged) */}
         <div className="md:hidden flex items-center justify-between px-4 py-3">
           <button onClick={() => setMobileMenuOpen(true)} aria-label="Menu" className="p-1">
             <Menu size={24} />
@@ -268,7 +269,7 @@ export default function Navbar() {
           </Link>
           
           <div className="flex items-center gap-2">
-            {/* Profile Icon - Mobile */}
+            {/* Mobile user dropdown (similarly fixed) */}
             <div className="relative">
               <button 
                 onClick={() => setUserMenuOpen(!userMenuOpen)} 
@@ -292,68 +293,39 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]">
                   {!isLoggedIn ? (
                     <>
-                      <button
-                        onClick={() => handleNavigation('/login')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <User size={16} />
-                        Sign In
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/signup')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <User size={16} />
-                        Create Account
-                      </button>
+                      <Link href="/login" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <User size={16} /> Sign In
+                      </Link>
+                      <Link href="/signup" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <User size={16} /> Create Account
+                      </Link>
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => handleNavigation('/account/profile')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <User size={16} />
-                        My Profile
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/account/addresses')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <MapPin size={16} />
-                        Addresses
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/account/orders')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <Package size={16} />
-                        My Orders
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/account/wishlist')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <Heart size={16} />
-                        Wishlist
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/account/settings')}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
-                      >
-                        <Settings size={16} />
-                        Settings
-                      </button>
+                      <Link href="/account/profile" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <User size={16} /> My Profile
+                      </Link>
+                      <Link href="/account/addresses" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <MapPin size={16} /> Addresses
+                      </Link>
+                      <Link href="/account/orders" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <Package size={16} /> My Orders
+                      </Link>
+                      <Link href="/account/wishlist" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <Heart size={16} /> Wishlist
+                      </Link>
+                      <Link href="/account/settings" className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316]" onClick={closeUserMenu}>
+                        <Settings size={16} /> Settings
+                      </Link>
                       <div className="border-t border-gray-100 my-1"></div>
                       <button
-                        onClick={async () => {
-                          await logout();
+                        onClick={() => {
+                          logout();
                           closeUserMenu();
                         }}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
                       >
-                        <LogOut size={16} />
-                        Logout
+                        <LogOut size={16} /> Logout
                       </button>
                     </>
                   )}
@@ -373,7 +345,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MOBILE MENU (SIDEBAR) - FULLY CLICKABLE PROFILE SECTION */}
+      {/* MOBILE SIDEBAR – unchanged, already uses Link */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
@@ -384,13 +356,13 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* ENTIRE PROFILE SECTION - CLICKABLE */}
+            {/* Profile section – remains clickable */}
             <div 
               onClick={() => {
                 if (isLoggedIn) {
-                  handleNavigation('/account/profile');
+                  router.push('/account/profile');
                 } else {
-                  handleNavigation('/login');
+                  router.push('/login');
                 }
                 closeMobileMenu();
               }}
@@ -416,7 +388,7 @@ export default function Navbar() {
             {/* View Products Button */}
             <button 
               onClick={() => {
-                handleNavigation('/products');
+                router.push('/products');
                 closeMobileMenu();
               }}
               className="mx-4 my-3 bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl shadow-md"
@@ -428,58 +400,32 @@ export default function Navbar() {
             </button>
 
             <div className="flex-1 overflow-y-auto px-4 space-y-1">
-              <button onClick={() => { handleNavigation('/'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <Home size={18} /> Home
-              </button>
-              <button onClick={() => { handleNavigation('/reviews'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <Star size={18} /> Reviews
-              </button>
-              <button onClick={() => { handleNavigation('/about'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <Info size={18} /> About Us
-              </button>
-              <button onClick={() => { handleNavigation('/contact'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <HelpCircle size={18} /> Contact Us
-              </button>
-              <button onClick={() => { handleNavigation('/faq'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <HelpCircle size={18} /> FAQ
-              </button>
-              <button onClick={openCart} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                <ShoppingCart size={18} /> Cart
-              </button>
-              
+              {/* all links use Link – already correct */}
+              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Home</Link>
+              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Reviews</Link>
+              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">About Us</Link>
+              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Contact Us</Link>
+              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">FAQ</Link>
+              <button onClick={openCart} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">Cart</button>
               {isLoggedIn && (
                 <>
                   <div className="border-t my-2"></div>
-                  <button onClick={() => { handleNavigation('/account/orders'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                    <Clock size={18} /> Order History
-                  </button>
-                  <button onClick={() => { handleNavigation('/account/settings'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                    <Settings size={18} /> Settings
-                  </button>
-                  <button onClick={() => { handleNavigation('/account/addresses'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                    <MapPin size={18} /> Addresses
-                  </button>
-                  <button onClick={() => { handleNavigation('/account/wishlist'); closeMobileMenu(); }} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg text-left">
-                    <Heart size={18} /> Wishlist
-                  </button>
+                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Order History</Link>
+                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Settings</Link>
+                  <Link href="/account/addresses" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Addresses</Link>
+                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 w-full px-2 py-2 hover:bg-gray-50 rounded-lg">Wishlist</Link>
                 </>
               )}
             </div>
 
             <div className="p-4 border-t mt-auto">
               {isLoggedIn ? (
-                <button 
-                  onClick={async () => {
-                    await logout();
-                    closeMobileMenu();
-                  }} 
-                  className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition"
-                >
+                <button onClick={logout} className="text-red-600 flex items-center gap-2 px-2 py-2 w-full text-left hover:bg-red-50 rounded-lg transition">
                   <LogOut size={18} /> Log out
                 </button>
               ) : (
                 <div className="text-xs text-gray-400 text-center py-2">
-                  <button onClick={() => { handleNavigation('/signup'); closeMobileMenu(); }} className="text-[#F97316]">Create an account</button> to enjoy order history and more.
+                  <Link href="/signup" onClick={closeMobileMenu} className="text-[#F97316]">Create an account</Link> to enjoy order history and more.
                 </div>
               )}
             </div>
@@ -491,13 +437,7 @@ export default function Navbar() {
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
       {showWhatsApp && (
-        <a
-          href={WHATSAPP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-6 right-6 z-[9999] whatsapp-float"
-          aria-label="Chat on WhatsApp"
-        >
+        <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-[9999] whatsapp-float">
           <div className="relative">
             <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
             <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center">
