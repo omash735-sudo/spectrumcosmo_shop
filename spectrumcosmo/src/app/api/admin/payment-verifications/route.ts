@@ -10,7 +10,14 @@ export async function GET(req: NextRequest) {
     const sql = getDb();
     const verifications = await sql`
       SELECT 
-        pc.*,
+        pc.id,
+        pc.order_id,
+        pc.proof_image_url,
+        pc.transaction_reference,
+        pc.notes,
+        pc.submitted_at,
+        pc.status,
+        pc.rejection_reason,
         o.customer_name,
         o.phone_number,
         o.total_amount
