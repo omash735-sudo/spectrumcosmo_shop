@@ -39,16 +39,13 @@ export default async function ProductsPage({
   const params = await searchParams;
   const sql = getDb();
   
-  // Get category from URL or from saved cookie (for Continue Shopping)
+  // Get category from URL or from saved cookie
   const cookieStore = cookies();
   let selectedCategory = params.category;
-  
-  // If no category in URL but we have a saved category cookie, use that
   if (!selectedCategory && !params.q) {
     const savedCategory = cookieStore.get('last_category')?.value;
     if (savedCategory && savedCategory !== 'All') {
       selectedCategory = savedCategory;
-      // Redirect to include the category in URL
       redirect(`/products?category=${encodeURIComponent(selectedCategory)}`);
     }
   }
@@ -63,6 +60,7 @@ export default async function ProductsPage({
   }
   const categoryNames = ['All', ...categories.map((c: any) => c.name)];
 
+  // Product fetching logic (unchanged)
   let products: any[] = [];
   let totalCount = 0;
   const currentPage = parseInt(params.page || '1');
@@ -71,15 +69,14 @@ export default async function ProductsPage({
 
   try {
     let countQuery, dataQuery;
-
     if (params.q) {
-      // Search query
-      if (params.category && params.category !== 'All') {
+      // Search query (same as before)
+      if (selectedCategory && selectedCategory !== 'All') {
         countQuery = sql`
           SELECT COUNT(*) as count
           FROM products p
           JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category}
+          WHERE c.name = ${selectedCategory}
             AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
             AND p.status = 'in_stock'
         `;
@@ -87,7 +84,7 @@ export default async function ProductsPage({
           SELECT p.*, c.name as category_name 
           FROM products p
           JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category}
+          WHERE c.name = ${selectedCategory}
             AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
             AND p.status = 'in_stock'
           ORDER BY 
@@ -122,18 +119,18 @@ export default async function ProductsPage({
       }
     } else {
       // Regular category browse
-      if (params.category && params.category !== 'All') {
+      if (selectedCategory && selectedCategory !== 'All') {
         countQuery = sql`
           SELECT COUNT(*) as count
           FROM products p
           JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category} AND p.status = 'in_stock'
+          WHERE c.name = ${selectedCategory} AND p.status = 'in_stock'
         `;
         dataQuery = sql`
           SELECT p.*, c.name as category_name 
           FROM products p
           JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category} AND p.status = 'in_stock'
+          WHERE c.name = ${selectedCategory} AND p.status = 'in_stock'
           ORDER BY p.created_at DESC
           LIMIT ${pageSize} OFFSET ${offset}
         `;
@@ -153,7 +150,6 @@ export default async function ProductsPage({
         `;
       }
     }
-
     const [countResult, productsResult] = await Promise.all([countQuery, dataQuery]);
     totalCount = parseInt(countResult[0]?.count || '0');
     products = productsResult;
@@ -162,14 +158,12 @@ export default async function ProductsPage({
   }
 
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  // Helper function to build pagination URL
   const getPageUrl = (page: number) => {
-    const params = new URLSearchParams();
-    if (params.q) params.set('q', params.q);
-    if (selectedCategory && selectedCategory !== 'All') params.set('category', selectedCategory);
-    params.set('page', page.toString());
-    return `/products?${params.toString()}`;
+    const urlParams = new URLSearchParams();
+    if (params.q) urlParams.set('q', params.q);
+    if (selectedCategory && selectedCategory !== 'All') urlParams.set('category', selectedCategory);
+    urlParams.set('page', page.toString());
+    return `/products?${urlParams.toString()}`;
   };
 
   return (
@@ -181,7 +175,7 @@ export default async function ProductsPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
           <FeaturedProducts />
 
-          {/* Search Bar - FIXED ALIGNMENT */}
+          {/* Search Bar */}
           <div className="mb-8 sm:mb-10">
             <form method="GET" action="/products" className="relative max-w-md mx-auto">
               <input
@@ -193,7 +187,7 @@ export default async function ProductsPage({
               />
               <button
                 type="submit"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#F97316] text-white p-2 rounded-full hover:bg-orange-600 transition flex items-center justify-center"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#F97316] text-white p-2 rounded-full hover:bg-orange-600 transition"
                 aria-label="Search"
               >
                 <Search size={18} />
@@ -201,35 +195,37 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Category Filter - FIXED CENTERING & SPACING */}
+          {/* Category Filter – now scrollable horizontally on mobile */}
           <div className="mb-8 sm:mb-10">
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-              {categoryNames.map((cat) => {
-                const isActive = (!selectedCategory && cat === 'All') || selectedCategory === cat;
-                let href;
-                if (params.q) {
-                  href = cat === 'All'
-                    ? `/products?q=${encodeURIComponent(params.q)}`
-                    : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
-                } else {
-                  href = cat === 'All'
-                    ? '/products'
-                    : `/products?category=${encodeURIComponent(cat)}`;
-                }
-                return (
-                  <a
-                    key={cat}
-                    href={href}
-                    className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium transition whitespace-nowrap flex items-center justify-center ${
-                      isActive
-                        ? 'bg-[#F97316] text-white shadow-md hover:bg-orange-600'
-                        : 'bg-gray-100 text-gray-700 hover:bg-orange-50 hover:text-[#F97316]'
-                    }`}
-                  >
-                    {cat}
-                  </a>
-                );
-              })}
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
+              <div className="flex gap-2 sm:gap-3 min-w-max md:flex-wrap md:justify-center">
+                {categoryNames.map((cat) => {
+                  const isActive = (!selectedCategory && cat === 'All') || selectedCategory === cat;
+                  let href;
+                  if (params.q) {
+                    href = cat === 'All'
+                      ? `/products?q=${encodeURIComponent(params.q)}`
+                      : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
+                  } else {
+                    href = cat === 'All'
+                      ? '/products'
+                      : `/products?category=${encodeURIComponent(cat)}`;
+                  }
+                  return (
+                    <a
+                      key={cat}
+                      href={href}
+                      className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-sm sm:text-base font-medium whitespace-nowrap transition ${
+                        isActive
+                          ? 'bg-[#F97316] text-white shadow-md hover:bg-orange-600'
+                          : 'bg-gray-100 text-gray-700 hover:bg-orange-50 hover:text-[#F97316]'
+                      }`}
+                    >
+                      {cat}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
