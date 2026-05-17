@@ -32,6 +32,7 @@ export default function PaymentVerificationsPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/payment-verifications');
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setVerifications(data);
     } catch (err) {
@@ -123,9 +124,7 @@ export default function PaymentVerificationsPage() {
     <div className="pt-16 lg:pt-0">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Payment Verifications</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Review and approve manual payment submissions
-        </p>
+        <p className="text-gray-500 text-sm mt-1">Review and approve manual payment submissions</p>
       </div>
 
       {/* Pending Verifications */}
@@ -142,12 +141,12 @@ export default function PaymentVerificationsPage() {
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div>
                     <p className="font-semibold text-gray-900">Order #{v.order_id.slice(-8)}</p>
-                    <p className="text-sm text-gray-600">{v.customer_name}</p>
-                    <p className="text-sm text-gray-500">{v.phone_number}</p>
-                    <p className="text-lg font-bold text-orange-600 mt-1">MWK {v.total_amount.toLocaleString()}</p>
-                    {v.transaction_reference && (
-                      <p className="text-xs text-gray-400 mt-1">Reference: {v.transaction_reference}</p>
-                    )}
+                    <p className="text-sm text-gray-600">{v.customer_name || 'N/A'}</p>
+                    <p className="text-sm text-gray-500">{v.phone_number || 'N/A'}</p>
+                    <p className="text-lg font-bold text-orange-600 mt-1">
+                      MWK {v.total_amount ? v.total_amount.toLocaleString() : '0'}
+                    </p>
+                    {v.transaction_reference && <p className="text-xs text-gray-400 mt-1">Ref: {v.transaction_reference}</p>}
                     {v.notes && <p className="text-xs text-gray-500 mt-1">Note: {v.notes}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -192,8 +191,10 @@ export default function PaymentVerificationsPage() {
                 <div className="flex flex-wrap justify-between items-center gap-4">
                   <div>
                     <p className="font-medium text-gray-900">Order #{v.order_id.slice(-8)}</p>
-                    <p className="text-sm text-gray-600">{v.customer_name}</p>
-                    <p className="text-sm font-medium text-gray-700">MWK {v.total_amount.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">{v.customer_name || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      MWK {v.total_amount ? v.total_amount.toLocaleString() : '0'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(v.status)}
@@ -205,9 +206,7 @@ export default function PaymentVerificationsPage() {
                     </button>
                   </div>
                 </div>
-                {v.rejection_reason && (
-                  <p className="text-xs text-red-500 mt-2">Reason: {v.rejection_reason}</p>
-                )}
+                {v.rejection_reason && <p className="text-xs text-red-500 mt-2">Reason: {v.rejection_reason}</p>}
               </div>
             ))}
           </div>
@@ -216,7 +215,7 @@ export default function PaymentVerificationsPage() {
 
       {/* Image Modal */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
           <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-lg overflow-auto" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setSelectedImage(null)} className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1 hover:bg-gray-700">
               <XCircle size={20} />
@@ -228,7 +227,7 @@ export default function PaymentVerificationsPage() {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">Reject Payment</h3>
             <p className="text-sm text-gray-600 mb-3">Please provide a reason for rejection:</p>
