@@ -11,25 +11,33 @@ export async function GET(
 
   try {
     const sql = getDb();
+    
     const [order] = await sql`
       SELECT 
-        o.*,
-        COALESCE(
-          (SELECT json_agg(json_build_object(
-            'id', oi.id,
-            'product_id', oi.product_id,
-            'product_name', oi.product_name,
-            'quantity', oi.quantity,
-            'price', oi.price,
-            'subtotal', oi.quantity * oi.price
-          )) FROM order_items oi WHERE oi.order_id = o.id
-        ), '[]'::json) as items
-      FROM orders o
-      WHERE o.id = ${params.id} AND o.user_id = ${user.id}
+        id,
+        order_number,
+        customer_name,
+        customer_email,
+        phone_number,
+        delivery_address,
+        total_amount,
+        status,
+        payment_method,
+        payment_status,
+        proof_of_payment_url,
+        payment_note,
+        delivery_method_id,
+        delivery_fee,
+        created_at,
+        updated_at
+      FROM orders
+      WHERE id = ${params.id} AND (user_id = ${user.id} OR customer_email = ${user.email})
     `;
+    
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
+    
     return NextResponse.json(order);
   } catch (err: any) {
     console.error('Failed to fetch order:', err);
