@@ -40,9 +40,8 @@ export default function UserMenu() {
 
   if (!user) {
     return (
-      <Link href="/login" className="flex items-center gap-1 text-sm text-gray-600 hover:text-[#F97316]">
-        <User size={16} />
-        <span>Sign in</span>
+      <Link href="/login" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors">
+        <User size={18} className="text-gray-600" />
       </Link>
     );
   }
@@ -54,14 +53,14 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#F97316]"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors overflow-hidden"
+        aria-label="User menu"
       >
         {profileImage ? (
-          <Image src={profileImage} alt={displayName} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
+          <Image src={profileImage} alt={displayName} width={32} height={32} className="w-full h-full object-cover" />
         ) : (
-          <User size={18} />
+          <User size={18} className="text-gray-600" />
         )}
-        <span>{displayName}</span>
       </button>
 
       {menuOpen && (
