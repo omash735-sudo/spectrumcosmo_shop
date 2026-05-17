@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
@@ -37,6 +37,7 @@ const desktopLinks = [
   { href: '/reviews', label: 'Reviews' },
   { href: '/about', label: 'About Us' },
   { href: '/contact', label: 'Contact Us' },
+  { href: '/faq', label: 'FAQ' },
 ]
 
 const WHATSAPP_NUMBER = '265893160202'
@@ -146,11 +147,17 @@ export default function Navbar() {
     closeUserMenu()
   }
 
+  const handleNavigation = (href: string) => {
+    closeUserMenu()
+    router.push(href)
+  }
+
   const alwaysItems = [
     { type: 'link' as const, href: '/', label: 'Home', icon: Home },
     { type: 'link' as const, href: '/reviews', label: 'Reviews', icon: Star },
     { type: 'link' as const, href: '/about', label: 'About Us', icon: Info },
     { type: 'link' as const, href: '/contact', label: 'Contact Us', icon: HelpCircle },
+    { type: 'link' as const, href: '/faq', label: 'FAQ', icon: HelpCircle },
     { type: 'action' as const, label: 'Cart', icon: ShoppingCart, onClick: openCart },
   ]
 
@@ -160,12 +167,6 @@ export default function Navbar() {
     { type: 'link' as const, href: '/account/addresses', label: 'Addresses', icon: MapPin },
     { type: 'link' as const, href: '/account/wishlist', label: 'Wishlist', icon: Heart },
   ]
-
-  // Navigation handler for dropdown items
-  const handleNavigation = (href: string) => {
-    closeUserMenu()
-    router.push(href)
-  }
 
   return (
     <>
@@ -234,52 +235,59 @@ export default function Navbar() {
                   {/* DYNAMIC DESKTOP DROPDOWN */}
                   {userMenuOpen && (
                     <div 
-                      className="fixed md:absolute right-4 md:right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
-                      style={{ 
-                        top: 'auto',
-                        position: 'fixed',
-                        marginTop: '8px',
-                        transform: 'translateY(0)',
-                      }}
+                      className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
                     >
-                      {menuItems.map((item, index) => {
-                        // Welcome header (non-clickable)
-                        if (item.label.startsWith('Hello,')) {
-                          return (
-                            <div key={index} className="px-4 py-2 border-b border-gray-100 mb-2">
-                              <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                              <p className="text-xs text-gray-500">{user?.email}</p>
-                            </div>
-                          )
-                        }
-                        
-                        // Logout button
-                        if (item.label === 'Logout') {
-                          return (
-                            <button
-                              key={index}
-                              onClick={() => handleMenuItemClick(item)}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                            >
-                              <DynamicIcon name={item.icon} size={16} />
-                              {item.label}
-                            </button>
-                          )
-                        }
-                        
-                        // Regular menu items
-                        return (
-                          <Link
-                            key={index}
-                            href={item.href}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
-                            onClick={closeUserMenu}
-                          >
-                            <DynamicIcon name={item.icon} size={16} />
-                            {item.label}
-                          </Link>
-                        )
-                      })}
+                      <div className="px-4 py-2 border-b border-gray-100 mb-2">
+                        <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleNavigation('/account/profile')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <User size={16} /> My Profile
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigation('/account/orders')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <Package size={16} /> My Orders
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigation('/account/wishlist')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <Heart size={16} /> Wishlist
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigation('/account/addresses')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <MapPin size={16} /> Addresses
+                      </button>
+                      
+                      <button
+                        onClick={() => handleNavigation('/account/settings')}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors text-left"
+                      >
+                        <Settings size={16} /> Settings
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1"></div>
+                      
+                      <button
+                        onClick={async () => {
+                          await logout()
+                          closeUserMenu()
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+                      >
+                        <LogOut size={16} /> Logout
+                      </button>
                     </div>
                   )}
                 </div>
