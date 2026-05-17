@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, Upload, AlertCircle, Trash2, CheckCircle, Clock, Phone, Landmark, ReceiptText } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, Trash2, CheckCircle, Clock, Phone, Landmark, ReceiptText, FileText, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -45,22 +45,20 @@ export default function PaymentContent() {
 
   useEffect(() => {
     if (!orderId) {
-      setMessage({ type: 'error', text: 'No order specified. Please return to checkout.' });
+      setMessage({ type: 'error', text: 'No order specified.' });
       setLoading(false);
       return;
     }
 
     const load = async () => {
       try {
-        console.log('Loading payment data for order:', orderId);
         const res = await fetch(`/api/orders/${orderId}/payment`);
         if (!res.ok) throw new Error('Failed to load payment data');
         const data = await res.json();
-        console.log('Payment data loaded:', data);
         setPaymentData(data);
       } catch (err: any) {
         console.error('Load error:', err);
-        setMessage({ type: 'error', text: err.message || 'Failed to load payment data.' });
+        setMessage({ type: 'error', text: err.message });
       } finally {
         setLoading(false);
       }
@@ -70,13 +68,6 @@ export default function PaymentContent() {
 
   const uploadProof = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('=== UPLOAD PROOF STARTED ===');
-    console.log('Order ID:', orderId);
-    console.log('Proof file:', proofFile?.name);
-    console.log('Transaction reference:', transactionRef);
-    console.log('Note:', note);
-    
     if (!proofFile) {
       setMessage({ type: 'error', text: 'Please select a file' });
       return;
@@ -88,10 +79,8 @@ export default function PaymentContent() {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-    console.log('Cloudinary config:', { cloudName: cloudName || 'missing', uploadPreset: uploadPreset || 'missing' });
-
     if (!cloudName || !uploadPreset) {
-      setMessage({ type: 'error', text: 'Upload service not configured. Please contact support.' });
+      setMessage({ type: 'error', text: 'Upload service not configured.' });
       setUploading(false);
       return;
     }
@@ -101,54 +90,36 @@ export default function PaymentContent() {
     formData.append('upload_preset', uploadPreset);
 
     try {
-      console.log('Uploading to Cloudinary...');
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
       });
       const uploadData = await uploadRes.json();
-      console.log('Cloudinary response:', uploadData);
-      
-      if (!uploadData.secure_url) {
-        throw new Error('Cloudinary upload failed - no secure_url returned');
-      }
+      if (!uploadData.secure_url) throw new Error('Upload failed');
 
-      const payload = {
-        id: orderId,
-        proofOfPaymentUrl: uploadData.secure_url,
-        paymentNote: note,
-        transactionReference: transactionRef,
-      };
-      
-      console.log('Sending to API - Method: POST, URL: /api/account/orders');
-      console.log('Payload:', JSON.stringify(payload, null, 2));
-      
       const confirmRes = await fetch('/api/account/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          id: orderId,
+          proofOfPaymentUrl: uploadData.secure_url,
+          paymentNote: note,
+          transactionReference: transactionRef,
+        }),
       });
 
-      console.log('API response status:', confirmRes.status);
-      console.log('API response status text:', confirmRes.statusText);
-      
-      const result = await confirmRes.json();
-      console.log('API response body:', result);
-      
-      if (!confirmRes.ok) {
-        throw new Error(result.error || `HTTP ${confirmRes.status}`);
-      }
+      if (!confirmRes.ok) throw new Error('Failed to save proof');
 
       setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it shortly.' });
       setProofFile(null);
       setTransactionRef('');
       setNote('');
-      
+
       const refreshed = await fetch(`/api/orders/${orderId}/payment`);
       const newData = await refreshed.json();
       setPaymentData(newData);
     } catch (err: any) {
-      console.error('Upload error details:', err);
+      console.error('Upload error:', err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setUploading(false);
@@ -159,7 +130,6 @@ export default function PaymentContent() {
     if (!confirm('Remove your submitted proof?')) return;
     setCancellingProof(true);
     try {
-      console.log('Cancelling proof for order:', orderId);
       const res = await fetch(`/api/orders/${orderId}/payment-cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,7 +141,6 @@ export default function PaymentContent() {
         setMessage({ type: 'success', text: 'Proof removed.' });
       }
     } catch (err: any) {
-      console.error('Cancel proof error:', err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setCancellingProof(false);
@@ -198,7 +167,7 @@ export default function PaymentContent() {
           <div className="max-w-md mx-auto bg-white rounded-xl p-6 shadow-sm">
             <AlertCircle className="text-red-500 w-12 h-12 mx-auto mb-3" />
             <p className="text-gray-700">Payment data not available.</p>
-            <button onClick={() => router.push('/account/orders')} className="mt-4 text-orange-600 hover:underline">
+            <button onClick={() => router.push('/account/orders')} className="mt-4 text-orange-600">
               Go to My Orders
             </button>
           </div>
@@ -244,20 +213,20 @@ export default function PaymentContent() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Payment for Order #{order.id.slice(-8)}</h1>
-                <p className="text-gray-500 mt-1">Amount: MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</p>
+                <p className="text-gray-500 mt-1 text-lg">Amount: MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</p>
               </div>
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
                 isPaid ? 'bg-green-100 text-green-700' : 
                 isAwaiting ? 'bg-blue-100 text-blue-700' : 
                 'bg-yellow-100 text-yellow-700'
               }`}>
-                {isPaid ? <CheckCircle size={16} /> : isAwaiting ? <Clock size={16} /> : <Clock size={16} />}
+                {isPaid ? <CheckCircle size={16} /> : <Clock size={16} />}
                 <span>{isPaid ? 'Payment Confirmed' : isAwaiting ? 'Awaiting Verification' : 'Payment Pending'}</span>
               </div>
             </div>
           </div>
 
-          {/* Payment Instructions – modern card style */}
+          {/* Payment Instructions – Modern Card */}
           {provider && !isPaid && (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
               <div className="bg-orange-50 px-6 py-4 border-b border-gray-200">
@@ -266,7 +235,6 @@ export default function PaymentContent() {
                 </h2>
               </div>
               <div className="p-6 space-y-5">
-                {/* Provider name */}
                 <div className="flex items-center gap-3">
                   {provider.category === 'mobile_money' ? (
                     <Phone className="text-orange-500" size={22} />
@@ -279,7 +247,6 @@ export default function PaymentContent() {
                   </div>
                 </div>
 
-                {/* Account details card */}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                   {provider.category === 'mobile_money' && provider.account_number && (
                     <div>
@@ -311,7 +278,6 @@ export default function PaymentContent() {
                   )}
                 </div>
 
-                {/* HTML instructions (admin editable) */}
                 {provider.instructions ? (
                   <div className="prose prose-sm max-w-none text-gray-700 border-t pt-4">
                     <div dangerouslySetInnerHTML={{ __html: provider.instructions }} />
@@ -322,7 +288,6 @@ export default function PaymentContent() {
                   </div>
                 )}
 
-                {/* Total amount */}
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total to pay</span>
@@ -333,97 +298,130 @@ export default function PaymentContent() {
             </div>
           )}
 
-          {/* Upload Proof Section (same as before) */}
+          {/* Upload Payment Proof – Redesigned Card */}
           {canUpload && (
-            <div className="bg-white rounded-2xl border p-6 mb-6">
-              <h2 className="font-semibold text-gray-800 mb-4">Upload Payment Proof</h2>
-              <form onSubmit={uploadProof} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Screenshot / Receipt *</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                    required
-                    className="w-full text-sm border rounded-lg p-2"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG. Max size: 5MB.</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Transaction Reference</label>
-                  <input
-                    type="text"
-                    value={transactionRef}
-                    onChange={(e) => setTransactionRef(e.target.value)}
-                    className="w-full border rounded-xl p-2 text-sm"
-                    placeholder="e.g., TRX-123456, Reference from your bank"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Additional Notes</label>
-                  <textarea
-                    rows={2}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full border rounded-xl p-2 text-sm"
-                    placeholder="Any extra information about your payment"
-                  />
-                </div>
-                {message && (
-                  <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    {message.text}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Upload size={20} className="text-orange-500" /> Upload Payment Proof
+                </h2>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-gray-500 mb-5">
+                  After making the payment, take a screenshot or save the receipt and upload it here.
+                </p>
+                <form onSubmit={uploadProof} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Screenshot / Receipt *</label>
+                    <div className="flex items-center gap-3">
+                      <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                        Choose File
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          required
+                        />
+                      </label>
+                      {proofFile && <span className="text-sm text-gray-600">{proofFile.name}</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Accepted formats: JPG, PNG. Max size: 5MB.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Reference (optional)</label>
+                    <input
+                      type="text"
+                      value={transactionRef}
+                      onChange={(e) => setTransactionRef(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-orange-500 focus:border-orange-500 transition"
+                      placeholder="e.g., TRX-123456, Reference number from your bank"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (optional)</label>
+                    <textarea
+                      rows={2}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-orange-500 focus:border-orange-500 transition"
+                      placeholder="Any extra information about your payment"
+                    />
+                  </div>
+
+                  {message && (
+                    <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {message.text}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={uploading || !proofFile}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {uploading ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        <Upload size={18} /> Submit Payment Proof
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Existing Proof Card */}
+          {existing_proof && (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText size={20} className="text-orange-500" /> Submitted Proof
+                </h2>
+              </div>
+              <div className="p-6">
+                <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline break-all hover:text-orange-700">
+                  View uploaded proof image
+                </a>
+                {existing_note && <p className="text-sm text-gray-500 mt-2">Note: {existing_note}</p>}
+                {isAwaiting && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+                    Your payment is being reviewed by our team. You will receive an email once verified.
                   </div>
                 )}
-                <button
-                  type="submit"
-                  disabled={uploading || !proofFile}
-                  className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50"
-                >
-                  {uploading ? <Loader2 className="animate-spin inline mr-2" size={16} /> : <Upload size={16} className="inline mr-2" />}
-                  {uploading ? 'Submitting...' : 'Submit Payment Proof'}
-                </button>
-              </form>
+                {canUpload && existing_proof && !isAwaiting && (
+                  <button
+                    onClick={cancelProof}
+                    disabled={cancellingProof}
+                    className="mt-4 flex items-center gap-2 text-red-600 hover:text-red-700 text-sm transition"
+                  >
+                    <Trash2 size={14} /> {cancellingProof ? 'Removing...' : 'Cancel and remove this proof'}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Existing Proof Display */}
-          {existing_proof && (
-            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-              <h2 className="font-semibold text-gray-800 mb-3">Submitted Proof</h2>
-              <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline break-all">
-                View uploaded proof image
-              </a>
-              {existing_note && <p className="text-sm text-gray-500 mt-2">Note: {existing_note}</p>}
-              {isAwaiting && (
-                <p className="text-sm text-blue-600 mt-3">Your payment is being reviewed by our team.</p>
-              )}
-              {canUpload && existing_proof && !isAwaiting && (
-                <button
-                  onClick={cancelProof}
-                  disabled={cancellingProof}
-                  className="mt-3 flex items-center gap-2 text-red-600 hover:text-red-700 text-sm"
-                >
-                  <Trash2 size={14} />
-                  {cancellingProof ? 'Removing...' : 'Cancel and remove this proof'}
-                </button>
-              )}
+          {/* Action Buttons Card */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-6 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => router.push('/account/orders')}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2"
+              >
+                View My Orders <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-600 py-2.5 rounded-xl font-medium transition"
+              >
+                Continue Shopping
+              </button>
             </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => router.push('/account/orders')}
-              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition"
-            >
-              View My Orders
-            </button>
-            <button
-              onClick={() => router.push('/')}
-              className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition"
-            >
-              Continue Shopping
-            </button>
           </div>
         </div>
       </main>
