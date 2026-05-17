@@ -27,6 +27,8 @@ import {
   Tag,
   Sliders,
   HelpCircle,
+  MessageSquare,
+  Smartphone,
 } from 'lucide-react';
 
 const navItems = [
@@ -45,7 +47,10 @@ const navItems = [
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
-  { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },  // NEW
+  { name: 'Email Templates', href: '/admin/email-templates', icon: Mail, section: 'GROWTH' },
+  { name: 'Customer Messages', href: '/admin/customer-messages', icon: MessageSquare, section: 'GROWTH' },
+  { name: 'SMS Templates', href: '/admin/sms-templates', icon: Smartphone, section: 'GROWTH' },
+  { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
   { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },
