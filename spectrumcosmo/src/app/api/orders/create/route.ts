@@ -105,18 +105,22 @@ export async function POST(req: NextRequest) {
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
-    // Insert order items
+    // FIXED: Insert order items with safe product name fallback
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
       const quantity = Number(item.quantity);
       if (isNaN(quantity)) continue;
       const subtotalUsd = quantity * unitPriceUsd;
+      
+      // Safe: Try multiple field names for product name, fallback to 'Product'
+      const productName = item.product_name || item.name || 'Product';
+      
       await sql`
         INSERT INTO order_items (
           order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
         ) VALUES (
-          ${order.id}::uuid, ${item.name}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
+          ${order.id}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
           ${item.custom_details || null}
         )
       `;
@@ -161,7 +165,7 @@ export async function POST(req: NextRequest) {
         // Fallback email template
         const fallbackHtml = `
           <div style="font-family: Arial; max-width:600px;">
-            <h2>Order Confirmed!</h2>
+            <h2>Order Confirmed</h2>
             <p>Hello ${customer_name},</p>
             <p>Thank you for your order! Your payment has been processed successfully.</p>
             <div style="background:#f9fafb; padding:20px; border-radius:12px;">
@@ -196,14 +200,14 @@ export async function POST(req: NextRequest) {
 
       const discountBannerHtml = activeBanner ? `
         <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-          <p style="margin:0; font-size:14px; color:#92400E;">🎉 ${activeBanner.title || 'Special Offer'} 🎉</p>
+          <p style="margin:0; font-size:14px; color:#92400E;">${activeBanner.title || 'Special Offer'}</p>
           ${activeBanner.description ? `<p style="margin:5px 0 0; font-size:12px;">${activeBanner.description}</p>` : ''}
           ${activeBanner.discount_code ? `<p style="margin:10px 0 0; font-weight:bold;">Code: ${activeBanner.discount_code}</p>` : ''}
           ${activeBanner.button_text && activeBanner.button_url ? `<a href="${activeBanner.button_url}" style="display:inline-block; margin-top:10px; background:#F97316; color:white; padding:8px 20px; text-decoration:none; border-radius:30px;">${activeBanner.button_text}</a>` : ''}
         </div>
       ` : (settingsMap.discount_banner_default ? `
         <div class="discount-banner" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-          <p style="margin:0;">🎉 ${settingsMap.discount_banner_default} 🎉</p>
+          <p style="margin:0;">${settingsMap.discount_banner_default}</p>
         </div>
       ` : '');
 
@@ -267,7 +271,7 @@ export async function POST(req: NextRequest) {
         
         await sendMail({
           to: customer_email,
-          subject: `⏳ Complete Your Payment for Order #${orderNumber}`,
+          subject: `Complete Your Payment for Order #${orderNumber}`,
           text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
           html: fallbackHtml,
         }).catch(err => console.error('Email failed:', err));
