@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   } | null>(null);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<PaymentProvider | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -128,6 +129,7 @@ export default function CheckoutPage() {
           delivery_fee: Number(deliveryFee),
           payment_provider_id: selectedPaymentProvider.id,
           payment_method: selectedPaymentProvider.name,
+          is_guest: isGuest,
         }),
       });
 
@@ -234,6 +236,21 @@ export default function CheckoutPage() {
                 className="w-full border rounded-xl px-3 py-2"
               />
 
+              {/* Guest Checkout Option */}
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="guestCheckout"
+                  checked={isGuest}
+                  onChange={(e) => setIsGuest(e.target.checked)}
+                  className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
+                />
+                <label htmlFor="guestCheckout" className="text-sm text-gray-600">
+                  Checkout as guest (no account required)
+                </label>
+              </div>
+
+              {/* Delivery Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
                 <div className="space-y-2">
@@ -252,6 +269,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Payment Methods */}
               <div>
                 <p className="text-sm font-semibold mb-2">Payment Method</p>
                 
@@ -297,6 +315,15 @@ export default function CheckoutPage() {
                           <span>{p.name}</span>
                         </label>
                       ))}
+                    </div>
+                    
+                    {/* PAYMENT EXPLANATION - Added for clarity */}
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <p className="text-xs text-blue-800">
+                        <strong>How manual payment works:</strong> After placing your order, you will receive payment instructions via email. 
+                        Transfer the amount to the provided account, then upload your proof of payment (screenshot/receipt) for verification. 
+                        Our team will verify your payment within 24 hours.
+                      </p>
                     </div>
                   </div>
                 )}
