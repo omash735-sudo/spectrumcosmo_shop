@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Eye, Edit, Trash2, Plus, X } from 'lucide-react';
 
 type FAQ = {
   id: number;
@@ -83,7 +83,7 @@ export default function AdminFaqsPage() {
         ),
       });
       if (res.ok) {
-        fetchFaqs();
+        await fetchFaqs();
         setShowModal(false);
         setSelectedFaq(null);
         setAnswer('');
@@ -102,7 +102,7 @@ export default function AdminFaqsPage() {
   const deleteFaq = async (id: number) => {
     if (!confirm('Delete this FAQ?')) return;
     await fetch(`/api/admin/faqs?id=${id}`, { method: 'DELETE' });
-    fetchFaqs();
+    await fetchFaqs();
   };
 
   if (loading) {
@@ -120,7 +120,10 @@ export default function AdminFaqsPage() {
           <h1 className="text-2xl font-bold text-gray-900">FAQ Management</h1>
           <p className="text-gray-500 text-sm mt-1">Answer customer questions and manage FAQs</p>
         </div>
-        <button onClick={openAddModal} className="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+        <button
+          onClick={openAddModal}
+          className="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
+        >
           <Plus size={16} /> Add FAQ
         </button>
       </div>
@@ -149,7 +152,9 @@ export default function AdminFaqsPage() {
                   <tr key={faq.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <p className="font-medium text-sm text-gray-800 line-clamp-2">{faq.question}</p>
-                      {faq.answer && <p className="text-xs text-gray-500 mt-1 line-clamp-1">Answer: {faq.answer}</p>}
+                      {faq.answer && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">Answer: {faq.answer}</p>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {faq.is_published && faq.is_answered ? (
@@ -174,15 +179,21 @@ export default function AdminFaqsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openAnswerModal(faq)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600">
+                        <button
+                          onClick={() => openAnswerModal(faq)}
+                          className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"
+                        >
                           <Edit size={15} />
                         </button>
-                        <button onClick={() => deleteFaq(faq.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500">
+                        <button
+                          onClick={() => deleteFaq(faq.id)}
+                          className="p-2 rounded-lg hover:bg-red-50 text-red-500"
+                        >
                           <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
-                  </table>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -199,7 +210,7 @@ export default function AdminFaqsPage() {
                 {selectedFaq ? 'Answer Question' : 'Add New FAQ'}
               </h2>
               <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
-                <XCircle size={18} />
+                <X size={18} />
               </button>
             </div>
             <div className="p-6 space-y-4">
@@ -259,13 +270,16 @@ export default function AdminFaqsPage() {
                 </>
               )}
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-sm">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2 border rounded-xl text-sm"
+                >
                   Cancel
                 </button>
                 <button
                   onClick={saveAnswer}
                   disabled={saving || (!selectedFaq && (!newQuestion || !newAnswer))}
-                  className="flex-1 bg-orange-500 text-white rounded-xl py-2 text-sm font-medium"
+                  className="flex-1 bg-orange-500 text-white rounded-xl py-2 text-sm font-medium disabled:opacity-50"
                 >
                   {saving ? <Loader2 size={16} className="animate-spin mx-auto" /> : (selectedFaq ? 'Save Answer' : 'Add FAQ')}
                 </button>
