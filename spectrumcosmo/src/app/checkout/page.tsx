@@ -113,8 +113,7 @@ export default function CheckoutPage() {
         custom_details: item.custom_details || null,
       }));
 
-      // FIXED: Correct API endpoint
-      const orderRes = await fetch('/api/account/orders', {
+      const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
