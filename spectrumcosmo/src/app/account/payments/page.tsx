@@ -92,7 +92,6 @@ export default function AccountPaymentsPage() {
       const uploadData = await uploadRes.json()
       if (!uploadData.secure_url) throw new Error('Upload failed')
 
-      // FIXED: Changed from PATCH to POST method
       const updateRes = await fetch('/api/account/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
