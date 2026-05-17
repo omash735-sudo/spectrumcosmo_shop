@@ -14,6 +14,7 @@ type PaymentData = {
     total_amount: number;
     payment_status: string;
     payment_method: string;
+    status: string;        // Added order status (e.g., pending, cancelled, etc.)
   };
   provider: {
     name: string;
@@ -34,6 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   awaiting_verification: { label: 'Verification in Progress', color: 'bg-blue-100 text-blue-700', icon: Clock },
   paid: { label: 'Payment Confirmed', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   failed: { label: 'Failed', color: 'bg-red-100 text-red-700', icon: XCircle },
+  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-600', icon: XCircle },
 };
 
 export default function OrderPaymentPage() {
@@ -148,11 +150,39 @@ export default function OrderPaymentPage() {
   }
 
   const { order, provider, existing_proof, existing_note } = paymentData;
+  const isCancelled = order.status === 'cancelled';
   const statusConfig = STATUS_CONFIG[order.payment_status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
   const isAwaiting = order.payment_status === 'awaiting_verification';
   const isPaid = order.payment_status === 'paid';
-  const canUpload = !isPaid && !isAwaiting;
+  const canUpload = !isPaid && !isAwaiting && !isCancelled && provider;
+
+  // If order is cancelled, show a different UI
+  if (isCancelled) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-gray-50 py-10">
+          <div className="max-w-3xl mx-auto px-4">
+            <div className="bg-white rounded-2xl shadow-sm border p-6 text-center">
+              <XCircle className="mx-auto text-gray-400 mb-4" size={48} />
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">Order Cancelled</h1>
+              <p className="text-gray-500 mb-6">
+                This order has been cancelled. No further action is required.
+              </p>
+              <button
+                onClick={() => router.push('/account/orders')}
+                className="bg-orange-500 text-white px-6 py-2 rounded-xl"
+              >
+                View My Orders
+              </button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -181,7 +211,7 @@ export default function OrderPaymentPage() {
             </div>
           </div>
 
-          {/* Payment Instructions (only for manual payments that are not yet paid) */}
+          {/* Payment Instructions (only for manual payments that are not yet paid and not cancelled) */}
           {provider && !isPaid && (
             <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6 mb-6">
               <h2 className="font-semibold text-amber-800 flex items-center gap-2 mb-4">
@@ -213,8 +243,8 @@ export default function OrderPaymentPage() {
             </div>
           )}
 
-          {/* Upload Proof Section - Only when payment is pending */}
-          {canUpload && provider && (
+          {/* Upload Proof Section - Only when payment is pending and not cancelled */}
+          {canUpload && (
             <div className="bg-white rounded-2xl border p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-4">Upload Payment Proof</h2>
               <form onSubmit={uploadProof} className="space-y-4">
