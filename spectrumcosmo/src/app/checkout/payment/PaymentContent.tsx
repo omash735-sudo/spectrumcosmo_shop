@@ -90,12 +90,16 @@ export default function PaymentContent() {
     formData.append('upload_preset', uploadPreset);
 
     try {
+      console.log('Uploading to Cloudinary...');
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
       });
       const uploadData = await uploadRes.json();
       if (!uploadData.secure_url) throw new Error('Upload failed');
+
+      console.log('Cloudinary success, URL:', uploadData.secure_url);
+      console.log('Calling API:', `/api/orders/${orderId}/payment-confirm`);
 
       const confirmRes = await fetch(`/api/orders/${orderId}/payment-confirm`, {
         method: 'POST',
@@ -107,7 +111,11 @@ export default function PaymentContent() {
         }),
       });
 
-      if (!confirmRes.ok) throw new Error('Failed to save proof');
+      console.log('API Response Status:', confirmRes.status);
+      const result = await confirmRes.json();
+      console.log('API Response Body:', result);
+
+      if (!confirmRes.ok) throw new Error(result.error || 'Failed to save proof');
 
       setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it shortly.' });
       setProofFile(null);
@@ -119,6 +127,7 @@ export default function PaymentContent() {
       const newData = await refreshed.json();
       setPaymentData(newData);
     } catch (err: any) {
+      console.error('Upload error:', err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setUploading(false);
