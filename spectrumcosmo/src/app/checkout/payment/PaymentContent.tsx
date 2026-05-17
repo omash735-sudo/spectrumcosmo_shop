@@ -52,9 +52,11 @@ export default function PaymentContent() {
 
     const load = async () => {
       try {
+        console.log('Loading payment data for order:', orderId);
         const res = await fetch(`/api/orders/${orderId}/payment`);
         if (!res.ok) throw new Error('Failed to load payment data');
         const data = await res.json();
+        console.log('Payment data loaded:', data);
         setPaymentData(data);
       } catch (err: any) {
         console.error('Load error:', err);
@@ -68,6 +70,13 @@ export default function PaymentContent() {
 
   const uploadProof = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('=== UPLOAD PROOF STARTED ===');
+    console.log('Order ID:', orderId);
+    console.log('Proof file:', proofFile?.name);
+    console.log('Transaction reference:', transactionRef);
+    console.log('Note:', note);
+    
     if (!proofFile) {
       setMessage({ type: 'error', text: 'Please select a file' });
       return;
@@ -79,8 +88,10 @@ export default function PaymentContent() {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
+    console.log('Cloudinary config:', { cloudName: cloudName || 'missing', uploadPreset: uploadPreset || 'missing' });
+
     if (!cloudName || !uploadPreset) {
-      setMessage({ type: 'error', text: 'Upload service not configured.' });
+      setMessage({ type: 'error', text: 'Upload service not configured. Please contact support.' });
       setUploading(false);
       return;
     }
@@ -90,27 +101,43 @@ export default function PaymentContent() {
     formData.append('upload_preset', uploadPreset);
 
     try {
+      console.log('Uploading to Cloudinary...');
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
       });
       const uploadData = await uploadRes.json();
-      if (!uploadData.secure_url) throw new Error('Upload failed');
+      console.log('Cloudinary response:', uploadData);
+      
+      if (!uploadData.secure_url) {
+        throw new Error('Cloudinary upload failed - no secure_url returned');
+      }
 
-      // Use the correct API endpoint - /api/account/orders (POST)
+      const payload = {
+        id: orderId,
+        proofOfPaymentUrl: uploadData.secure_url,
+        paymentNote: note,
+        transactionReference: transactionRef,
+      };
+      
+      console.log('Sending to API - Method: POST, URL: /api/account/orders');
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+      
       const confirmRes = await fetch('/api/account/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: orderId,
-          proofOfPaymentUrl: uploadData.secure_url,
-          paymentNote: note,
-          transactionReference: transactionRef,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('API response status:', confirmRes.status);
+      console.log('API response status text:', confirmRes.statusText);
+      
       const result = await confirmRes.json();
-      if (!confirmRes.ok) throw new Error(result.error || 'Failed to save proof');
+      console.log('API response body:', result);
+      
+      if (!confirmRes.ok) {
+        throw new Error(result.error || `HTTP ${confirmRes.status}`);
+      }
 
       setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it shortly.' });
       setProofFile(null);
@@ -121,7 +148,7 @@ export default function PaymentContent() {
       const newData = await refreshed.json();
       setPaymentData(newData);
     } catch (err: any) {
-      console.error('Upload error:', err);
+      console.error('Upload error details:', err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setUploading(false);
@@ -129,9 +156,10 @@ export default function PaymentContent() {
   };
 
   const cancelProof = async () => {
-    if (!confirm('Are you sure you want to remove your submitted proof?')) return;
+    if (!confirm('Remove your submitted proof?')) return;
     setCancellingProof(true);
     try {
+      console.log('Cancelling proof for order:', orderId);
       const res = await fetch(`/api/orders/${orderId}/payment-cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,10 +169,9 @@ export default function PaymentContent() {
         const newData = await refreshed.json();
         setPaymentData(newData);
         setMessage({ type: 'success', text: 'Proof removed.' });
-      } else {
-        throw new Error('Failed to remove proof');
       }
     } catch (err: any) {
+      console.error('Cancel proof error:', err);
       setMessage({ type: 'error', text: err.message });
     } finally {
       setCancellingProof(false);
@@ -171,10 +198,7 @@ export default function PaymentContent() {
           <div className="max-w-md mx-auto bg-white rounded-xl p-6 shadow-sm">
             <AlertCircle className="text-red-500 w-12 h-12 mx-auto mb-3" />
             <p className="text-gray-700">Payment data not available.</p>
-            <button
-              onClick={() => router.push('/account/orders')}
-              className="mt-4 text-orange-600 hover:underline"
-            >
+            <button onClick={() => router.push('/account/orders')} className="mt-4 text-orange-600 hover:underline">
               Go to My Orders
             </button>
           </div>
@@ -197,7 +221,6 @@ export default function PaymentContent() {
         <main className="min-h-screen bg-gray-50 py-10">
           <div className="max-w-3xl mx-auto px-4">
             <div className="bg-white rounded-2xl shadow-sm border p-6 text-center">
-              <div className="text-red-500 text-5xl mb-4">X</div>
               <h1 className="text-2xl font-bold text-gray-800 mb-2">Order Cancelled</h1>
               <p className="text-gray-500 mb-6">This order has been cancelled.</p>
               <button onClick={() => router.push('/account/orders')} className="bg-orange-500 text-white px-6 py-2 rounded-xl">
@@ -227,7 +250,7 @@ export default function PaymentContent() {
                 isAwaiting ? 'bg-blue-100 text-blue-700' : 
                 'bg-yellow-100 text-yellow-700'
               }`}>
-                {isPaid ? <CheckCircle size={16} /> : <Clock size={16} />}
+                {isPaid ? <CheckCircle size={16} /> : isAwaiting ? <Clock size={16} /> : <Clock size={16} />}
                 <span>{isPaid ? 'Payment Confirmed' : isAwaiting ? 'Awaiting Verification' : 'Payment Pending'}</span>
               </div>
             </div>
@@ -241,13 +264,13 @@ export default function PaymentContent() {
               <div className="space-y-3 text-sm">
                 <p><strong>Provider:</strong> {provider.name}</p>
                 {provider.category === 'mobile_money' && (
-                  <p><strong>Mobile Money Number:</strong> <span className="font-mono">{provider.account_number}</span></p>
+                  <p><strong>Mobile Money Number:</strong> <span className="font-mono bg-white px-2 py-1 rounded">{provider.account_number}</span></p>
                 )}
                 {provider.category === 'bank' && (
                   <>
                     <p><strong>Bank:</strong> {provider.name}</p>
                     <p><strong>Account Name:</strong> {provider.account_name}</p>
-                    <p><strong>Account Number:</strong> <span className="font-mono">{provider.account_number}</span></p>
+                    <p><strong>Account Number:</strong> <span className="font-mono bg-white px-2 py-1 rounded">{provider.account_number}</span></p>
                     {provider.branch && <p><strong>Branch:</strong> {provider.branch}</p>}
                   </>
                 )}
@@ -264,7 +287,7 @@ export default function PaymentContent() {
               <h2 className="font-semibold text-gray-800 mb-4">Upload Payment Proof</h2>
               <form onSubmit={uploadProof} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Payment Screenshot / Receipt *</label>
+                  <label className="block text-sm font-medium mb-1">Screenshot / Receipt *</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -272,6 +295,7 @@ export default function PaymentContent() {
                     required
                     className="w-full text-sm border rounded-lg p-2"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Accepted formats: JPG, PNG. Max size: 5MB.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Transaction Reference</label>
@@ -280,7 +304,7 @@ export default function PaymentContent() {
                     value={transactionRef}
                     onChange={(e) => setTransactionRef(e.target.value)}
                     className="w-full border rounded-xl p-2 text-sm"
-                    placeholder="e.g., TRX-123456"
+                    placeholder="e.g., TRX-123456, Reference from your bank"
                   />
                 </div>
                 <div>
@@ -290,7 +314,7 @@ export default function PaymentContent() {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="w-full border rounded-xl p-2 text-sm"
-                    placeholder="Any extra information"
+                    placeholder="Any extra information about your payment"
                   />
                 </div>
                 {message && (
@@ -301,7 +325,7 @@ export default function PaymentContent() {
                 <button
                   type="submit"
                   disabled={uploading || !proofFile}
-                  className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-medium"
+                  className="w-full bg-orange-600 text-white py-2.5 rounded-xl font-medium hover:bg-orange-700 disabled:opacity-50"
                 >
                   {uploading ? <Loader2 className="animate-spin inline mr-2" size={16} /> : <Upload size={16} className="inline mr-2" />}
                   {uploading ? 'Submitting...' : 'Submit Payment Proof'}
@@ -313,11 +337,20 @@ export default function PaymentContent() {
           {existing_proof && (
             <div className="bg-gray-50 rounded-2xl p-6 mb-6">
               <h2 className="font-semibold text-gray-800 mb-3">Submitted Proof</h2>
-              <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline">View uploaded proof image</a>
+              <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline break-all">
+                View uploaded proof image
+              </a>
               {existing_note && <p className="text-sm text-gray-500 mt-2">Note: {existing_note}</p>}
-              {isAwaiting && <p className="text-sm text-blue-600 mt-3">Your payment is being reviewed.</p>}
+              {isAwaiting && (
+                <p className="text-sm text-blue-600 mt-3">Your payment is being reviewed by our team.</p>
+              )}
               {canUpload && existing_proof && !isAwaiting && (
-                <button onClick={cancelProof} disabled={cancellingProof} className="mt-3 text-red-600 text-sm">
+                <button
+                  onClick={cancelProof}
+                  disabled={cancellingProof}
+                  className="mt-3 flex items-center gap-2 text-red-600 hover:text-red-700 text-sm"
+                >
+                  <Trash2 size={14} />
                   {cancellingProof ? 'Removing...' : 'Cancel and remove this proof'}
                 </button>
               )}
@@ -325,10 +358,16 @@ export default function PaymentContent() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={() => router.push('/account/orders')} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium">
+            <button
+              onClick={() => router.push('/account/orders')}
+              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-200 transition"
+            >
               View My Orders
             </button>
-            <button onClick={() => router.push('/')} className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl font-medium">
+            <button
+              onClick={() => router.push('/')}
+              className="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition"
+            >
               Continue Shopping
             </button>
           </div>
