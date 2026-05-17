@@ -152,11 +152,13 @@ export default function CustomerMessagesPage() {
   };
 
   const getStatusName = (id: number) => {
-    return statuses.find(s => s.id === id)?.name || 'All Statuses';
+    const found = statuses.find(s => s.id === id);
+    return found ? found.name : 'All Statuses';
   };
 
   const getCategoryName = (id: number) => {
-    return categories.find(c => c.id === id)?.name || 'General';
+    const found = categories.find(c => c.id === id);
+    return found ? found.name : 'General';
   };
 
   if (loading) {
@@ -228,13 +230,22 @@ export default function CustomerMessagesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => setPreviewMessage(m.message)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                        <button 
+                          onClick={() => setPreviewMessage(m.message)} 
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                        >
                           <Eye size={15} />
                         </button>
-                        <button onClick={() => openEdit(m)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600">
+                        <button 
+                          onClick={() => openEdit(m)} 
+                          className="p-2 rounded-lg hover:bg-blue-50 text-blue-600"
+                        >
                           <Pencil size={15} />
                         </button>
-                        <button onClick={() => deleteMessage(m.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500">
+                        <button 
+                          onClick={() => deleteMessage(m.id)} 
+                          className="p-2 rounded-lg hover:bg-red-50 text-red-500"
+                        >
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -253,7 +264,9 @@ export default function CustomerMessagesPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg">Message Preview</h3>
-              <button onClick={() => setPreviewMessage(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              <button onClick={() => setPreviewMessage(null)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={18} />
+              </button>
             </div>
             <div className="bg-gray-50 p-4 rounded-xl">
               <p className="text-gray-700 whitespace-pre-wrap">{previewMessage}</p>
@@ -268,7 +281,9 @@ export default function CustomerMessagesPage() {
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b">
               <h2 className="font-bold text-[#111111]">{editing ? 'Edit Message' : 'Add Message'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={18} />
+              </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -381,7 +396,7 @@ export default function CustomerMessagesPage() {
                   onChange={(e) => setForm({ ...form, html_content: e.target.value })}
                   rows={4}
                   className="input font-mono text-sm"
-                  placeholder="<div class="alert">Custom HTML block</div>"
+                  placeholder='<div class="alert">Custom HTML block</div>'
                 />
               </div>
 
@@ -411,7 +426,9 @@ export default function CustomerMessagesPage() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-sm">Cancel</button>
+                <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-sm">
+                  Cancel
+                </button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 bg-orange-500 text-white rounded-xl py-2 text-sm font-medium">
                   {saving ? <Loader2 size={16} className="animate-spin mx-auto" /> : (editing ? 'Save Changes' : 'Add Message')}
                 </button>
