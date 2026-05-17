@@ -23,7 +23,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null);
 
 const STORAGE_KEY = 'spectrumcosmo_cart';
-const POLL_INTERVAL_MS = 2000; // 2 seconds – real‑time feel
+const POLL_INTERVAL_MS = 5000; // 5 seconds – real‑time feel
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
