@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
-// Helper to get or create session ID from cookie
 function getSessionId(request: NextRequest, response: NextResponse) {
   let sessionId = request.cookies.get('user_session_id')?.value;
   if (!sessionId) {
@@ -18,12 +17,10 @@ function getSessionId(request: NextRequest, response: NextResponse) {
   return sessionId;
 }
 
-// GET – fetch cart (supports both logged-in users and guest sessions)
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
   if (error && error.status !== 401) return error;
 
-  // For logged-in users, fetch from user_carts
   if (user) {
     const sql = getDb();
     const [cart] = await sql`
@@ -32,7 +29,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ items: cart?.items || [] });
   }
 
-  // For guests, fetch from cart_sessions using session cookie
   const sessionId = req.cookies.get('user_session_id')?.value;
   if (!sessionId) {
     return NextResponse.json({ items: [] });
@@ -45,19 +41,19 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ items: sessionCart?.items || [] });
 }
 
-// POST – save cart (supports both logged-in users and guest sessions)
 export async function POST(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
   if (error && error.status !== 401) return error;
 
   const { items } = await req.json();
   const sql = getDb();
-
-  // Create a response object to set cookies if needed
   const response = NextResponse.json({ success: true });
 
+  // Calculate derived fields
+  const itemCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
+  const totalAmount = items.reduce((sum: number, i: any) => sum + (i.priceUsd || 0) * (i.quantity || 1), 0);
+
   if (user) {
-    // Logged-in user – store in user_carts
     await sql`
       INSERT INTO user_carts (user_id, items, updated_at)
       VALUES (${user.id}, ${JSON.stringify(items)}, NOW())
@@ -65,29 +61,32 @@ export async function POST(req: NextRequest) {
         items = EXCLUDED.items,
         updated_at = NOW()
     `;
-    // Also update cart_sessions for this user (for analytics)
+
     const sessionId = req.cookies.get('user_session_id')?.value;
     if (sessionId) {
       await sql`
-        INSERT INTO cart_sessions (session_id, user_id, items, status, last_activity)
-        VALUES (${sessionId}, ${user.id}, ${JSON.stringify(items)}, 'active', NOW())
+        INSERT INTO cart_sessions (session_id, user_id, items, status, item_count, total_amount, last_activity)
+        VALUES (${sessionId}, ${user.id}, ${JSON.stringify(items)}, 'active', ${itemCount}, ${totalAmount}, NOW())
         ON CONFLICT (session_id) DO UPDATE SET
           user_id = EXCLUDED.user_id,
           items = EXCLUDED.items,
-          last_activity = NOW(),
-          status = 'active'
+          status = 'active',
+          item_count = EXCLUDED.item_count,
+          total_amount = EXCLUDED.total_amount,
+          last_activity = NOW()
       `;
     }
   } else {
-    // Guest – store in cart_sessions
     const sessionId = getSessionId(req, response);
     await sql`
-      INSERT INTO cart_sessions (session_id, items, status, last_activity)
-      VALUES (${sessionId}, ${JSON.stringify(items)}, 'active', NOW())
+      INSERT INTO cart_sessions (session_id, items, status, item_count, total_amount, last_activity)
+      VALUES (${sessionId}, ${JSON.stringify(items)}, 'active', ${itemCount}, ${totalAmount}, NOW())
       ON CONFLICT (session_id) DO UPDATE SET
         items = EXCLUDED.items,
-        last_activity = NOW(),
-        status = 'active'
+        status = 'active',
+        item_count = EXCLUDED.item_count,
+        total_amount = EXCLUDED.total_amount,
+        last_activity = NOW()
     `;
   }
 
