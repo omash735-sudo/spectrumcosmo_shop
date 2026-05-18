@@ -11,7 +11,9 @@ export async function GET() {
   try {
     const sql = getDb();
     
-    // Optimized single query instead of view
+    // Use Malawi timezone (UTC+2)
+    const malawiTimezone = 'Africa/Blantyre';
+    
     const result = await sql`
       WITH 
       today_stats AS (
@@ -20,7 +22,7 @@ export async function GET() {
           COUNT(*) as orders,
           COALESCE(SUM(total_amount), 0) as revenue
         FROM orders 
-        WHERE created_at >= CURRENT_DATE
+        WHERE created_at >= (NOW() AT TIME ZONE ${malawiTimezone})::DATE
       ),
       cart_stats AS (
         SELECT 
