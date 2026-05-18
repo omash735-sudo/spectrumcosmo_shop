@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
@@ -12,7 +11,8 @@ const redis = Redis.fromEnv();
 // WHITELIST - These IPs are NEVER blocked
 // =============================================
 const WHITELIST_IPS = [
-  '137.115.3.164',               // Your IP
+  '137.115.3.164',               // old IP
+  '102.70.104.115',              // new IP
   '127.0.0.1',                  // Localhost
   '::1',                        // Localhost IPv6
 ];
@@ -36,9 +36,7 @@ const DEFAULT_RULES = {
 async function getCachedRules(): Promise<any> {
   try {
     const cached = await redis.get('security:rules');
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
     return DEFAULT_RULES;
   } catch (err) {
     console.error('Failed to get cached rules:', err);
@@ -126,19 +124,10 @@ export async function middleware(request: NextRequest) {
       const rateKey = `rate:${ip}`;
       
       const current = await redis.incr(rateKey);
-      if (current === 1) {
-        await redis.expire(rateKey, windowSeconds);
-      }
-      
+      if (current === 1) await redis.expire(rateKey, windowSeconds);
       if (current > maxRequests) {
-        await logIncident(origin, 'rate_limit_exceeded', 'medium', ip, userAgent, pathname, {
-          count: current,
-          limit: maxRequests,
-        });
-        return NextResponse.json(
-          { error: 'Rate limit exceeded. Please slow down.' },
-          { status: 429 }
-        );
+        await logIncident(origin, 'rate_limit_exceeded', 'medium', ip, userAgent, pathname, { count: current, limit: maxRequests });
+        return NextResponse.json({ error: 'Rate limit exceeded. Please slow down.' }, { status: 429 });
       }
     }
 
@@ -149,22 +138,11 @@ export async function middleware(request: NextRequest) {
       const suspiciousKey = `suspicious:${ip}`;
       
       const current = await redis.incr(suspiciousKey);
-      if (current === 1) {
-        await redis.expire(suspiciousKey, windowSeconds);
-      }
-      
+      if (current === 1) await redis.expire(suspiciousKey, windowSeconds);
       if (current > maxRequests) {
-        if (autoBlockRule.enabled) {
-          await blockIp(ip, blockMinutes * 60);
-        }
-        await logIncident(origin, 'bot_detected', 'high', ip, userAgent, pathname, {
-          request_count: current,
-          reason: 'rapid_requests',
-        });
-        return NextResponse.json(
-          { error: 'Suspicious activity detected. Access blocked.' },
-          { status: 403 }
-        );
+        if (autoBlockRule.enabled) await blockIp(ip, blockMinutes * 60);
+        await logIncident(origin, 'bot_detected', 'high', ip, userAgent, pathname, { request_count: current, reason: 'rapid_requests' });
+        return NextResponse.json({ error: 'Suspicious activity detected. Access blocked.' }, { status: 403 });
       }
     }
 
@@ -175,19 +153,10 @@ export async function middleware(request: NextRequest) {
       const checkoutKey = `checkout:${ip}`;
       
       const current = await redis.incr(checkoutKey);
-      if (current === 1) {
-        await redis.expire(checkoutKey, windowSeconds);
-      }
-      
+      if (current === 1) await redis.expire(checkoutKey, windowSeconds);
       if (current > maxAttempts) {
-        await logIncident(origin, 'checkout_abuse', 'high', ip, userAgent, pathname, {
-          attempts: current,
-          limit: maxAttempts,
-        });
-        return NextResponse.json(
-          { error: 'Too many checkout attempts. Please try again later.' },
-          { status: 429 }
-        );
+        await logIncident(origin, 'checkout_abuse', 'high', ip, userAgent, pathname, { attempts: current, limit: maxAttempts });
+        return NextResponse.json({ error: 'Too many checkout attempts. Please try again later.' }, { status: 429 });
       }
     }
 
@@ -197,12 +166,8 @@ export async function middleware(request: NextRequest) {
                     /bot|crawl|scrape|python|curl|wget|headless/i.test(userAgent) ||
                     !request.headers.get('accept') ||
                     !request.headers.get('accept-language');
-      
       if (isBot) {
-        await logIncident(origin, 'bot_detected', 'medium', ip, userAgent, pathname, {
-          reason: 'missing_headers_or_bot_user_agent',
-          user_agent: userAgent,
-        });
+        await logIncident(origin, 'bot_detected', 'medium', ip, userAgent, pathname, { reason: 'missing_headers_or_bot_user_agent', user_agent: userAgent });
       }
     }
   }
@@ -212,10 +177,7 @@ export async function middleware(request: NextRequest) {
   const isAdminLogin = pathname === '/admin/login';
   
   if (adminRule.enabled && pathname.startsWith('/admin') && !isAdminLogin && !adminToken) {
-    await logIncident(origin, 'unauthorized_admin_access', 'high', ip, userAgent, pathname, {
-      attempted_access: pathname,
-      missing_token: true,
-    });
+    await logIncident(origin, 'unauthorized_admin_access', 'high', ip, userAgent, pathname, { attempted_access: pathname, missing_token: true });
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
@@ -257,14 +219,7 @@ export async function middleware(request: NextRequest) {
     fetch(`${origin}/api/track-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        userId,
-        pageUrl: pathname,
-        userAgent,
-        ipAddress: ip,
-        referrer: request.headers.get('referer') || '',
-      }),
+      body: JSON.stringify({ sessionId, userId, pageUrl: pathname, userAgent, ipAddress: ip, referrer: request.headers.get('referer') || '' }),
     }).catch(() => {});
   }
 
