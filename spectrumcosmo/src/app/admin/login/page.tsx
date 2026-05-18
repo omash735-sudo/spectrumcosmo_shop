@@ -1,12 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { ShoppingBag, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const [form, setForm] = useState({ username:'', password:'' })
   const [showPw, setShowPw] = useState(false)
   const [status, setStatus] = useState<'idle'|'loading'|'error'>('idle')
   const [error, setError] = useState('')
+
+  // Dark mode logo (white/orange) for dark background
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,9 +37,8 @@ export default function AdminLoginPage() {
       </div>
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#F97316] rounded-xl flex items-center justify-center"><ShoppingBag size={20} className="text-white" /></div>
-            <span className="text-2xl font-bold text-white" style={{fontFamily:'var(--font-display)'}}>SpectrumCosmo</span>
+          <div className="flex justify-center mb-4">
+            <img src={logoSrc} alt="SpectrumCosmo" className="h-12 w-auto" />
           </div>
           <p className="text-gray-400 text-sm">Admin Dashboard</p>
         </div>
