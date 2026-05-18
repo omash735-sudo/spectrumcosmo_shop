@@ -101,7 +101,24 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const skipPaths = ['/_next/', '/favicon.ico', '/api/track-session', '/api/security/log-incident', '/api/log-request', '/api/cron/'];
+  // NEW: Skip all security checks for admin API routes
+  if (pathname.startsWith('/api/admin/')) {
+    const response = NextResponse.next();
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    return response;
+  }
+
+  const skipPaths = [
+    '/_next/', 
+    '/favicon.ico', 
+    '/api/track-session', 
+    '/api/security/log-incident', 
+    '/api/log-request', 
+    '/api/cron/',
+    '/api/admin/'
+  ];
   const shouldSkip = skipPaths.some(path => pathname.includes(path));
   
   if (!shouldSkip) {
