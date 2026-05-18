@@ -31,6 +31,7 @@ import {
   Users,
   Server,
   Database,
+  Trash2,
 } from 'lucide-react';
 import {
   LineChart,
@@ -475,7 +476,7 @@ export default function SecurityCenter() {
           </div>
         </div>
 
-        {/* Section 3: Live Threat Feed (simplified – no filters) */}
+        {/* Section 3: Live Threat Feed */}
         <div className="bg-white rounded-xl border overflow-hidden mb-8">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -550,7 +551,7 @@ export default function SecurityCenter() {
                     <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                       No threat events found
                     </td>
-                  </tr>
+                  </table>
                 )}
               </tbody>
             </table>
@@ -781,7 +782,7 @@ export default function SecurityCenter() {
           </div>
         </div>
 
-        {/* Section 8: Security Logs (Raw Data) – simplified, no risk filter */}
+        {/* Section 8: Security Logs (Raw Data) */}
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center justify-between">
@@ -823,7 +824,7 @@ export default function SecurityCenter() {
                     <td className="px-3 py-2">
                       {log.blocked ? <Ban size={14} className="text-red-500" /> : <CheckCircle size={14} className="text-green-500" />}
                     </td>
-                  </td>
+                  </tr>
                 ))}
                 {logs.length === 0 && (
                   <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No security logs available</td></tr>
