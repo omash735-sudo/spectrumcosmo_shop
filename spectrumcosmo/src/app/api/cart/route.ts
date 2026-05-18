@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
-function ensureSessionId(request: NextRequest, response: NextResponse): string {
+function getSessionId(request: NextRequest, response: NextResponse) {
   let sessionId = request.cookies.get('user_session_id')?.value;
   if (!sessionId) {
     sessionId = crypto.randomUUID();
@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ items: cart?.items || [] });
   }
 
-  // Guest: try to get session ID from cookie
   const sessionId = req.cookies.get('user_session_id')?.value;
   if (!sessionId) return NextResponse.json({ items: [] });
 
@@ -48,7 +47,6 @@ export async function POST(req: NextRequest) {
   const totalAmount = items.reduce((sum: number, i: any) => sum + (i.priceUsd || 0) * (i.quantity || 1), 0);
 
   if (user) {
-    // Logged in user
     await sql`
       INSERT INTO user_carts (user_id, items, updated_at)
       VALUES (${user.id}, ${JSON.stringify(items)}, NOW())
@@ -56,30 +54,18 @@ export async function POST(req: NextRequest) {
     `;
     const sessionId = req.cookies.get('user_session_id')?.value;
     if (sessionId) {
+      await sql`DELETE FROM cart_sessions WHERE session_id = ${sessionId}`;
       await sql`
         INSERT INTO cart_sessions (session_id, user_id, items, status, item_count, total_amount, last_activity)
         VALUES (${sessionId}, ${user.id}, ${JSON.stringify(items)}, 'active', ${itemCount}, ${totalAmount}, NOW())
-        ON CONFLICT (session_id) DO UPDATE SET
-          user_id = EXCLUDED.user_id,
-          items = EXCLUDED.items,
-          status = 'active',
-          item_count = EXCLUDED.item_count,
-          total_amount = EXCLUDED.total_amount,
-          last_activity = NOW()
       `;
     }
   } else {
-    // Guest – ensure session cookie exists
-    const sessionId = ensureSessionId(req, response);
+    const sessionId = getSessionId(req, response);
+    await sql`DELETE FROM cart_sessions WHERE session_id = ${sessionId}`;
     await sql`
       INSERT INTO cart_sessions (session_id, items, status, item_count, total_amount, last_activity)
       VALUES (${sessionId}, ${JSON.stringify(items)}, 'active', ${itemCount}, ${totalAmount}, NOW())
-      ON CONFLICT (session_id) DO UPDATE SET
-        items = EXCLUDED.items,
-        status = 'active',
-        item_count = EXCLUDED.item_count,
-        total_amount = EXCLUDED.total_amount,
-        last_activity = NOW()
     `;
   }
 
