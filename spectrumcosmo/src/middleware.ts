@@ -1,96 +1,64 @@
+// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getRuleConfig, isRuleEnabled } from '@/lib/rule-engine';
+import { Redis } from '@upstash/redis';
 
 // =============================================
-// PROTECTION STORES (In-memory - use Redis in production)
+// REDIS CLIENT
 // =============================================
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-const failedLoginStore = new Map<string, { attempts: number; firstAttempt: number; blockedUntil: number }>();
-const suspiciousActivityStore = new Map<string, { count: number; firstActivity: number }>();
-const checkoutStore = new Map<string, { count: number; resetTime: number }>();
-
-// Cache for dynamic rules (refresh every 60 seconds)
-let rulesCache: {
-  rateLimiting: any;
-  suspiciousActivity: any;
-  checkoutProtection: any;
-  autoBlock: any;
-} | null = null;
-let lastRuleRefresh = 0;
-const RULE_CACHE_TTL = 60000; // 60 seconds
-
-async function loadDynamicRules() {
-  const now = Date.now();
-  if (rulesCache && now - lastRuleRefresh < RULE_CACHE_TTL) {
-    return rulesCache;
-  }
-  
-  const rateLimitingEnabled = await isRuleEnabled('rate_limiting');
-  const suspiciousEnabled = await isRuleEnabled('suspicious_activity');
-  const checkoutEnabled = await isRuleEnabled('checkout_protection');
-  const autoBlockEnabled = await isRuleEnabled('auto_block');
-  
-  const rateLimitingConfig = rateLimitingEnabled ? await getRuleConfig('rate_limiting') : null;
-  const suspiciousConfig = suspiciousEnabled ? await getRuleConfig('suspicious_activity') : null;
-  const checkoutConfig = checkoutEnabled ? await getRuleConfig('checkout_protection') : null;
-  const autoBlockConfig = autoBlockEnabled ? await getRuleConfig('auto_block') : null;
-  
-  rulesCache = {
-    rateLimiting: {
-      enabled: rateLimitingEnabled,
-      maxRequests: rateLimitingConfig?.max_requests || 60,
-      windowMs: (rateLimitingConfig?.window_seconds || 60) * 1000,
-    },
-    suspiciousActivity: {
-      enabled: suspiciousEnabled,
-      maxRequests: suspiciousConfig?.max_requests || 20,
-      windowMs: (suspiciousConfig?.window_seconds || 10) * 1000,
-      blockDurationMs: (suspiciousConfig?.block_minutes || 30) * 60 * 1000,
-    },
-    checkoutProtection: {
-      enabled: checkoutEnabled,
-      maxAttempts: checkoutConfig?.max_attempts || 10,
-      windowMs: (checkoutConfig?.window_hours || 1) * 60 * 60 * 1000,
-    },
-    autoBlock: {
-      enabled: autoBlockEnabled,
-      riskScoreThreshold: autoBlockConfig?.risk_threshold || 80,
-      blockDurationMs: (autoBlockConfig?.block_minutes || 30) * 60 * 1000,
-    },
-  };
-  
-  lastRuleRefresh = now;
-  return rulesCache;
-}
+const redis = Redis.fromEnv();
 
 // =============================================
-// HELPER: Clean up expired entries
+// CACHED RULES (loaded once, refreshed via cron)
 // =============================================
-function cleanupStores() {
-  const now = Date.now();
-  
-  for (const [key, value] of rateLimitStore) {
-    if (now > value.resetTime) rateLimitStore.delete(key);
-  }
-  for (const [key, value] of failedLoginStore) {
-    if (value.blockedUntil && now > value.blockedUntil) failedLoginStore.delete(key);
-    else if (now > value.firstAttempt + 10 * 60 * 1000) failedLoginStore.delete(key);
-  }
-  for (const [key, value] of suspiciousActivityStore) {
-    if (now > value.firstActivity + 10 * 1000) suspiciousActivityStore.delete(key);
-  }
-  for (const [key, value] of checkoutStore) {
-    if (now > value.resetTime) checkoutStore.delete(key);
+// Default rules (fallback if Redis cache is empty)
+const DEFAULT_RULES = {
+  rate_limiting: { enabled: true, max_requests: 60, window_seconds: 60 },
+  suspicious_activity: { enabled: true, max_requests: 20, window_seconds: 10, block_minutes: 30 },
+  checkout_protection: { enabled: true, max_attempts: 10, window_hours: 1 },
+  bot_detection: { enabled: true },
+  auto_block: { enabled: true, risk_threshold: 80, block_minutes: 30 },
+  admin_protection: { enabled: true },
+};
+
+// Helper to get rules from Redis cache
+async function getCachedRules(): Promise<any> {
+  try {
+    const cached = await redis.get('security:rules');
+    if (cached) {
+      return cached;
+    }
+    // Return defaults if no cache
+    return DEFAULT_RULES;
+  } catch (err) {
+    console.error('Failed to get cached rules:', err);
+    return DEFAULT_RULES;
   }
 }
 
-// Run cleanup every minute
-setInterval(cleanupStores, 60 * 1000);
-setInterval(() => { rulesCache = null; }, RULE_CACHE_TTL);
+// Helper to get a single rule's config
+async function getRule(ruleKey: string): Promise<any> {
+  const rules = await getCachedRules();
+  return rules[ruleKey] || { enabled: false };
+}
 
 // =============================================
-// HELPER: Log security incidents
+// HELPER: Check if IP is blocked in Redis
+// =============================================
+async function isIpBlocked(ip: string): Promise<boolean> {
+  const blocked = await redis.get(`blocked:${ip}`);
+  return blocked !== null;
+}
+
+// =============================================
+// HELPER: Block IP in Redis
+// =============================================
+async function blockIp(ip: string, durationSeconds: number) {
+  await redis.setex(`blocked:${ip}`, durationSeconds, 'blocked');
+}
+
+// =============================================
+// HELPER: Log incident to database via API
 // =============================================
 async function logIncident(origin: string, type: string, severity: string, ip: string, userAgent: string, endpoint: string, details: any) {
   try {
@@ -105,6 +73,21 @@ async function logIncident(origin: string, type: string, severity: string, ip: s
 }
 
 // =============================================
+// HELPER: Log API request to api_logs table
+// =============================================
+async function logApiRequest(origin: string, endpoint: string, method: string, ip: string, userAgent: string, status: number, responseTimeMs: number) {
+  try {
+    await fetch(`${origin}/api/log-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint, method, ip, userAgent, status, responseTimeMs }),
+    }).catch(() => {});
+  } catch (err) {
+    console.error('Failed to log API request:', err);
+  }
+}
+
+// =============================================
 // MAIN MIDDLEWARE FUNCTION
 // =============================================
 export async function middleware(request: NextRequest) {
@@ -113,188 +96,167 @@ export async function middleware(request: NextRequest) {
              request.headers.get('x-real-ip') || 
              'unknown';
   const userAgent = request.headers.get('user-agent') || '';
-  const now = Date.now();
-  const origin = request.nextUrl.origin;
+  const method = request.method;
+  const startTime = Date.now();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
-  // Load dynamic rules
-  const rules = await loadDynamicRules();
-
-  // =============================================
-  // RULE 4: Admin Access Protection
-  // =============================================
-  const adminToken = request.cookies.get('admin_token')?.value;
-  const userToken = request.cookies.get('user_token')?.value;
-  const isAdminLogin = pathname === '/admin/login';
-  const adminProtectionEnabled = await isRuleEnabled('admin_protection');
-
-  if (adminProtectionEnabled && pathname.startsWith('/admin') && !isAdminLogin) {
-    if (!adminToken) {
-      await logIncident(origin, 'unauthorized_admin_access', 'high', ip, userAgent, pathname, {
-        attempted_access: pathname,
-        missing_token: true,
-      });
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
-  }
-
-  // Account protection
-  if (pathname.startsWith('/account')) {
-    if (!userToken) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-  }
-
-  // =============================================
-  // RULE 8: Auto-Block Check (IP already blocked)
-  // =============================================
-  if (rules.autoBlock.enabled) {
-    const blockedKey = `blocked:${ip}`;
-    const blockedData = rateLimitStore.get(blockedKey);
-    if (blockedData && now < blockedData.resetTime) {
+  // Skip protection for static assets and tracking endpoints
+  const skipPaths = ['/_next/', '/favicon.ico', '/api/track-session', '/api/security/log-incident', '/api/log-request', '/api/cron/'];
+  const shouldSkip = skipPaths.some(path => pathname.includes(path));
+  
+  if (!shouldSkip) {
+    // Check if IP is already blocked
+    const blocked = await isIpBlocked(ip);
+    if (blocked) {
       return NextResponse.json(
-        { error: 'Too many suspicious requests. Please try again later.' },
+        { error: 'Your IP has been blocked due to suspicious activity. Please contact support.' },
         { status: 403 }
       );
     }
-  }
 
-  // Skip protection for static assets and certain paths
-  const skipProtectionPaths = ['/_next/', '/favicon.ico', '/api/track-session', '/api/security/log-incident', '/api/auth/captcha'];
-  const shouldSkipProtection = skipProtectionPaths.some(path => pathname.includes(path));
-  
-  if (!shouldSkipProtection && !pathname.startsWith('/admin')) {
-    
+    // Get rules from Redis cache
+    const rateLimitingRule = await getRule('rate_limiting');
+    const suspiciousRule = await getRule('suspicious_activity');
+    const checkoutRule = await getRule('checkout_protection');
+    const autoBlockRule = await getRule('auto_block');
+
     // =============================================
-    // RULE 2: Rate Limiting
+    // RATE LIMITING (Redis)
     // =============================================
-    if (rules.rateLimiting.enabled) {
+    if (rateLimitingRule.enabled) {
+      const maxRequests = rateLimitingRule.max_requests || 60;
+      const windowSeconds = rateLimitingRule.window_seconds || 60;
       const rateKey = `rate:${ip}`;
-      const rateData = rateLimitStore.get(rateKey);
       
-      if (rateData && now < rateData.resetTime) {
-        if (rateData.count >= rules.rateLimiting.maxRequests) {
-          await logIncident(origin, 'rate_limit_exceeded', 'medium', ip, userAgent, pathname, {
-            count: rateData.count,
-            limit: rules.rateLimiting.maxRequests,
-          });
-          return NextResponse.json(
-            { error: 'Rate limit exceeded. Please slow down.' },
-            { status: 429 }
-          );
-        }
-        rateData.count++;
-        rateLimitStore.set(rateKey, rateData);
-      } else {
-        rateLimitStore.set(rateKey, {
-          count: 1,
-          resetTime: now + rules.rateLimiting.windowMs,
+      const current = await redis.incr(rateKey);
+      if (current === 1) {
+        await redis.expire(rateKey, windowSeconds);
+      }
+      
+      if (current > maxRequests) {
+        await logIncident(origin, 'rate_limit_exceeded', 'medium', ip, userAgent, pathname, {
+          count: current,
+          limit: maxRequests,
         });
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Please slow down.' },
+          { status: 429 }
+        );
       }
     }
 
     // =============================================
-    // RULE 3: Suspicious Activity / Bot Detection
+    // SUSPICIOUS ACTIVITY / BOT DETECTION (Redis)
     // =============================================
-    if (rules.suspiciousActivity.enabled) {
+    if (suspiciousRule.enabled) {
+      const maxRequests = suspiciousRule.max_requests || 20;
+      const windowSeconds = suspiciousRule.window_seconds || 10;
+      const blockMinutes = suspiciousRule.block_minutes || 30;
       const suspiciousKey = `suspicious:${ip}`;
-      const suspiciousData = suspiciousActivityStore.get(suspiciousKey);
       
-      if (suspiciousData && now < suspiciousData.firstActivity + rules.suspiciousActivity.windowMs) {
-        const newCount = suspiciousData.count + 1;
-        if (newCount >= rules.suspiciousActivity.maxRequests) {
-          // Auto-block
-          if (rules.autoBlock.enabled) {
-            rateLimitStore.set(`blocked:${ip}`, {
-              count: 1,
-              resetTime: now + rules.autoBlock.blockDurationMs,
-            });
-          }
-          
-          await logIncident(origin, 'bot_detected', 'high', ip, userAgent, pathname, {
-            request_count: newCount,
-            time_window_ms: rules.suspiciousActivity.windowMs,
-            reason: 'rapid_requests',
-          });
-          
-          return NextResponse.json(
-            { error: 'Suspicious activity detected. Access blocked.' },
-            { status: 403 }
-          );
+      const current = await redis.incr(suspiciousKey);
+      if (current === 1) {
+        await redis.expire(suspiciousKey, windowSeconds);
+      }
+      
+      if (current > maxRequests) {
+        if (autoBlockRule.enabled) {
+          await blockIp(ip, blockMinutes * 60);
         }
-        suspiciousActivityStore.set(suspiciousKey, { count: newCount, firstActivity: suspiciousData.firstActivity });
-      } else {
-        suspiciousActivityStore.set(suspiciousKey, { count: 1, firstActivity: now });
+        await logIncident(origin, 'bot_detected', 'high', ip, userAgent, pathname, {
+          request_count: current,
+          reason: 'rapid_requests',
+        });
+        return NextResponse.json(
+          { error: 'Suspicious activity detected. Access blocked.' },
+          { status: 403 }
+        );
       }
     }
 
     // =============================================
-    // RULE 7: Bot Detection (Missing headers)
+    // CHECKOUT PROTECTION (Redis)
     // =============================================
-    const botDetectionEnabled = await isRuleEnabled('bot_detection');
-    if (botDetectionEnabled) {
+    if (checkoutRule.enabled && (pathname.includes('/checkout') || pathname.includes('/api/checkout'))) {
+      const maxAttempts = checkoutRule.max_attempts || 10;
+      const windowHours = checkoutRule.window_hours || 1;
+      const windowSeconds = windowHours * 60 * 60;
+      const checkoutKey = `checkout:${ip}`;
+      
+      const current = await redis.incr(checkoutKey);
+      if (current === 1) {
+        await redis.expire(checkoutKey, windowSeconds);
+      }
+      
+      if (current > maxAttempts) {
+        await logIncident(origin, 'checkout_abuse', 'high', ip, userAgent, pathname, {
+          attempts: current,
+          limit: maxAttempts,
+        });
+        return NextResponse.json(
+          { error: 'Too many checkout attempts. Please try again later.' },
+          { status: 429 }
+        );
+      }
+    }
+
+    // =============================================
+    // BOT DETECTION (User agent check)
+    // =============================================
+    const botRule = await getRule('bot_detection');
+    if (botRule.enabled && !pathname.includes('/api/')) {
       const isBot = !userAgent || 
-                    userAgent.toLowerCase().includes('bot') || 
-                    userAgent.toLowerCase().includes('crawl') ||
-                    userAgent.toLowerCase().includes('scrape') ||
-                    userAgent.toLowerCase().includes('python') ||
-                    userAgent.toLowerCase().includes('curl') ||
-                    userAgent.toLowerCase().includes('wget') ||
+                    /bot|crawl|scrape|python|curl|wget|headless/i.test(userAgent) ||
                     !request.headers.get('accept') ||
                     !request.headers.get('accept-language');
       
-      if (isBot && !pathname.includes('/api/')) {
+      if (isBot) {
         await logIncident(origin, 'bot_detected', 'medium', ip, userAgent, pathname, {
           reason: 'missing_headers_or_bot_user_agent',
           user_agent: userAgent,
         });
       }
     }
-
-    // =============================================
-    // RULE 6: Checkout Protection
-    // =============================================
-    if (rules.checkoutProtection.enabled && (pathname.includes('/checkout') || pathname.includes('/api/checkout'))) {
-      const checkoutKey = `checkout:${ip}`;
-      const checkoutData = checkoutStore.get(checkoutKey);
-      
-      if (checkoutData && now < checkoutData.resetTime) {
-        if (checkoutData.count >= rules.checkoutProtection.maxAttempts) {
-          await logIncident(origin, 'checkout_abuse', 'high', ip, userAgent, pathname, {
-            attempts: checkoutData.count,
-            limit: rules.checkoutProtection.maxAttempts,
-          });
-          return NextResponse.json(
-            { error: 'Too many checkout attempts. Please try again later.' },
-            { status: 429 }
-          );
-        }
-        checkoutData.count++;
-        checkoutStore.set(checkoutKey, checkoutData);
-      } else {
-        checkoutStore.set(checkoutKey, {
-          count: 1,
-          resetTime: now + rules.checkoutProtection.windowMs,
-        });
-      }
-    }
   }
 
   // =============================================
-  // SESSION TRACKING (Existing functionality)
+  // ADMIN PROTECTION
+  // =============================================
+  const adminRule = await getRule('admin_protection');
+  const adminToken = request.cookies.get('admin_token')?.value;
+  const isAdminLogin = pathname === '/admin/login';
+  
+  if (adminRule.enabled && pathname.startsWith('/admin') && !isAdminLogin && !adminToken) {
+    await logIncident(origin, 'unauthorized_admin_access', 'high', ip, userAgent, pathname, {
+      attempted_access: pathname,
+      missing_token: true,
+    });
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+
+  // Account protection
+  const userToken = request.cookies.get('user_token')?.value;
+  if (pathname.startsWith('/account') && !userToken) {
+    return NextResponse.redirect(new URL('/auth/login', request.url));
+  }
+
+  // =============================================
+  // PROCESS REQUEST
   // =============================================
   const response = NextResponse.next();
-  
+
+  // =============================================
+  // SESSION TRACKING
+  // =============================================
   const skipTrackingPaths = [
     '/api/', '/_next/', '/favicon.ico', 
     '/admin/', '/admin/login', '/auth/login', '/auth/register',
     '/login', '/register'
   ];
+  const shouldSkipTracking = skipTrackingPaths.some(p => pathname.startsWith(p));
   
-  const shouldSkipTracking = skipTrackingPaths.some(path => pathname.startsWith(path));
-  
-  if (!shouldSkipTracking) {
+  if (!shouldSkipTracking && !pathname.startsWith('/api/')) {
     let sessionId = request.cookies.get('user_session_id')?.value;
-    
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       response.cookies.set('user_session_id', sessionId, {
@@ -311,28 +273,34 @@ export async function middleware(request: NextRequest) {
       try {
         const decoded = JSON.parse(Buffer.from(userToken.split('.')[1], 'base64').toString());
         userId = decoded.userId || decoded.id || null;
-      } catch (err) {
-        console.error('Failed to decode user token:', err);
-      }
+      } catch (err) {}
     }
-    
-    const trackingData = {
-      sessionId,
-      userId,
-      pageUrl: pathname,
-      userAgent: userAgent,
-      ipAddress: ip,
-      referrer: request.headers.get('referer') || '',
-    };
     
     fetch(`${origin}/api/track-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(trackingData),
-    }).catch(err => console.error('Session tracking failed:', err));
+      body: JSON.stringify({
+        sessionId,
+        userId,
+        pageUrl: pathname,
+        userAgent,
+        ipAddress: ip,
+        referrer: request.headers.get('referer') || '',
+      }),
+    }).catch(() => {});
   }
 
-  // Add security headers to response
+  // =============================================
+  // API REQUEST LOGGING
+  // =============================================
+  if (pathname.startsWith('/api/') && !pathname.includes('/api/track-session') && !pathname.includes('/api/security/log-incident') && !pathname.includes('/api/log-request')) {
+    const responseTime = Date.now() - startTime;
+    logApiRequest(origin, pathname, method, ip, userAgent, response.status, responseTime);
+  }
+
+  // =============================================
+  // SECURITY HEADERS
+  // =============================================
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -341,7 +309,7 @@ export async function middleware(request: NextRequest) {
 }
 
 // =============================================
-// EXPORT CONFIG
+// MATCHER CONFIGURATION
 // =============================================
 export const config = {
   matcher: [
