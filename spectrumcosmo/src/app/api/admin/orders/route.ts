@@ -20,31 +20,53 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'ID and status required' }, { status: 400 })
 
   const sql = getDb()
-  const result = await sql`
-    UPDATE orders SET status = ${status} WHERE id = ${id} RETURNING *
-  `
-  const order = result[0]
+  
+  // If status is 'completed' (approved), also set paid_at = NOW()
+  if (status === 'completed') {
+    const result = await sql`
+      UPDATE orders 
+      SET status = ${status}, 
+          paid_at = NOW(),
+          updated_at = NOW()
+      WHERE id = ${id} 
+      RETURNING *
+    `
+    const order = result[0]
 
-  // Send completion email
-  if (status === 'completed' && order.email) {
-    try {
-      await sendOrderEmail({
-        customerName: order.customer_name,
-        customerEmail: order.email,
-        productName: order.product_name,
-        paymentMethod: order.payment_method || '',
-        deliveryMethod: order.delivery_method || '',
-        totalAmount: order.total_amount || 0,
-        currency: 'MWK',
-        orderId: order.id,
-        status: 'completed',
-        customDetails: order.custom_details,
-        createdAt: order.created_at,
-      })
-    } catch (emailErr) {
-      console.error('Completion email failed:', emailErr)
+    // Send completion email
+    if (status === 'completed' && order?.email) {
+      try {
+        await sendOrderEmail({
+          customerName: order.customer_name,
+          customerEmail: order.email,
+          productName: order.product_name,
+          paymentMethod: order.payment_method || '',
+          deliveryMethod: order.delivery_method || '',
+          totalAmount: order.total_amount || 0,
+          currency: 'MWK',
+          orderId: order.id,
+          status: 'completed',
+          customDetails: order.custom_details,
+          createdAt: order.created_at,
+        })
+      } catch (emailErr) {
+        console.error('Completion email failed:', emailErr)
+      }
     }
-  }
 
-  return NextResponse.json({ order })
+    return NextResponse.json({ order })
+  } 
+  
+  // For other status changes (pending, declined, etc.) – no paid_at change
+  else {
+    const result = await sql`
+      UPDATE orders 
+      SET status = ${status}, 
+          updated_at = NOW()
+      WHERE id = ${id} 
+      RETURNING *
+    `
+    const order = result[0]
+    return NextResponse.json({ order })
+  }
 }
