@@ -1,15 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "next build",
-  "installCommand": "npm install --legacy-peer-deps",
-  "crons": [
-    {
-      "path": "/api/cron/abandon-carts",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-rules",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "installCommand": "npm install --legacy-peer-deps"
 }
