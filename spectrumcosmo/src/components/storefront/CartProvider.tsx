@@ -23,16 +23,23 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null);
 
 const STORAGE_KEY = 'spectrumcosmo_cart';
-const POLL_INTERVAL_MS = 5000; // 5 seconds – real‑time feel
+const POLL_INTERVAL_MS = 5000;
+
+// Helper to get session ID from cookie (client-side)
+function getSessionIdFromCookie(): string | null {
+  const match = document.cookie.match(/user_session_id=([^;]+)/);
+  return match ? match[1] : null;
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isSyncingRef = useRef(false);
 
-  // Fetch logged‑in user
+  // Fetch logged-in user
   useEffect(() => {
     fetch('/api/auth/me')
       .then(res => (res.ok ? res.json() : null))
@@ -40,9 +47,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       .catch(() => null);
   }, []);
 
-  // Fetch cart from database (for logged‑in users)
+  // Get session ID from cookie (set by middleware)
+  useEffect(() => {
+    const sid = getSessionIdFromCookie();
+    setSessionId(sid);
+  }, []);
+
+  // Fetch cart from database (for both guest and logged-in)
   const fetchCartFromDB = useCallback(async () => {
-    if (!user) return null;
     try {
       const res = await fetch('/api/cart');
       const data = await res.json();
@@ -51,11 +63,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to fetch cart from DB', err);
       return null;
     }
-  }, [user]);
+  }, []);
 
-  // Save cart to database (for logged‑in users)
+  // Save cart to database (for both guest and logged-in)
   const saveCartToDB = useCallback(async (cartItems: CartItem[]) => {
-    if (!user) return;
     try {
       await fetch('/api/cart', {
         method: 'POST',
@@ -65,50 +76,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to save cart to DB', err);
     }
-  }, [user]);
+  }, []);
 
-  // Load initial cart (once user is known)
+  // Load initial cart
   const loadCart = useCallback(async () => {
-    if (user) {
-      const dbCart = await fetchCartFromDB();
-      if (dbCart && dbCart.length) {
-        setItems(dbCart);
-      } else {
-        // No cart in DB → check localStorage for guest cart
-        const localCart = localStorage.getItem(STORAGE_KEY);
-        if (localCart) {
-          const localItems = JSON.parse(localCart);
-          setItems(localItems);
-          await saveCartToDB(localItems);
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      }
+    const dbCart = await fetchCartFromDB();
+    if (dbCart && dbCart.length) {
+      // Database has cart (either from guest or logged-in)
+      setItems(dbCart);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dbCart));
     } else {
-      // Guest: load from localStorage
+      // No cart in DB, load from localStorage
       const localCart = localStorage.getItem(STORAGE_KEY);
       if (localCart) {
-        setItems(JSON.parse(localCart));
+        const localItems = JSON.parse(localCart);
+        setItems(localItems);
+        // Sync local cart to DB
+        await saveCartToDB(localItems);
       }
     }
     setIsLoading(false);
-  }, [user, fetchCartFromDB, saveCartToDB]);
+  }, [fetchCartFromDB, saveCartToDB]);
 
   useEffect(() => {
     loadCart();
   }, [loadCart]);
 
-  // Start polling when user is logged in (every 2 seconds)
+  // Poll for changes (when user logs in/out or multiple tabs)
   useEffect(() => {
-    if (!user) return;
-
     const poll = async () => {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
       const dbCart = await fetchCartFromDB();
       if (dbCart) {
         setItems(prev => {
-          // Only update if the cart actually changed
           if (JSON.stringify(prev) !== JSON.stringify(dbCart)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dbCart));
             return dbCart;
           }
           return prev;
@@ -116,25 +119,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       isSyncingRef.current = false;
     };
-
     pollIntervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [user, fetchCartFromDB]);
+  }, [fetchCartFromDB]);
 
-  // Save cart to both localStorage and database (if logged in)
+  // Save cart to both localStorage and database
   const saveCart = useCallback(
     async (newItems: CartItem[]) => {
       setItems(newItems);
-      // Always save to localStorage (for guests and fallback)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
-      // If logged in, also save to database
-      if (user) {
-        await saveCartToDB(newItems);
-      }
+      await saveCartToDB(newItems);
     },
-    [user, saveCartToDB]
+    [saveCartToDB]
   );
 
   const addItem = (item: Omit<CartItem, 'quantity'>, qty = 1) => {
