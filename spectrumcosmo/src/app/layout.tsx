@@ -8,6 +8,7 @@ import { CartProvider } from '@/components/storefront/CartProvider'
 import { UserProvider } from '@/components/storefront/UserProvider'
 import { WishlistProvider } from '@/components/storefront/WishlistProvider'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -32,19 +33,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased font-body">
-        <UserProvider>
-          <SettingsProvider>
-            <CurrencyProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    {children}
-                  </Suspense>
-                </WishlistProvider>
-              </CartProvider>
-            </CurrencyProvider>
-          </SettingsProvider>
-        </UserProvider>
+        <ErrorBoundary>
+          <UserProvider>
+            <SettingsProvider>
+              <CurrencyProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      {children}
+                    </Suspense>
+                  </WishlistProvider>
+                </CartProvider>
+              </CurrencyProvider>
+            </SettingsProvider>
+          </UserProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
