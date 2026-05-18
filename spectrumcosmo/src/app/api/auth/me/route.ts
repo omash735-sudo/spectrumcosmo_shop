@@ -20,7 +20,11 @@ async function ensureUsersTable() {
 
 export async function GET(req: NextRequest) {
   const { user: userToken, error: authError } = await getVerifiedUser(req)
-  if (authError) return authError
+  
+  // If auth fails (missing token, expired, etc.), return null user (not an error)
+  if (authError || !userToken) {
+    return NextResponse.json({ user: null })
+  }
 
   try {
     await ensureUsersTable()
@@ -37,7 +41,9 @@ export async function GET(req: NextRequest) {
       FROM users 
       WHERE id = ${userToken.id}
     `
-    if (users.length === 0) return NextResponse.json({ user: null }, { status: 404 })
+    if (users.length === 0) {
+      return NextResponse.json({ user: null })
+    }
 
     const user = users[0]
 
@@ -56,6 +62,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (err: any) {
     console.error('Auth me error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    // On any server error, return null user (not a 500)
+    return NextResponse.json({ user: null })
   }
 }
