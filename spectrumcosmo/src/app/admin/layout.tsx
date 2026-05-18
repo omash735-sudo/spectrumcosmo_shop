@@ -64,6 +64,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Check if this is the login page
+  const isLoginPage = pathname === '/admin/login';
+
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -131,6 +134,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </>
   );
+
+  // If this is the login page, render only children (no sidebar)
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
