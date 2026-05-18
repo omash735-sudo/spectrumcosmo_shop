@@ -146,7 +146,6 @@ const DashboardSkeleton = () => (
 );
 
 export default function SecurityCenter() {
-  // Existing state
   const [logs, setLogs] = useState<SecurityLog[]>([]);
   const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
   const [summary, setSummary] = useState<RiskSummary | null>(null);
@@ -156,7 +155,6 @@ export default function SecurityCenter() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showBlockedOnly, setShowBlockedOnly] = useState(false);
   
-  // New state for missing sections
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [protectionRules, setProtectionRules] = useState<ProtectionRule[]>([]);
   const [attackTypes, setAttackTypes] = useState<AttackStats[]>([]);
@@ -171,13 +169,11 @@ export default function SecurityCenter() {
     action: 'block',
   });
   
-  // IP Detail Modal
   const [selectedIPDetail, setSelectedIPDetail] = useState<string | null>(null);
   const [ipActivity, setIPActivity] = useState<SecurityLog[]>([]);
   const [ipModalOpen, setIpModalOpen] = useState(false);
   const [loadingIPDetail, setLoadingIPDetail] = useState(false);
   
-  // Protection Settings
   const [protectionSettings, setProtectionSettings] = useState({
     maxFailedAttempts: 10,
     blockDurationMinutes: 30,
@@ -361,9 +357,7 @@ export default function SecurityCenter() {
               <Shield size={32} className="text-[#F97316]" />
               <h1 className="text-3xl font-bold text-gray-900">Security Center</h1>
             </div>
-            <p className="text-gray-500 mt-1">
-              Real-time threat monitoring and automated protection
-            </p>
+            <p className="text-gray-500 mt-1">Real-time threat monitoring and automated protection</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -438,7 +432,7 @@ export default function SecurityCenter() {
           </div>
         </div>
 
-        {/* Section 2: Charts - Traffic vs Suspicious Activity */}
+        {/* Section 2: Charts */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-xl border p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Traffic vs Suspicious Activity</h2>
@@ -481,7 +475,7 @@ export default function SecurityCenter() {
           </div>
         </div>
 
-        {/* Section 3: Live Threat Feed */}
+        {/* Section 3: Live Threat Feed (simplified – no filters) */}
         <div className="bg-white rounded-xl border overflow-hidden mb-8">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -563,7 +557,7 @@ export default function SecurityCenter() {
           </div>
         </div>
 
-        {/* Section 4: Users & IP Risk Intelligence */}
+        {/* Section 4: IP Risk Intelligence */}
         <div className="bg-white rounded-xl border overflow-hidden mb-8">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center justify-between">
@@ -589,9 +583,7 @@ export default function SecurityCenter() {
                   <tr key={ip.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => viewIPDetails(ip.ip_address)}>
                     <td className="px-4 py-3 font-mono text-sm">{ip.ip_address}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                        Blocked
-                      </span>
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Blocked</span>
                     </td>
                     <td className="px-4 py-3 text-xs whitespace-nowrap">
                       Expires: {new Date(ip.expires_at).toLocaleString()}
@@ -715,16 +707,11 @@ export default function SecurityCenter() {
                     <span className="text-gray-500">{endpoint.attack_count} attacks</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-red-500 h-2 rounded-full"
-                      style={{ width: `${endpoint.percentage}%` }}
-                    />
+                    <div className="bg-red-500 h-2 rounded-full" style={{ width: `${endpoint.percentage}%` }} />
                   </div>
                 </div>
               ))}
-              {topEndpoints.length === 0 && (
-                <p className="text-center text-gray-500 py-8">No attack data available</p>
-              )}
+              {topEndpoints.length === 0 && <p className="text-center text-gray-500 py-8">No attack data available</p>}
             </div>
           </div>
         </div>
@@ -736,12 +723,8 @@ export default function SecurityCenter() {
               <Lock size={20} className="text-[#F97316]" />
               <h2 className="text-lg font-semibold text-gray-900">Protection Controls</h2>
             </div>
-            <button
-              onClick={() => setShowAddRule(!showAddRule)}
-              className="flex items-center gap-1 text-sm text-[#F97316] hover:underline"
-            >
-              <Plus size={14} />
-              Add Rule
+            <button onClick={() => setShowAddRule(!showAddRule)} className="flex items-center gap-1 text-sm text-[#F97316] hover:underline">
+              <Plus size={14} /> Add Rule
             </button>
           </div>
           
@@ -750,11 +733,7 @@ export default function SecurityCenter() {
               <div className="flex gap-3 items-end">
                 <div>
                   <label className="text-xs text-gray-500">Rule Type</label>
-                  <select
-                    value={newRule.rule_type}
-                    onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
-                    className="mt-1 px-3 py-1.5 border rounded-lg text-sm"
-                  >
+                  <select value={newRule.rule_type} onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })} className="mt-1 px-3 py-1.5 border rounded-lg text-sm">
                     <option value="ip">IP Address</option>
                     <option value="user">User</option>
                     <option value="endpoint">Endpoint</option>
@@ -762,40 +741,21 @@ export default function SecurityCenter() {
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Max Requests</label>
-                  <input
-                    type="number"
-                    value={newRule.max_requests}
-                    onChange={(e) => setNewRule({ ...newRule, max_requests: parseInt(e.target.value) })}
-                    className="mt-1 px-3 py-1.5 border rounded-lg text-sm w-24"
-                  />
+                  <input type="number" value={newRule.max_requests} onChange={(e) => setNewRule({ ...newRule, max_requests: parseInt(e.target.value) })} className="mt-1 px-3 py-1.5 border rounded-lg text-sm w-24" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Window (seconds)</label>
-                  <input
-                    type="number"
-                    value={newRule.window_seconds}
-                    onChange={(e) => setNewRule({ ...newRule, window_seconds: parseInt(e.target.value) })}
-                    className="mt-1 px-3 py-1.5 border rounded-lg text-sm w-24"
-                  />
+                  <input type="number" value={newRule.window_seconds} onChange={(e) => setNewRule({ ...newRule, window_seconds: parseInt(e.target.value) })} className="mt-1 px-3 py-1.5 border rounded-lg text-sm w-24" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Action</label>
-                  <select
-                    value={newRule.action}
-                    onChange={(e) => setNewRule({ ...newRule, action: e.target.value })}
-                    className="mt-1 px-3 py-1.5 border rounded-lg text-sm"
-                  >
+                  <select value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} className="mt-1 px-3 py-1.5 border rounded-lg text-sm">
                     <option value="block">Block</option>
                     <option value="captcha">CAPTCHA</option>
                     <option value="rate_limit">Rate Limit</option>
                   </select>
                 </div>
-                <button
-                  onClick={addRateLimitRule}
-                  className="px-4 py-1.5 bg-[#F97316] text-white rounded-lg text-sm"
-                >
-                  Save
-                </button>
+                <button onClick={addRateLimitRule} className="px-4 py-1.5 bg-[#F97316] text-white rounded-lg text-sm">Save</button>
               </div>
             </div>
           )}
@@ -808,53 +768,26 @@ export default function SecurityCenter() {
                     <span className="text-sm font-medium">{rule.rule_type}</span>
                     <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{rule.identifier || 'Global'}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {rule.max_requests} requests per {rule.window_seconds}s → {rule.action}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{rule.max_requests} requests per {rule.window_seconds}s → {rule.action}</p>
                 </div>
-                <button
-                  onClick={() => deleteRule(rule.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
+                <button onClick={() => deleteRule(rule.id)} className="text-red-500 hover:text-red-700">
                   <Trash2 size={16} />
                 </button>
               </div>
             ))}
             {protectionRules.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                <p>No custom rate limit rules configured</p>
-              </div>
+              <div className="p-8 text-center text-gray-500"><p>No custom rate limit rules configured</p></div>
             )}
           </div>
         </div>
 
-        {/* Section 8: Security Logs (Raw Data) */}
+        {/* Section 8: Security Logs (Raw Data) – simplified, no risk filter */}
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Database size={20} className="text-[#F97316]" />
                 <h2 className="text-lg font-semibold text-gray-900">Security Logs (Raw Data)</h2>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedRisk('all')}
-                  className={`px-2 py-1 rounded text-xs ${selectedRisk === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setSelectedRisk('critical')}
-                  className={`px-2 py-1 rounded text-xs ${selectedRisk === 'critical' ? 'bg-purple-600 text-white' : 'bg-gray-100'}`}
-                >
-                  Critical
-                </button>
-                <button
-                  onClick={() => setSelectedRisk('high')}
-                  className={`px-2 py-1 rounded text-xs ${selectedRisk === 'high' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}
-                >
-                  High
-                </button>
               </div>
             </div>
           </div>
@@ -864,25 +797,19 @@ export default function SecurityCenter() {
                 <tr>
                   <th className="px-3 py-2 text-left">Timestamp</th>
                   <th className="px-3 py-2 text-left">IP</th>
-                  <th className="px-3 py-2 text-left">User</th>
                   <th className="px-3 py-2 text-left">Action</th>
                   <th className="px-3 py-2 text-left">Endpoint</th>
-                  <th className="px-3 py-2 text-left">Status</th>
                   <th className="px-3 py-2 text-left">Risk</th>
                   <th className="px-3 py-2 text-left">Blocked</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.slice(0, 100).map((log) => (
+                {logs.map((log) => (
                   <tr key={log.id} className="border-t hover:bg-gray-50">
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {new Date(log.created_at).toLocaleString()}
-                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
                     <td className="px-3 py-2 font-mono">{log.ip_address}</td>
-                    <td className="px-3 py-2">{log.user_id || 'guest'}</td>
                     <td className="px-3 py-2">{log.action_type}</td>
                     <td className="px-3 py-2 truncate max-w-[200px]">{log.endpoint}</td>
-                    <td className="px-3 py-2">{log.response_status}</td>
                     <td className="px-3 py-2">
                       <span className={`px-1.5 py-0.5 rounded text-xs ${
                         log.risk_level === 'critical' ? 'bg-purple-100 text-purple-700' :
@@ -894,20 +821,12 @@ export default function SecurityCenter() {
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      {log.blocked ? (
-                        <Ban size={14} className="text-red-500" />
-                      ) : (
-                        <CheckCircle size={14} className="text-green-500" />
-                      )}
+                      {log.blocked ? <Ban size={14} className="text-red-500" /> : <CheckCircle size={14} className="text-green-500" />}
                     </td>
-                  </tr>
+                  </td>
                 ))}
                 {logs.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                      No security logs available
-                    </td>
-                  </tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No security logs available</td></tr>
                 )}
               </tbody>
             </table>
@@ -920,19 +839,12 @@ export default function SecurityCenter() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
             <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
-              <div className="flex items-center gap-2">
-                <Eye size={20} className="text-[#F97316]" />
-                <h2 className="text-lg font-semibold">IP Activity: {selectedIPDetail}</h2>
-              </div>
-              <button onClick={() => setIpModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2"><Eye size={20} className="text-[#F97316]" /><h2 className="text-lg font-semibold">IP Activity: {selectedIPDetail}</h2></div>
+              <button onClick={() => setIpModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto max-h-[calc(85vh-70px)] p-4">
               {loadingIPDetail ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="animate-spin text-[#F97316]" size={32} />
-                </div>
+                <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#F97316]" size={32} /></div>
               ) : ipActivity.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">No activity found for this IP</div>
               ) : (
@@ -941,25 +853,16 @@ export default function SecurityCenter() {
                     <div key={log.id} className="border rounded-lg p-3 hover:bg-gray-50">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            log.risk_level === 'critical' ? 'bg-purple-100 text-purple-700' :
-                            log.risk_level === 'high' ? 'bg-red-100 text-red-700' :
-                            log.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${log.risk_level === 'critical' ? 'bg-purple-100 text-purple-700' : log.risk_level === 'high' ? 'bg-red-100 text-red-700' : log.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                             {log.risk_level}
                           </span>
                           <span className="text-sm font-mono">{log.action_type}</span>
                         </div>
-                        <span className="text-xs text-gray-400">
-                          {new Date(log.created_at).toLocaleString()}
-                        </span>
+                        <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
                       </div>
                       <p className="text-xs text-gray-600 mb-1">Endpoint: {log.endpoint}</p>
                       <p className="text-xs text-gray-400">Status: {log.response_status}</p>
-                      {log.user_agent && (
-                        <p className="text-xs text-gray-400 mt-1 truncate">User Agent: {log.user_agent}</p>
-                      )}
+                      {log.user_agent && <p className="text-xs text-gray-400 mt-1 truncate">User Agent: {log.user_agent}</p>}
                     </div>
                   ))}
                 </div>
@@ -974,75 +877,19 @@ export default function SecurityCenter() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
             <div className="flex justify-between items-center p-4 border-b">
-              <div className="flex items-center gap-2">
-                <SettingsIcon size={20} className="text-[#F97316]" />
-                <h2 className="text-lg font-semibold">Protection Settings</h2>
-              </div>
-              <button onClick={() => setSettingsModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2"><SettingsIcon size={20} className="text-[#F97316]" /><h2 className="text-lg font-semibold">Protection Settings</h2></div>
+              <button onClick={() => setSettingsModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20} /></button>
             </div>
             <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Failed Login Attempts</label>
-                <input
-                  type="number"
-                  value={protectionSettings.maxFailedAttempts}
-                  onChange={(e) => setProtectionSettings({ ...protectionSettings, maxFailedAttempts: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Block Duration (minutes)</label>
-                <input
-                  type="number"
-                  value={protectionSettings.blockDurationMinutes}
-                  onChange={(e) => setProtectionSettings({ ...protectionSettings, blockDurationMinutes: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rate Limit (requests per minute)</label>
-                <input
-                  type="number"
-                  value={protectionSettings.rateLimitPerMinute}
-                  onChange={(e) => setProtectionSettings({ ...protectionSettings, rateLimitPerMinute: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">CAPTCHA after attempts</label>
-                <input
-                  type="number"
-                  value={protectionSettings.enableCaptchaAfterAttempts}
-                  onChange={(e) => setProtectionSettings({ ...protectionSettings, enableCaptchaAfterAttempts: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Auto-Block Enabled</label>
-                <button
-                  onClick={() => setProtectionSettings({ ...protectionSettings, autoBlockEnabled: !protectionSettings.autoBlockEnabled })}
-                  className={`w-12 h-6 rounded-full transition ${protectionSettings.autoBlockEnabled ? 'bg-[#F97316]' : 'bg-gray-300'}`}
-                >
-                  <div className={`w-5 h-5 bg-white rounded-full transition-transform ${protectionSettings.autoBlockEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Max Failed Login Attempts</label><input type="number" value={protectionSettings.maxFailedAttempts} onChange={(e) => setProtectionSettings({ ...protectionSettings, maxFailedAttempts: parseInt(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Block Duration (minutes)</label><input type="number" value={protectionSettings.blockDurationMinutes} onChange={(e) => setProtectionSettings({ ...protectionSettings, blockDurationMinutes: parseInt(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Rate Limit (requests per minute)</label><input type="number" value={protectionSettings.rateLimitPerMinute} onChange={(e) => setProtectionSettings({ ...protectionSettings, rateLimitPerMinute: parseInt(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">CAPTCHA after attempts</label><input type="number" value={protectionSettings.enableCaptchaAfterAttempts} onChange={(e) => setProtectionSettings({ ...protectionSettings, enableCaptchaAfterAttempts: parseInt(e.target.value) })} className="w-full px-3 py-2 border rounded-lg" /></div>
+              <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700">Auto-Block Enabled</label><button onClick={() => setProtectionSettings({ ...protectionSettings, autoBlockEnabled: !protectionSettings.autoBlockEnabled })} className={`w-12 h-6 rounded-full transition ${protectionSettings.autoBlockEnabled ? 'bg-[#F97316]' : 'bg-gray-300'}`}><div className={`w-5 h-5 bg-white rounded-full transition-transform ${protectionSettings.autoBlockEnabled ? 'translate-x-6' : 'translate-x-1'}`} /></button></div>
             </div>
             <div className="p-4 border-t flex justify-end gap-2">
-              <button
-                onClick={() => setSettingsModalOpen(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveProtectionSettings}
-                disabled={savingSettings}
-                className="px-4 py-2 bg-[#F97316] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
-              >
-                {savingSettings ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}
-              </button>
+              <button onClick={() => setSettingsModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={saveProtectionSettings} disabled={savingSettings} className="px-4 py-2 bg-[#F97316] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50">{savingSettings ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}</button>
             </div>
           </div>
         </div>
