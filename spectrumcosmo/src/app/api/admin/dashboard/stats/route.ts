@@ -10,13 +10,12 @@ export async function GET() {
   try {
     const sql = getDb();
     
-    // Use exact same logic as your working SQL query
     const result = await sql`
       WITH 
       today_stats AS (
         SELECT 
           COUNT(*) as orders,
-          COALESCE(SUM(total_amount), 0) as revenue
+          COALESCE(SUM(CASE WHEN status = 'approved' THEN total_amount ELSE 0 END), 0) as revenue
         FROM orders 
         WHERE created_at >= (NOW() AT TIME ZONE 'Africa/Blantyre')::DATE
       ),
