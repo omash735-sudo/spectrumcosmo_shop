@@ -551,7 +551,7 @@ export default function SecurityCenter() {
                     <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                       No threat events found
                     </td>
-                  </table>
+                  </tr>
                 )}
               </tbody>
             </table>
