@@ -9,9 +9,21 @@ import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
 
 // =============================================
+// WHITELIST - These IPs are NEVER blocked
+// =============================================
+const WHITELIST_IPS = [
+  '137.115.3.164',               // Your IP
+  '127.0.0.1',                  // Localhost
+  '::1',                        // Localhost IPv6
+];
+
+function isWhitelisted(ip: string): boolean {
+  return WHITELIST_IPS.includes(ip);
+}
+
+// =============================================
 // CACHED RULES (loaded once, refreshed via cron)
 // =============================================
-// Default rules (fallback if Redis cache is empty)
 const DEFAULT_RULES = {
   rate_limiting: { enabled: true, max_requests: 60, window_seconds: 60 },
   suspicious_activity: { enabled: true, max_requests: 20, window_seconds: 10, block_minutes: 30 },
@@ -21,14 +33,12 @@ const DEFAULT_RULES = {
   admin_protection: { enabled: true },
 };
 
-// Helper to get rules from Redis cache
 async function getCachedRules(): Promise<any> {
   try {
     const cached = await redis.get('security:rules');
     if (cached) {
       return cached;
     }
-    // Return defaults if no cache
     return DEFAULT_RULES;
   } catch (err) {
     console.error('Failed to get cached rules:', err);
@@ -36,30 +46,20 @@ async function getCachedRules(): Promise<any> {
   }
 }
 
-// Helper to get a single rule's config
 async function getRule(ruleKey: string): Promise<any> {
   const rules = await getCachedRules();
   return rules[ruleKey] || { enabled: false };
 }
 
-// =============================================
-// HELPER: Check if IP is blocked in Redis
-// =============================================
 async function isIpBlocked(ip: string): Promise<boolean> {
   const blocked = await redis.get(`blocked:${ip}`);
   return blocked !== null;
 }
 
-// =============================================
-// HELPER: Block IP in Redis
-// =============================================
 async function blockIp(ip: string, durationSeconds: number) {
   await redis.setex(`blocked:${ip}`, durationSeconds, 'blocked');
 }
 
-// =============================================
-// HELPER: Log incident to database via API
-// =============================================
 async function logIncident(origin: string, type: string, severity: string, ip: string, userAgent: string, endpoint: string, details: any) {
   try {
     await fetch(`${origin}/api/security/log-incident`, {
@@ -72,9 +72,6 @@ async function logIncident(origin: string, type: string, severity: string, ip: s
   }
 }
 
-// =============================================
-// HELPER: Log API request to api_logs table
-// =============================================
 async function logApiRequest(origin: string, endpoint: string, method: string, ip: string, userAgent: string, status: number, responseTimeMs: number) {
   try {
     await fetch(`${origin}/api/log-request`, {
@@ -87,9 +84,6 @@ async function logApiRequest(origin: string, endpoint: string, method: string, i
   }
 }
 
-// =============================================
-// MAIN MIDDLEWARE FUNCTION
-// =============================================
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -100,12 +94,19 @@ export async function middleware(request: NextRequest) {
   const startTime = Date.now();
   const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
-  // Skip protection for static assets and tracking endpoints
+  // WHITELIST CHECK - Skip all blocking for whitelisted IPs
+  if (isWhitelisted(ip)) {
+    const response = NextResponse.next();
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    return response;
+  }
+
   const skipPaths = ['/_next/', '/favicon.ico', '/api/track-session', '/api/security/log-incident', '/api/log-request', '/api/cron/'];
   const shouldSkip = skipPaths.some(path => pathname.includes(path));
   
   if (!shouldSkip) {
-    // Check if IP is already blocked
     const blocked = await isIpBlocked(ip);
     if (blocked) {
       return NextResponse.json(
@@ -114,15 +115,11 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Get rules from Redis cache
     const rateLimitingRule = await getRule('rate_limiting');
     const suspiciousRule = await getRule('suspicious_activity');
     const checkoutRule = await getRule('checkout_protection');
     const autoBlockRule = await getRule('auto_block');
 
-    // =============================================
-    // RATE LIMITING (Redis)
-    // =============================================
     if (rateLimitingRule.enabled) {
       const maxRequests = rateLimitingRule.max_requests || 60;
       const windowSeconds = rateLimitingRule.window_seconds || 60;
@@ -145,9 +142,6 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // =============================================
-    // SUSPICIOUS ACTIVITY / BOT DETECTION (Redis)
-    // =============================================
     if (suspiciousRule.enabled) {
       const maxRequests = suspiciousRule.max_requests || 20;
       const windowSeconds = suspiciousRule.window_seconds || 10;
@@ -174,9 +168,6 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // =============================================
-    // CHECKOUT PROTECTION (Redis)
-    // =============================================
     if (checkoutRule.enabled && (pathname.includes('/checkout') || pathname.includes('/api/checkout'))) {
       const maxAttempts = checkoutRule.max_attempts || 10;
       const windowHours = checkoutRule.window_hours || 1;
@@ -200,9 +191,6 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // =============================================
-    // BOT DETECTION (User agent check)
-    // =============================================
     const botRule = await getRule('bot_detection');
     if (botRule.enabled && !pathname.includes('/api/')) {
       const isBot = !userAgent || 
@@ -219,9 +207,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // =============================================
-  // ADMIN PROTECTION
-  // =============================================
   const adminRule = await getRule('admin_protection');
   const adminToken = request.cookies.get('admin_token')?.value;
   const isAdminLogin = pathname === '/admin/login';
@@ -234,20 +219,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  // Account protection
   const userToken = request.cookies.get('user_token')?.value;
   if (pathname.startsWith('/account') && !userToken) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // =============================================
-  // PROCESS REQUEST
-  // =============================================
   const response = NextResponse.next();
 
-  // =============================================
-  // SESSION TRACKING
-  // =============================================
   const skipTrackingPaths = [
     '/api/', '/_next/', '/favicon.ico', 
     '/admin/', '/admin/login', '/auth/login', '/auth/register',
@@ -290,17 +268,11 @@ export async function middleware(request: NextRequest) {
     }).catch(() => {});
   }
 
-  // =============================================
-  // API REQUEST LOGGING
-  // =============================================
   if (pathname.startsWith('/api/') && !pathname.includes('/api/track-session') && !pathname.includes('/api/security/log-incident') && !pathname.includes('/api/log-request')) {
     const responseTime = Date.now() - startTime;
     logApiRequest(origin, pathname, method, ip, userAgent, response.status, responseTime);
   }
 
-  // =============================================
-  // SECURITY HEADERS
-  // =============================================
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -308,9 +280,6 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// =============================================
-// MATCHER CONFIGURATION
-// =============================================
 export const config = {
   matcher: [
     '/admin/:path*', 
