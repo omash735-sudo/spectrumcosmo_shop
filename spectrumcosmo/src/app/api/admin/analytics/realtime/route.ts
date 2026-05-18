@@ -11,18 +11,17 @@ export async function GET(req: Request) {
 
     const [ordersCount, revenue, confirmed, pending, declined, monthly, products, repeatData] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM orders`,
-      sql`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status = 'approved'`,
-      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'approved'`,
+      sql`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status = 'completed'`,
+      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'completed'`,
       sql`SELECT COUNT(*) as count FROM orders WHERE status = 'pending'`,
       sql`SELECT COUNT(*) as count FROM orders WHERE status = 'declined'`,
-      // Monthly revenue based on paid_at (confirmation date)
       sql`
         SELECT
-          DATE_TRUNC('month', paid_at) as month,
+          DATE_TRUNC('month', COALESCE(paid_at, created_at)) as month,
           COALESCE(SUM(total_amount), 0) as revenue
         FROM orders
-        WHERE status = 'approved' AND paid_at IS NOT NULL
-          AND paid_at >= NOW() - INTERVAL '12 months'
+        WHERE status = 'completed'
+          AND COALESCE(paid_at, created_at) >= NOW() - INTERVAL '12 months'
         GROUP BY month
         ORDER BY month ASC
       `,
@@ -30,7 +29,7 @@ export async function GET(req: Request) {
         SELECT product_name, SUM(quantity) as sold
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
-        WHERE o.status = 'approved'
+        WHERE o.status = 'completed'
         GROUP BY product_name
         ORDER BY sold DESC
         LIMIT 5
@@ -42,7 +41,7 @@ export async function GET(req: Request) {
         FROM (
           SELECT user_id, COUNT(*) as order_count
           FROM orders
-          WHERE user_id IS NOT NULL AND status = 'approved'
+          WHERE user_id IS NOT NULL AND status = 'completed'
           GROUP BY user_id
         ) t
       `
