@@ -3,6 +3,11 @@ import type { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
 
 // =============================================
+// TEMPORARY DISABLE SWITCH - Set to true to re-enable all security features
+// =============================================
+const ENABLE_SECURITY_CHECKS = false;
+
+// =============================================
 // REDIS CLIENT
 // =============================================
 const redis = Redis.fromEnv();
@@ -11,10 +16,10 @@ const redis = Redis.fromEnv();
 // WHITELIST - These IPs are NEVER blocked
 // =============================================
 const WHITELIST_IPS = [
-  '137.115.3.164',               // old IP
-  '102.70.104.115',              // new IP
-  '127.0.0.1',                  // Localhost
-  '::1',                        // Localhost IPv6
+  '137.115.3.164',
+  '102.70.104.115',
+  '127.0.0.1',
+  '::1',
 ];
 
 function isWhitelisted(ip: string): boolean {
@@ -50,15 +55,18 @@ async function getRule(ruleKey: string): Promise<any> {
 }
 
 async function isIpBlocked(ip: string): Promise<boolean> {
+  if (!ENABLE_SECURITY_CHECKS) return false;
   const blocked = await redis.get(`blocked:${ip}`);
   return blocked !== null;
 }
 
 async function blockIp(ip: string, durationSeconds: number) {
+  if (!ENABLE_SECURITY_CHECKS) return;
   await redis.setex(`blocked:${ip}`, durationSeconds, 'blocked');
 }
 
 async function logIncident(origin: string, type: string, severity: string, ip: string, userAgent: string, endpoint: string, details: any) {
+  if (!ENABLE_SECURITY_CHECKS) return;
   try {
     await fetch(`${origin}/api/security/log-incident`, {
       method: 'POST',
@@ -71,6 +79,7 @@ async function logIncident(origin: string, type: string, severity: string, ip: s
 }
 
 async function logApiRequest(origin: string, endpoint: string, method: string, ip: string, userAgent: string, status: number, responseTimeMs: number) {
+  if (!ENABLE_SECURITY_CHECKS) return;
   try {
     await fetch(`${origin}/api/log-request`, {
       method: 'POST',
@@ -101,7 +110,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // NEW: Skip all security checks for admin API routes
+  // Skip all security checks for admin API routes
   if (pathname.startsWith('/api/admin/')) {
     const response = NextResponse.next();
     response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -121,7 +130,8 @@ export async function middleware(request: NextRequest) {
   ];
   const shouldSkip = skipPaths.some(path => pathname.includes(path));
   
-  if (!shouldSkip) {
+  // Only run security checks if ENABLE_SECURITY_CHECKS is true
+  if (!shouldSkip && ENABLE_SECURITY_CHECKS) {
     const blocked = await isIpBlocked(ip);
     if (blocked) {
       return NextResponse.json(
