@@ -84,11 +84,9 @@ export default async function HomePage() {
                 {h.description}
               </p>
               <div className="flex flex-wrap gap-4">
+                {/* ONLY SHOP NOW BUTTON - View Products removed */}
                 <Link href={h.button1_link} className="btn-primary text-base px-8 py-4">
                   {h.button1_text} <ArrowRight size={18} />
-                </Link>
-                <Link href={h.button2_link} className="btn-secondary text-base px-8 py-4">
-                  {h.button2_text}
                 </Link>
               </div>
               <div className="flex flex-wrap gap-6 mt-12 pt-10 border-t border-gray-100">
