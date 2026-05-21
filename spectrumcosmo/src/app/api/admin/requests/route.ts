@@ -8,72 +8,88 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const status = url.searchParams.get('status') || 'pending';
-  const categoryId = url.searchParams.get('categoryId');
-  const limit = parseInt(url.searchParams.get('limit') || '100');
 
   const sql = getDb();
-  
-  let queryText = `
-    SELECT 
-      r.*,
-      u.name as user_name,
-      u.email as user_email,
-      c.name as category_name,
-      c.id as category_id,
-      COALESCE(COUNT(DISTINCT ri.id), 0) as image_count,
-      COALESCE(COUNT(DISTINCT rl.id), 0) as like_count
-    FROM product_requests r
-    JOIN users u ON u.id = r.user_id
-    LEFT JOIN categories c ON c.id = r.category_id
-    LEFT JOIN request_images ri ON ri.request_id = r.id
-    LEFT JOIN request_likes rl ON rl.request_id = r.id
-    WHERE r.status = $1
-  `;
-  
-  const params: any[] = [status];
-  
-  if (categoryId) {
-    queryText += ` AND r.category_id = $2`;
-    params.push(parseInt(categoryId));
+
+  try {
+    // Simple query without complex joins
+    const requests = await sql`
+      SELECT 
+        r.id,
+        r.title,
+        r.description,
+        r.status,
+        r.like_count,
+        r.created_at,
+        r.user_id
+      FROM product_requests r
+      WHERE r.status = ${status}
+      ORDER BY r.created_at DESC
+    `;
+
+    // Return empty array if no results
+    if (!requests || requests.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Get user info for each request
+    const results = [];
+    for (const req of requests) {
+      const [user] = await sql`
+        SELECT name, email FROM users WHERE id = ${req.user_id}
+      `;
+      
+      const [imageCount] = await sql`
+        SELECT COUNT(*) as count FROM request_images WHERE request_id = ${req.id}
+      `;
+      
+      const [likeCount] = await sql`
+        SELECT COUNT(*) as count FROM request_likes WHERE request_id = ${req.id}
+      `;
+
+      results.push({
+        id: req.id,
+        title: req.title,
+        description: req.description,
+        status: req.status,
+        like_count: parseInt(likeCount?.count || '0'),
+        created_at: req.created_at,
+        user_name: user?.name || 'Unknown',
+        user_email: user?.email || '',
+        image_count: parseInt(imageCount?.count || '0'),
+        category_name: null,
+      });
+    }
+
+    return NextResponse.json(results);
+  } catch (err) {
+    console.error('Admin requests error:', err);
+    return NextResponse.json([]);
   }
-  
-  queryText += `
-    GROUP BY r.id, u.name, u.email, c.name, c.id
-    ORDER BY r.created_at DESC
-    LIMIT $${params.length + 1}
-  `;
-  params.push(limit);
-  
-  const requests = await sql.unsafe(queryText, params);
-  
-  return NextResponse.json(requests);
 }
 
 export async function PATCH(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
-  const { id, status, admin_notes } = await req.json();
+  try {
+    const { id, status, admin_notes } = await req.json();
 
-  if (!id || !status) {
-    return NextResponse.json({ error: 'id and status required' }, { status: 400 });
+    if (!id || !status) {
+      return NextResponse.json({ error: 'id and status required' }, { status: 400 });
+    }
+
+    const sql = getDb();
+
+    await sql`
+      UPDATE product_requests 
+      SET status = ${status}, admin_notes = ${admin_notes || null}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Admin PATCH error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-
-  const sql = getDb();
-
-  const [current] = await sql`SELECT status FROM product_requests WHERE id = ${id}`;
-  const oldStatus = current?.status;
-
-  await sql`
-    UPDATE product_requests 
-    SET status = ${status}, admin_notes = ${admin_notes || null}, updated_at = NOW()
-    WHERE id = ${id}
-  `;
-
-  await sql`
-    INSERT INTO request_status_history (request_id, old_status, new_status, changed_by, note)
-    VALUES (${id}, ${oldStatus}, ${status}, ${null}, ${admin_notes || null})
-  `;
-
-  return NextResponse.json({ success: true });
 }
