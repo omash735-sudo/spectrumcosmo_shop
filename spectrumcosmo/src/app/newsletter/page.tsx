@@ -3,11 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
+import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import RequestCarousel from '@/components/storefront/RequestCarousel';
-import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
+import ContentBlockRenderer from '@/components/storefront/ContentBlockRenderer';
+
+interface ContentBlock {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  content: any;
+  display_order: number;
+  is_active: boolean;
+}
 
 export default function NewsletterPage() {
   const router = useRouter();
@@ -15,6 +24,8 @@ export default function NewsletterPage() {
   const [subscribed, setSubscribed] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [blocks, setBlocks] = useState<ContentBlock[]>([]);
+  const [blocksLoading, setBlocksLoading] = useState(true);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackReason, setFeedbackReason] = useState('');
   const [feedbackDetails, setFeedbackDetails] = useState('');
@@ -33,6 +44,14 @@ export default function NewsletterPage() {
       setLoading(false);
     };
     loadUser();
+
+    const loadBlocks = async () => {
+      const res = await fetch('/api/content-blocks');
+      const data = await res.json();
+      setBlocks(data);
+      setBlocksLoading(false);
+    };
+    loadBlocks();
   }, [router]);
 
   const performUnsubscribe = async () => {
@@ -105,7 +124,7 @@ export default function NewsletterPage() {
     }
   };
 
-  if (loading) {
+  if (loading || blocksLoading) {
     return (
       <>
         <Navbar />
@@ -122,16 +141,23 @@ export default function NewsletterPage() {
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Newsletter Section */}
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-xl border p-8 mb-12">
+          {/* Content Blocks - Dynamic, admin-managed */}
+          <div className="space-y-8">
+            {blocks.map((block) => (
+              <ContentBlockRenderer key={block.id} block={block} />
+            ))}
+          </div>
+
+          {/* Newsletter Subscription - Now at the bottom */}
+          <div className="max-w-3xl mx-auto mt-16">
+            <div className="bg-white rounded-3xl shadow-xl border p-8">
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Newspaper className="text-[#F97316]" size={40} />
                 </div>
-                <h1 className="text-3xl font-bold mb-2">SpectrumCosmo Newsletter</h1>
+                <h2 className="text-2xl font-bold mb-2">Stay Updated</h2>
                 <p className="text-gray-600">
-                  Be the first to know about new anime merch, exclusive deals, and drops.
+                  Get the latest anime merch drops and exclusive offers.
                 </p>
               </div>
 
@@ -183,44 +209,14 @@ export default function NewsletterPage() {
                 </div>
               )}
 
-              <div className="mt-6 text-center text-sm text-gray-500">
-                <p>We send about 2-4 emails per month. No spam, just quality content.</p>
-              </div>
-
-              {/* Link to Preferences Page */}
               <div className="mt-4 text-center">
-                <Link
-                  href="/newsletter/preferences"
-                  className="text-sm text-[#F97316] hover:underline inline-flex items-center gap-1"
-                >
+                <Link href="/newsletter/preferences" className="text-sm text-[#F97316] hover:underline inline-flex items-center gap-1">
                   Customize your preferences →
                 </Link>
               </div>
-            </div>
-          </div>
 
-          {/* Community Wishlist Section */}
-          <div className="border-t pt-12 mt-8">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
-                <Heart size={18} className="text-[#F97316]" />
-                <span className="text-sm font-medium text-[#F97316]">Community Driven</span>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Community Wishlist</h2>
-              <p className="text-gray-500 max-w-2xl mx-auto">
-                Request products you want to see. Trending ideas with high demand become reality.
-              </p>
-            </div>
-
-            <RequestCarousel />
-
-            <div className="mt-16 max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl border p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Idea</h3>
-                <p className="text-gray-500 text-sm mb-5">
-                  Have a product in mind? Tell us what you want – we'll review it and if there's enough interest, we'll make it.
-                </p>
-                <RequestSubmitForm />
+              <div className="mt-6 text-center text-sm text-gray-500">
+                <p>We send about 2-4 emails per month. No spam, just quality content.</p>
               </div>
             </div>
           </div>
