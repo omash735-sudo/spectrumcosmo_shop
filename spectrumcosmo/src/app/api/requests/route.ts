@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   try {
-    const { title, description, category, imageUrls } = await req.json();
+    const { title, description, categoryId, imageUrls } = await req.json();
 
     if (!title || !description) {
       return NextResponse.json({ error: 'Title and description required' }, { status: 400 });
@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     const sql = getDb();
 
     const [request] = await sql`
-      INSERT INTO product_requests (user_id, title, description, category, status, created_at, updated_at)
-      VALUES (${user.id}, ${title}, ${description}, ${category || null}, 'pending', NOW(), NOW())
+      INSERT INTO product_requests (user_id, title, description, category_id, status, created_at, updated_at)
+      VALUES (${user.id}, ${title}, ${description}, ${categoryId || null}, 'pending', NOW(), NOW())
       RETURNING id
     `;
 
@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
+  const categoryId = url.searchParams.get('categoryId');
   const limit = parseInt(url.searchParams.get('limit') || '20');
   const offset = parseInt(url.searchParams.get('offset') || '0');
 
@@ -53,13 +54,16 @@ export async function GET(req: NextRequest) {
     query = sql`
       SELECT 
         r.*,
+        c.name as category_name,
         COALESCE(COUNT(DISTINCT ri.id), 0) as image_count,
         COALESCE(SUM(CASE WHEN rl.user_id = ${user.id} THEN 1 ELSE 0 END), 0) as user_liked
       FROM product_requests r
+      LEFT JOIN categories c ON c.id = r.category_id
       LEFT JOIN request_images ri ON ri.request_id = r.id
       LEFT JOIN request_likes rl ON rl.request_id = r.id
       WHERE r.user_id = ${user.id}
-      GROUP BY r.id
+      ${categoryId ? sql`AND r.category_id = ${categoryId}` : sql``}
+      GROUP BY r.id, c.name
       ORDER BY r.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -68,14 +72,17 @@ export async function GET(req: NextRequest) {
     query = sql`
       SELECT 
         r.*,
+        c.name as category_name,
         COALESCE(COUNT(DISTINCT ri.id), 0) as image_count,
         COALESCE(COUNT(DISTINCT rl.id), 0) as like_count,
         COALESCE(SUM(CASE WHEN rl.user_id = ${user.id} THEN 1 ELSE 0 END), 0) as user_liked
       FROM product_requests r
+      LEFT JOIN categories c ON c.id = r.category_id
       LEFT JOIN request_images ri ON ri.request_id = r.id
       LEFT JOIN request_likes rl ON rl.request_id = r.id
       WHERE ${sql.raw(statusFilter)}
-      GROUP BY r.id
+      ${categoryId ? sql`AND r.category_id = ${categoryId}` : sql``}
+      GROUP BY r.id, c.name
       ORDER BY r.like_count DESC, r.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
