@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const status = url.searchParams.get('status') || 'pending';
   const categoryId = url.searchParams.get('categoryId');
-  const limit = parseInt(url.searchParams.get('limit') || '50');
+  const limit = parseInt(url.searchParams.get('limit') || '100');
 
   const sql = getDb();
   
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   
   queryText += `
     GROUP BY r.id, u.name, u.email, c.name, c.id
-    ORDER BY r.created_at ASC
+    ORDER BY r.created_at DESC
     LIMIT $${params.length + 1}
   `;
   params.push(limit);
