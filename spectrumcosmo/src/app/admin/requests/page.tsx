@@ -8,7 +8,8 @@ interface Request {
   id: string;
   title: string;
   description: string;
-  category: string;
+  category_name: string;
+  category_id: number | null;
   status: string;
   user_name: string;
   user_email: string;
@@ -27,10 +28,15 @@ export default function AdminRequestsPage() {
 
   const fetchRequests = async () => {
     setLoading(true);
-    const res = await fetch(`/api/admin/requests?status=${filter}`);
-    const data = await res.json();
-    setRequests(data);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/admin/requests?status=${filter}`);
+      const data = await res.json();
+      setRequests(data);
+    } catch (err) {
+      console.error('Failed to fetch requests:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -39,15 +45,20 @@ export default function AdminRequestsPage() {
 
   const updateStatus = async (id: string, newStatus: string) => {
     setProcessing(true);
-    await fetch('/api/admin/requests', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: newStatus, admin_notes: adminNote }),
-    });
-    setSelectedRequest(null);
-    setAdminNote('');
-    await fetchRequests();
-    setProcessing(false);
+    try {
+      await fetch('/api/admin/requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus, admin_notes: adminNote }),
+      });
+      setSelectedRequest(null);
+      setAdminNote('');
+      await fetchRequests();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const statusColors: Record<string, string> = {
@@ -59,6 +70,14 @@ export default function AdminRequestsPage() {
     available: 'bg-teal-100 text-teal-700',
   };
 
+  if (loading) {
+    return (
+      <div className="pt-16 lg:pt-0">
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" size={32} /></div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-16 lg:pt-0">
       <div className="mb-8">
@@ -66,7 +85,7 @@ export default function AdminRequestsPage() {
         <p className="text-gray-500 text-sm mt-1">Review and manage community submissions.</p>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {['pending', 'reviewing', 'approved', 'rejected', 'sourcing', 'available'].map((s) => (
           <button
             key={s}
@@ -81,9 +100,7 @@ export default function AdminRequestsPage() {
       </div>
 
       <div className="bg-white rounded-2xl border overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" size={32} /></div>
-        ) : requests.length === 0 ? (
+        {requests.length === 0 ? (
           <div className="text-center py-20 text-gray-400">No requests found.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -92,6 +109,7 @@ export default function AdminRequestsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Likes</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -109,6 +127,7 @@ export default function AdminRequestsPage() {
                       <p className="text-sm font-medium">{req.user_name}</p>
                       <p className="text-xs text-gray-400">{req.user_email}</p>
                     </td>
+                    <td className="px-6 py-4 text-sm">{req.category_name || '—'}</td>
                     <td className="px-6 py-4 text-sm">{req.like_count}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[req.status]}`}>
@@ -146,7 +165,7 @@ export default function AdminRequestsPage() {
               <div><label className="text-sm text-gray-500">User</label><p className="font-medium">{selectedRequest.user_name} ({selectedRequest.user_email})</p></div>
               <div><label className="text-sm text-gray-500">Title</label><p className="font-medium">{selectedRequest.title}</p></div>
               <div><label className="text-sm text-gray-500">Description</label><p className="text-gray-700 whitespace-pre-wrap">{selectedRequest.description}</p></div>
-              <div><label className="text-sm text-gray-500">Category</label><p>{selectedRequest.category || 'Not specified'}</p></div>
+              <div><label className="text-sm text-gray-500">Category</label><p>{selectedRequest.category_name || 'Not specified'}</p></div>
               <div><label className="text-sm text-gray-500">Likes</label><p>{selectedRequest.like_count}</p></div>
               <div>
                 <label className="text-sm text-gray-500 block mb-2">Admin Notes (optional)</label>
