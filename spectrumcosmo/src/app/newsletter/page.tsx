@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/storefront/Footer';
+import Footer from '@/components/storefront/Footer';
 import RequestCarousel from '@/components/storefront/RequestCarousel';
 import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
 
@@ -183,7 +184,17 @@ export default function NewsletterPage() {
               )}
 
               <div className="mt-6 text-center text-sm text-gray-500">
-                <p>We send about 2–4 emails per month. No spam, just quality content.</p>
+                <p>We send about 2-4 emails per month. No spam, just quality content.</p>
+              </div>
+
+              {/* Link to Preferences Page */}
+              <div className="mt-4 text-center">
+                <Link
+                  href="/newsletter/preferences"
+                  className="text-sm text-[#F97316] hover:underline inline-flex items-center gap-1"
+                >
+                  Customize your preferences →
+                </Link>
               </div>
             </div>
           </div>
