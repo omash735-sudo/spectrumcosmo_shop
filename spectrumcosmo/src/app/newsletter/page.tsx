@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X } from 'lucide-react';
+import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
+import Footer from '@/storefront/Footer';
+import RequestCarousel from '@/components/storefront/RequestCarousel';
+import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
 
 export default function NewsletterPage() {
   const router = useRouter();
@@ -12,8 +14,6 @@ export default function NewsletterPage() {
   const [subscribed, setSubscribed] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  // Feedback modal state
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackReason, setFeedbackReason] = useState('');
   const [feedbackDetails, setFeedbackDetails] = useState('');
@@ -37,7 +37,6 @@ export default function NewsletterPage() {
   const performUnsubscribe = async () => {
     setSaving(true);
     try {
-      // Call new unified unsubscribe endpoint
       await fetch('/api/subscribe/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,7 +75,6 @@ export default function NewsletterPage() {
   const submitFeedbackAndUnsubscribe = async () => {
     setSubmittingFeedback(true);
     try {
-      // Send feedback + unsubscribe in one call
       await fetch('/api/subscribe/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,74 +120,104 @@ export default function NewsletterPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="bg-white rounded-3xl shadow-xl border p-8">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Newspaper className="text-[#F97316]" size={40} />
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Newsletter Section */}
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-xl border p-8 mb-12">
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Newspaper className="text-[#F97316]" size={40} />
+                </div>
+                <h1 className="text-3xl font-bold mb-2">SpectrumCosmo Newsletter</h1>
+                <p className="text-gray-600">
+                  Be the first to know about new anime merch, exclusive deals, and drops.
+                </p>
               </div>
-              <h1 className="text-3xl font-bold mb-2">SpectrumCosmo Newsletter</h1>
-              <p className="text-gray-600">
-                Be the first to know about new anime merch, exclusive deals, and drops.
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Tag className="text-[#F97316]" size={20} />
+                  <span className="text-sm font-medium">Early access to sales</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Bell className="text-[#F97316]" size={20} />
+                  <span className="text-sm font-medium">Weekly anime news</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Shield className="text-[#F97316]" size={20} />
+                  <span className="text-sm font-medium">Unsubscribe anytime</span>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Mail className="text-[#F97316]" size={24} />
+                    <div>
+                      <p className="font-medium">{user?.email || 'Your email'}</p>
+                      <p className="text-sm text-gray-500">
+                        {subscribed ? 'Subscribed' : 'Not subscribed'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleSubscription}
+                    disabled={saving}
+                    className={`px-6 py-2 rounded-full font-medium transition ${
+                      subscribed
+                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                        : 'bg-[#F97316] text-white hover:bg-[#e0650f]'
+                    }`}
+                  >
+                    {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
+                    {subscribed ? 'Unsubscribe' : 'Subscribe'}
+                  </button>
+                </div>
+              </div>
+
+              {subscribed && (
+                <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 py-3 rounded-xl">
+                  <CheckCircle size={20} />
+                  <span>You're all set! Check your inbox for a welcome email.</span>
+                </div>
+              )}
+
+              <div className="mt-6 text-center text-sm text-gray-500">
+                <p>We send about 2–4 emails per month. No spam, just quality content.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Community Wishlist Section */}
+          <div className="border-t pt-12 mt-8">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
+                <Heart size={18} className="text-[#F97316]" />
+                <span className="text-sm font-medium text-[#F97316]">Community Driven</span>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Community Wishlist</h2>
+              <p className="text-gray-500 max-w-2xl mx-auto">
+                Request products you want to see. Trending ideas with high demand become reality.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <Tag className="text-[#F97316]" size={20} />
-                <span className="text-sm font-medium">Early access to sales</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <Bell className="text-[#F97316]" size={20} />
-                <span className="text-sm font-medium">Weekly anime news</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <Shield className="text-[#F97316]" size={20} />
-                <span className="text-sm font-medium">Unsubscribe anytime</span>
-              </div>
-            </div>
+            <RequestCarousel />
 
-            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Mail className="text-[#F97316]" size={24} />
-                  <div>
-                    <p className="font-medium">{user?.email || 'Your email'}</p>
-                    <p className="text-sm text-gray-500">
-                      {subscribed ? 'Subscribed' : 'Not subscribed'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={toggleSubscription}
-                  disabled={saving}
-                  className={`px-6 py-2 rounded-full font-medium transition ${
-                    subscribed
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                      : 'bg-[#F97316] text-white hover:bg-[#e0650f]'
-                  }`}
-                >
-                  {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
-                  {subscribed ? 'Unsubscribe' : 'Subscribe'}
-                </button>
+            <div className="mt-16 max-w-2xl mx-auto">
+              <div className="bg-white rounded-2xl border p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Idea</h3>
+                <p className="text-gray-500 text-sm mb-5">
+                  Have a product in mind? Tell us what you want – we'll review it and if there's enough interest, we'll make it.
+                </p>
+                <RequestSubmitForm />
               </div>
-            </div>
-
-            {subscribed && (
-              <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 py-3 rounded-xl">
-                <CheckCircle size={20} />
-                <span>You're all set! Check your inbox for a welcome email.</span>
-              </div>
-            )}
-
-            <div className="mt-6 text-center text-sm text-gray-500">
-              <p>We send about 2–4 emails per month. No spam, just quality content.</p>
             </div>
           </div>
         </div>
       </main>
       <Footer />
 
+      {/* Feedback Modal */}
       {showFeedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl">
@@ -238,4 +266,4 @@ export default function NewsletterPage() {
       )}
     </>
   );
-          }
+}
