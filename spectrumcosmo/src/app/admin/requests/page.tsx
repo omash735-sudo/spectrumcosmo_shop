@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Eye, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 
 interface Request {
@@ -25,15 +25,23 @@ export default function AdminRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [adminNote, setAdminNote] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/requests?status=${filter}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
-      setRequests(data);
+      console.log('Admin API response:', data);
+      setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch requests:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load requests');
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -46,16 +54,18 @@ export default function AdminRequestsPage() {
   const updateStatus = async (id: string, newStatus: string) => {
     setProcessing(true);
     try {
-      await fetch('/api/admin/requests', {
+      const res = await fetch('/api/admin/requests', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus, admin_notes: adminNote }),
       });
+      if (!res.ok) throw new Error('Update failed');
       setSelectedRequest(null);
       setAdminNote('');
       await fetchRequests();
     } catch (err) {
       console.error('Failed to update status:', err);
+      alert('Failed to update status');
     } finally {
       setProcessing(false);
     }
@@ -73,16 +83,27 @@ export default function AdminRequestsPage() {
   if (loading) {
     return (
       <div className="pt-16 lg:pt-0">
-        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-500" size={32} /></div>
+        <div className="flex justify-center py-20">
+          <Loader2 className="animate-spin text-orange-500" size={32} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="pt-16 lg:pt-0">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Product Requests</h1>
-        <p className="text-gray-500 text-sm mt-1">Review and manage community submissions.</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Product Requests</h1>
+          <p className="text-gray-500 text-sm mt-1">Review and manage community submissions.</p>
+        </div>
+        <button
+          onClick={fetchRequests}
+          className="flex items-center gap-2 px-3 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+        >
+          <RefreshCw size={16} />
+          Refresh
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -95,13 +116,30 @@ export default function AdminRequestsPage() {
             }`}
           >
             {s.charAt(0).toUpperCase() + s.slice(1)}
+            {s === 'pending' && requests.length > 0 && (
+              <span className="ml-1.5 bg-white/20 text-inherit text-xs px-1.5 py-0.5 rounded-full">
+                {requests.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-600 text-sm">
+          Error: {error}
+          <button onClick={fetchRequests} className="ml-3 underline">Try again</button>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border overflow-hidden">
         {requests.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">No requests found.</div>
+          <div className="text-center py-20 text-gray-400">
+            <p>No {filter} requests found.</p>
+            {filter === 'pending' && (
+              <p className="text-xs mt-2">When users submit requests, they will appear here.</p>
+            )}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -110,6 +148,7 @@ export default function AdminRequestsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Images</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Likes</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -120,15 +159,16 @@ export default function AdminRequestsPage() {
                 {requests.map((req) => (
                   <tr key={req.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{req.title}</p>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{req.description}</p>
+                      <p className="font-medium text-gray-900 line-clamp-1">{req.title}</p>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{req.description}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm font-medium">{req.user_name}</p>
                       <p className="text-xs text-gray-400">{req.user_email}</p>
                     </td>
                     <td className="px-6 py-4 text-sm">{req.category_name || '—'}</td>
-                    <td className="px-6 py-4 text-sm">{req.like_count}</td>
+                    <td className="px-6 py-4 text-sm">{req.image_count || 0} images</td>
+                    <td className="px-6 py-4 text-sm">{req.like_count || 0}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[req.status]}`}>
                         {req.status}
@@ -166,6 +206,7 @@ export default function AdminRequestsPage() {
               <div><label className="text-sm text-gray-500">Title</label><p className="font-medium">{selectedRequest.title}</p></div>
               <div><label className="text-sm text-gray-500">Description</label><p className="text-gray-700 whitespace-pre-wrap">{selectedRequest.description}</p></div>
               <div><label className="text-sm text-gray-500">Category</label><p>{selectedRequest.category_name || 'Not specified'}</p></div>
+              <div><label className="text-sm text-gray-500">Images</label><p>{selectedRequest.image_count || 0} images uploaded</p></div>
               <div><label className="text-sm text-gray-500">Likes</label><p>{selectedRequest.like_count}</p></div>
               <div>
                 <label className="text-sm text-gray-500 block mb-2">Admin Notes (optional)</label>
