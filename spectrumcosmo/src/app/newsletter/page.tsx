@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
+import HeroCarousel from '@/components/storefront/HeroCarousel';
 import ContentBlockRenderer from '@/components/storefront/ContentBlockRenderer';
 import RequestCarousel from '@/components/storefront/RequestCarousel';
 import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
@@ -143,7 +144,10 @@ export default function NewsletterPage() {
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Community Wishlist Section - Top Priority */}
+          {/* Hero Carousel - Entry Point */}
+          <HeroCarousel />
+
+          {/* Community Wishlist Section */}
           <div className="mb-16">
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
