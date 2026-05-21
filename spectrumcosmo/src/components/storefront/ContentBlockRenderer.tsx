@@ -5,6 +5,7 @@ import StaticCardBlock from './blocks/StaticCardBlock';
 import ImageTextBlock from './blocks/ImageTextBlock';
 import AnnouncementBlock from './blocks/AnnouncementBlock';
 import TrendingRequestsBlock from './blocks/TrendingRequestsBlock';
+import InspirationGalleryBlock from './blocks/InspirationGalleryBlock';
 
 interface ContentBlock {
   id: string;
@@ -26,6 +27,8 @@ export default function ContentBlockRenderer({ block }: { block: ContentBlock })
       return <AnnouncementBlock block={block} />;
     case 'trending_requests':
       return <TrendingRequestsBlock block={block} />;
+    case 'inspiration_gallery':
+      return <InspirationGalleryBlock block={block} />;
     default:
       return null;
   }
