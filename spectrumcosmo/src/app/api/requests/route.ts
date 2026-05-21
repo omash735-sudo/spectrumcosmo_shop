@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Title and description required' }, { status: 400 });
     }
 
+    if (!imageUrls || imageUrls.length === 0) {
+      return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
+    }
+
     const sql = getDb();
 
     const [request] = await sql`
@@ -20,6 +24,10 @@ export async function POST(req: NextRequest) {
       VALUES (${user.id}, ${title}, ${description}, ${categoryId || null}, 'pending', NOW(), NOW())
       RETURNING id
     `;
+
+    if (!request || !request.id) {
+      throw new Error('Failed to create request');
+    }
 
     if (imageUrls && imageUrls.length > 0) {
       for (let i = 0; i < imageUrls.length; i++) {
@@ -29,6 +37,8 @@ export async function POST(req: NextRequest) {
         `;
       }
     }
+
+    console.log(`Request created: ${request.id} by user ${user.id}`);
 
     return NextResponse.json({ success: true, id: request.id }, { status: 201 });
   } catch (err: any) {
@@ -51,43 +61,46 @@ export async function GET(req: NextRequest) {
 
   let query;
   if (status === 'my') {
-    query = sql`
+    query = await sql`
       SELECT 
-        r.*,
+        r.id,
+        r.title,
+        r.description,
+        r.status,
+        r.like_count,
+        r.created_at,
         c.name as category_name,
-        COALESCE(COUNT(DISTINCT ri.id), 0) as image_count,
-        COALESCE(SUM(CASE WHEN rl.user_id = ${user.id} THEN 1 ELSE 0 END), 0) as user_liked
+        COALESCE((SELECT COUNT(*) FROM request_images WHERE request_id = r.id), 0) as image_count,
+        COALESCE((SELECT COUNT(*) FROM request_likes WHERE request_id = r.id AND user_id = ${user.id}), 0) as user_liked
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
-      LEFT JOIN request_images ri ON ri.request_id = r.id
-      LEFT JOIN request_likes rl ON rl.request_id = r.id
       WHERE r.user_id = ${user.id}
-      ${categoryId ? sql`AND r.category_id = ${categoryId}` : sql``}
-      GROUP BY r.id, c.name
+      ${categoryId ? sql`AND r.category_id = ${parseInt(categoryId)}` : sql``}
       ORDER BY r.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
   } else {
-    const statusFilter = status === 'approved' ? 'status = \'approved\'' : 'status IN (\'approved\', \'available\')';
-    query = sql`
+    const statusFilter = status === 'approved' ? 'r.status = \'approved\'' : 'r.status IN (\'approved\', \'available\')';
+    query = await sql`
       SELECT 
-        r.*,
+        r.id,
+        r.title,
+        r.description,
+        r.status,
+        r.like_count,
+        r.created_at,
         c.name as category_name,
-        COALESCE(COUNT(DISTINCT ri.id), 0) as image_count,
-        COALESCE(COUNT(DISTINCT rl.id), 0) as like_count,
-        COALESCE(SUM(CASE WHEN rl.user_id = ${user.id} THEN 1 ELSE 0 END), 0) as user_liked
+        COALESCE((SELECT COUNT(*) FROM request_images WHERE request_id = r.id), 0) as image_count,
+        COALESCE((SELECT COUNT(DISTINCT rl.id) FROM request_likes rl WHERE rl.request_id = r.id), 0) as like_count,
+        COALESCE((SELECT COUNT(*) FROM request_likes WHERE request_id = r.id AND user_id = ${user.id}), 0) as user_liked
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
-      LEFT JOIN request_images ri ON ri.request_id = r.id
-      LEFT JOIN request_likes rl ON rl.request_id = r.id
       WHERE ${sql.raw(statusFilter)}
-      ${categoryId ? sql`AND r.category_id = ${categoryId}` : sql``}
-      GROUP BY r.id, c.name
+      ${categoryId ? sql`AND r.category_id = ${parseInt(categoryId)}` : sql``}
       ORDER BY r.like_count DESC, r.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
   }
 
-  const requests = await query;
-  return NextResponse.json(requests);
+  return NextResponse.json(query);
 }
