@@ -1,20 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+
+interface Category {
+  id: string;
+  name: string;
+  image_url?: string;
+  is_active: boolean;
+  sort_order: number;
+}
 
 export default function RequestSubmitForm() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Fetch categories from your API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories');
+        if (res.ok) {
+          const data = await res.json();
+          // Filter only active categories
+          const activeCategories = data.filter((cat: Category) => cat.is_active !== false);
+          setCategories(activeCategories);
+        } else {
+          console.error('Failed to fetch categories');
+        }
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME';
@@ -56,6 +88,10 @@ export default function RequestSubmitForm() {
       setError('Title and description are required');
       return;
     }
+    if (images.length === 0) {
+      setError('Please upload at least one reference image');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
@@ -71,15 +107,18 @@ export default function RequestSubmitForm() {
         body: JSON.stringify({
           title,
           description,
-          category: category || null,
+          categoryId: categoryId || null,
           imageUrls: uploadedUrls,
         }),
       });
 
-      if (!res.ok) throw new Error('Submission failed');
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Submission failed');
+      }
 
       setSuccess(true);
-      setTimeout(() => router.push('/'), 2000);
+      setTimeout(() => router.push('/newsletter'), 3000);
     } catch (err: any) {
       setError(err.message);
       setSubmitting(false);
@@ -93,7 +132,13 @@ export default function RequestSubmitForm() {
           <CheckCircle size={32} className="text-green-600" />
         </div>
         <h3 className="text-xl font-bold mb-2">Request Submitted!</h3>
-        <p className="text-gray-500">Your request has been sent for review.</p>
+        <p className="text-gray-500">Your request has been sent for review by our team.</p>
+        <button
+          onClick={() => router.push('/newsletter')}
+          className="mt-4 text-orange-500 hover:underline"
+        >
+          Back to Newsletter
+        </button>
       </div>
     );
   }
@@ -107,7 +152,7 @@ export default function RequestSubmitForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g., Jujutsu Kaisen Hoodie"
-          className="w-full border rounded-xl px-4 py-2"
+          className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           required
         />
       </div>
@@ -119,26 +164,34 @@ export default function RequestSubmitForm() {
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           placeholder="Colors, size, material, specific characters, etc."
-          className="w-full border rounded-xl px-4 py-2"
+          className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Category (optional)</label>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full border rounded-xl px-4 py-2">
-          <option value="">Select category</option>
-          <option value="shirt">T-Shirt</option>
-          <option value="hoodie">Hoodie</option>
-          <option value="pendant">Pendant</option>
-          <option value="bracelet">Bracelet</option>
-          <option value="poster">Poster</option>
-          <option value="other">Other</option>
-        </select>
+        <label className="block text-sm font-medium mb-1">Category</label>
+        {loadingCategories ? (
+          <div className="flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin text-gray-400" />
+            <span className="text-sm text-gray-400">Loading categories...</span>
+          </div>
+        ) : (
+          <select 
+            value={categoryId} 
+            onChange={(e) => setCategoryId(e.target.value)} 
+            className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="">Select category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Reference Images</label>
+        <label className="block text-sm font-medium mb-1">Reference Images *</label>
         <div className="flex flex-wrap gap-3 mb-3">
           {images.map((img, idx) => (
             <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border">
@@ -152,23 +205,24 @@ export default function RequestSubmitForm() {
               </button>
             </div>
           ))}
-          <label className="w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50">
+          <label className="w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition">
             <Upload size={20} className="text-gray-400" />
             <span className="text-xs text-gray-400 mt-1">Upload</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
           </label>
         </div>
-        <p className="text-xs text-gray-400">You can upload multiple images for inspiration.</p>
+        <p className="text-xs text-gray-400">At least one image is required. You can upload multiple.</p>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm">{error}</div>}
+      {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-200">{error}</div>}
 
       <button
         type="submit"
         disabled={submitting || uploading}
-        className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50"
+        className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 transition flex items-center justify-center gap-2"
       >
-        {submitting || uploading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Submit Request'}
+        {submitting || uploading ? <Loader2 size={18} className="animate-spin" /> : null}
+        {submitting || uploading ? 'Submitting...' : 'Submit Request'}
       </button>
     </form>
   );
