@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X } from 'lucide-react';
+import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ContentBlockRenderer from '@/components/storefront/ContentBlockRenderer';
+import RequestCarousel from '@/components/storefront/RequestCarousel';
+import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
 
 interface ContentBlock {
   id: string;
@@ -141,6 +143,36 @@ export default function NewsletterPage() {
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
         <div className="max-w-6xl mx-auto px-4">
+          {/* Community Wishlist Section - Top Priority */}
+          <div className="mb-16">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
+                <Heart size={18} className="text-[#F97316]" />
+                <span className="text-sm font-medium text-[#F97316]">Community Driven</span>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Community Wishlist</h1>
+              <p className="text-gray-500 max-w-2xl mx-auto">
+                Request products you want to see. Submit your ideas with images and descriptions. 
+                Trending requests with high demand become reality.
+              </p>
+            </div>
+
+            {/* Trending Requests Carousel */}
+            <RequestCarousel />
+
+            {/* Submit Request Form */}
+            <div className="mt-16 max-w-2xl mx-auto">
+              <div className="bg-white rounded-2xl border p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h2>
+                <p className="text-gray-500 text-sm mb-5">
+                  Have a product in mind? Tell us what you want – upload reference images and describe your idea.
+                  Our team will review it and if there's enough interest, we'll make it.
+                </p>
+                <RequestSubmitForm />
+              </div>
+            </div>
+          </div>
+
           {/* Content Blocks - Dynamic, admin-managed */}
           <div className="space-y-8">
             {blocks.map((block) => (
@@ -148,7 +180,7 @@ export default function NewsletterPage() {
             ))}
           </div>
 
-          {/* Newsletter Subscription - Now at the bottom */}
+          {/* Newsletter Subscription - At the bottom */}
           <div className="max-w-3xl mx-auto mt-16">
             <div className="bg-white rounded-3xl shadow-xl border p-8">
               <div className="text-center mb-8">
