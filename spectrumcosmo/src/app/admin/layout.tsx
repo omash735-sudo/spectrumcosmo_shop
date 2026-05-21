@@ -31,6 +31,7 @@ import {
   Smartphone,
   Heart,
   Blocks,
+  ImageIcon,
 } from 'lucide-react';
 
 const navItems = [
@@ -42,6 +43,8 @@ const navItems = [
   { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'CORE' },
   { name: 'Product Requests', href: '/admin/requests', icon: Heart, section: 'CORE' },
   { name: 'Content Blocks', href: '/admin/content-blocks', icon: Blocks, section: 'CORE' },
+  { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
+  { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
