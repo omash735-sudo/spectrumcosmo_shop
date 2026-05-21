@@ -1,22 +1,25 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 
-type Slide = {
-  id: number;
-  image: string;
+interface HeroSlide {
+  id: string;
+  image_url: string;
   title: string;
-  subtitle?: string;
-};
+  description: string;
+  button_text: string;
+  button_link: string;
+  autoplay_delay: number;
+}
 
 interface HeroCarouselProps {
-  slides: Slide[];
-  // Styling options (now fully configurable)
   titleColor?: string;
   subtitleColor?: string;
   titleAlignment?: 'left' | 'center' | 'right';
@@ -24,13 +27,9 @@ interface HeroCarouselProps {
   verticalPosition?: 'top' | 'center' | 'bottom';
   buttonBgColor?: string;
   buttonTextColor?: string;
-  buttonLabel?: string;
-  buttonLink?: string;
-  autoplayDelay?: number;
 }
 
 export default function HeroCarousel({
-  slides,
   titleColor = '#FFFFFF',
   subtitleColor = '#FFFFFF',
   titleAlignment = 'center',
@@ -38,16 +37,28 @@ export default function HeroCarousel({
   verticalPosition = 'bottom',
   buttonBgColor = '#F97316',
   buttonTextColor = '#FFFFFF',
-  buttonLabel = '',
-  buttonLink = '',
-  autoplayDelay = 5000,
 }: HeroCarouselProps) {
-  // Map vertical position to Tailwind classes
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/hero-slides')
+      .then(res => res.json())
+      .then(data => {
+        setSlides(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const verticalClass = {
     top: 'items-start',
     center: 'items-center',
     bottom: 'items-end',
   }[verticalPosition];
+
+  if (loading) return <div className="h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse" />;
+  if (slides.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -55,24 +66,24 @@ export default function HeroCarousel({
         modules={[Autoplay, Pagination, Navigation]}
         spaceBetween={0}
         slidesPerView={1}
-        autoplay={{ delay: autoplayDelay, disableOnInteraction: false }}
+        autoplay={{ delay: slides[0]?.autoplay_delay || 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         navigation
         loop={true}
         className="w-full h-[400px] sm:h-[500px] md:h-[600px]"
       >
-        {slides.map((slide) => (
+        {slides.map((slide, idx) => (
           <SwiperSlide key={slide.id}>
             <div className="relative w-full h-full">
               <Image
-                src={slide.image}
-                alt={slide.title}
+                src={slide.image_url}
+                alt={slide.title || 'Hero'}
                 fill
                 className="object-cover"
-                priority={slide.id === 1}
+                priority={idx === 0}
                 sizes="100vw"
               />
-              {/* Overlay with dynamic positioning */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent pointer-events-none" />
               <div className={`absolute inset-0 flex flex-col ${verticalClass} justify-center p-6`}>
                 <div className="container mx-auto px-4 text-center">
                   {slide.title && (
@@ -83,29 +94,27 @@ export default function HeroCarousel({
                       {slide.title}
                     </h2>
                   )}
-                  {slide.subtitle && (
+                  {slide.description && (
                     <p
-                      className="text-base sm:text-xl md:text-2xl drop-shadow"
+                      className="text-base sm:text-xl md:text-2xl drop-shadow max-w-2xl mx-auto"
                       style={{ color: subtitleColor, textAlign: subtitleAlignment }}
                     >
-                      {slide.subtitle}
+                      {slide.description}
                     </p>
                   )}
-                  {buttonLabel && buttonLink && (
+                  {slide.button_text && slide.button_link && (
                     <div className="mt-6" style={{ textAlign: titleAlignment }}>
-                      <a
-                        href={buttonLink}
+                      <Link
+                        href={slide.button_link}
                         className="inline-block px-6 py-3 rounded-full font-medium transition hover:opacity-90"
                         style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
                       >
-                        {buttonLabel}
-                      </a>
+                        {slide.button_text}
+                      </Link>
                     </div>
                   )}
                 </div>
               </div>
-              {/* Gradient overlay (optional – can be controlled later) */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent pointer-events-none" />
             </div>
           </SwiperSlide>
         ))}
