@@ -145,11 +145,13 @@ export default function NewsletterPage() {
       <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
         <div className="max-w-6xl mx-auto px-4">
           {/* Hero Carousel - Entry Point */}
-          <HeroCarousel />
+          <div className="mb-16">
+            <HeroCarousel />
+          </div>
 
           {/* Community Wishlist Section */}
-          <div className="mb-16">
-            <div className="text-center mb-10">
+          <div className="mb-20">
+            <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
                 <Heart size={18} className="text-[#F97316]" />
                 <span className="text-sm font-medium text-[#F97316]">Community Driven</span>
@@ -162,10 +164,12 @@ export default function NewsletterPage() {
             </div>
 
             {/* Trending Requests Carousel */}
-            <RequestCarousel />
+            <div className="mb-16">
+              <RequestCarousel />
+            </div>
 
             {/* Submit Request Form */}
-            <div className="mt-16 max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl border p-6 shadow-sm">
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h2>
                 <p className="text-gray-500 text-sm mb-5">
@@ -177,15 +181,15 @@ export default function NewsletterPage() {
             </div>
           </div>
 
-          {/* Content Blocks - Dynamic, admin-managed */}
-          <div className="space-y-8">
+          {/* Content Blocks - Dynamic, admin-managed (includes Inspiration Gallery) */}
+          <div className="space-y-16">
             {blocks.map((block) => (
               <ContentBlockRenderer key={block.id} block={block} />
             ))}
           </div>
 
           {/* Newsletter Subscription - At the bottom */}
-          <div className="max-w-3xl mx-auto mt-16">
+          <div className="max-w-3xl mx-auto mt-20">
             <div className="bg-white rounded-3xl shadow-xl border p-8">
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
