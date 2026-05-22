@@ -37,6 +37,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useRealtimeActiveUsers } from '@/hooks/useRealtimeActiveUsers';
+import TestAccountKillSwitch from '@/components/admin/TestAccountKillSwitch';
 
 interface DashboardStats {
   active_users_today: number;
@@ -475,7 +476,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* System Health */}
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white rounded-xl border p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">System Health</h2>
             <div className="flex items-center gap-2 text-sm">
@@ -510,6 +511,11 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Test Account Kill Switch */}
+        <div className="mt-8">
+          <TestAccountKillSwitch />
         </div>
       </div>
 
