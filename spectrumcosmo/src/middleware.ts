@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { getDb } from '@/lib/db'; // Adjust path to your database connection
 
 // =============================================
 // TEMPORARY DISABLE SWITCH - Set to true to re-enable all security features
@@ -24,6 +25,39 @@ const WHITELIST_IPS = [
 
 function isWhitelisted(ip: string): boolean {
   return WHITELIST_IPS.includes(ip);
+}
+
+// =============================================
+// TEST ACCOUNT HELPER
+// =============================================
+async function isTestAccountWriteBlocked(request: NextRequest): Promise<boolean> {
+  const userToken = request.cookies.get('user_token')?.value;
+  if (!userToken) return false;
+  
+  try {
+    const decoded = JSON.parse(Buffer.from(userToken.split('.')[1], 'base64').toString());
+    const userId = decoded.userId || decoded.id;
+    
+    if (!userId) return false;
+    
+    const sql = getDb();
+    const [user] = await sql`
+      SELECT is_test_account FROM users WHERE id = ${userId}
+    `;
+    
+    if (!user?.is_test_account) return false;
+    
+    // Check kill switch - if test_account_enabled is 'false', write actions are blocked
+    const [setting] = await sql`
+      SELECT value FROM site_settings WHERE key = 'test_account_enabled'
+    `;
+    
+    // Block write actions if kill switch is disabled (value !== 'true')
+    return setting?.value !== 'true';
+  } catch (err) {
+    console.error('Failed to check test account status:', err);
+    return false;
+  }
 }
 
 // =============================================
@@ -117,6 +151,20 @@ export async function middleware(request: NextRequest) {
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     return response;
+  }
+
+  // =============================================
+  // TEST ACCOUNT WRITE BLOCKING - Check BEFORE other security checks
+  // =============================================
+  const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (writeMethods.includes(method)) {
+    const isWriteBlocked = await isTestAccountWriteBlocked(request);
+    if (isWriteBlocked) {
+      return NextResponse.json(
+        { error: 'Test account is currently in read-only mode. Write actions are disabled.' },
+        { status: 403 }
+      );
+    }
   }
 
   const skipPaths = [
