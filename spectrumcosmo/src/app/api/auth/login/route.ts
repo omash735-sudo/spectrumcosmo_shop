@@ -51,7 +51,9 @@ async function ensureUsersTable() {
       created_at TIMESTAMP NOT NULL DEFAULT NOW(),
       two_factor_enabled BOOLEAN DEFAULT false,
       two_factor_secret TEXT,
-      account_status TEXT DEFAULT 'active'
+      account_status TEXT DEFAULT 'active',
+      email_verified BOOLEAN DEFAULT false,
+      email_verified_at TIMESTAMP
     )
   `;
 }
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb();
-    const users = await sql`SELECT id, name, email, password_hash, account_status FROM users WHERE email = ${email}`;
+    const users = await sql`SELECT id, name, email, password_hash, account_status, email_verified FROM users WHERE email = ${email}`;
     
     // Track attempts for this IP
     const attemptKey = `attempts:${ipAddress}`;
@@ -216,6 +218,29 @@ export async function POST(req: NextRequest) {
         { error: 'Invalid credentials', requiresCaptcha: nowRequiresCaptcha },
         { status: 401 }
       );
+    }
+
+    // =============================================
+    // EMAIL VERIFICATION CHECK
+    // =============================================
+    // Check if email is verified before allowing login
+    if (!user.email_verified) {
+      await logSecurityEvent({
+        actionType: 'failed_login',
+        endpoint: '/api/auth/login',
+        requestMethod: 'POST',
+        responseStatus: 403,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        userId: user.id,
+        details: { email: user.email, reason: 'Email not verified' }
+      });
+      
+      return NextResponse.json({ 
+        error: 'Please verify your email before logging in', 
+        needsVerification: true,
+        email: user.email
+      }, { status: 403 });
     }
 
     // =============================================
