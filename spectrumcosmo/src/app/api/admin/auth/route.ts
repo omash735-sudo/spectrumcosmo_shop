@@ -1,83 +1,98 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { signAdminToken } from '@/lib/auth'
-import { getDb } from '@/lib/db'
-import bcrypt from 'bcryptjs'
-import { authenticator } from 'otplib'
+import { NextRequest, NextResponse } from 'next/server';
+import { signAdminToken } from '@/lib/auth';
+import { getDb } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import { authenticator } from 'otplib';
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, password, twoFactorCode } = await req.json()
-    const sql = getDb()
+    const { email, password, twoFactorCode } = await req.json();
+    const sql = getDb();
     
-    const users = await sql`SELECT * FROM admins WHERE username = ${username}`
+    // Query from users table where is_admin = true (not from admins table)
+    const users = await sql`
+      SELECT id, name, email, password_hash, is_admin, account_status, two_factor_enabled, two_factor_secret 
+      FROM users 
+      WHERE email = ${email} AND is_admin = true
+    `;
+    
     if (users.length === 0) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: 'Invalid credentials or not an admin account' }, { status: 401 });
     }
 
-    const user = users[0]
-    const valid = await bcrypt.compare(password, user.password_hash)
+    const admin = users[0];
+    
+    // Check account status
+    if (admin.account_status === 'frozen') {
+      return NextResponse.json({ error: 'Account frozen. Contact support.' }, { status: 403 });
+    }
+    
+    if (admin.account_status === 'banned') {
+      return NextResponse.json({ error: 'Account banned. Contact support.' }, { status: 403 });
+    }
+    
+    // Verify password
+    const valid = await bcrypt.compare(password, admin.password_hash);
     
     if (!valid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Check if 2FA is enabled for this admin
-    // Note: Assuming admins table has 2FA columns or you're using users table
-    // If admins table doesn't have 2FA columns, you'll need to add them or query users table
-    const [admin] = await sql`
-      SELECT id, email, two_factor_enabled, two_factor_secret 
-      FROM admins WHERE id = ${user.id}
-    `
-    
-    // If 2FA is enabled, verify the code
-    if (admin?.two_factor_enabled === true) {
+    // Check if 2FA is enabled
+    if (admin.two_factor_enabled === true) {
       if (!twoFactorCode) {
         return NextResponse.json({ 
           error: '2FA code required', 
           requiresTwoFactor: true 
-        }, { status: 401 })
+        }, { status: 401 });
       }
       
       const isValid = authenticator.verify({
         token: twoFactorCode,
         secret: admin.two_factor_secret
-      })
+      });
       
       if (!isValid) {
-        return NextResponse.json({ error: 'Invalid 2FA code' }, { status: 401 })
+        return NextResponse.json({ error: 'Invalid 2FA code' }, { status: 401 });
       }
     }
     
-    // Proceed with login - 2FA passed or not enabled
+    // Generate admin token
     const token = signAdminToken({ 
-      id: user.id, 
-      username: user.username, 
-      role: 'admin',
-      twoFactorVerified: true 
-    })
+      id: admin.id, 
+      name: admin.name,
+      email: admin.email,
+      role: 'admin'
+    });
     
     const res = NextResponse.json({ 
       success: true,
+      admin: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+      },
       requiresTwoFactor: false
-    })
+    });
     
     res.cookies.set('admin_token', token, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
+      maxAge: 60 * 60 * 24, // 24 hours
       path: '/',
-    })
+    });
     
-    return res
+    return res;
     
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('Admin login error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function DELETE() {
-  const res = NextResponse.json({ success: true })
-  res.cookies.delete('admin_token')
-  return res
+  const res = NextResponse.json({ success: true });
+  res.cookies.delete('admin_token');
+  return res;
 }
