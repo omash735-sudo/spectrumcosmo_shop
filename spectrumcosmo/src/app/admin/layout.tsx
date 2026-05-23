@@ -32,6 +32,13 @@ import {
   Heart,
   Blocks,
   ImageIcon,
+  Activity,
+  Eye,
+  Zap,
+  Bell,
+  Key,
+  Verified,
+  Lock,
 } from 'lucide-react';
 
 const navItems = [
@@ -39,12 +46,20 @@ const navItems = [
   { name: 'Orders', href: '/admin/orders', icon: ShoppingBag, section: 'CORE' },
   { name: 'Products', href: '/admin/products', icon: Package, section: 'CORE' },
   { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'CORE' },
-  { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'CORE' },
-  { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'CORE' },
   { name: 'Product Requests', href: '/admin/requests', icon: Heart, section: 'CORE' },
   { name: 'Content Blocks', href: '/admin/content-blocks', icon: Blocks, section: 'CORE' },
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
+  
+  // SECURITY SECTION - New
+  { name: 'Security Dashboard', href: '/admin/security/dashboard', icon: Activity, section: 'SECURITY' },
+  { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'SECURITY' },
+  { name: 'Threat Logs', href: '/admin/security/logs', icon: Eye, section: 'SECURITY' },
+  { name: 'Blocked IPs', href: '/admin/security/blocked-ips', icon: Ban, section: 'SECURITY' },
+  { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'SECURITY' },
+  { name: '2FA Settings', href: '/admin/security/2fa', icon: Key, section: 'SECURITY' },
+  { name: 'Email Verification', href: '/admin/security/email-verification', icon: Verified, section: 'SECURITY' },
+  
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
@@ -52,12 +67,14 @@ const navItems = [
   { name: 'Order Statuses', href: '/admin/order-statuses', icon: Tag, section: 'OPERATIONS' },
   { name: 'Delivery', href: '/admin/delivery', icon: Truck, section: 'OPERATIONS' },
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
+  
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
   { name: 'Email Templates', href: '/admin/email-templates', icon: Mail, section: 'GROWTH' },
   { name: 'Customer Messages', href: '/admin/customer-messages', icon: MessageSquare, section: 'GROWTH' },
   { name: 'SMS Templates', href: '/admin/sms-templates', icon: Smartphone, section: 'GROWTH' },
   { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },
+  
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
   { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },
@@ -67,16 +84,67 @@ const navItems = [
   { name: 'Privacy', href: '/admin/privacy', icon: Shield, section: 'SYSTEM' },
 ];
 
+// Security alert badge component
+function SecurityAlertBadge() {
+  const [alertCount, setAlertCount] = useState(0);
+  
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch('/api/admin/security/alerts/count');
+        if (res.ok) {
+          const data = await res.json();
+          setAlertCount(data.count);
+        }
+      } catch (err) {
+        console.error('Failed to fetch alert count:', err);
+      }
+    };
+    
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  if (alertCount === 0) return null;
+  
+  return (
+    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+      {alertCount > 99 ? '99+' : alertCount}
+    </span>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [adminName, setAdminName] = useState('');
 
   // Check if this is the login page
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
     setMobileMenuOpen(false);
-  }, [pathname]);
+    
+    // Fetch admin info for 2FA status
+    const fetchAdminInfo = async () => {
+      try {
+        const res = await fetch('/api/admin/me');
+        if (res.ok) {
+          const data = await res.json();
+          setTwoFactorEnabled(data.twoFactorEnabled);
+          setAdminName(data.name || 'Admin');
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin info:', err);
+      }
+    };
+    
+    if (!isLoginPage) {
+      fetchAdminInfo();
+    }
+  }, [pathname, isLoginPage]);
 
   const isActive = (href: string) => {
     return pathname === href || pathname?.startsWith(href + '/');
@@ -98,39 +166,66 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      <nav className="flex-1">
-        {['CORE', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => (
-          <div key={section}>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2 px-2">
-              {section}
-            </p>
-            {navItems
-              .filter((item) => item.section === section)
-              .map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-1 ${
-                    isActive(item.href)
-                      ? 'bg-[#F97316] text-white shadow-md shadow-orange-100'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon size={18} />
-                  {item.name}
-                  {isActive(item.href) && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
-                  )}
-                </Link>
-              ))}
+      {/* Admin Profile Summary */}
+      <div className="mb-6 p-3 bg-gray-50 rounded-xl">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-[#F97316]/10 flex items-center justify-center">
+            <Users size={14} className="text-[#F97316]" />
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{adminName || 'Admin User'}</p>
+            <div className="flex items-center gap-1">
+              <Lock size={10} className={twoFactorEnabled ? 'text-green-500' : 'text-gray-400'} />
+              <span className={`text-xs ${twoFactorEnabled ? 'text-green-600' : 'text-gray-400'}`}>
+                2FA {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1">
+        {['CORE', 'SECURITY', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => {
+          const sectionItems = navItems.filter((item) => item.section === section);
+          if (sectionItems.length === 0) return null;
+          
+          return (
+            <div key={section}>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2 px-2">
+                {section}
+              </p>
+              {sectionItems.map((item) => {
+                const Icon = item.icon;
+                const isSecuritySection = section === 'SECURITY';
+                
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-1 ${
+                      isActive(item.href)
+                        ? 'bg-[#F97316] text-white shadow-md shadow-orange-100'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    } ${isSecuritySection && !isActive(item.href) ? 'hover:border-l-2 hover:border-[#F97316]' : ''}`}
+                  >
+                    <Icon size={18} />
+                    {item.name}
+                    {item.name === 'Security Center' && <SecurityAlertBadge />}
+                    {isActive(item.href) && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="pt-4 mt-4 border-t border-gray-100">
         <button
           onClick={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            await fetch('/api/admin/logout', { method: 'POST' });
             window.location.href = '/admin/login';
           }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition w-full"
@@ -158,6 +253,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="w-8 h-8 object-contain"
           />
           <span className="font-semibold text-gray-800">Admin</span>
+          {!twoFactorEnabled && (
+            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full ml-1">
+              No 2FA
+            </span>
+          )}
         </div>
         <button
           onClick={() => setMobileMenuOpen(true)}
