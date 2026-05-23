@@ -1,23 +1,46 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [requiresCaptcha, setRequiresCaptcha] = useState(false);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [pendingCredentials, setPendingCredentials] = useState({ email: '', password: '' });
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+
+  // Check for verification success/error from URL params
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const errorParam = searchParams.get('error');
+    
+    if (verified === 'true') {
+      setSuccess('Email verified successfully! You can now log in.');
+    }
+    if (errorParam === 'invalid_token') {
+      setError('Invalid or expired verification link. Request a new one below.');
+    }
+    if (errorParam === 'expired_token') {
+      setError('Verification link expired. Request a new one below.');
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
+    setNeedsVerification(false);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -28,11 +51,20 @@ export default function LoginPage() {
       
       const data = await res.json();
       
-      // Rule 9: CAPTCHA required after multiple failed attempts
+      // CAPTCHA required after multiple failed attempts
       if (res.status === 428 && data.requiresCaptcha) {
         setRequiresCaptcha(true);
         setShowCaptcha(true);
         setPendingCredentials({ email: form.email, password: form.password });
+        setLoading(false);
+        return;
+      }
+      
+      // Email not verified
+      if (res.status === 403 && data.needsVerification) {
+        setNeedsVerification(true);
+        setUnverifiedEmail(data.email || form.email);
+        setError(data.error || 'Please verify your email before logging in.');
         setLoading(false);
         return;
       }
@@ -51,6 +83,39 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+
+  const handleResendVerification = async () => {
+    const emailToSend = unverifiedEmail || form.email;
+    if (!emailToSend) {
+      setError('Please enter your email address first');
+      return;
+    }
+    
+    setResending(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToSend }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuccess('Verification email sent! Please check your inbox.');
+        setNeedsVerification(false);
+      } else {
+        setError(data.error || 'Failed to send verification email');
+      }
+    } catch {
+      setError('Something went wrong. Try again.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleCaptchaVerify = async (captchaToken: string, captchaAnswer: string) => {
     try {
@@ -73,7 +138,6 @@ export default function LoginPage() {
         throw new Error('CAPTCHA verification failed');
       }
       
-      // Successful login after CAPTCHA
       setShowCaptcha(false);
       setRequiresCaptcha(false);
       router.push('/account');
@@ -92,14 +156,12 @@ export default function LoginPage() {
   return (
     <>
       <main className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
-        {/* Animated background orbs */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
         </div>
 
         <div className="relative w-full max-w-md">
-          {/* Logo */}
           <div className="text-center mb-8">
             <Link href="/">
               <h1 className="text-3xl font-black tracking-wider">
@@ -110,13 +172,22 @@ export default function LoginPage() {
             <p className="text-gray-400 mt-2 text-sm">Sign in to your account</p>
           </div>
 
-          {/* Card */}
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
             <h2 className="text-white text-xl font-bold mb-6">Welcome Back</h2>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-3 mb-6">
+              <div className={`text-sm rounded-lg px-4 py-3 mb-6 ${
+                needsVerification
+                  ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
+                  : 'bg-red-500/10 border border-red-500/30 text-red-400'
+              }`}>
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3 mb-6">
+                {success}
               </div>
             )}
 
@@ -163,6 +234,19 @@ export default function LoginPage() {
               </button>
             </form>
 
+            {/* Resend verification button */}
+            {needsVerification && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleResendVerification}
+                  disabled={resending}
+                  className="text-yellow-400 hover:text-yellow-300 text-sm transition-colors disabled:opacity-50"
+                >
+                  {resending ? 'Sending...' : 'Resend verification email'}
+                </button>
+              </div>
+            )}
+
             <div className="mt-6 pt-6 border-t border-white/10 text-center">
               <p className="text-gray-400 text-sm">
                 Don&apos;t have an account?{' '}
@@ -170,10 +254,12 @@ export default function LoginPage() {
                   Create one
                 </Link>
               </p>
+              <Link href="/forgot-password" className="text-gray-500 text-xs hover:text-gray-400 transition-colors mt-2 inline-block">
+                Forgot password?
+              </Link>
             </div>
           </div>
 
-          {/* Back to shop */}
           <div className="text-center mt-6">
             <Link href="/" className="text-gray-500 text-sm hover:text-gray-400 transition-colors">
               ← Back to Shop
@@ -182,7 +268,6 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* CAPTCHA Modal */}
       <CaptchaModal
         isOpen={showCaptcha}
         onVerify={handleCaptchaVerify}
