@@ -1,27 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getVerifiedUser } from '@/lib/auth';
+import { getAdminFromRequest } from '@/lib/auth'; // Change this
 
 export async function GET(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  // Use getAdminFromRequest instead of getVerifiedUser
+  const admin = getAdminFromRequest(req);
+  
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
   try {
     const sql = getDb();
-    const [admin] = await sql`
+    const [adminUser] = await sql`
       SELECT id, name, email, two_factor_enabled, avatar_url
       FROM users
-      WHERE id = ${user.id}
+      WHERE id = ${admin.id} AND is_admin = true
     `;
     
+    if (!adminUser) {
+      return NextResponse.json({ error: 'Admin not found' }, { status: 401 });
+    }
+    
     return NextResponse.json({
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      twoFactorEnabled: admin.two_factor_enabled || false,
-      avatarUrl: admin.avatar_url,
+      id: adminUser.id,
+      name: adminUser.name,
+      email: adminUser.email,
+      twoFactorEnabled: adminUser.two_factor_enabled || false,
+      avatarUrl: adminUser.avatar_url,
     });
   } catch (err) {
     console.error('Failed to get admin info:', err);
