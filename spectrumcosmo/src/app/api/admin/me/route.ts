@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getAdminFromRequest } from '@/lib/auth'; // Change this
+import { getAdminFromRequest } from '@/lib/auth'; // ← Change this import
 
 export async function GET(req: NextRequest) {
   // Use getAdminFromRequest instead of getVerifiedUser
