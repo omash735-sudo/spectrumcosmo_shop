@@ -3,6 +3,10 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { signUserToken } from '@/lib/userAuth';
 import { recordFailedLogin, logSecurityEvent, isIPBlocked } from '@/lib/security-logger';
+import { setCsrfToken } from '@/lib/csrf';
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
 
 // In-memory store for login attempts (use Redis in production)
 const loginAttemptStore = new Map<string, { attempts: number; firstAttempt: number; blockedUntil: number }>();
@@ -31,7 +35,6 @@ setInterval(cleanupLoginAttempts, 60 * 1000);
 function shouldRequireCaptcha(ipAddress: string): boolean {
   const attempts = loginAttemptStore.get(`attempts:${ipAddress}`);
   if (!attempts) return false;
-  // Require CAPTCHA after 3 failed attempts
   return attempts.attempts >= 3;
 }
 
@@ -45,7 +48,10 @@ async function ensureUsersTable() {
       phone TEXT,
       password_hash TEXT NOT NULL,
       newsletter_subscribed BOOLEAN NOT NULL DEFAULT true,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      two_factor_enabled BOOLEAN DEFAULT false,
+      two_factor_secret TEXT,
+      account_status TEXT DEFAULT 'active'
     )
   `;
 }
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest) {
                       'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    // Rule 1: Check if IP is blocked due to too many failed attempts
+    // Check if IP is blocked
     const isBlocked = await isIPBlocked(ipAddress);
     if (isBlocked) {
       return NextResponse.json(
@@ -67,7 +73,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rule 1: Check in-memory block
+    // Check in-memory block
     const blockKey = `blocked:${ipAddress}`;
     const blockData = loginAttemptStore.get(blockKey);
     if (blockData && blockData.blockedUntil && Date.now() < blockData.blockedUntil) {
@@ -96,7 +102,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    // Rule 9: CAPTCHA verification for suspicious attempts
+    // CAPTCHA verification for suspicious attempts
     const needsCaptcha = shouldRequireCaptcha(ipAddress);
     if (needsCaptcha) {
       if (!captchaToken && !captchaAnswer) {
@@ -106,7 +112,6 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // Verify CAPTCHA (simple example - replace with proper CAPTCHA service)
       const isCaptchaValid = await verifyCaptcha(captchaToken, captchaAnswer);
       if (!isCaptchaValid) {
         await logSecurityEvent({
@@ -126,7 +131,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb();
-    const users = await sql`SELECT id, name, email, password_hash FROM users WHERE email = ${email}`;
+    const users = await sql`SELECT id, name, email, password_hash, account_status FROM users WHERE email = ${email}`;
     
     // Track attempts for this IP
     const attemptKey = `attempts:${ipAddress}`;
@@ -134,11 +139,9 @@ export async function POST(req: NextRequest) {
     
     // Failed login - user not found
     if (users.length === 0) {
-      // Increment attempt counter
       const newAttempts = currentAttempts.attempts + 1;
       let blockedUntil = null;
       
-      // Rule 1: Block after 5 attempts
       if (newAttempts >= LOGIN_RULE.maxAttempts) {
         blockedUntil = Date.now() + LOGIN_RULE.blockDurationMs;
         loginAttemptStore.set(`blocked:${ipAddress}`, { attempts: 0, firstAttempt: Date.now(), blockedUntil });
@@ -161,7 +164,6 @@ export async function POST(req: NextRequest) {
         details: { email, reason: 'User not found', attempts_remaining: LOGIN_RULE.maxAttempts - newAttempts }
       });
       
-      // Rule 9: Tell client if CAPTCHA is now required
       const nowRequiresCaptcha = newAttempts >= 3;
       return NextResponse.json(
         { error: 'Invalid credentials', requiresCaptcha: nowRequiresCaptcha },
@@ -170,15 +172,22 @@ export async function POST(req: NextRequest) {
     }
 
     const user = users[0];
+    
+    // Check account status
+    if (user.account_status === 'frozen') {
+      return NextResponse.json({ error: 'Account frozen. Contact support.' }, { status: 403 });
+    }
+    if (user.account_status === 'banned') {
+      return NextResponse.json({ error: 'Account banned. Contact support.' }, { status: 403 });
+    }
+    
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     
     // Failed login - wrong password
     if (!passwordValid) {
-      // Increment attempt counter
       const newAttempts = currentAttempts.attempts + 1;
       let blockedUntil = null;
       
-      // Rule 1: Block after 5 attempts
       if (newAttempts >= LOGIN_RULE.maxAttempts) {
         blockedUntil = Date.now() + LOGIN_RULE.blockDurationMs;
         loginAttemptStore.set(`blocked:${ipAddress}`, { attempts: 0, firstAttempt: Date.now(), blockedUntil });
@@ -202,7 +211,6 @@ export async function POST(req: NextRequest) {
         details: { email, reason: 'Invalid password', userId: user.id, attempts_remaining: LOGIN_RULE.maxAttempts - newAttempts }
       });
       
-      // Rule 9: Tell client if CAPTCHA is now required
       const nowRequiresCaptcha = newAttempts >= 3;
       return NextResponse.json(
         { error: 'Invalid credentials', requiresCaptcha: nowRequiresCaptcha },
@@ -210,11 +218,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Successful login - reset attempt counter
+    // =============================================
+    // SESSION REGENERATION - Prevent session fixation
+    // =============================================
+    // Blacklist any existing token
+    const existingToken = req.cookies.get('user_token')?.value;
+    if (existingToken) {
+      await redis.setex(`blacklist:${existingToken}`, 86400, 'logged_out');
+    }
+
+    // Reset attempt counter on successful login
     loginAttemptStore.delete(attemptKey);
     loginAttemptStore.delete(`blocked:${ipAddress}`);
 
-    // Successful login
+    // Create new token
     const token = signUserToken({ 
       id: user.id, 
       name: user.name, 
@@ -237,6 +254,7 @@ export async function POST(req: NextRequest) {
       user: { id: user.id, name: user.name, email: user.email } 
     });
     
+    // Set new user token
     res.cookies.set('user_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -244,6 +262,9 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
+    
+    // Set CSRF token
+    setCsrfToken(res, user.id);
     
     return res;
   } catch (err: any) {
@@ -267,14 +288,11 @@ export async function POST(req: NextRequest) {
 }
 
 // =============================================
-// CAPTCHA Verification (Rule 9)
+// CAPTCHA Verification
 // =============================================
-// Simple CAPTCHA store - use proper service in production
 const captchaStore = new Map<string, { answer: string; expires: number }>();
 
-// Generate CAPTCHA challenge
 export async function generateCaptcha(ipAddress: string): Promise<{ token: string; challenge: string }> {
-  // Simple math challenge (in production, use Google reCAPTCHA or similar)
   const num1 = Math.floor(Math.random() * 10) + 1;
   const num2 = Math.floor(Math.random() * 10) + 1;
   const answer = String(num1 + num2);
@@ -282,10 +300,9 @@ export async function generateCaptcha(ipAddress: string): Promise<{ token: strin
   
   captchaStore.set(token, {
     answer,
-    expires: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
+    expires: Date.now() + 5 * 60 * 1000,
   });
   
-  // Clean up expired CAPTCHAs
   setTimeout(() => captchaStore.delete(token), 5 * 60 * 1000);
   
   return {
@@ -301,7 +318,6 @@ async function verifyCaptcha(token: string, answer: string): Promise<boolean> {
   return captcha.answer === answer;
 }
 
-// API endpoint to request CAPTCHA (call this from frontend when needsCaptcha is true)
 export async function GET(req: NextRequest) {
   const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   const { token, challenge } = await generateCaptcha(ipAddress);
