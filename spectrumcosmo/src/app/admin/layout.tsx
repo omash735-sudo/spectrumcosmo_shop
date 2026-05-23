@@ -34,6 +34,7 @@ import {
   ImageIcon,
   Activity,
   Eye,
+  Ban,
   Zap,
   Bell,
   Key,
@@ -51,14 +52,13 @@ const navItems = [
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
   
-  // SECURITY SECTION - New
+  // SECURITY SECTION
   { name: 'Security Dashboard', href: '/admin/security/dashboard', icon: Activity, section: 'SECURITY' },
   { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'SECURITY' },
   { name: 'Threat Logs', href: '/admin/security/logs', icon: Eye, section: 'SECURITY' },
   { name: 'Blocked IPs', href: '/admin/security/blocked-ips', icon: Ban, section: 'SECURITY' },
   { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'SECURITY' },
   { name: '2FA Settings', href: '/admin/security/2fa', icon: Key, section: 'SECURITY' },
-  { name: 'Email Verification', href: '/admin/security/email-verification', icon: Verified, section: 'SECURITY' },
   
   { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
@@ -94,15 +94,15 @@ function SecurityAlertBadge() {
         const res = await fetch('/api/admin/security/alerts/count');
         if (res.ok) {
           const data = await res.json();
-          setAlertCount(data.count);
+          setAlertCount(data.count || 0);
         }
       } catch (err) {
-        console.error('Failed to fetch alert count:', err);
+        console.warn('Could not fetch alert count');
       }
     };
     
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 30000);
+    const interval = setInterval(fetchAlerts, 60000);
     return () => clearInterval(interval);
   }, []);
   
@@ -120,35 +120,55 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [adminName, setAdminName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if this is the login page
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
     setMobileMenuOpen(false);
     
-    // Fetch admin info for 2FA status
     const fetchAdminInfo = async () => {
+      if (isLoginPage) {
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         const res = await fetch('/api/admin/me');
         if (res.ok) {
           const data = await res.json();
-          setTwoFactorEnabled(data.twoFactorEnabled);
+          setTwoFactorEnabled(data.twoFactorEnabled || false);
           setAdminName(data.name || 'Admin');
+        } else if (res.status === 401) {
+          window.location.href = '/admin/login';
+          return;
         }
       } catch (err) {
-        console.error('Failed to fetch admin info:', err);
+        console.warn('Could not fetch admin info:', err);
+        setAdminName('Admin');
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    if (!isLoginPage) {
-      fetchAdminInfo();
-    }
-  }, [pathname, isLoginPage]);
+    fetchAdminInfo();
+  }, [isLoginPage]);
 
   const isActive = (href: string) => {
     return pathname === href || pathname?.startsWith(href + '/');
   };
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-pulse text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   const NavContent = () => (
     <>
@@ -166,7 +186,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* Admin Profile Summary */}
       <div className="mb-6 p-3 bg-gray-50 rounded-xl">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#F97316]/10 flex items-center justify-center">
@@ -196,7 +215,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               {sectionItems.map((item) => {
                 const Icon = item.icon;
-                const isSecuritySection = section === 'SECURITY';
                 
                 return (
                   <Link
@@ -206,7 +224,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       isActive(item.href)
                         ? 'bg-[#F97316] text-white shadow-md shadow-orange-100'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    } ${isSecuritySection && !isActive(item.href) ? 'hover:border-l-2 hover:border-[#F97316]' : ''}`}
+                    }`}
                   >
                     <Icon size={18} />
                     {item.name}
@@ -236,11 +254,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </>
   );
-
-  // If this is the login page, render only children (no sidebar)
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -274,7 +287,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85%] bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
+          <div className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85%] bg-white shadow-2xl flex flex-col">
             <div className="flex justify-end p-4">
               <button
                 onClick={() => setMobileMenuOpen(false)}
