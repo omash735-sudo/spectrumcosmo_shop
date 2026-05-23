@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
-import { getDb } from '@/lib/db'; // Adjust path to your database connection
+import { getDb } from '@/lib/db';
 
 // =============================================
 // TEMPORARY DISABLE SWITCH - Set to true to re-enable all security features
@@ -47,12 +47,10 @@ async function isTestAccountWriteBlocked(request: NextRequest): Promise<boolean>
     
     if (!user?.is_test_account) return false;
     
-    // Check kill switch - if test_account_enabled is 'false', write actions are blocked
     const [setting] = await sql`
       SELECT value FROM site_settings WHERE key = 'test_account_enabled'
     `;
     
-    // Block write actions if kill switch is disabled (value !== 'true')
     return setting?.value !== 'true';
   } catch (err) {
     console.error('Failed to check test account status:', err);
@@ -61,7 +59,15 @@ async function isTestAccountWriteBlocked(request: NextRequest): Promise<boolean>
 }
 
 // =============================================
-// CACHED RULES (loaded once, refreshed via cron)
+// CHECK BLACKLISTED TOKEN (Session invalidation)
+// =============================================
+async function isTokenBlacklisted(token: string): Promise<boolean> {
+  const blacklisted = await redis.get(`blacklist:${token}`);
+  return blacklisted !== null;
+}
+
+// =============================================
+// CACHED RULES
 // =============================================
 const DEFAULT_RULES = {
   rate_limiting: { enabled: true, max_requests: 60, window_seconds: 60 },
@@ -135,12 +141,29 @@ export async function middleware(request: NextRequest) {
   const startTime = Date.now();
   const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
-  // WHITELIST CHECK - Skip all blocking for whitelisted IPs
+  // =============================================
+  // CHECK FOR BLACKLISTED TOKENS (Logged out sessions)
+  // =============================================
+  const userToken = request.cookies.get('user_token')?.value;
+  if (userToken && await isTokenBlacklisted(userToken)) {
+    const response = NextResponse.redirect(new URL('/auth/login', request.url));
+    response.cookies.delete('user_token');
+    return response;
+  }
+
+  // WHITELIST CHECK
   if (isWhitelisted(ip)) {
     const response = NextResponse.next();
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+    response.headers.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://api.upstash.com;"
+    );
     return response;
   }
 
@@ -150,11 +173,18 @@ export async function middleware(request: NextRequest) {
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+    response.headers.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://api.upstash.com;"
+    );
     return response;
   }
 
   // =============================================
-  // TEST ACCOUNT WRITE BLOCKING - Check BEFORE other security checks
+  // TEST ACCOUNT WRITE BLOCKING
   // =============================================
   const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
   if (writeMethods.includes(method)) {
@@ -178,7 +208,7 @@ export async function middleware(request: NextRequest) {
   ];
   const shouldSkip = skipPaths.some(path => pathname.includes(path));
   
-  // Only run security checks if ENABLE_SECURITY_CHECKS is true
+  // Run security checks if enabled
   if (!shouldSkip && ENABLE_SECURITY_CHECKS) {
     const blocked = await isIpBlocked(ip);
     if (blocked) {
@@ -256,7 +286,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  const userToken = request.cookies.get('user_token')?.value;
+  // Account page protection
   if (pathname.startsWith('/account') && !userToken) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
@@ -303,9 +333,19 @@ export async function middleware(request: NextRequest) {
     logApiRequest(origin, pathname, method, ip, userAgent, response.status, responseTime);
   }
 
+  // =============================================
+  // SECURITY HEADERS
+  // =============================================
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://api.upstash.com;"
+  );
 
   return response;
 }
