@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getDb } from '@/lib/db'
-import { signUserToken } from '@/lib/userAuth'
 import { sendMail } from '@/lib/mailer'
+import crypto from 'crypto'
 
-async function ensureUsersTable() {
+async function ensureTables() {
   const sql = getDb()
+  // Users table with email_verified
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -14,7 +15,19 @@ async function ensureUsersTable() {
       phone TEXT,
       password_hash TEXT NOT NULL,
       profile_image TEXT,
+      email_verified BOOLEAN DEFAULT false,
+      email_verified_at TIMESTAMP,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `
+  // Email verifications table
+  await sql`
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
     )
   `
 }
@@ -45,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You must agree to the Terms & Conditions and Privacy Policy' }, { status: 400 })
     }
 
-    await ensureUsersTable()
+    await ensureTables()
     const sql = getDb()
 
     const existing = await sql`SELECT id FROM users WHERE email = ${email}`
@@ -60,7 +73,7 @@ export async function POST(req: NextRequest) {
       RETURNING id, name, email
     `
 
-    // Insert into unified newsletter_subscriptions table
+    // Insert into newsletter_subscriptions table
     await sql`
       INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
       VALUES (${email.toLowerCase()}, ${user.id}, true, NOW())
@@ -70,17 +83,19 @@ export async function POST(req: NextRequest) {
         updated_at = NOW()
     `
 
-    const token = signUserToken({ id: user.id, name: user.name, email: user.email, role: 'customer' })
-    const res = NextResponse.json({ user })
-    res.cookies.set('user_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    })
+    // Generate email verification token
+    const token = crypto.randomBytes(32).toString('hex')
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
+    await sql`
+      INSERT INTO email_verifications (user_id, token, expires_at)
+      VALUES (${user.id}, ${token}, ${expiresAt})
+    `
 
-    // Welcome email
+    // Prepare verification email
+    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`
+
+    // Optional: still show recent products in a "while you wait" section
     const recentProducts = await getRecentProducts(3)
     const productsHtml = recentProducts.map(p => `
       <div style="flex: 1; min-width: 120px; text-align: center; background: #f9f9f9; padding: 12px; border-radius: 12px; margin: 4px;">
@@ -90,40 +105,41 @@ export async function POST(req: NextRequest) {
       </div>
     `).join('')
 
-    const welcomeHtml = `
+    const verificationHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
         <div style="background: #F97316; padding: 24px 20px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to SpectrumCosmo!</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">Verify Your Email</h1>
         </div>
         <div style="padding: 24px; background: white;">
           <p style="font-size: 16px; color: #333;">Hi <strong>${name}</strong>,</p>
-          <p style="font-size: 15px; line-height: 1.5; color: #555;">We're thrilled to have you in our community. Get ready for <strong>exclusive drops, anime merch, and custom apparel</strong> that lets you wear your excitement with pride.</p>
-          <h3 style="margin-top: 24px; color: #F97316;">See what's new – just for you</h3>
+          <p style="font-size: 15px; line-height: 1.5; color: #555;">Thanks for joining SpectrumCosmo! Please confirm your email address by clicking the button below:</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${verificationUrl}" style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+          </div>
+          <p style="font-size: 13px; color: #777;">This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
+          <hr style="margin: 30px 0 20px; border: none; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #999;">While you wait, check out what's new:</p>
           <div style="display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 24px;">
             ${productsHtml || '<p style="color: #888;">Shop our latest arrivals now!</p>'}
           </div>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.com'}/products" 
-               style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">
-              Start Shopping →
-            </a>
-          </div>
-          <p style="font-size: 14px; color: #666;">We'll send you updates on new products and special offers, but only when it's exciting. Unsubscribe anytime.</p>
-          <hr style="margin: 30px 0 20px; border: none; border-top: 1px solid #eee;" />
-          <p style="font-size: 12px; color: #999;">Questions? Just reply to this email – we're here to help.<br/>
-          SpectrumCosmo Team – Wear your excitement with pride.</p>
+          <p style="font-size: 12px; color: #999;">Questions? Just reply to this email – we're here to help.<br/>SpectrumCosmo Team – Wear your excitement with pride.</p>
         </div>
       </div>
     `
 
     await sendMail({
       to: user.email,
-      subject: 'Welcome to SpectrumCosmo!',
-      text: `Hi ${name}, welcome to SpectrumCosmo.\n\nCheck out our latest products at ${process.env.NEXT_PUBLIC_APP_URL || ''}/products\n\nWe look forward to helping you express your passion!`,
-      html: welcomeHtml,
-    }).catch(err => console.error('Failed to send welcome email:', err))
+      subject: 'Please verify your email – SpectrumCosmo',
+      text: `Hi ${name}, please verify your email by clicking this link: ${verificationUrl}\n\nAfter verification you can log in and start shopping.`,
+      html: verificationHtml,
+    }).catch(err => console.error('Failed to send verification email:', err))
 
-    return res
+    // Return success without logging the user in
+    return NextResponse.json({
+      success: true,
+      message: 'Registration successful. Please check your email to verify your account.',
+      needsVerification: true
+    })
   } catch (err: any) {
     console.error('Registration error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
