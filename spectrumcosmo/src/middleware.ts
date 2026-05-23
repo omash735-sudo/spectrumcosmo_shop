@@ -270,16 +270,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const adminRule = await getRule('admin_protection');
+  // =============================================
+  // ADMIN PROTECTION - FIXED VERSION
+  // =============================================
   const adminToken = request.cookies.get('admin_token')?.value;
-  const isAdminLogin = pathname === '/admin/login';
+  const isAdminLoginPage = pathname === '/admin/login';
+  const isAdminAuthApi = pathname === '/api/admin/auth';
+  const isAdminAsset = pathname.startsWith('/_next/') || pathname.includes('favicon') || pathname.includes('.ico');
   
-  if (adminRule.enabled && pathname.startsWith('/admin') && !isAdminLogin && !adminToken) {
-    await logIncident(origin, 'unauthorized_admin_access', 'high', ip, userAgent, pathname, { attempted_access: pathname, missing_token: true });
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+  // Only protect admin routes, but skip login page, auth API, and assets
+  if (pathname.startsWith('/admin') && !isAdminLoginPage && !isAdminAuthApi && !isAdminAsset) {
+    if (!adminToken) {
+      // If it's an API call, return 401
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      // Otherwise redirect to login
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
   }
 
-  // Account page protection
+  // Account page protection (customer)
   if (pathname.startsWith('/account') && !userToken) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
