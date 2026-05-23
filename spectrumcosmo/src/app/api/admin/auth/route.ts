@@ -6,14 +6,14 @@ import { authenticator } from 'otplib';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, twoFactorCode } = await req.json();
+    const { username, password, twoFactorCode } = await req.json();
     const sql = getDb();
     
-    // Query from users table where is_admin = true (not from admins table)
+    // Query by username from users table where is_admin = true
     const users = await sql`
-      SELECT id, name, email, password_hash, is_admin, account_status, two_factor_enabled, two_factor_secret 
+      SELECT id, name, username, email, password_hash, is_admin, account_status, two_factor_enabled, two_factor_secret 
       FROM users 
-      WHERE email = ${email} AND is_admin = true
+      WHERE username = ${username} AND is_admin = true
     `;
     
     if (users.length === 0) {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Check if 2FA is enabled
+    // Check 2FA if enabled
     if (admin.two_factor_enabled === true) {
       if (!twoFactorCode) {
         return NextResponse.json({ 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     // Generate admin token
     const token = signAdminToken({ 
       id: admin.id, 
-      name: admin.name,
+      name: admin.name || admin.username,
       email: admin.email,
       role: 'admin'
     });
@@ -69,17 +69,17 @@ export async function POST(req: NextRequest) {
       success: true,
       admin: {
         id: admin.id,
-        name: admin.name,
+        name: admin.name || admin.username,
         email: admin.email,
-      },
-      requiresTwoFactor: false
+        username: admin.username
+      }
     });
     
     res.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
     
@@ -89,10 +89,4 @@ export async function POST(req: NextRequest) {
     console.error('Admin login error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
-
-export async function DELETE() {
-  const res = NextResponse.json({ success: true });
-  res.cookies.delete('admin_token');
-  return res;
 }
