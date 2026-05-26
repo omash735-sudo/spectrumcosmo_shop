@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { ReactNode, useState, useEffect } from 'react'
+import { ReactNode, useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -15,68 +15,70 @@ import {
   X,
   Loader2,
   Home,
-} from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useSettings } from '@/components/storefront/SettingsProvider'
-import clsx from 'clsx'
-import Image from 'next/image'
+  Bell,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useSettings } from '@/components/storefront/SettingsProvider';
+import clsx from 'clsx';
+import Image from 'next/image';
 
 type User = {
-  id: string
-  name: string
-  email: string
-  phone: string
-  profileImage?: string
-}
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  profileImage?: string;
+};
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
-  const { settings } = useSettings()
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const { settings } = useSettings();
 
   // Logo based on dark mode setting
   const logoSrc = settings?.darkMode
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
   const navItems = [
-    { name: 'Home', href: '/', icon: Home },          // ← Home button added here
+    { name: 'Home', href: '/', icon: Home },
     { name: 'Overview', href: '/account', icon: LayoutDashboard },
     { name: 'Orders', href: '/account/orders', icon: Package },
     { name: 'Wishlist', href: '/account/wishlist', icon: Heart },
+    { name: 'Notifications', href: '/account/notifications', icon: Bell },  // ← ADDED
     { name: 'Profile', href: '/account/profile', icon: User },
     { name: 'Payments', href: '/account/payments', icon: CreditCard },
     { name: 'Addresses', href: '/account/addresses', icon: MapPin },
     { name: 'Tracking', href: '/account/tracking', icon: Truck },
     { name: 'Support', href: '/account/support', icon: HelpCircle },
     { name: 'Settings', href: '/account/settings', icon: Settings },
-  ]
+  ];
 
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me')
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
-          const data = await res.json()
-          if (data?.user) setUser(data.user)
+          const data = await res.json();
+          if (data?.user) setUser(data.user);
         }
       } catch (err) {
-        console.error('Failed to load user in layout:', err)
+        console.error('Failed to load user in layout:', err);
       } finally {
-        setLoadingUser(false)
+        setLoadingUser(false);
       }
-    }
-    fetchUser()
-  }, [])
+    };
+    fetchUser();
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname])
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const SidebarContent = () => (
     <>
@@ -124,7 +126,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         {navItems.map((item) => {
           const active =
             pathname === item.href ||
-            (item.href !== '/' && item.href !== '/account' && pathname?.startsWith(item.href))
+            (item.href !== '/' && item.href !== '/account' && pathname?.startsWith(item.href));
 
           return (
             <Link
@@ -143,7 +145,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
               )}
             </Link>
-          )
+          );
         })}
       </nav>
 
@@ -151,7 +153,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         SpectrumCosmo © 2026
       </div>
     </>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -195,5 +197,5 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
-  )
+  );
 }
