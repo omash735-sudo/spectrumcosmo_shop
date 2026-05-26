@@ -1,14 +1,16 @@
-import type { Metadata } from 'next'
-import { Suspense } from 'react'
-import './globals.css'
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { Toaster } from 'react-hot-toast';
+import './globals.css';
 
-import { SettingsProvider } from '@/components/storefront/SettingsProvider'
-import { CurrencyProvider } from '@/components/storefront/CurrencyProvider'
-import { CartProvider } from '@/components/storefront/CartProvider'
-import { UserProvider } from '@/components/storefront/UserProvider'
-import { WishlistProvider } from '@/components/storefront/WishlistProvider'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import ErrorBoundary from '@/components/ErrorBoundary'
+import { SettingsProvider } from '@/components/storefront/SettingsProvider';
+import { CurrencyProvider } from '@/components/storefront/CurrencyProvider';
+import { CartProvider } from '@/components/storefront/CartProvider';
+import { UserProvider } from '@/components/storefront/UserProvider';
+import { WishlistProvider } from '@/components/storefront/WishlistProvider';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import NotificationBell from '@/components/ui/NotificationBell';
 
 export const metadata: Metadata = {
   title: 'SpectrumCosmo — Wear Your Excitement With Pride',
@@ -23,12 +25,12 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'SpectrumCosmo',
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -42,6 +44,32 @@ export default function RootLayout({
                     <Suspense fallback={<LoadingSpinner />}>
                       {children}
                     </Suspense>
+                    {/* Toast notifications for delivery confirmations, errors, etc. */}
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
+                        duration: 4000,
+                        style: {
+                          background: '#363636',
+                          color: '#fff',
+                          borderRadius: '12px',
+                        },
+                        success: {
+                          duration: 3000,
+                          iconTheme: {
+                            primary: '#22C55E',
+                            secondary: '#fff',
+                          },
+                        },
+                        error: {
+                          duration: 4000,
+                          iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
+                    />
                   </WishlistProvider>
                 </CartProvider>
               </CurrencyProvider>
@@ -50,5 +78,5 @@ export default function RootLayout({
         </ErrorBoundary>
       </body>
     </html>
-  )
+  );
 }
