@@ -20,6 +20,7 @@ import {
   Package,
   Settings,
   LogOut,
+  Bell,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -29,6 +30,7 @@ import CartDrawer from '@/components/storefront/CartDrawer';
 import { useSettings } from '@/components/storefront/SettingsProvider';
 import SearchBar from '@/components/storefront/SearchBar';
 import UserMenu from '@/components/storefront/UserMenu';
+import NotificationBell from '@/components/ui/NotificationBell';
 
 const desktopLinks = [
   { href: '/', label: 'Home' },
@@ -117,6 +119,10 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <CurrencySelector />
             <SearchBar />
+            
+            {/* Notification Bell - Only show for logged in users */}
+            {isLoggedIn && <NotificationBell />}
+            
             <button onClick={openCart} className="relative p-1">
               <ShoppingCart size={20} />
               {totalItems > 0 && (
@@ -142,6 +148,7 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-2">
+            {isLoggedIn && <NotificationBell />}
             <UserMenu />
             <button onClick={openCart} className="relative p-1" aria-label="Cart">
               <ShoppingCart size={22} />
@@ -239,6 +246,9 @@ export default function Navbar() {
                   </Link>
                   <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
                     <Heart size={18} /> Wishlist
+                  </Link>
+                  <Link href="/account/notifications" onClick={closeMobileMenu} className="flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg">
+                    <Bell size={18} /> Notifications
                   </Link>
                 </>
               )}
