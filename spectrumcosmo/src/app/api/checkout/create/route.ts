@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
       }, { status: 409 });
     }
 
+    // Get delivery method to get confirmation_days
+    const [deliveryMethod] = await sql`
+      SELECT confirmation_days FROM delivery_methods WHERE id = ${deliveryMethodId}
+    `;
+    const confirmationDays = deliveryMethod?.confirmation_days || 3;
+
     // Create order
     const [order] = await sql`
       INSERT INTO orders (
@@ -68,6 +74,13 @@ export async function POST(req: NextRequest) {
         VALUES (${orderId}, ${item.name}, ${item.quantity}, ${item.priceUsd}, ${item.priceUsd * item.quantity})
       `;
     }
+
+    // Pre-create delivery confirmation record with reminder schedule
+    await sql`
+      INSERT INTO delivery_confirmations (order_id, delivery_method_id, asked_at)
+      VALUES (${orderId}, ${deliveryMethodId}, NOW() + (${confirmationDays} || ' days')::INTERVAL)
+      ON CONFLICT (order_id) DO NOTHING
+    `;
 
     await sql`COMMIT`;
 
