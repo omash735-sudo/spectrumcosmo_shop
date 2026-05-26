@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { updateOrderStatus, getStatusDisplayInfo, getOrderStatusHistory } from '@/lib/order-status';
 import { sendDynamicStatusEmail } from '@/lib/email';
+import { deductStock, releaseReservedStock } from '@/lib/stock-manager';
 
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
@@ -49,6 +50,24 @@ export async function PUT(req: NextRequest) {
     
     if (!currentOrder) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    // === STOCK MANAGEMENT ===
+    // If moving to 'approved' from a different status
+    if (status === 'approved' && currentOrder.status !== 'approved') {
+      const stockDeducted = await deductStock(id);
+      if (!stockDeducted) {
+        return NextResponse.json({ 
+          error: 'Failed to deduct stock. Items may be out of stock.' 
+        }, { status: 409 });
+      }
+    }
+    
+    // If moving to 'declined' or 'cancelled' from any status
+    if ((status === 'declined' || status === 'cancelled') && 
+        currentOrder.status !== 'declined' && 
+        currentOrder.status !== 'cancelled') {
+      await releaseReservedStock(id);
     }
     
     // Get status info to check if it requires paid_at
@@ -151,6 +170,9 @@ export async function DELETE(req: NextRequest) {
   const sql = getDb();
   
   try {
+    // Release reserved stock before deleting
+    await releaseReservedStock(id);
+    
     // Delete order items first (foreign key constraint)
     await sql`DELETE FROM order_items WHERE order_id = ${id}::uuid`;
     
@@ -167,21 +189,70 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// Optional: GET single order with details
 export async function PATCH(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   const body = await req.json();
-  const { id, trackingNumber, trackingNotes, adminNotes } = body;
+  const { id, status, trackingNumber, trackingNotes, adminNotes } = body;
   
   if (!id) {
     return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
   }
 
   const sql = getDb();
+  const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
   
   try {
+    // Get current order
+    const [currentOrder] = await sql`
+      SELECT status, paid_at FROM orders WHERE id = ${id}
+    `;
+    
+    if (!currentOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    // If status is being updated in PATCH request
+    if (status && status !== currentOrder.status) {
+      // === STOCK MANAGEMENT ===
+      if (status === 'approved' && currentOrder.status !== 'approved') {
+        const stockDeducted = await deductStock(id);
+        if (!stockDeducted) {
+          return NextResponse.json({ 
+            error: 'Failed to deduct stock. Items may be out of stock.' 
+          }, { status: 409 });
+        }
+      }
+      
+      if ((status === 'declined' || status === 'cancelled') && 
+          currentOrder.status !== 'declined' && 
+          currentOrder.status !== 'cancelled') {
+        await releaseReservedStock(id);
+      }
+      
+      // Update status
+      await sql`
+        UPDATE orders 
+        SET 
+          status = ${status},
+          updated_at = NOW(),
+          paid_at = CASE 
+            WHEN (${status} = 'approved' OR ${status} = 'delivered') AND paid_at IS NULL 
+            THEN NOW() 
+            ELSE paid_at 
+          END
+        WHERE id = ${id}
+      `;
+      
+      // Log status change
+      await sql`
+        INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, ip_address, notes, changed_at)
+        VALUES (${id}, ${currentOrder.status}, ${status}, 'admin', ${ipAddress}, ${adminNotes || null}, NOW())
+      `;
+    }
+    
+    // Update tracking and notes
     const [updatedOrder] = await sql`
       UPDATE orders 
       SET 
