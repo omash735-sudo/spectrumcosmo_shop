@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Loader2, Upload, FileText, X, Image as ImageIcon, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function AdminReceiptUploadPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [receiptText, setReceiptText] = useState('');
   const [useManual, setUseManual] = useState(false);
@@ -26,7 +31,6 @@ export default function AdminReceiptUploadPage() {
     senderName: '',
     dateTime: '',
   });
-
   const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
@@ -39,6 +43,45 @@ export default function AdminReceiptUploadPage() {
       const data = await res.json();
       setOrder(data.order);
     }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setImageUrl(data.secure_url);
+        toast.success('Image uploaded successfully');
+      }
+    } catch (err) {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      handleImageUpload(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageUrl('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,21 +149,58 @@ export default function AdminReceiptUploadPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Image URL (optional) */}
+          {/* Image Upload Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Receipt Image URL (optional)
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Receipt Image
             </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Upload image to Cloudinary and paste URL here
-            </p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              {!imagePreview ? (
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    className="hidden"
+                    id="receipt-image"
+                  />
+                  <label
+                    htmlFor="receipt-image"
+                    className="cursor-pointer inline-flex flex-col items-center"
+                  >
+                    <ImageIcon size={40} className="text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">Click to upload receipt image</span>
+                    <span className="text-xs text-gray-400">PNG, JPG up to 5MB</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Image
+                    src={imagePreview}
+                    alt="Receipt preview"
+                    width={200}
+                    height={150}
+                    className="mx-auto rounded-lg object-contain max-h-32"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  {uploadingImage && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                      <Loader2 className="animate-spin text-white" size={24} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {imageUrl && (
+              <p className="text-xs text-green-600 mt-1">✓ Image uploaded successfully</p>
+            )}
           </div>
 
           {!useManual ? (
