@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, ShoppingCart, Trash2, ChevronDown, Eye, X, Truck, Package, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ShoppingCart, Trash2, ChevronDown, Eye, X, Truck, Package, Clock, CheckCircle2, AlertCircle, Upload } from 'lucide-react';
 import Image from 'next/image';
 
 interface Status {
@@ -238,6 +239,13 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/orders/${order.id}/receipt`}
+                          className="p-2 rounded-lg hover:bg-green-50 text-green-600"
+                          title="Upload Receipt"
+                        >
+                          <Upload size={15} />
+                        </Link>
                         <button
                           onClick={() => openTrackingModal(order)}
                           className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
