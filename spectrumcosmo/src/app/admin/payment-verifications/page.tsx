@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Eye, CheckCircle, XCircle, Clock, Upload } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 type Verification = {
   id: number;
@@ -37,6 +39,7 @@ export default function PaymentVerificationsPage() {
       setVerifications(data);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load verifications');
     } finally {
       setLoading(false);
     }
@@ -46,22 +49,39 @@ export default function PaymentVerificationsPage() {
     fetchVerifications();
   }, []);
 
-  const handleApprove = async (verificationId: number, orderId: string) => {
+  const handleApprove = async (verificationId: number, orderId: string, proofImageUrl: string) => {
     setActionLoading(`${verificationId}-approve`);
     try {
+      // First approve the payment verification
       const res = await fetch(`/api/admin/payment-verifications/${verificationId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       });
+      
       if (res.ok) {
+        // Also create a receipt from the proof image
+        const formData = new FormData();
+        formData.append('imageUrl', proofImageUrl);
+        formData.append('manualData', JSON.stringify({
+          receiptType: 'payment_proof',
+          notes: 'Auto-created from payment verification',
+          paymentStatus: 'paid',
+        }));
+        
+        await fetch(`/api/admin/orders/${orderId}/receipt`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        toast.success('Payment approved and receipt created');
         fetchVerifications();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to approve');
+        toast.error(err.error || 'Failed to approve');
       }
     } catch (err) {
-      alert('Failed to approve payment');
+      toast.error('Failed to approve payment');
     } finally {
       setActionLoading(null);
     }
@@ -69,7 +89,7 @@ export default function PaymentVerificationsPage() {
 
   const handleReject = async (verificationId: number, orderId: string) => {
     if (!rejectionReason.trim()) {
-      alert('Please provide a reason for rejection');
+      toast.error('Please provide a reason for rejection');
       return;
     }
     setActionLoading(`${verificationId}-reject`);
@@ -82,13 +102,14 @@ export default function PaymentVerificationsPage() {
       if (res.ok) {
         setShowRejectModal(null);
         setRejectionReason('');
+        toast.success('Payment rejected');
         fetchVerifications();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to reject');
+        toast.error(err.error || 'Failed to reject');
       }
     } catch (err) {
-      alert('Failed to reject payment');
+      toast.error('Failed to reject payment');
     } finally {
       setActionLoading(null);
     }
@@ -158,7 +179,7 @@ export default function PaymentVerificationsPage() {
                     </button>
                     <div className="flex gap-2 mt-2">
                       <button
-                        onClick={() => handleApprove(v.id, v.order_id)}
+                        onClick={() => handleApprove(v.id, v.order_id, v.proof_image_url)}
                         disabled={!!actionLoading}
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm flex items-center gap-1 disabled:opacity-50"
                       >
@@ -198,6 +219,13 @@ export default function PaymentVerificationsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(v.status)}
+                    <Link
+                      href={`/admin/orders/${v.order_id}/receipt`}
+                      className="text-gray-400 hover:text-green-600"
+                      title="Upload Receipt"
+                    >
+                      <Upload size={16} />
+                    </Link>
                     <button
                       onClick={() => setSelectedImage(v.proof_image_url)}
                       className="text-gray-400 hover:text-orange-600"
