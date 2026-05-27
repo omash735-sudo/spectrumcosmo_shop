@@ -2,24 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
-
-function replacePlaceholders(template: string, data: Record<string, string>): string {
-  let result = template;
-  for (const [key, value] of Object.entries(data)) {
-    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
-  }
-  return result;
-}
-
-async function getEmailTemplate(sql: any, templateName: string) {
-  const templates = await sql`
-    SELECT html_template, subject, text_content 
-    FROM email_templates 
-    WHERE name = ${templateName} AND is_active = true 
-    LIMIT 1
-  `;
-  return templates[0] || null;
-}
+import { releaseReservedStock } from '@/lib/stock-manager';
 
 export async function POST(
   req: NextRequest,
@@ -31,11 +14,13 @@ export async function POST(
   try {
     const { id } = params;
     const { orderId, reason } = await req.json();
+    const adminId = (authError as any)?.id || null;
 
     const sql = getDb();
 
+    // Get order details
     const [order] = await sql`
-      SELECT customer_email, customer_name, total_amount, id 
+      SELECT customer_email, customer_name, total_amount, status
       FROM orders 
       WHERE id = ${orderId}::uuid
     `;
@@ -44,39 +29,43 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Release reserved stock back to inventory
+    if (order.status === 'pending') {
+      await releaseReservedStock(orderId);
+    }
+
+    // Update payment verification status
     await sql`
       UPDATE payment_confirmations
-      SET status = 'rejected', reviewed_by = 1, reviewed_at = NOW(), rejection_reason = ${reason}
-      WHERE order_id = ${orderId}::uuid
+      SET status = 'rejected', rejection_reason = ${reason}, reviewed_by = ${adminId}, reviewed_at = NOW()
+      WHERE id = ${id}
     `;
 
+    // Optionally update order status to 'payment_issue'
     await sql`
       UPDATE orders
-      SET payment_status = 'pending', proof_of_payment_url = NULL, payment_note = NULL, status = 'pending'
+      SET status = 'payment_issue', admin_notes = CONCAT(COALESCE(admin_notes, ''), '\nPayment rejected: ', ${reason})
       WHERE id = ${orderId}::uuid
     `;
 
-    const orderNumber = order.id.slice(-8);
-    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/orders/${orderId}/payment`;
-
-    const placeholders = {
-      customer_name: order.customer_name,
-      order_number: orderNumber,
-      rejection_reason: reason,
-      payment_url: paymentUrl,
-    };
-
-    const emailTemplate = await getEmailTemplate(sql, 'payment_rejected');
-    
-    if (emailTemplate && order.customer_email) {
-      const emailHtml = replacePlaceholders(emailTemplate.html_template, placeholders);
-      const emailSubject = replacePlaceholders(emailTemplate.subject, placeholders);
-      
+    // Send rejection email to customer
+    if (order.customer_email) {
       await sendMail({
         to: order.customer_email,
-        subject: emailSubject,
-        text: `Your payment proof was rejected. Reason: ${reason}. Please upload a valid proof.`,
-        html: emailHtml,
+        subject: `Payment Verification Issue - Order #${orderId.slice(-8)}`,
+        text: `Hello ${order.customer_name},\n\nYour payment verification was rejected for the following reason:\n\n${reason}\n\nPlease upload a clear payment proof or contact support.\n\nSpectrumCosmo Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px;">
+            <h2>Payment Verification Issue</h2>
+            <p>Hello ${order.customer_name},</p>
+            <p>Your payment verification was rejected for the following reason:</p>
+            <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              ${reason}
+            </div>
+            <p>Please upload a clear payment proof or contact support.</p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${orderId}" style="background: #F97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 30px;">View Order</a>
+          </div>
+        `,
       }).catch(err => console.error('Email failed:', err));
     }
 
