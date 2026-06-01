@@ -1,58 +1,63 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import Navbar from '@/components/storefront/Navbar'
-import Footer from '@/components/storefront/Footer'
+import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { signUp } from '@/lib/auth-client';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 
 export default function SignupPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!acceptedTerms) {
-      setError('You must agree to the Terms & Conditions and Privacy Policy.')
-      return
+      setError('You must agree to the Terms & Conditions and Privacy Policy.');
+      return;
     }
-    setError('')
-    setLoading(true)
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, acceptedTerms }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Signup failed')
-      }
-      window.location.href = '/account'
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+    setError('');
+    setLoading(true);
 
-  // Use the dark mode logo (white/orange) for better visibility on dark background
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+    const { error: signUpError } = await signUp.email({
+      name,
+      email,
+      password,
+      callbackURL: '/account',
+    });
+
+    if (signUpError) {
+      setError(signUpError.message || 'Signup failed');
+      setLoading(false);
+      return;
+    }
+
+    await fetch('/api/auth/send-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+    }).catch(console.error);
+
+    router.push(`/verify-email?email=${encodeURIComponent(email)}&justRegistered=true`);
+    setLoading(false);
+  };
+
+  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png";
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-[#111111] flex items-center justify-center px-4 py-12">
         <div className="absolute inset-0 opacity-5">
-          <div
-            className="absolute inset-0"
-            style={{ backgroundImage: 'radial-gradient(circle, #F97316 1px, transparent 1px)', backgroundSize: '32px 32px' }}
-          />
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, #F97316 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
         </div>
         <div className="relative w-full max-w-md">
           <div className="text-center mb-8">
@@ -64,48 +69,46 @@ export default function SignupPage() {
             <p className="text-gray-500 text-sm mb-8">Join SpectrumCosmo and shop with ease.</p>
             <form onSubmit={onSubmit} className="space-y-5">
               <div>
-                <label className="label">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="input"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                   placeholder="Your name"
                 />
               </div>
               <div>
-                <label className="label">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="input"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                   placeholder="you@example.com"
                 />
               </div>
               <div>
-                <label className="label">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="input pr-12"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg pr-12"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
-
-              {/* Terms & Privacy Checkbox */}
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -125,17 +128,16 @@ export default function SignupPage() {
                   </Link>.
                 </label>
               </div>
-
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full justify-center py-3.5 text-base disabled:opacity-50"
+                className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? <><Loader2 size={16} className="animate-spin" />Creating...</> : 'Create Account'}
+                {loading ? <><Loader2 size={16} className="animate-spin" /> Creating...</> : 'Create Account'}
               </button>
-              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</p>}
+              {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
             </form>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-gray-500 mt-4 text-center">
               Already have an account?{' '}
               <Link href="/login" className="text-[#F97316] font-medium hover:underline">
                 Sign in
@@ -146,5 +148,5 @@ export default function SignupPage() {
       </main>
       <Footer />
     </>
-  )
+  );
 }
