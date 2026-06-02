@@ -1,11 +1,12 @@
-// app/api/search/route.ts
+// app/api/search/route.ts (first few lines)
 import { NextRequest, NextResponse } from 'next/server';
-import { searchClient, productsIndex } from '@/lib/algolia';
+import algoliasearch from 'algoliasearch';
 import { getCachedSearch, setCachedSearch } from '@/lib/search-cache';
 import { getDb } from '@/lib/db';
 
-// Cache TTL for search results
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!;
+const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!;
+const productsIndex = 'products';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -16,15 +17,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  // 1. Check memory cache first
+  // Check memory cache first
   const cachedResults = getCachedSearch(q);
   if (cachedResults) {
     return NextResponse.json(cachedResults.slice(0, limit));
   }
 
   try {
-    // 2. Try Algolia search
-    const index = searchClient.initIndex(productsIndex);
+    // Initialize Algolia client for search
+    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_SEARCH_KEY);
+    const index = client.initIndex(productsIndex);
+    
     const { hits } = await index.search(q, {
       hitsPerPage: limit,
       attributesToRetrieve: ['id', 'name', 'price', 'image_url', 'currency'],
@@ -39,28 +42,20 @@ export async function GET(request: NextRequest) {
         currency: hit.currency || 'MWK',
       }));
       
-      // Cache results
       setCachedSearch(q, results);
       return NextResponse.json(results);
     }
 
-    // 3. Fallback to PostgreSQL if Algolia has no results
+    // Fallback to PostgreSQL
     const sql = getDb();
     const fallbackResults = await sql`
       SELECT id, name, price, image_url, 'MWK' as currency
       FROM products 
       WHERE (name ILIKE ${'%' + q + '%'} OR description ILIKE ${'%' + q + '%'})
         AND status = 'in_stock'
-      ORDER BY 
-        CASE 
-          WHEN name ILIKE ${q + '%'} THEN 1
-          WHEN name ILIKE ${'%' + q + '%'} THEN 2
-          ELSE 3
-        END
       LIMIT ${limit}
     `;
     
-    // Cache fallback results too
     if (fallbackResults.length > 0) {
       setCachedSearch(q, fallbackResults);
     }
@@ -69,7 +64,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('Search error:', err);
     
-    // Fallback to PostgreSQL on Algolia error
+    // Fallback to PostgreSQL on error
     try {
       const sql = getDb();
       const fallbackResults = await sql`
