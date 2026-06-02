@@ -133,7 +133,9 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb();
-    const users = await sql`SELECT id, name, email, password_hash, account_status, email_verified FROM users WHERE email = ${email}`;
+    
+    // Check for duplicate emails
+    const users = await sql`SELECT id, name, email, password_hash, account_status, email_verified FROM users WHERE email = ${email.toLowerCase()}`;
     
     // Track attempts for this IP
     const attemptKey = `attempts:${ipAddress}`;
@@ -173,6 +175,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for duplicate emails
+    if (users.length > 1) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid credentials', 
+          debug: { 
+            reason: 'Duplicate emails found', 
+            count: users.length,
+            userIds: users.map(u => u.id)
+          } 
+        },
+        { status: 401 }
+      );
+    }
+
     const user = users[0];
     
     // Check account status
@@ -185,7 +202,7 @@ export async function POST(req: NextRequest) {
     
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     
-    // Failed login - wrong password
+    // Failed login - wrong password with debug info
     if (!passwordValid) {
       const newAttempts = currentAttempts.attempts + 1;
       let blockedUntil = null;
@@ -214,8 +231,25 @@ export async function POST(req: NextRequest) {
       });
       
       const nowRequiresCaptcha = newAttempts >= 3;
+      
+      // Generate test hash for debugging
+      const testHash = await bcrypt.hash(password, 10);
+      
       return NextResponse.json(
-        { error: 'Invalid credentials', requiresCaptcha: nowRequiresCaptcha },
+        { 
+          error: 'Invalid credentials', 
+          requiresCaptcha: nowRequiresCaptcha,
+          debug: {
+            reason: 'Password mismatch',
+            userId: user.id,
+            userEmail: user.email,
+            storedHashPrefix: user.password_hash?.substring(0, 20),
+            inputHashPrefix: testHash.substring(0, 20),
+            hashAlgorithm: user.password_hash?.startsWith('$2a') ? 'bcrypt' : 'unknown',
+            storedHashLength: user.password_hash?.length,
+            inputPasswordLength: password.length
+          } 
+        },
         { status: 401 }
       );
     }
