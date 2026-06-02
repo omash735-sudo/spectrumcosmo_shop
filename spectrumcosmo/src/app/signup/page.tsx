@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp } from '@/lib/auth-client';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -27,19 +26,22 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
 
-    const { error: signUpError } = await signUp.email({
-      name,
-      email,
-      password,
-      callbackURL: '/account',
+    // Use your custom register API (not Better Auth)
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, acceptedTerms }),
     });
 
-    if (signUpError) {
-      setError(signUpError.message || 'Signup failed');
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || 'Signup failed');
       setLoading(false);
       return;
     }
 
+    // Send verification email using your custom endpoint
     await fetch('/api/auth/send-verification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
