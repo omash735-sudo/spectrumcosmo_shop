@@ -1,14 +1,21 @@
-// app/api/admin/sync-products/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { adminClient, productsIndex } from '@/lib/algolia';
 import { getDb } from '@/lib/db';
+import algoliasearch from 'algoliasearch';
+
+const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!;
+const ALGOLIA_ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY!;
+const productsIndex = 'products';
 
 export async function POST(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   try {
+    // Initialize Algolia client (v5 syntax)
+    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = client.initIndex(productsIndex);
+
     const sql = getDb();
     
     // Get all active products
@@ -29,6 +36,13 @@ export async function POST(req: NextRequest) {
       WHERE p.status = 'in_stock'
     `;
 
+    if (!products || products.length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'No products found to sync',
+      });
+    }
+
     // Format for Algolia
     const algoliaObjects = products.map((p: any) => ({
       objectID: p.id,
@@ -44,7 +58,6 @@ export async function POST(req: NextRequest) {
     }));
 
     // Send to Algolia
-    const index = adminClient.initIndex(productsIndex);
     const result = await index.replaceAllObjects(algoliaObjects);
 
     return NextResponse.json({
