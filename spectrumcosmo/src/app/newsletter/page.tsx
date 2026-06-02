@@ -36,23 +36,36 @@ export default function NewsletterPage() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const res = await fetch('/api/auth/me');
-      if (!res.ok) {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+          router.push('/login');
+          return;
+        }
+        const data = await res.json();
+        setUser(data.user);
+        setSubscribed(data.user?.newsletter_subscribed ?? true);
+      } catch (err) {
+        console.error('Failed to load user:', err);
         router.push('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      const data = await res.json();
-      setUser(data.user);
-      setSubscribed(data.user?.newsletter_subscribed ?? true);
-      setLoading(false);
     };
     loadUser();
 
     const loadBlocks = async () => {
-      const res = await fetch('/api/content-blocks');
-      const data = await res.json();
-      setBlocks(data);
-      setBlocksLoading(false);
+      try {
+        const res = await fetch('/api/content-blocks');
+        if (!res.ok) throw new Error('Failed to load blocks');
+        const data = await res.json();
+        setBlocks(data);
+      } catch (err) {
+        console.error('Failed to load blocks:', err);
+        setBlocks([]);
+      } finally {
+        setBlocksLoading(false);
+      }
     };
     loadBlocks();
   }, [router]);
