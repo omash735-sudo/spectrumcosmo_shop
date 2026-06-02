@@ -18,8 +18,8 @@ export default function ForgotPasswordForm() {
     setMessage('')
     setError('')
     try {
-      // Changed endpoint to Better Auth's forget-password
-      const res = await fetch('/api/auth/forget-password', {
+      // Call your old custom route (still exists if you didn't delete it)
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
