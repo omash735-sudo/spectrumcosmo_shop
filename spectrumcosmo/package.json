@@ -29,7 +29,7 @@
     "qrcode": "^1.5.4",
     "react-hot-toast": "^2.4.1",
     "pdf-lib": "^1.17.1",
-    "better-auth": "^1.1.19",
+    "better-auth": "1.0.11",
     "kysely": "0.27.0",
     "pg": "^8.11.0"
   },
@@ -49,6 +49,6 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.8",
     "@tailwindcss/typography": "^0.5.15",
-    "@better-auth/cli": "^1.1.19"
+    "@better-auth/cli": "1.0.11"
   }
 }
