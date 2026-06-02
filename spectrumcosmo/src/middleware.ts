@@ -143,7 +143,7 @@ function setSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com;"
   );
   return response;
 }
@@ -281,18 +281,16 @@ export async function middleware(request: NextRequest) {
   // Only protect admin routes, but skip login page, auth API, and assets
   if (pathname.startsWith('/admin') && !isAdminLoginPage && !isAdminAuthApi && !isAdminAsset) {
     if (!adminToken) {
-      // If it's an API call, return 401
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      // Otherwise redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
 
   // Account page protection (customer)
   if (pathname.startsWith('/account') && !userToken) {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const response = NextResponse.next();
