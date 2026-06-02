@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from '@/lib/auth-client';
 import { Eye, EyeOff, Loader2, Check, Shield } from 'lucide-react';
 
 const mobileSlides = [
@@ -60,20 +59,31 @@ export default function LoginPage() {
     setLoading(true);
     setIsTestAccount(false);
 
-    const { error: signInError } = await signIn.email({
-      email,
-      password,
-      callbackURL: '/account',
+    // Use your custom login API instead of Better Auth
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (signInError) {
-      if (signInError.message?.toLowerCase().includes('verify')) {
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Display debug info if available
+      if (data.debug) {
+        setError(`${data.error}\n\nDebug: ${JSON.stringify(data.debug, null, 2)}`);
+      } else if (data.needsVerification) {
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       } else {
-        setError(signInError.message || 'Invalid credentials');
+        setError(data.error || 'Invalid credentials');
       }
       setLoading(false);
       return;
+    }
+
+    // Check if test account
+    if (data.user?.is_test_account) {
+      setIsTestAccount(true);
     }
 
     setSuccess(true);
@@ -144,7 +154,7 @@ export default function LoginPage() {
                   Create account
                 </Link>
               </div>
-              {error && <p className="text-sm text-red-400">{error}</p>}
+              {error && <p className="text-sm text-red-400 whitespace-pre-wrap">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}
