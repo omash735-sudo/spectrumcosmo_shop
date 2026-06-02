@@ -29,25 +29,46 @@ export default function RequestCarousel() {
 
   const fetchRequests = async () => {
     try {
-      const res = await fetch('/api/requests?status=approved&limit=20');
+      // Use the public API endpoint (no auth required)
+      const res = await fetch('/api/requests/public?limit=20');
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      
       const data = await res.json();
-      setRequests(data);
+      
+      // Handle the response format { success: true, data: [] }
+      if (data.success && Array.isArray(data.data)) {
+        setRequests(data.data);
+      } else if (Array.isArray(data)) {
+        setRequests(data);
+      } else {
+        console.error('Unexpected API response:', data);
+        setRequests([]);
+      }
     } catch (err) {
       console.error('Failed to fetch requests:', err);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLike = async (id: string) => {
+  const handleLike = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation
+    e.stopPropagation();
+    
     try {
       const res = await fetch(`/api/requests/${id}/like`, { method: 'POST' });
-      const data = await res.json();
-      setRequests(prev => prev.map(r => 
-        r.id === id 
-          ? { ...r, like_count: r.like_count + (data.liked ? 1 : -1), user_liked: data.liked ? 1 : 0 }
-          : r
-      ));
+      if (res.ok) {
+        const data = await res.json();
+        setRequests(prev => prev.map(r => 
+          r.id === id 
+            ? { ...r, like_count: r.like_count + (data.liked ? 1 : -1), user_liked: data.liked ? 1 : 0 }
+            : r
+        ));
+      }
     } catch (err) {
       console.error('Failed to like:', err);
     }
@@ -57,8 +78,21 @@ export default function RequestCarousel() {
     fetchRequests();
   }, []);
 
-  if (loading) return <div className="text-center py-10 text-gray-500">Loading requests...</div>;
-  if (requests.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="text-center py-10 text-gray-500">
+        Loading requests...
+      </div>
+    );
+  }
+
+  if (requests.length === 0) {
+    return (
+      <div className="text-center py-10 text-gray-500">
+        No community requests yet. Be the first to submit one!
+      </div>
+    );
+  }
 
   return (
     <div className="my-12">
@@ -100,10 +134,7 @@ export default function RequestCarousel() {
                     </div>
                   )}
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleLike(req.id);
-                    }}
+                    onClick={(e) => handleLike(req.id, e)}
                     className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-105 transition"
                   >
                     <Heart
@@ -116,7 +147,7 @@ export default function RequestCarousel() {
                   <h3 className="font-semibold text-gray-800 line-clamp-1">{req.title}</h3>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{req.description}</p>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-orange-500 font-medium">{req.like_count} requests</span>
+                    <span className="text-xs text-orange-500 font-medium">{req.like_count} likes</span>
                     <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
                       {req.category_name || 'General'}
                     </span>
