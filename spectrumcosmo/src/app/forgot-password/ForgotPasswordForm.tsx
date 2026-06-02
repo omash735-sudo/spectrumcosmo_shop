@@ -18,7 +18,8 @@ export default function ForgotPasswordForm() {
     setMessage('')
     setError('')
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      // Changed endpoint to Better Auth's forget-password
+      const res = await fetch('/api/auth/forget-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -34,7 +35,6 @@ export default function ForgotPasswordForm() {
     }
   }
 
-  // Dark mode logo for dark background
   const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
 
   return (
