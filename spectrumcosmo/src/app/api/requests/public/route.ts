@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get('limit') || '12');
     const offset = parseInt(url.searchParams.get('offset') || '0');
-    const sortBy = url.searchParams.get('sort') || 'popular'; // popular, newest, most_voted
+    const sortBy = url.searchParams.get('sort') || 'popular';
     const category = url.searchParams.get('category');
     const search = url.searchParams.get('search');
 
@@ -16,10 +16,10 @@ export async function GET(req: NextRequest) {
     // Build WHERE clause
     let whereConditions = ["r.status = 'approved'"];
     if (category && category !== 'all') {
-      whereConditions.push(`c.name = ${category}`);
+      whereConditions.push(`c.name = '${category}'`);
     }
     if (search) {
-      whereConditions.push(`(r.title ILIKE ${'%' + search + '%'} OR r.description ILIKE ${'%' + search + '%'})`);
+      whereConditions.push(`(r.title ILIKE '%${search}%' OR r.description ILIKE '%${search}%')`);
     }
     const whereClause = whereConditions.join(' AND ');
 
@@ -39,31 +39,16 @@ export async function GET(req: NextRequest) {
         orderClause = 'r.like_count DESC, r.created_at DESC';
     }
 
-    // Get total count for pagination
-    const [countResult] = await sql`
+    // Get total count
+    const totalQuery = await sql`
       SELECT COUNT(*) as total
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
       WHERE ${sql.raw(whereClause)}
     `;
-    const total = parseInt(countResult?.total || '0');
+    const total = parseInt(totalQuery[0]?.total || '0');
 
-    // Check if user is logged in
-    let userId = null;
-    try {
-      const { cookies } = await import('next/headers');
-      const cookieStore = cookies();
-      const token = cookieStore.get('user_token')?.value;
-      if (token) {
-        const jwt = await import('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'spectrumcosmo-secret-key-2024') as any;
-        userId = decoded.id;
-      }
-    } catch (err) {
-      // User not logged in, continue
-    }
-
-    // Get requests with user-specific like status
+    // Get requests (simplified - no JWT parsing)
     const query = await sql`
       SELECT 
         r.id,
@@ -75,7 +60,7 @@ export async function GET(req: NextRequest) {
         c.name as category_name,
         c.id as category_id,
         COALESCE((SELECT COUNT(*) FROM request_images WHERE request_id = r.id), 0) as image_count,
-        ${userId ? sql`COALESCE((SELECT 1 FROM request_likes WHERE request_id = r.id AND user_id = ${userId}), 0) as user_liked` : sql`0 as user_liked`}
+        0 as user_liked
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
       WHERE ${sql.raw(whereClause)}
@@ -91,8 +76,6 @@ export async function GET(req: NextRequest) {
         limit,
         offset,
         hasMore: offset + limit < total,
-        nextOffset: offset + limit < total ? offset + limit : null,
-        prevOffset: offset > 0 ? Math.max(0, offset - limit) : null,
       },
       filters: {
         sort: sortBy,
@@ -103,7 +86,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('Public requests API error:', err);
     return NextResponse.json(
-      { success: false, error: err.message || 'Internal server error', data: [], pagination: { total: 0, limit: 0, offset: 0, hasMore: false } },
+      { success: false, error: err.message || 'Internal server error', data: [] },
       { status: 500 }
     );
   }
