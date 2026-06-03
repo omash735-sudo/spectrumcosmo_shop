@@ -355,7 +355,7 @@ export default function CheckoutPage() {
                             onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                             required
                             className={`${inputClasses('name')} pl-10`}
-                            placeholder="John Doe"
+                            placeholder="Your_name"
                           />
                         </div>
                       </div>
@@ -373,7 +373,7 @@ export default function CheckoutPage() {
                             onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                             required
                             className={`${inputClasses('email')} pl-10`}
-                            placeholder="john@example.com"
+                            placeholder="yourmail@example.com"
                           />
                         </div>
                       </div>
