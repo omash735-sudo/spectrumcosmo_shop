@@ -40,18 +40,57 @@ export async function PATCH(req: NextRequest) {
 
   try {
     await ensureUsersTable()
-    const { name, phone, newsletterSubscribed, profileImage } = await req.json()
+    const body = await req.json()
+    const { name, phone, newsletterSubscribed, profileImage } = body
+    
+    console.log('Received update request:', { name, phone, profileImage }) // Debug log
+    
     const sql = getDb()
 
-    const [updated] = await sql`
-      UPDATE users SET
-        name = COALESCE(${name}, name),
-        phone = COALESCE(${phone}, phone),
-        profile_image = COALESCE(${profileImage}, profile_image)
-      WHERE id = ${user.id}
+    // Build update query dynamically
+    const updates: string[] = []
+    const values: any[] = []
+    let paramIndex = 1
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex}`)
+      values.push(name)
+      paramIndex++
+    }
+    
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramIndex}`)
+      values.push(phone)
+      paramIndex++
+    }
+    
+    if (profileImage !== undefined) {
+      updates.push(`profile_image = $${paramIndex}`)
+      values.push(profileImage)
+      paramIndex++
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
+
+    values.push(user.id)
+    
+    const query = `
+      UPDATE users 
+      SET ${updates.join(', ')} 
+      WHERE id = $${paramIndex}
       RETURNING id, name, email, phone, profile_image AS "profileImage"
     `
+    
+    const result = await sql.query(query, values)
+    const updated = result[0] || result.rows?.[0]
 
+    if (!updated) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Handle newsletter subscription if provided
     if (newsletterSubscribed !== undefined) {
       const normalizedEmail = updated.email.toLowerCase()
       const [current] = await sql`
@@ -78,6 +117,7 @@ export async function PATCH(req: NextRequest) {
             <p style="color:#F97316; font-size:12px;">${p.currency || 'MWK'} ${p.price}</p>
           </div>
         `).join('')
+        
         const reSubscribeHtml = `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
             <div style="background: #F97316; padding: 20px; text-align: center;">
@@ -101,6 +141,7 @@ export async function PATCH(req: NextRequest) {
             </div>
           </div>
         `
+        
         await sendMail({
           to: updated.email,
           subject: 'We missed you! Here’s what’s new at SpectrumCosmo',
@@ -121,6 +162,29 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ user: updated })
   } catch (err: any) {
     console.error('Profile update error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const { user, error } = await getVerifiedUser(req)
+  if (error) return error
+
+  try {
+    const sql = getDb()
+    const [userData] = await sql`
+      SELECT id, name, email, phone, profile_image AS "profileImage"
+      FROM users
+      WHERE id = ${user.id}
+    `
+    
+    if (!userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    return NextResponse.json({ user: userData })
+  } catch (err: any) {
+    console.error('Error fetching user:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
