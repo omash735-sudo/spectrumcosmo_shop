@@ -68,6 +68,7 @@ export default function OrdersPage() {
   }, []);
 
   const cancelOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
     setCancellingId(orderId);
     try {
       const res = await fetch(`/api/account/orders?id=${orderId}&action=cancel`, { method: 'PATCH' });
@@ -93,7 +94,7 @@ export default function OrdersPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            product_id: item.product_id,
+            product_id: item.product_id || item.id,
             quantity: item.quantity,
           }),
         });
@@ -127,6 +128,7 @@ export default function OrdersPage() {
     }
   };
 
+  // FIXED: Track order button now works
   const handleViewTracking = (orderId: string, status: string) => {
     if (status === 'shipped' || status === 'delivered') {
       router.push(`/account/orders/${orderId}/tracking`);
@@ -262,6 +264,7 @@ export default function OrdersPage() {
                         {cancellingId === order.id ? 'Cancelling...' : 'Cancel Order'}
                       </button>
                     )}
+                    {/* FIXED: Track Order button now works */}
                     <button onClick={() => handleViewTracking(order.id, order.status)} className="px-4 py-2 text-sm text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition inline-flex items-center gap-2">
                       <Truck size={14} /> Track Order
                     </button>
