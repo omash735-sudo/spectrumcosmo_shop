@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import StarRating from '@/components/ui/StarRating';
+import { Star, User, Calendar, MessageSquare, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Review {
   id: number;
@@ -23,14 +24,16 @@ export default function ProductReviews({ productId, initialReviews = [] }: Produ
   const [reviewText, setReviewText] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     if (initialReviews.length > 0) return;
+    
     fetch(`/api/reviews?product_id=${productId}`)
       .then((res) => res.json())
       .then((data) => {
-        setReviews(data);
+        setReviews(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch((err) => {
@@ -42,10 +45,12 @@ export default function ProductReviews({ productId, initialReviews = [] }: Produ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) {
-      setMessage('Please select a rating');
+      setMessage({ type: 'error', text: 'Please select a rating' });
       return;
     }
     setSubmitting(true);
+    setMessage(null);
+    
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
@@ -60,86 +65,185 @@ export default function ProductReviews({ productId, initialReviews = [] }: Produ
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage('Review submitted! It will appear after approval.');
+        setMessage({ type: 'success', text: 'Review submitted! It will appear after approval.' });
         setRating(0);
         setReviewText('');
         setCustomerName('');
+        setShowForm(false);
+        
         setTimeout(() => {
           fetch(`/api/reviews?product_id=${productId}`)
             .then((res) => res.json())
             .then((newReviews) => setReviews(newReviews));
-        }, 2000);
+        }, 3000);
       } else {
-        setMessage(data.error || 'Submission failed');
+        setMessage({ type: 'error', text: data.error || 'Submission failed' });
       }
     } catch (err) {
-      setMessage('Network error. Please try again.');
+      setMessage({ type: 'error', text: 'Network error. Please try again.' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading)
-    return <p className="text-center text-gray-500 py-8">Loading reviews...</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin text-orange-500" size={32} />
+      </div>
+    );
+  }
+
+  const totalReviews = reviews.length;
+  const avgRating = totalReviews > 0
+    ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
+    : 0;
+
+  const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach((r) => {
+    const star = Math.floor(r.rating);
+    if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
+  });
 
   return (
     <div>
-      {/* Review Form */}
-      <div className="bg-gray-50 rounded-xl p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-3">Write a review</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Rating</label>
-            <StarRating rating={rating} interactive onRate={setRating} size={28} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Your name (optional)</label>
-            <input
-              type="text"
-              className="w-full border rounded-lg p-2 text-sm"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="...your_name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Your review</label>
-            <textarea
-              rows={3}
-              className="w-full border rounded-lg p-2 text-sm"
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              required
-            />
-          </div>
-          {message && <p className="text-sm text-orange-600">{message}</p>}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">Customer Reviews</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+          </p>
+        </div>
+        {!showForm && (
           <button
-            type="submit"
-            disabled={submitting}
-            className="bg-[#F97316] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50"
+            onClick={() => setShowForm(true)}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition shadow-sm"
           >
-            {submitting ? 'Submitting...' : 'Submit Review'}
+            Write a Review
           </button>
-        </form>
+        )}
       </div>
 
-      {/* Existing Reviews */}
-      {reviews.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No reviews yet. Be the first!</p>
-      ) : (
-        <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="border rounded-xl p-5 shadow-sm bg-white">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <StarRating rating={review.rating} size={16} />
-                <span className="text-xs text-gray-400">
-                  {new Date(review.created_at).toLocaleDateString()}
+      {/* Rating Summary */}
+      {totalReviews > 0 && (
+        <div className="bg-gray-50 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <span className="text-4xl font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+              <div className="mt-1">
+                <StarRating rating={avgRating} size={16} />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Based on {totalReviews} reviews</p>
+            </div>
+            <div className="flex-1 space-y-1">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = ratingCounts[star as keyof typeof ratingCounts];
+                const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                return (
+                  <div key={star} className="flex items-center gap-2 text-sm">
+                    <span className="w-8 text-gray-600">{star} ★</span>
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${percentage}%` }} />
+                    </div>
+                    <span className="w-10 text-right text-gray-500">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Form */}
+      {showForm && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-semibold text-gray-900">Write Your Review</h4>
+            <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
+              <StarRating rating={rating} interactive onRate={setRating} size={28} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Your Name (Optional)</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g., John Doe"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Your Review *</label>
+              <textarea
+                rows={4}
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder="Share your experience with this product..."
+                required
+              />
+            </div>
+            {message && (
+              <div className={`p-3 rounded-xl flex items-center gap-2 text-sm ${
+                message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              }`}>
+                {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                {message.text}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-medium transition disabled:opacity-50 w-full"
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin" />
+                  Submitting...
                 </span>
+              ) : (
+                'Submit Review'
+              )}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Reviews List */}
+      {reviews.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-2xl">
+          <MessageSquare size={40} className="text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No reviews yet. Be the first to review this product!</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {reviews.map((review) => (
+            <div key={review.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+              <div className="flex items-start justify-between flex-wrap gap-2 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center">
+                    <User size={18} className="text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{review.customer_name || 'Anonymous'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <StarRating rating={review.rating} size={14} />
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Calendar size={10} />
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-gray-700 mt-3 leading-relaxed">“{review.review_text}”</p>
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                <span>— {review.customer_name}</span>
-              </div>
+              <p className="text-gray-700 text-sm leading-relaxed mt-2">“{review.review_text}”</p>
             </div>
           ))}
         </div>
@@ -147,3 +251,6 @@ export default function ProductReviews({ productId, initialReviews = [] }: Produ
     </div>
   );
 }
+
+// Missing X icon import
+import { X } from 'lucide-react';
