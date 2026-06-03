@@ -27,6 +27,11 @@ import {
   Tag,
   Truck,
   Shield,
+  Shirt,
+  Package as PackageIcon,
+  Sparkles,
+  GraduationCap,
+  ArrowRight
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -38,12 +43,12 @@ import SearchBar from '@/components/storefront/SearchBar';
 import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 
-// Category dropdown data
+// Category dropdown data with proper Lucide icons
 const categories = [
-  { name: 'T-Shirts', href: '/products?category=tshirts', icon: '👕' },
-  { name: 'Hoodies', href: '/products?category=hoodies', icon: '👔' },
-  { name: 'Accessories', href: '/products?category=accessories', icon: '💍' },
-  { name: 'Limited Edition', href: '/products?category=limited', icon: '⭐' },
+  { name: 'T-Shirts', href: '/products?category=T-Shirts', icon: Shirt },
+  { name: 'Hoodies', href: '/products?category=Hoodies', icon: PackageIcon },
+  { name: 'Accessories', href: '/products?category=Accessories', icon: Sparkles },
+  { name: 'Anime Jerseys', href: '/products?category=Anime Jerseys', icon: GraduationCap },
 ];
 
 const desktopLinks = [
@@ -202,24 +207,28 @@ export default function Navbar() {
                     
                     {/* Dropdown Menu */}
                     {link.hasDropdown && openDropdown === link.label && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 dropdown-content">
-                        <div className="px-3 py-2 border-b border-gray-100">
+                      <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 dropdown-content">
+                        <div className="px-4 py-2 border-b border-gray-100">
                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shop by Category</p>
                         </div>
-                        {categories.map((cat) => (
-                          <Link
-                            key={cat.name}
-                            href={cat.href}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition"
-                            onClick={() => setOpenDropdown(null)}
-                          >
-                            <span className="text-lg">{cat.icon}</span>
-                            {cat.name}
-                          </Link>
-                        ))}
+                        {categories.map((cat) => {
+                          const Icon = cat.icon;
+                          return (
+                            <Link
+                              key={cat.name}
+                              href={cat.href}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition group"
+                              onClick={() => setOpenDropdown(null)}
+                            >
+                              <Icon size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
+                              {cat.name}
+                            </Link>
+                          );
+                        })}
                         <div className="border-t border-gray-100 mt-2 pt-2">
-                          <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition">
-                            View All Products <ChevronDown size={14} className="rotate-270" />
+                          <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition group">
+                            View All Products 
+                            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
                           </Link>
                         </div>
                       </div>
@@ -236,7 +245,7 @@ export default function Navbar() {
                 {/* Notification Bell */}
                 {isLoggedIn && <NotificationBell />}
                 
-                {/* Cart Button with Mini Cart Preview */}
+                {/* Cart Button */}
                 <div className="relative group">
                   <button 
                     onClick={openCart} 
