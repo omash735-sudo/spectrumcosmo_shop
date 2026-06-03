@@ -5,12 +5,12 @@ import { createNotification } from '@/lib/notifications';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
-  const orderId = params.id;
+  const { id: orderId } = await params;
   const { response } = await req.json();
 
   if (!response || !['received', 'not_received', 'disputed'].includes(response)) {
@@ -40,7 +40,7 @@ export async function POST(
     SET response = ${response}, 
         responded_at = NOW(),
         order_archived = ${response === 'received'},
-        archived_at = ${response === 'received' ? 'NOW()' : null}
+        archived_at = ${response === 'received' ? new Date() : null}
     WHERE order_id = ${orderId}
     RETURNING *
   `;
@@ -49,7 +49,7 @@ export async function POST(
   if (!confirmation) {
     await sql`
       INSERT INTO delivery_confirmations (order_id, response, responded_at, order_archived, archived_at)
-      VALUES (${orderId}, ${response}, NOW(), ${response === 'received'}, ${response === 'received' ? 'NOW()' : null})
+      VALUES (${orderId}, ${response}, NOW(), ${response === 'received'}, ${response === 'received' ? new Date() : null})
     `;
   }
 
