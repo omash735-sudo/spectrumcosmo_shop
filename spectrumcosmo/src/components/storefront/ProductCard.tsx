@@ -2,52 +2,93 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Heart, Plus, CheckCircle, Clock, AlertCircle, Ban, Eye, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Eye, Star, Clock, Ban, CheckCircle } from 'lucide-react';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 import { saveLastCategory } from '@/lib/recentlyViewedUtils';
-import { useWishlist } from '@/components/storefront/WishlistProvider';
 
-export default function ProductCard({ product }: { product: any }) {
+interface ProductCardProps {
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    compare_price?: number;
+    image_url: string;
+    status?: string;
+    stock_quantity?: number;
+    category_name?: string;
+    category?: string;
+    description?: string;
+  };
+}
+
+export default function ProductCard({ product }: ProductCardProps) {
+  // Early return if product is invalid
   if (!product || !product.id) {
-    console.warn('ProductCard received invalid product:', product);
     return null;
   }
 
   const priceMwk = Number(product.price ?? 0);
   const { addItem } = useCart();
-  const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
   const [localLoading, setLocalLoading] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
-  const isWishlisted = isInWishlist(product.id);
-  const loading = wishlistLoading || localLoading;
-
-  const getStatusBadge = () => {
-    const status = product.status || 'in_stock';
-    const stock = product.stock_quantity ?? 0;
-    
-    if (status === 'out_of_stock' || stock === 0) {
-      return { text: 'Out of Stock', color: 'bg-red-500 text-white', icon: Ban };
-    }
-    if (status === 'coming_soon') {
-      return { text: 'Coming Soon', color: 'bg-yellow-500 text-white', icon: Clock };
-    }
-    if (status === 'pre_order') {
-      return { text: 'Pre-Order', color: 'bg-blue-500 text-white', icon: AlertCircle };
-    }
-    return null;
-  };
-
-  const statusBadge = getStatusBadge();
-  const isOutOfStock = product.status === 'out_of_stock' || product.stock_quantity === 0;
+  const isOutOfStock = product.status === 'out_of_stock' || (product.stock_quantity ?? 0) === 0;
   const isComingSoon = product.status === 'coming_soon';
   const hasDiscount = product.compare_price && product.compare_price > product.price;
+  const discountPercent = hasDiscount 
+    ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) 
+    : 0;
+
+  const productName = product.name || 'Product';
+  const productImage = product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600';
+  const categoryName = product.category_name || product.category || 'Uncategorized';
+
+  // Fetch rating
+  useEffect(() => {
+    const fetchRating = async () => {
+      try {
+        const res = await fetch(`/api/reviews?product_id=${product.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length) {
+            const sum = data.reduce((s: number, r: any) => s + r.rating, 0);
+            setAvgRating(sum / data.length);
+            setReviewCount(data.length);
+          }
+        }
+      } catch (err) {
+        // Silent fail
+      }
+    };
+    fetchRating();
+  }, [product.id]);
+
+  // Check wishlist status
+  useEffect(() => {
+    const checkWishlist = async () => {
+      try {
+        const userRes = await fetch('/api/auth/me');
+        if (!userRes.ok) return;
+        
+        const wishlistRes = await fetch('/api/account/wishlist');
+        if (wishlistRes.ok) {
+          const wishlist = await wishlistRes.json();
+          setIsWishlisted(wishlist.some((item: any) => item.product_id === product.id));
+        }
+      } catch (err) {
+        // Silent fail - wishlist not critical
+      }
+    };
+    checkWishlist();
+  }, [product.id]);
 
   const handleProductClick = () => {
     const categoryToSave = product.category_name || product.category;
@@ -55,19 +96,6 @@ export default function ProductCard({ product }: { product: any }) {
       saveLastCategory(categoryToSave, 1);
     }
   };
-
-  useEffect(() => {
-    fetch(`/api/reviews?product_id=${product.id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.length) {
-          const sum = data.reduce((s: number, r: any) => s + r.rating, 0);
-          setAvgRating(sum / data.length);
-          setReviewCount(data.length);
-        }
-      })
-      .catch(console.error);
-  }, [product.id]);
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,9 +108,22 @@ export default function ProductCard({ product }: { product: any }) {
       return;
     }
     
-    setLocalLoading(true);
-    await toggleWishlist(product.id);
-    setLocalLoading(false);
+    setWishlistLoading(true);
+    try {
+      const method = isWishlisted ? 'DELETE' : 'POST';
+      const res = await fetch('/api/account/wishlist', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      if (res.ok) {
+        setIsWishlisted(!isWishlisted);
+      }
+    } catch (err) {
+      console.error('Wishlist error:', err);
+    } finally {
+      setWishlistLoading(false);
+    }
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -96,13 +137,24 @@ export default function ProductCard({ product }: { product: any }) {
     });
   };
 
-  const productName = product.name || 'Product';
-  const productImage = product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600';
-  const categoryName = product.category_name || product.category || 'Uncategorized';
+  const getStatusBadge = () => {
+    const status = product.status || 'in_stock';
+    const stock = product.stock_quantity ?? 0;
+    
+    if (status === 'out_of_stock' || stock === 0) {
+      return { text: 'Out of Stock', color: 'bg-red-500 text-white', icon: Ban };
+    }
+    if (status === 'coming_soon') {
+      return { text: 'Coming Soon', color: 'bg-yellow-500 text-white', icon: Clock };
+    }
+    if (status === 'pre_order') {
+      return { text: 'Pre-Order', color: 'bg-blue-500 text-white', icon: Clock };
+    }
+    return null;
+  };
 
-  const discountPercent = hasDiscount 
-    ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) 
-    : 0;
+  const statusBadge = getStatusBadge();
+  const StatusIcon = statusBadge?.icon;
 
   return (
     <div 
@@ -113,6 +165,7 @@ export default function ProductCard({ product }: { product: any }) {
       {/* Image Container */}
       <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
+          {/* Loading skeleton */}
           <div className={`absolute inset-0 bg-gray-100 transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
@@ -133,11 +186,11 @@ export default function ProductCard({ product }: { product: any }) {
           </div>
         )}
 
-        {/* Status Badge */}
+        {/* Status Badge (Out of Stock / Coming Soon) */}
         {statusBadge && (
           <div className="absolute top-3 left-3 z-10">
             <span className={`${statusBadge.color} text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1`}>
-              <statusBadge.icon size={12} />
+              <StatusIcon size={12} />
               {statusBadge.text}
             </span>
           </div>
@@ -146,7 +199,7 @@ export default function ProductCard({ product }: { product: any }) {
         {/* Quick View Overlay */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            <button className="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-500 hover:text-white transition shadow-lg flex items-center gap-2">
+            <button className="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-500 hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
               <Eye size={16} />
               Quick View
             </button>
@@ -156,7 +209,7 @@ export default function ProductCard({ product }: { product: any }) {
         {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
-          disabled={loading}
+          disabled={wishlistLoading}
           className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
@@ -210,7 +263,7 @@ export default function ProductCard({ product }: { product: any }) {
         </div>
 
         {/* Stock Warning */}
-        {!isOutOfStock && !isComingSoon && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+        {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
           <p className="text-xs text-orange-500 mt-1">Only {product.stock_quantity} left in stock</p>
         )}
 
