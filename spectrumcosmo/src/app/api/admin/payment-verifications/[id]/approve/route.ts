@@ -25,13 +25,13 @@ async function getEmailTemplate(sql: any, templateName: string) {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   try {
-    const { id } = params;
+    const { id: verificationId } = await params;
     const { orderId } = await req.json();
     const adminId = (authError as any)?.id || null;
     const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
@@ -42,7 +42,7 @@ export async function POST(
     const [verification] = await sql`
       SELECT proof_image_url, transaction_reference, notes
       FROM payment_confirmations 
-      WHERE id = ${id}
+      WHERE id = ${verificationId}
     `;
 
     if (!verification) {
@@ -105,7 +105,7 @@ export async function POST(
     await sql`
       UPDATE payment_confirmations
       SET status = 'approved', reviewed_by = ${adminId}, reviewed_at = NOW()
-      WHERE id = ${id}
+      WHERE id = ${verificationId}
     `;
 
     // ============================================
