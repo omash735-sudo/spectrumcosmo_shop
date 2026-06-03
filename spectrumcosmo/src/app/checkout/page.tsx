@@ -7,7 +7,7 @@ import Footer from '@/components/storefront/Footer';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import { formatCurrencyAmount } from '@/lib/currency';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Tag, Gift, X, CheckCircle, Info } from 'lucide-react';
 import Image from 'next/image';
 
 type DeliveryMethod = {
@@ -28,6 +28,13 @@ type PaymentProvider = {
   instructions?: string;
 };
 
+interface PromoCode {
+  id: number;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+}
+
 export default function CheckoutPage() {
   const { items, subtotalUsd, clearCart } = useCart();
   const { currency, rates } = useCurrency();
@@ -43,6 +50,20 @@ export default function CheckoutPage() {
   } | null>(null);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<PaymentProvider | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  
+  // Promo code states
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+  
+  // Referral code states
+  const [referralCode, setReferralCode] = useState('');
+  const [savedReferral, setSavedReferral] = useState('');
+  const [referralMessage, setReferralMessage] = useState('');
+  
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -58,7 +79,8 @@ export default function CheckoutPage() {
     [subtotalUsd, rates, currency]
   );
   const deliveryFee = deliveryMethods.find(m => m.id === selectedDeliveryId)?.price || 0;
-  const total = subtotal + deliveryFee;
+  const totalBeforeDiscount = subtotal + deliveryFee;
+  const finalTotal = Math.max(0, totalBeforeDiscount - discountAmount);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,6 +114,66 @@ export default function CheckoutPage() {
     fetchData();
   }, []);
 
+  // Apply promo code
+  const applyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      return;
+    }
+
+    setPromoLoading(true);
+    setPromoError('');
+    setPromoSuccess('');
+
+    try {
+      const res = await fetch('/api/validate-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoCode,
+          cartTotal: totalBeforeDiscount,
+          productIds: items.map(item => item.id),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPromoError(data.error || 'Invalid promo code');
+        return;
+      }
+
+      if (data.valid) {
+        setAppliedPromo(data.promoCode);
+        setDiscountAmount(data.discountAmount);
+        setPromoSuccess(`${data.promoCode.code} applied! You saved ${data.discountAmount.toLocaleString()} MWK`);
+        setPromoCode('');
+      }
+    } catch (err) {
+      setPromoError('Something went wrong. Please try again.');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  // Remove promo code
+  const removePromoCode = () => {
+    setAppliedPromo(null);
+    setDiscountAmount(0);
+    setPromoSuccess('');
+  };
+
+  // Save referral code
+  const saveReferralCode = () => {
+    if (!referralCode.trim()) {
+      setReferralMessage('');
+      return;
+    }
+    setSavedReferral(referralCode.toUpperCase());
+    setReferralMessage(`Referral code ${referralCode.toUpperCase()} saved! Your friend will get credit after your purchase.`);
+    setReferralCode('');
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -105,17 +187,16 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // FIXED: Map items with both product_name AND name to avoid null errors
       const mappedItems = items.map(item => ({
         product_id: item.id,
-        product_name: item.name,      // For order_items table
-        name: item.name,               // For backwards compatibility
+        product_name: item.name,
+        name: item.name,
         quantity: Number(item.quantity),
         price: Number(item.priceUsd ?? 0),
         custom_details: item.custom_details || null,
       }));
 
-      console.log('Sending items to API:', mappedItems); // Debug log
+      console.log('Sending items to API:', mappedItems);
 
       const orderRes = await fetch('/api/orders/create', {
         method: 'POST',
@@ -124,20 +205,50 @@ export default function CheckoutPage() {
           customer_name: form.name,
           customer_email: form.email,
           phone_number: form.phone,
-          location: form.location,
+          location: form.notes,
           notes: form.notes,
           items: mappedItems,
-          total_amount: Number(total),
+          subtotal: subtotal,
+          delivery_fee: deliveryFee,
+          discount_amount: discountAmount,
+          total_amount: finalTotal,
           delivery_method_id: Number(selectedDeliveryId),
-          delivery_fee: Number(deliveryFee),
           payment_provider_id: selectedPaymentProvider.id,
           payment_method: selectedPaymentProvider.name,
+          promo_code_id: appliedPromo?.id || null,
+          promo_code: appliedPromo?.code || null,
+          referral_code: savedReferral || null,
         }),
       });
 
       const orderData = await orderRes.json();
       if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
       const orderId = orderData.id;
+
+      // Record promo code usage
+      if (appliedPromo && discountAmount > 0) {
+        await fetch('/api/apply-promo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderId,
+            promoCodeId: appliedPromo.id,
+            discountAmount: discountAmount,
+          }),
+        });
+      }
+
+      // Track referral
+      if (savedReferral) {
+        await fetch('/api/referrals/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referralCode: savedReferral,
+            orderId: orderId,
+          }),
+        });
+      }
 
       clearCart();
 
@@ -146,7 +257,7 @@ export default function CheckoutPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: total,
+            amount: finalTotal,
             currency: 'MWK',
             phoneNumber: form.phone,
             paymentMethod: selectedPaymentProvider.name,
@@ -161,7 +272,7 @@ export default function CheckoutPage() {
         alert('Payment request sent to your phone. Please check your mobile money app.');
         router.push(`/account/orders?payment=pending&order=${orderId}`);
       } else {
-        router.push(`/orders/${orderId}/payment`);
+        router.push(`/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
@@ -204,7 +315,7 @@ export default function CheckoutPage() {
                 value={form.name}
                 onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                 required
-                className="w-full border rounded-xl px-3 py-2"
+                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
               <input
                 type="email"
@@ -212,7 +323,7 @@ export default function CheckoutPage() {
                 value={form.email}
                 onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                 required
-                className="w-full border rounded-xl px-3 py-2"
+                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
               <input
                 type="tel"
@@ -220,7 +331,7 @@ export default function CheckoutPage() {
                 value={form.phone}
                 onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                 required
-                className="w-full border rounded-xl px-3 py-2"
+                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
               <input
                 type="text"
@@ -228,15 +339,99 @@ export default function CheckoutPage() {
                 value={form.location}
                 onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
                 required
-                className="w-full border rounded-xl px-3 py-2"
+                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
               <textarea
                 rows={2}
                 placeholder="Delivery notes (optional)"
                 value={form.notes}
                 onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                className="w-full border rounded-xl px-3 py-2"
+                className="w-full border rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
+
+              {/* Promo Code Section */}
+              <div className="border-t pt-4">
+                <label className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Tag size={16} /> Promo Code
+                </label>
+                {appliedPromo ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex justify-between items-center">
+                    <div>
+                      <p className="text-green-700 font-medium">{appliedPromo.code} applied</p>
+                      <p className="text-xs text-green-600">
+                        {appliedPromo.discount_type === 'percentage' 
+                          ? `${appliedPromo.discount_value}% off` 
+                          : `${appliedPromo.discount_value.toLocaleString()} MWK off`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removePromoCode}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Enter promo code"
+                      className="flex-1 border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyPromoCode}
+                      disabled={promoLoading}
+                      className="px-4 py-2 bg-gray-100 rounded-xl text-sm hover:bg-gray-200 transition disabled:opacity-50"
+                    >
+                      {promoLoading ? <Loader2 className="animate-spin" size={16} /> : 'Apply'}
+                    </button>
+                  </div>
+                )}
+                {promoError && <p className="text-red-500 text-xs mt-1">{promoError}</p>}
+                {promoSuccess && <p className="text-green-500 text-xs mt-1">{promoSuccess}</p>}
+              </div>
+
+              {/* Referral Code Section */}
+              <div className="border-t pt-4">
+                <label className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Gift size={16} /> Referral Code (Optional)
+                </label>
+                {savedReferral ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                    <p className="text-blue-700 font-medium">Referral code saved: {savedReferral}</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Your friend will receive credit after your purchase is completed.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        placeholder="Enter friend's referral code"
+                        className="flex-1 border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveReferralCode}
+                        className="px-4 py-2 bg-gray-100 rounded-xl text-sm hover:bg-gray-200 transition"
+                      >
+                        Save
+                      </button>
+                    </div>
+                    {referralMessage && <p className="text-green-500 text-xs mt-1">{referralMessage}</p>}
+                    <p className="text-xs text-gray-400 mt-2">
+                      Have a referral code from a friend? Enter it here to support them. They earn rewards when you complete your purchase.
+                    </p>
+                  </>
+                )}
+              </div>
 
               <div>
                 <p className="text-sm font-semibold mb-2">Delivery Method</p>
@@ -321,7 +516,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={loading || items.length === 0}
-                className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium disabled:opacity-50"
+                className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium disabled:opacity-50 hover:bg-orange-600 transition"
               >
                 {loading ? <Loader2 className="animate-spin inline mr-2" size={16} /> : null}
                 {loading ? 'Processing...' : 'Place Order'}
@@ -334,27 +529,46 @@ export default function CheckoutPage() {
               <h2 className="font-bold mb-4">Order Summary</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Items</span> <span>{items.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Subtotal</span> <span>{formatCurrencyAmount(subtotal, currency)}</span>
+                  <span>Items ({items.length})</span> <span>{formatCurrencyAmount(subtotal, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery</span> <span>{deliveryFee.toLocaleString()} MWK</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span> <span>- {discountAmount.toLocaleString()} MWK</span>
+                  </div>
+                )}
+                {appliedPromo && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Promo: {appliedPromo.code}</span>
+                    <span>{appliedPromo.discount_type === 'percentage' ? `${appliedPromo.discount_value}%` : `${appliedPromo.discount_value} MWK`}</span>
+                  </div>
+                )}
                 <div className="border-t pt-2 flex justify-between font-bold">
-                  <span>Total</span> <span>{formatCurrencyAmount(total, currency)}</span>
+                  <span>Total</span> <span>{formatCurrencyAmount(finalTotal, currency)}</span>
                 </div>
               </div>
               {selectedPaymentProvider?.type === 'manual' && (
-                <p className="text-xs text-gray-500 mt-4">
-                  After placing your order, you will be redirected to a payment page where you can upload your payment proof.
-                </p>
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-xs text-yellow-800 flex items-start gap-2">
+                    <Info size={14} className="flex-shrink-0 mt-0.5" />
+                    After placing your order, you will be redirected to a payment page where you can upload your payment proof.
+                  </p>
+                </div>
               )}
               {selectedPaymentProvider?.type === 'automatic' && (
-                <p className="text-xs text-gray-500 mt-4">
-                  A payment request will be sent to your phone. Authorize the payment to complete your order.
-                </p>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-xs text-blue-800 flex items-start gap-2">
+                    <Info size={14} className="flex-shrink-0 mt-0.5" />
+                    A payment request will be sent to your phone. Authorize the payment to complete your order.
+                  </p>
+                </div>
+              )}
+              {savedReferral && !appliedPromo && (
+                <div className="mt-3 text-xs text-gray-500 text-center">
+                  Referral code {savedReferral} will be credited to your friend after payment.
+                </div>
               )}
             </div>
           </div>
