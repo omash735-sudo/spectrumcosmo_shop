@@ -5,12 +5,12 @@ import { generateReceiptPDF } from '@/lib/pdf-generator';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
-  const orderId = params.id;
+  const { id: orderId } = await params;
   const sql = getDb();
   const { searchParams } = new URL(req.url);
   const download = searchParams.get('download') === 'true';
