@@ -1,13 +1,12 @@
-// app/admin/payment-verifications/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Loader2, Eye, CheckCircle, XCircle, Clock, Upload, 
-  Search, Filter, ChevronDown, User, Phone, Calendar, 
-  DollarSign, CreditCard, Banknote, AlertTriangle, 
-  Shield, ExternalLink, Image as ImageIcon, Zap, ArrowUpRight
+  Search, User, Phone, Calendar, 
+  CreditCard, Banknote, AlertTriangle, 
+  ExternalLink, ArrowUpRight
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -37,7 +36,6 @@ export default function PaymentVerificationsPage() {
   const [showRejectModal, setShowRejectModal] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const fetchVerifications = async () => {
     setLoading(true);
@@ -114,36 +112,24 @@ export default function PaymentVerificationsPage() {
       case 'pending':
         return { 
           icon: Clock, 
-          bg: 'bg-amber-50', 
-          text: 'text-amber-700', 
-          border: 'border-amber-200',
           badge: 'bg-amber-100 text-amber-700',
           label: 'Pending Review'
         };
       case 'approved':
         return { 
           icon: CheckCircle, 
-          bg: 'bg-emerald-50', 
-          text: 'text-emerald-700', 
-          border: 'border-emerald-200',
           badge: 'bg-emerald-100 text-emerald-700',
           label: 'Approved'
         };
       case 'rejected':
         return { 
           icon: XCircle, 
-          bg: 'bg-rose-50', 
-          text: 'text-rose-700', 
-          border: 'border-rose-200',
           badge: 'bg-rose-100 text-rose-700',
           label: 'Rejected'
         };
       default:
         return { 
           icon: Clock, 
-          bg: 'bg-gray-50', 
-          text: 'text-gray-700', 
-          border: 'border-gray-200',
           badge: 'bg-gray-100 text-gray-700',
           label: status
         };
@@ -167,7 +153,24 @@ export default function PaymentVerificationsPage() {
     approved: verifications.filter(v => v.status === 'approved').length,
     rejected: verifications.filter(v => v.status === 'rejected').length,
     total: verifications.length,
-    totalAmount: verifications.reduce((sum, v) => sum + (v.total_amount || 0), 0),
+    totalApprovedAmount: verifications
+      .filter(v => v.status === 'approved')
+      .reduce((sum, v) => {
+        let amount = v.total_amount;
+        if (typeof amount === 'string') {
+          amount = parseFloat(amount.replace(/[^0-9.-]/g, ''));
+        }
+        return sum + (typeof amount === 'number' && !isNaN(amount) ? amount : 0);
+      }, 0),
+    totalPendingAmount: verifications
+      .filter(v => v.status === 'pending')
+      .reduce((sum, v) => {
+        let amount = v.total_amount;
+        if (typeof amount === 'string') {
+          amount = parseFloat(amount.replace(/[^0-9.-]/g, ''));
+        }
+        return sum + (typeof amount === 'number' && !isNaN(amount) ? amount : 0);
+      }, 0),
   };
 
   const pendingCount = stats.pending;
@@ -195,20 +198,18 @@ export default function PaymentVerificationsPage() {
               <p className="text-gray-500 mt-1">Review and process customer payment proofs</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition shadow-sm"
-                >
-                  <RefreshCw size={16} /> Refresh
-                </button>
-              </div>
+              <button 
+                onClick={() => fetchVerifications()} 
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition shadow-sm"
+              >
+                <RefreshIcon size={16} /> Refresh
+              </button>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <div>
@@ -253,11 +254,14 @@ export default function PaymentVerificationsPage() {
               </div>
             </div>
           </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm hover:shadow-md transition">
+          <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm hover:shadow-md transition col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-600">Total Value</p>
-                <p className="text-2xl font-bold text-blue-700">MWK {stats.totalAmount.toLocaleString()}</p>
+                <p className="text-sm text-blue-600">Approved Total</p>
+                <p className="text-2xl font-bold text-blue-700">MWK {stats.totalApprovedAmount.toLocaleString()}</p>
+                {stats.totalPendingAmount > 0 && (
+                  <p className="text-xs text-amber-600 mt-1">+ MWK {stats.totalPendingAmount.toLocaleString()} pending</p>
+                )}
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <Banknote size={20} className="text-blue-600" />
@@ -309,7 +313,7 @@ export default function PaymentVerificationsPage() {
         </div>
 
         {/* Pending Verifications Section */}
-        {statusFilter === 'all' || statusFilter === 'pending' ? (
+        {(statusFilter === 'all' || statusFilter === 'pending') && (
           <div className="mb-10">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
@@ -329,6 +333,7 @@ export default function PaymentVerificationsPage() {
               <div className="grid gap-5">
                 {filteredVerifications.filter(v => v.status === 'pending').map((verification) => {
                   const statusConfig = getStatusConfig(verification.status);
+                  const StatusIcon = statusConfig.icon;
                   
                   return (
                     <div key={verification.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -364,7 +369,7 @@ export default function PaymentVerificationsPage() {
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.badge}`}>
-                                    <statusConfig.icon size={12} /> {statusConfig.label}
+                                    <StatusIcon size={12} /> {statusConfig.label}
                                   </span>
                                   <span className="text-xs text-gray-400 font-mono">Order #{verification.order_id.slice(-8)}</span>
                                 </div>
@@ -432,7 +437,7 @@ export default function PaymentVerificationsPage() {
               </div>
             )}
           </div>
-        ) : null}
+        )}
 
         {/* Processed Verifications Section */}
         {(statusFilter === 'all' || statusFilter === 'approved' || statusFilter === 'rejected') && filteredVerifications.filter(v => v.status !== 'pending').length > 0 && (
@@ -446,6 +451,7 @@ export default function PaymentVerificationsPage() {
             <div className="grid gap-3">
               {filteredVerifications.filter(v => v.status !== 'pending').map((verification) => {
                 const statusConfig = getStatusConfig(verification.status);
+                const StatusIcon = statusConfig.icon;
                 
                 return (
                   <div key={verification.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition">
@@ -457,7 +463,7 @@ export default function PaymentVerificationsPage() {
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.badge}`}>
-                              <statusConfig.icon size={10} /> {statusConfig.label}
+                              <StatusIcon size={10} /> {statusConfig.label}
                             </span>
                             <span className="text-xs text-gray-400 font-mono">#{verification.order_id.slice(-8)}</span>
                             <span className="text-sm font-medium text-gray-900">{verification.customer_name}</span>
@@ -581,8 +587,8 @@ export default function PaymentVerificationsPage() {
   );
 }
 
-// Helper component for refresh icon (add this or import from lucide-react)
-function RefreshCw(props: any) {
+// Refresh Icon Component
+function RefreshIcon(props: any) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
