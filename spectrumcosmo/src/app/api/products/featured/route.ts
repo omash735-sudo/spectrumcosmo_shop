@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     const featured = await sql`
-      SELECT id, name, price, image_url, compare_price, slug
+      SELECT id, name, price, compare_price, image_url
       FROM products 
       WHERE is_featured = true AND status = 'in_stock'
       ORDER BY created_at DESC 
