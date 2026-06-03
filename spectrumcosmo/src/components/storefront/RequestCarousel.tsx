@@ -38,10 +38,11 @@ export default function RequestCarousel() {
       
       const data = await res.json();
       
-      if (Array.isArray(data)) {
-        setRequests(data);
-      } else if (data && Array.isArray(data.data)) {
+      // Your API returns { success: true, data: [...] }
+      if (data && data.success && Array.isArray(data.data)) {
         setRequests(data.data);
+      } else if (Array.isArray(data)) {
+        setRequests(data);
       } else {
         console.error('Unexpected API response:', data);
         setRequests([]);
