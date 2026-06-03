@@ -1,9 +1,10 @@
+// components/storefront/RequestCarousel.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import { Heart, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
+import { Heart, Users, Calendar, TrendingUp, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import 'swiper/css';
@@ -24,9 +25,11 @@ interface Request {
 export default function RequestCarousel() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/requests/public?limit=20');
       
@@ -35,38 +38,23 @@ export default function RequestCarousel() {
       }
       
       const data = await res.json();
+      console.log('RequestCarousel API Response:', data);
       
+      // Handle the response format from your API
       if (data && data.success && Array.isArray(data.data)) {
         setRequests(data.data);
       } else if (Array.isArray(data)) {
         setRequests(data);
       } else {
+        console.error('Unexpected API response:', data);
         setRequests([]);
       }
     } catch (err) {
       console.error('Failed to fetch requests:', err);
+      setError('Unable to load community requests');
       setRequests([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLike = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    try {
-      const res = await fetch(`/api/requests/${id}/like`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(prev => prev.map(r => 
-          r.id === id 
-            ? { ...r, like_count: r.like_count + (data.liked ? 1 : -1), user_liked: data.liked ? 1 : 0 }
-            : r
-        ));
-      }
-    } catch (err) {
-      console.error('Failed to like:', err);
     }
   };
 
@@ -82,15 +70,32 @@ export default function RequestCarousel() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <TrendingUp size={28} className="text-red-400" />
+        </div>
+        <p className="text-gray-500">{error}</p>
+        <button 
+          onClick={fetchRequests} 
+          className="mt-4 text-orange-500 hover:text-orange-600 text-sm font-medium"
+        >
+          Try again →
+        </button>
+      </div>
+    );
+  }
+
   if (requests.length === 0) {
     return (
-      <div className="text-center py-16 bg-gradient-to-br from-orange-50 to-white rounded-2xl">
+      <div className="text-center py-16 bg-gradient-to-br from-orange-50 to-white rounded-2xl border border-orange-100">
         <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Heart size={32} className="text-orange-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-800 mb-2">No Requests Yet</h3>
         <p className="text-gray-500 mb-4">Be the first to suggest a product you'd love to see!</p>
-        <Link href="/newsletter#submit" className="inline-block bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition">
+        <Link href="#submit-request" className="inline-block bg-orange-500 text-white px-6 py-2.5 rounded-full font-medium hover:bg-orange-600 transition shadow-sm">
           Submit a Request
         </Link>
       </div>
@@ -98,7 +103,7 @@ export default function RequestCarousel() {
   }
 
   return (
-    <div className="py-8">
+    <div className="py-4">
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-full mb-4">
           <TrendingUp size={16} className="text-orange-600" />
@@ -106,7 +111,7 @@ export default function RequestCarousel() {
         </div>
         <h2 className="text-3xl font-bold text-gray-900">Trending Community Requests</h2>
         <p className="text-gray-500 mt-2 max-w-2xl mx-auto">
-          Most requested items by our community. Vote for what you want to see next!
+          Most requested items by our community. Vote for what you want to see next
         </p>
       </div>
 
@@ -147,14 +152,18 @@ export default function RequestCarousel() {
                   </div>
                 )}
                 
-                {/* Request Badge - distinguishes from products */}
-                <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                {/* Request Badge */}
+                <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-md">
                   Request
                 </div>
                 
                 {/* Like Button */}
                 <button
-                  onClick={(e) => handleLike(req.id, e)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Add like functionality here
+                  }}
                   className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition duration-200"
                 >
                   <Heart
@@ -173,18 +182,12 @@ export default function RequestCarousel() {
                   {req.description}
                 </p>
                 
-                {/* Request Stats - Different from product stats */}
+                {/* Request Stats */}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-1">
                     <Heart size={14} className="text-red-400" />
                     <span className="text-sm font-semibold text-gray-700">
                       {req.like_count} votes
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users size={14} className="text-gray-400" />
-                    <span className="text-xs text-gray-500">
-                      {req.like_count} supporters
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -197,7 +200,7 @@ export default function RequestCarousel() {
                 
                 {/* Category Tag */}
                 <div className="mt-3">
-                  <span className="inline-block text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
+                  <span className="inline-block text-xs bg-gray-100 px-2.5 py-1 rounded-full text-gray-600">
                     {req.category_name || 'General Request'}
                   </span>
                 </div>
