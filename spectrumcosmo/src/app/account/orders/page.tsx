@@ -7,8 +7,9 @@ import {
   Loader2, Eye, CheckCircle, Truck, Clock, Package, XCircle, 
   Search, Filter, Download, Repeat, MapPin, Calendar, 
   CreditCard, ChevronRight, AlertCircle, Star, TrendingUp,
-  ArrowLeft, X
+  ArrowLeft, X, Sparkles
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; bg: string }> = {
   pending: { label: 'Pending', color: 'text-yellow-700', bg: 'bg-yellow-50', icon: Clock },
@@ -18,6 +19,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; b
   declined: { label: 'Declined', color: 'text-red-700', bg: 'bg-red-50', icon: XCircle },
   cancelled: { label: 'Cancelled', color: 'text-gray-700', bg: 'bg-gray-100', icon: XCircle },
 };
+
+// Helper function to format order number
+function formatOrderNumber(order: any): string {
+  // If order_number exists and is not null, use it
+  if (order.order_number && order.order_number !== 'null') {
+    return order.order_number;
+  }
+  // Otherwise format the ID to show only last 8 characters
+  return `#${order.id.slice(-8).toUpperCase()}`;
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -37,6 +48,7 @@ export default function OrdersPage() {
       setOrders(data);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
@@ -52,13 +64,14 @@ export default function OrdersPage() {
     try {
       const res = await fetch(`/api/account/orders?id=${orderId}&action=cancel`, { method: 'PATCH' });
       if (res.ok) {
+        toast.success('Order cancelled successfully');
         await loadOrders();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to cancel order');
+        toast.error(err.error || 'Failed to cancel order');
       }
     } catch (err) {
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setCancellingId(null);
     }
@@ -66,8 +79,9 @@ export default function OrdersPage() {
 
   const filteredOrders = orders.filter(order => {
     const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+    const orderDisplayNumber = formatOrderNumber(order);
     const matchesSearch = searchTerm === '' || 
-      order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      orderDisplayNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.id.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -214,8 +228,9 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => {
-            const StatusIcon = STATUS_CONFIG[order.status]?.icon || Package;
             const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+            const StatusIcon = statusConfig.icon;
+            const orderDisplayNumber = formatOrderNumber(order);
             
             return (
               <div key={order.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -227,7 +242,9 @@ export default function OrdersPage() {
                         <Package size={18} className="text-orange-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Order #{order.order_number?.slice(-8) || order.id.slice(-8)}</p>
+                        <p className="text-sm font-mono font-medium text-gray-900">
+                          {orderDisplayNumber}
+                        </p>
                         <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                           <Calendar size={12} />
                           <span>{formatDate(order.created_at)}</span>
@@ -304,9 +321,12 @@ export default function OrdersPage() {
                       </button>
                     )}
                     {(order.status === 'shipped' || order.status === 'delivered') && (
-                      <button className="px-4 py-2 text-sm text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition inline-flex items-center gap-2">
+                      <Link
+                        href={`/account/orders/${order.id}/tracking`}
+                        className="px-4 py-2 text-sm text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition inline-flex items-center gap-2"
+                      >
                         <Truck size={14} /> Track Order
-                      </button>
+                      </Link>
                     )}
                     <button className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition inline-flex items-center gap-2">
                       <Repeat size={14} /> Reorder
@@ -316,23 +336,6 @@ export default function OrdersPage() {
                     </button>
                   </div>
                 </div>
-
-                {/* Order Timeline (for shipped/delivered) */}
-                {(order.status === 'shipped' || order.status === 'delivered') && (
-                  <div className="px-5 pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${order.status === 'shipped' ? 'bg-purple-500' : 'bg-green-500'}`}></div>
-                        <span className="text-xs text-gray-500">
-                          {order.status === 'shipped' ? 'Order Shipped' : 'Order Delivered'}
-                        </span>
-                      </div>
-                      {order.tracking_number && (
-                        <p className="text-xs text-gray-400">Tracking: {order.tracking_number}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -354,7 +357,7 @@ export default function OrdersPage() {
               <div className="grid grid-cols-2 gap-4 pb-4 border-b">
                 <div>
                   <p className="text-xs text-gray-400">Order Number</p>
-                  <p className="text-sm font-mono font-medium">#{selectedOrder.order_number?.slice(-8) || selectedOrder.id.slice(-8)}</p>
+                  <p className="text-sm font-mono font-medium">{formatOrderNumber(selectedOrder)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Order Date</p>
@@ -366,9 +369,8 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Order Status</p>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
-                    <StatusIcon size={10} />
-                    {statusConfig.label}
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[selectedOrder.status]?.bg} ${STATUS_CONFIG[selectedOrder.status]?.color}`}>
+                    {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
                   </span>
                 </div>
               </div>
