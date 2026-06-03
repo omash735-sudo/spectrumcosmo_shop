@@ -1,149 +1,244 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, Upload, AlertCircle, Trash2, CheckCircle, Clock, Phone, Landmark, ReceiptText, FileText, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Loader2, Tag, Gift, X, CheckCircle, AlertCircle, ArrowRight, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 
-type PaymentData = {
-  order: {
-    id: string;
-    customer_name: string;
-    total_amount: number;
-    payment_status: string;
-    payment_method: string;
-    status: string;
-  };
-  provider: {
-    name: string;
-    type: string;
-    category: string;
-    account_name: string;
-    account_number: string;
-    branch: string;
-    instructions: string;
-  } | null;
-  existing_proof: string | null;
-  existing_note: string | null;
-};
+interface CartItem {
+  id: string;
+  product_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image_url: string;
+}
 
-export default function PaymentContent() {
-  const searchParams = useSearchParams();
+interface PromoCode {
+  id: number;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+}
+
+export default function CheckoutPage() {
   const router = useRouter();
-  const orderId = searchParams.get('orderId');
-
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [transactionRef, setTransactionRef] = useState('');
-  const [note, setNote] = useState('');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [cancellingProof, setCancellingProof] = useState(false);
+  const [subtotal, setSubtotal] = useState(0);
+  const [shipping, setShipping] = useState(5000);
+  const [total, setTotal] = useState(0);
+  
+  // Promo code states
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+  
+  // Referral code states
+  const [referralCode, setReferralCode] = useState('');
+  const [savedReferral, setSavedReferral] = useState('');
+  const [referralMessage, setReferralMessage] = useState('');
+  
+  // Order placement
+  const [placingOrder, setPlacingOrder] = useState(false);
 
+  // Load cart
   useEffect(() => {
-    if (!orderId) {
-      setMessage({ type: 'error', text: 'No order specified.' });
-      setLoading(false);
-      return;
-    }
-
-    const load = async () => {
+    const loadCart = async () => {
       try {
-        const res = await fetch(`/api/orders/${orderId}/payment`);
-        if (!res.ok) throw new Error('Failed to load payment data');
+        const res = await fetch('/api/cart');
         const data = await res.json();
-        setPaymentData(data);
-      } catch (err: any) {
-        console.error('Load error:', err);
-        setMessage({ type: 'error', text: err.message });
+        if (data.items) {
+          setCartItems(data.items);
+          const cartSubtotal = data.items.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
+          setSubtotal(cartSubtotal);
+          setTotal(cartSubtotal + shipping);
+        }
+      } catch (err) {
+        console.error('Failed to load cart:', err);
       } finally {
         setLoading(false);
       }
     };
-    load();
-  }, [orderId]);
+    loadCart();
+  }, []);
 
-  const uploadProof = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!proofFile) {
-      setMessage({ type: 'error', text: 'Please select a file' });
+  // Update total when discount changes
+  useEffect(() => {
+    setTotal(Math.max(0, subtotal + shipping - discountAmount));
+  }, [subtotal, shipping, discountAmount]);
+
+  // Apply promo code
+  const applyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
       return;
     }
 
-    setUploading(true);
-    setMessage(null);
-
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
-      setMessage({ type: 'error', text: 'Upload service not configured.' });
-      setUploading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', proofFile);
-    formData.append('upload_preset', uploadPreset);
+    setPromoLoading(true);
+    setPromoError('');
+    setPromoSuccess('');
 
     try {
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadData.secure_url) throw new Error('Upload failed');
-
-      const confirmRes = await fetch('/api/account/orders', {
+      const res = await fetch('/api/validate-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: orderId,
-          proofOfPaymentUrl: uploadData.secure_url,
-          paymentNote: note,
-          transactionReference: transactionRef,
+          code: promoCode,
+          cartTotal: subtotal + shipping,
+          productIds: cartItems.map(item => item.product_id),
         }),
       });
 
-      if (!confirmRes.ok) throw new Error('Failed to save proof');
+      const data = await res.json();
 
-      setMessage({ type: 'success', text: 'Payment proof submitted! Admin will review it shortly.' });
-      setProofFile(null);
-      setTransactionRef('');
-      setNote('');
+      if (!res.ok) {
+        setPromoError(data.error || 'Invalid promo code');
+        return;
+      }
 
-      const refreshed = await fetch(`/api/orders/${orderId}/payment`);
-      const newData = await refreshed.json();
-      setPaymentData(newData);
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      setMessage({ type: 'error', text: err.message });
+      if (data.valid) {
+        setAppliedPromo(data.promoCode);
+        setDiscountAmount(data.discountAmount);
+        setTotal(data.finalTotal);
+        setPromoSuccess(`${data.promoCode.code} applied! You saved ${data.discountAmount.toLocaleString()} MWK`);
+        setPromoCode('');
+      }
+    } catch (err) {
+      setPromoError('Something went wrong. Please try again.');
     } finally {
-      setUploading(false);
+      setPromoLoading(false);
     }
   };
 
-  const cancelProof = async () => {
-    if (!confirm('Remove your submitted proof?')) return;
-    setCancellingProof(true);
+  // Remove promo code
+  const removePromoCode = () => {
+    setAppliedPromo(null);
+    setDiscountAmount(0);
+    setTotal(subtotal + shipping);
+    setPromoSuccess('');
+  };
+
+  // Save referral code
+  const saveReferralCode = () => {
+    if (!referralCode.trim()) {
+      setReferralMessage('');
+      return;
+    }
+    setSavedReferral(referralCode.toUpperCase());
+    setReferralMessage(`Referral code ${referralCode.toUpperCase()} saved. Your friend will get credit after your purchase.`);
+    setReferralCode('');
+  };
+
+  // Place order
+  const placeOrder = async () => {
+    setPlacingOrder(true);
+    
     try {
-      const res = await fetch(`/api/orders/${orderId}/payment-cancel`, {
+      // Create order
+      const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cartItems,
+          subtotal: subtotal,
+          shipping: shipping,
+          discountAmount: discountAmount,
+          total: total,
+          promoCodeId: appliedPromo?.id,
+          referralCode: savedReferral || null,
+        }),
       });
-      if (res.ok) {
-        const refreshed = await fetch(`/api/orders/${orderId}/payment`);
-        const newData = await refreshed.json();
-        setPaymentData(newData);
-        setMessage({ type: 'success', text: 'Proof removed.' });
+
+      if (!orderRes.ok) {
+        const error = await orderRes.json();
+        throw new Error(error.error || 'Failed to create order');
       }
+
+      const order = await orderRes.json();
+
+      // Record promo code usage if applied
+      if (appliedPromo && discountAmount > 0) {
+        await fetch('/api/apply-promo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            promoCodeId: appliedPromo.id,
+            discountAmount: discountAmount,
+          }),
+        });
+      }
+
+      // Track referral if used
+      if (savedReferral) {
+        await fetch('/api/referrals/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referralCode: savedReferral,
+            orderId: order.id,
+          }),
+        });
+      }
+
+      // Clear cart and redirect to payment
+      await fetch('/api/cart/clear', { method: 'DELETE' });
+      router.push(`/payment?orderId=${order.id}`);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
+      console.error('Order failed:', err);
+      alert(err.message || 'Failed to place order. Please try again.');
     } finally {
-      setCancellingProof(false);
+      setPlacingOrder(false);
+    }
+  };
+
+  // Update quantity
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    try {
+      await fetch('/api/cart', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, quantity: newQuantity }),
+      });
+      // Reload cart
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      if (data.items) {
+        setCartItems(data.items);
+        const cartSubtotal = data.items.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
+        setSubtotal(cartSubtotal);
+        setTotal(cartSubtotal + shipping - discountAmount);
+      }
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+    }
+  };
+
+  // Remove item
+  const removeItem = async (itemId: string) => {
+    try {
+      await fetch('/api/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId }),
+      });
+      const res = await fetch('/api/cart');
+      const data = await res.json();
+      if (data.items) {
+        setCartItems(data.items);
+        const cartSubtotal = data.items.reduce((sum: number, item: CartItem) => sum + (item.price * item.quantity), 0);
+        setSubtotal(cartSubtotal);
+        setTotal(cartSubtotal + shipping - discountAmount);
+      }
+    } catch (err) {
+      console.error('Failed to remove item:', err);
     }
   };
 
@@ -159,43 +254,21 @@ export default function PaymentContent() {
     );
   }
 
-  if (!paymentData) {
+  if (cartItems.length === 0) {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen p-6 text-center">
-          <div className="max-w-md mx-auto bg-white rounded-xl p-6 shadow-sm">
-            <AlertCircle className="text-red-500 w-12 h-12 mx-auto mb-3" />
-            <p className="text-gray-700">Payment data not available.</p>
-            <button onClick={() => router.push('/account/orders')} className="mt-4 text-orange-600">
-              Go to My Orders
+        <main className="min-h-screen flex items-center justify-center py-12">
+          <div className="text-center max-w-md mx-auto px-4">
+            <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h1>
+            <p className="text-gray-500 mb-6">Looks like you haven't added any items yet.</p>
+            <button
+              onClick={() => router.push('/products')}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 mx-auto"
+            >
+              Start Shopping <ArrowRight size={18} />
             </button>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
-
-  const { order, provider, existing_proof, existing_note } = paymentData;
-  const isPaid = order.payment_status === 'paid';
-  const isAwaiting = order.payment_status === 'awaiting_verification';
-  const isCancelled = order.status === 'cancelled';
-  const canUpload = !isPaid && !isAwaiting && !isCancelled;
-
-  if (isCancelled) {
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen bg-gray-50 py-10">
-          <div className="max-w-3xl mx-auto px-4">
-            <div className="bg-white rounded-2xl shadow-sm border p-6 text-center">
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">Order Cancelled</h1>
-              <p className="text-gray-500 mb-6">This order has been cancelled.</p>
-              <button onClick={() => router.push('/account/orders')} className="bg-orange-500 text-white px-6 py-2 rounded-xl">
-                View My Orders
-              </button>
-            </div>
           </div>
         </main>
         <Footer />
@@ -206,221 +279,210 @@ export default function PaymentContent() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-2xl mx-auto px-4">
-          {/* Status Card */}
-          <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Payment for Order #{order.id.slice(-8)}</h1>
-                <p className="text-gray-500 mt-1 text-lg">Amount: MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</p>
-              </div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
-                isPaid ? 'bg-green-100 text-green-700' : 
-                isAwaiting ? 'bg-blue-100 text-blue-700' : 
-                'bg-yellow-100 text-yellow-700'
-              }`}>
-                {isPaid ? <CheckCircle size={16} /> : <Clock size={16} />}
-                <span>{isPaid ? 'Payment Confirmed' : isAwaiting ? 'Awaiting Verification' : 'Payment Pending'}</span>
-              </div>
-            </div>
-          </div>
+      <main className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
-          {/* Payment Instructions – Modern Card */}
-          {provider && !isPaid && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-              <div className="bg-orange-50 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-orange-800 flex items-center gap-2">
-                  <ReceiptText size={20} /> Payment Instructions
-                </h2>
-              </div>
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-3">
-                  {provider.category === 'mobile_money' ? (
-                    <Phone className="text-orange-500" size={22} />
-                  ) : (
-                    <Landmark className="text-orange-500" size={22} />
-                  )}
-                  <div>
-                    <p className="text-xs text-gray-500">Provider</p>
-                    <p className="font-medium text-gray-800">{provider.name}</p>
-                  </div>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* LEFT COLUMN - Order Items + Promo Code + Referral */}
+            <div className="flex-1 space-y-4">
+              {/* Order Items Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <ShoppingBag size={18} className="text-orange-500" />
+                    Order Items ({cartItems.length})
+                  </h2>
                 </div>
+                <div className="divide-y divide-gray-100">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="p-4 flex gap-4">
+                      <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        {item.image_url && (
+                          <Image
+                            src={item.image_url}
+                            alt={item.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-800">{item.name}</h3>
+                        <p className="text-orange-600 font-semibold mt-1">{item.price.toLocaleString()} MWK</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1 rounded-lg hover:bg-gray-100 transition"
+                          >
+                            <Minus size={14} className="text-gray-500" />
+                          </button>
+                          <span className="text-sm text-gray-600 w-8 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1 rounded-lg hover:bg-gray-100 transition"
+                          >
+                            <Plus size={14} className="text-gray-500" />
+                          </button>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="ml-auto p-1 text-gray-400 hover:text-red-500 transition"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-800">{(item.price * item.quantity).toLocaleString()} MWK</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                  {provider.category === 'mobile_money' && provider.account_number && (
-                    <div>
-                      <p className="text-xs text-gray-500">Mobile Money Number</p>
-                      <p className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</p>
+              {/* Promo Code Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Tag size={18} className="text-orange-500" />
+                    Promo Code
+                  </h2>
+                </div>
+                <div className="p-5">
+                  {appliedPromo ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex justify-between items-center">
+                      <div>
+                        <p className="text-green-700 font-medium">{appliedPromo.code} applied</p>
+                        <p className="text-sm text-green-600">
+                          {appliedPromo.discount_type === 'percentage' 
+                            ? `${appliedPromo.discount_value}% off` 
+                            : `${appliedPromo.discount_value.toLocaleString()} MWK off`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={removePromoCode}
+                        className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
+                      >
+                        <X size={14} /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="Enter promo code (e.g., SUMMER20)"
+                        className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <button
+                        onClick={applyPromoCode}
+                        disabled={promoLoading}
+                        className="px-5 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition disabled:opacity-50 font-medium"
+                      >
+                        {promoLoading ? <Loader2 className="animate-spin" size={18} /> : 'Apply'}
+                      </button>
                     </div>
                   )}
-                  {provider.category === 'bank' && (
+                  {promoError && <p className="text-red-500 text-sm mt-2">{promoError}</p>}
+                  {promoSuccess && <p className="text-green-500 text-sm mt-2">{promoSuccess}</p>}
+                  <p className="text-xs text-gray-400 mt-3">Have a discount code? Enter it above to save on your order.</p>
+                </div>
+              </div>
+
+              {/* Referral Code Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Gift size={18} className="text-orange-500" />
+                    Referral Code (Optional)
+                  </h2>
+                </div>
+                <div className="p-5">
+                  {savedReferral ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <p className="text-blue-700 font-medium">Referral code saved</p>
+                      <p className="text-sm text-blue-600 mt-1">
+                        Code: {savedReferral}
+                      </p>
+                      <p className="text-xs text-blue-500 mt-2">
+                        Your friend will receive credit after your purchase is completed.
+                      </p>
+                    </div>
+                  ) : (
                     <>
-                      {provider.account_number && (
-                        <div>
-                          <p className="text-xs text-gray-500">Account Number</p>
-                          <p className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</p>
-                        </div>
-                      )}
-                      {provider.account_name && (
-                        <div>
-                          <p className="text-xs text-gray-500">Account Name</p>
-                          <p className="text-gray-800">{provider.account_name}</p>
-                        </div>
-                      )}
-                      {provider.branch && (
-                        <div>
-                          <p className="text-xs text-gray-500">Branch</p>
-                          <p className="text-gray-800">{provider.branch}</p>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={referralCode}
+                          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                          placeholder="Enter friend's referral code (e.g., JOHN123)"
+                          className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        />
+                        <button
+                          onClick={saveReferralCode}
+                          className="px-5 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
+                        >
+                          Save
+                        </button>
+                      </div>
+                      {referralMessage && <p className="text-green-500 text-sm mt-2">{referralMessage}</p>}
+                      <p className="text-xs text-gray-400 mt-3">
+                        Have a friend's referral code? Enter it to support them. They will earn rewards when you complete your purchase.
+                      </p>
                     </>
                   )}
                 </div>
-
-                {provider.instructions ? (
-                  <div className="prose prose-sm max-w-none text-gray-700 border-t pt-4">
-                    <div dangerouslySetInnerHTML={{ __html: provider.instructions }} />
-                  </div>
-                ) : (
-                  <div className="border-t pt-4 text-sm text-gray-500 italic">
-                    No additional instructions. Please use the account details above.
-                  </div>
-                )}
-
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total to pay</span>
-                    <span className="text-2xl font-bold text-orange-600">MWK {order.total_amount ? order.total_amount.toLocaleString() : '0'}</span>
-                  </div>
-                </div>
               </div>
             </div>
-          )}
 
-          {/* Upload Payment Proof – Redesigned Card */}
-          {canUpload && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Upload size={20} className="text-orange-500" /> Upload Payment Proof
-                </h2>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-gray-500 mb-5">
-                  After making the payment, take a screenshot or save the receipt and upload it here.
-                </p>
-                <form onSubmit={uploadProof} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Screenshot / Receipt *</label>
-                    <div className="flex items-center gap-3">
-                      <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">
-                        Choose File
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                          className="hidden"
-                          required
-                        />
-                      </label>
-                      {proofFile && <span className="text-sm text-gray-600">{proofFile.name}</span>}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">Accepted formats: JPG, PNG. Max size: 5MB.</p>
+            {/* RIGHT COLUMN - Order Summary */}
+            <div className="lg:w-96">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-800">Order Summary</h2>
+                </div>
+                <div className="p-5 space-y-3">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span>{subtotal.toLocaleString()} MWK</span>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Reference (optional)</label>
-                    <input
-                      type="text"
-                      value={transactionRef}
-                      onChange={(e) => setTransactionRef(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-orange-500 focus:border-orange-500 transition"
-                      placeholder="e.g., TRX-123456, Reference number from your bank"
-                    />
+                  <div className="flex justify-between text-gray-600">
+                    <span>Shipping</span>
+                    <span>{shipping.toLocaleString()} MWK</span>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (optional)</label>
-                    <textarea
-                      rows={2}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-orange-500 focus:border-orange-500 transition"
-                      placeholder="Any extra information about your payment"
-                    />
-                  </div>
-
-                  {message && (
-                    <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {message.text}
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount</span>
+                      <span>-{discountAmount.toLocaleString()} MWK</span>
                     </div>
                   )}
+                  <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900">
+                    <span>Total</span>
+                    <span className="text-orange-600 text-xl">{total.toLocaleString()} MWK</span>
+                  </div>
 
                   <button
-                    type="submit"
-                    disabled={uploading || !proofFile}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    onClick={placeOrder}
+                    disabled={placingOrder}
+                    className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {uploading ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
+                    {placingOrder ? (
                       <>
-                        <Upload size={18} /> Submit Payment Proof
+                        <Loader2 className="animate-spin" size={18} />
+                        Processing...
                       </>
+                    ) : (
+                      'Place Order'
                     )}
                   </button>
-                </form>
-              </div>
-            </div>
-          )}
 
-          {/* Existing Proof Card */}
-          {existing_proof && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <FileText size={20} className="text-orange-500" /> Submitted Proof
-                </h2>
+                  <p className="text-xs text-gray-400 text-center mt-3">
+                    By placing your order, you agree to our Terms of Service and Privacy Policy.
+                  </p>
+                </div>
               </div>
-              <div className="p-6">
-                <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 underline break-all hover:text-orange-700">
-                  View uploaded proof image
-                </a>
-                {existing_note && <p className="text-sm text-gray-500 mt-2">Note: {existing_note}</p>}
-                {isAwaiting && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                    Your payment is being reviewed by our team. You will receive an email once verified.
-                  </div>
-                )}
-                {canUpload && existing_proof && !isAwaiting && (
-                  <button
-                    onClick={cancelProof}
-                    disabled={cancellingProof}
-                    className="mt-4 flex items-center gap-2 text-red-600 hover:text-red-700 text-sm transition"
-                  >
-                    <Trash2 size={14} /> {cancellingProof ? 'Removing...' : 'Cancel and remove this proof'}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons Card */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => router.push('/account/orders')}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2"
-              >
-                View My Orders <ArrowRight size={16} />
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-600 py-2.5 rounded-xl font-medium transition"
-              >
-                Continue Shopping
-              </button>
             </div>
           </div>
         </div>
