@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { 
   Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart, 
   Sparkles, ArrowRight, Star, Users, TrendingUp, Clock, Gift, 
-  Zap, Send, BookOpen, Crown, Rocket, Award
+  Zap, Send, BookOpen, Music, Palette, Crown, Rocket, Award
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -106,7 +106,7 @@ export default function NewsletterPage() {
       
       if (res.ok) {
         setSubscribed(true);
-        toast.success('Successfully subscribed');
+        toast.success('Successfully subscribed to the newsletter');
       } else {
         const data = await res.json();
         toast.error(data.error || 'Failed to subscribe');
@@ -188,7 +188,7 @@ export default function NewsletterPage() {
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         
-        {/* Hero Section */}
+        {/* Hero Section - Premium */}
         <div className="relative bg-gradient-to-r from-orange-600 to-orange-500 overflow-hidden">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
@@ -200,16 +200,13 @@ export default function NewsletterPage() {
                 <span className="text-white text-sm font-medium">Join Our Community</span>
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
-                The SpectrumCosmo
+                The SpectrumCosmo <br />
+                <span className="text-yellow-200">Newsletter</span>
               </h1>
-              <p className="text-3xl lg:text-5xl font-bold text-yellow-200 mb-6">
-                Newsletter
-              </p>
               <p className="text-white/90 text-lg max-w-2xl mx-auto mb-8">
                 Get the latest anime merch drops, exclusive offers, and community updates delivered to your inbox.
               </p>
               
-              {/* Subscribe Form */}
               <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
@@ -232,7 +229,7 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        {/* Benefits Section */}
+        {/* Benefits Section - Premium Cards */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full mb-4">
@@ -282,12 +279,10 @@ export default function NewsletterPage() {
               </p>
             </div>
 
-            {/* Trending Requests Carousel */}
             <div className="mb-16">
               <RequestCarousel />
             </div>
 
-            {/* Submit Request Form */}
             <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h3>
@@ -301,7 +296,7 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        {/* Content Blocks - Dynamic */}
+        {/* Content Blocks */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-16">
           {blocks.map((block) => (
             <ContentBlockRenderer key={block.id} block={block} />
