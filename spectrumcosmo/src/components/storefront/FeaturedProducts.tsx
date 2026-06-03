@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
-import { ChevronLeft, ChevronRight, Sparkles, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface FeaturedProduct {
   id: string;
@@ -18,39 +18,55 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(4);
 
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const res = await fetch('/api/products/featured');
-        
-        // Check if response is OK (status 200-299)
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        
-        const data = await res.json();
-        
-        // Validate data is an array
-        if (!Array.isArray(data)) {
-          throw new Error('Invalid response format');
-        }
-        
-        setProducts(data);
-      } catch (err) {
-        console.error('Failed to fetch featured products:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load featured products');
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchFeatured = async () => {
+    setLoading(true);
+    setError(null);
+    setDebugInfo(null);
     
+    try {
+      console.log('[FeaturedProducts] Fetching from /api/products/featured');
+      
+      const res = await fetch('/api/products/featured');
+      
+      console.log('[FeaturedProducts] Response status:', res.status, res.statusText);
+      
+      // Check if response is OK
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('[FeaturedProducts] Response data:', data);
+      
+      // Validate data is an array
+      if (!Array.isArray(data)) {
+        console.error('[FeaturedProducts] Data is not an array:', typeof data);
+        setDebugInfo(`API returned ${typeof data}, expected array. Check API response.`);
+        setProducts([]);
+        return;
+      }
+      
+      console.log(`[FeaturedProducts] Successfully loaded ${data.length} featured products`);
+      
+      if (data.length === 0) {
+        setDebugInfo('No featured products found. Mark some products as featured in admin panel.');
+      }
+      
+      setProducts(data);
+    } catch (err) {
+      console.error('[FeaturedProducts] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load featured products');
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchFeatured();
 
     const handleResize = () => {
@@ -72,28 +88,61 @@ export default function FeaturedProducts() {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  // Show error state
+  // Manual retry button
+  const handleRetry = () => {
+    fetchFeatured();
+  };
+
+  // Error State
   if (error) {
     return (
-      <div className="mb-12 p-4 bg-red-50 rounded-xl border border-red-200 text-center">
-        <AlertCircle size={24} className="text-red-500 mx-auto mb-2" />
-        <p className="text-red-600 text-sm">Unable to load featured products</p>
+      <div className="mb-12 p-6 bg-red-50 rounded-xl border border-red-200 text-center">
+        <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
+        <p className="text-red-600 font-medium mb-1">Unable to load featured products</p>
+        <p className="text-red-500 text-sm mb-3">{error}</p>
+        {debugInfo && (
+          <p className="text-xs text-gray-500 mb-3 bg-white p-2 rounded-lg">{debugInfo}</p>
+        )}
         <button 
-          onClick={() => window.location.reload()} 
-          className="mt-2 text-xs text-red-500 hover:text-red-600 underline"
+          onClick={handleRetry}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
         >
+          <RefreshCw size={14} />
           Retry
         </button>
       </div>
     );
   }
 
+  // Debug/Empty State (only shows when products length is 0 and not loading)
+  if (!loading && products.length === 0) {
+    return (
+      <div className="mb-12 p-6 bg-yellow-50 rounded-xl border border-yellow-200 text-center">
+        <Sparkles size={32} className="text-yellow-500 mx-auto mb-3" />
+        <p className="text-yellow-700 font-medium mb-1">No featured products yet</p>
+        <p className="text-yellow-600 text-sm mb-3">
+          {debugInfo || 'Mark products as featured in the admin panel to display them here.'}
+        </p>
+        <Link 
+          href="/admin/products"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700 transition"
+        >
+          Go to Admin Panel
+        </Link>
+      </div>
+    );
+  }
+
+  // Loading State
   if (loading) {
     return (
       <div className="mb-12">
         <div className="flex justify-between items-center mb-4">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-6 bg-gray-200 rounded-full"></div>
+            <div className="h-7 w-40 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-5 w-16 bg-gray-200 rounded animate-pulse"></div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -108,13 +157,12 @@ export default function FeaturedProducts() {
     );
   }
 
-  if (products.length === 0) return null;
-
   const visibleProducts = products.slice(currentIndex, currentIndex + itemsPerView);
   const showControls = products.length > itemsPerView;
 
   return (
     <div className="mb-12">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
@@ -127,7 +175,9 @@ export default function FeaturedProducts() {
         </Link>
       </div>
 
+      {/* Carousel Container */}
       <div className="relative">
+        {/* Navigation Buttons */}
         {showControls && (
           <>
             <button
@@ -147,6 +197,7 @@ export default function FeaturedProducts() {
           </>
         )}
 
+        {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {visibleProducts.map((product) => {
             const hasDiscount = product.compare_price && product.compare_price > product.price;
@@ -194,6 +245,7 @@ export default function FeaturedProducts() {
         </div>
       </div>
 
+      {/* Dot Indicators */}
       {showControls && (
         <div className="flex justify-center gap-2 mt-4">
           {Array.from({ length: Math.ceil(products.length / itemsPerView) }).map((_, idx) => (
@@ -207,6 +259,13 @@ export default function FeaturedProducts() {
               }`}
             />
           ))}
+        </div>
+      )}
+
+      {/* Hidden debug info - remove after fixing */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 text-xs text-gray-400 border-t pt-2 text-center">
+          Debug: {products.length} products loaded | Items per view: {itemsPerView} | Current index: {currentIndex}
         </div>
       )}
     </div>
