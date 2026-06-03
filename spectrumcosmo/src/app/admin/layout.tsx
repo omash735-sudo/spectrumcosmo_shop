@@ -40,14 +40,20 @@ import {
   Key,
   Verified,
   Lock,
+  AlertTriangle,
+  Percent,
+  Gift,
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, section: 'CORE' },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingBag, section: 'CORE' },
   { name: 'Products', href: '/admin/products', icon: Package, section: 'CORE' },
+  { name: 'Inventory', href: '/admin/inventory', icon: Package, section: 'CORE' },
   { name: 'Reviews', href: '/admin/reviews', icon: Star, section: 'CORE' },
   { name: 'Product Requests', href: '/admin/requests', icon: Heart, section: 'CORE' },
+  { name: 'Promo Codes', href: '/admin/promo-codes', icon: Percent, section: 'CORE' },
+  { name: 'Referrals', href: '/admin/referrals', icon: Gift, section: 'CORE' },
   { name: 'Content Blocks', href: '/admin/content-blocks', icon: Blocks, section: 'CORE' },
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
@@ -76,6 +82,7 @@ const navItems = [
   { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },
   
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
+  { name: 'Alert Settings', href: '/admin/alert-settings', icon: Bell, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
   { name: 'Homepage', href: '/admin/homepage', icon: Home, section: 'SYSTEM' },
   { name: 'About Page', href: '/admin/about', icon: FileText, section: 'SYSTEM' },
@@ -110,6 +117,39 @@ function SecurityAlertBadge() {
   
   return (
     <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+      {alertCount > 99 ? '99+' : alertCount}
+    </span>
+  );
+}
+
+// Stock alert badge component for inventory
+function StockAlertBadge() {
+  const [alertCount, setAlertCount] = useState(0);
+  
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch('/api/admin/inventory/alerts');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.summary) {
+            setAlertCount(data.summary.total_alerts || 0);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch stock alerts');
+      }
+    };
+    
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  if (alertCount === 0) return null;
+  
+  return (
+    <span className="ml-auto bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
       {alertCount > 99 ? '99+' : alertCount}
     </span>
   );
@@ -215,6 +255,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               {sectionItems.map((item) => {
                 const Icon = item.icon;
+                const showStockAlert = item.name === 'Inventory';
+                const showSecurityAlert = item.name === 'Security Center';
                 
                 return (
                   <Link
@@ -228,7 +270,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   >
                     <Icon size={18} />
                     {item.name}
-                    {item.name === 'Security Center' && <SecurityAlertBadge />}
+                    {showStockAlert && <StockAlertBadge />}
+                    {showSecurityAlert && <SecurityAlertBadge />}
                     {isActive(item.href) && (
                       <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
                     )}
