@@ -1,210 +1,279 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { CheckCircle, Loader2, Upload, X } from 'lucide-react'
-import StarRating from '@/components/ui/StarRating'
-import Image from 'next/image'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import StarRating from '@/components/ui/StarRating';
+import { Loader2, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
+import toast from 'react-hot-toast';
 
-export default function ReviewSubmitForm({ productId }: { productId?: string }) {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
+export default function ReviewSubmitForm() {
+  const router = useRouter();
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [productId, setProductId] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [form, setForm] = useState({
-    review_text: '',
-    rating: 0,
-    image_url: '',
-    product_id: productId || '',
-  })
-  const [uploading, setUploading] = useState(false)
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [error, setError] = useState('')
-
-  // Check authentication
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me')
-        if (!res.ok) {
-          router.push('/login?redirect=/reviews/submit')
-          return
-        }
-        const data = await res.json()
-        setUser(data.user)
-      } catch (err) {
-        router.push('/login')
-      } finally {
-        setLoadingUser(false)
-      }
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
     }
-    fetchUser()
-  }, [router])
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+    
+    setImageFile(file);
+    const preview = URL.createObjectURL(file);
+    setImagePreview(preview);
+  };
 
-  // Cloudinary upload (same as profile picture)
-  const uploadImage = async (file: File) => {
-    setUploading(true)
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo'
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', uploadPreset)
+  const removeImage = () => {
+    setImageFile(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+  };
 
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    if (!cloudName || !uploadPreset) {
+      console.error('Cloudinary not configured');
+      return null;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    formData.append('upload_preset', uploadPreset);
+    
     try {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
-      })
-      const data = await res.json()
-      if (!data.secure_url) throw new Error('Upload failed')
-      setForm(prev => ({ ...prev, image_url: data.secure_url }))
+      });
+      const data = await res.json();
+      return data.secure_url || null;
     } catch (err) {
-      console.error(err)
-      alert('Image upload failed')
-    } finally {
-      setUploading(false)
+      console.error('Upload failed:', err);
+      return null;
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (form.rating === 0) {
-      setError('Please select a star rating.')
-      return
+    e.preventDefault();
+    
+    if (rating === 0) {
+      setMessage({ type: 'error', text: 'Please select a rating' });
+      return;
     }
-    setStatus('loading')
-    setError('')
-
+    
+    if (!reviewText.trim() || reviewText.length < 3) {
+      setMessage({ type: 'error', text: 'Please write a review (minimum 3 characters)' });
+      return;
+    }
+    
+    setLoading(true);
+    setMessage(null);
+    
     try {
+      // Upload image if present
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadImage();
+      }
+      
+      // Submit review
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          review_text: form.review_text,
-          rating: form.rating,
-          image_url: form.image_url || null,
-          product_id: form.product_id || null,
+          rating,
+          review_text: reviewText,
+          customer_name: customerName.trim() || 'Anonymous',
+          product_id: productId || null,
+          image_url: imageUrl,
         }),
-      })
-
+      });
+      
+      const data = await res.json();
+      
       if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || 'Submission failed')
+        throw new Error(data.error || 'Failed to submit review');
       }
-
-      setStatus('success')
+      
+      toast.success('Review submitted! It will appear after approval.');
+      setMessage({ type: 'success', text: 'Review submitted! Thank you for your feedback.' });
+      
+      // Reset form
+      setRating(0);
+      setReviewText('');
+      setCustomerName('');
+      setProductId('');
+      removeImage();
+      
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        router.push('/reviews');
+      }, 2000);
+      
     } catch (err: any) {
-      setError(err.message)
-      setStatus('error')
+      console.error('Submit error:', err);
+      setMessage({ type: 'error', text: err.message || 'Failed to submit review. Please try again.' });
+    } finally {
+      setLoading(false);
     }
-  }
-
-  if (loadingUser) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="animate-spin text-orange-500" size={32} />
-      </div>
-    )
-  }
-
-  if (!user) return null // already redirecting
-
-  if (status === 'success') {
-    return (
-      <div className="flex flex-col items-center text-center py-8 gap-4">
-        <CheckCircle className="text-green-500" size={56} />
-        <h2 className="font-bold text-gray-800 text-2xl">Thank You!</h2>
-        <p className="text-gray-500 max-w-sm">
-          Your review has been submitted and is pending approval. You can check its status in the "My Reviews" tab.
-        </p>
-        <a href="/reviews" className="mt-2 bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600">
-          Back to Reviews
-        </a>
-      </div>
-    )
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Rating Section */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-        <input
-          type="text"
-          value={user.name}
-          disabled
-          className="w-full bg-gray-100 border rounded-xl px-3 py-2 text-gray-600"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating *</label>
-        <div className="mt-1">
-          <StarRating
-            rating={form.rating}
-            interactive
-            onRate={r => setForm(prev => ({ ...prev, rating: r }))}
-            size={28}
-          />
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Your Rating <span className="text-red-500">*</span>
+        </label>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(star => (
+            <button
+              key={star}
+              type="button"
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={() => setRating(star)}
+              className="focus:outline-none transition-transform hover:scale-110"
+            >
+              <Star 
+                size={32} 
+                className={`${(hoverRating || rating) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} transition`}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* Product ID (Optional) */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Your Review *</label>
-        <textarea
-          value={form.review_text}
-          onChange={e => setForm(prev => ({ ...prev, review_text: e.target.value }))}
-          required
-          rows={4}
-          placeholder="Tell us about your experience..."
-          className="w-full border rounded-xl px-3 py-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Product ID (Optional)
+        </label>
+        <input
+          type="text"
+          value={productId}
+          onChange={(e) => setProductId(e.target.value)}
+          placeholder="e.g., product-123 (if reviewing a specific product)"
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
         />
+        <p className="text-xs text-gray-400 mt-1">Leave blank for general website review</p>
       </div>
 
+      {/* Review Text */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Upload Photo (optional)</label>
-        <div className="flex items-center gap-3">
-          <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg flex items-center gap-2 transition">
-            <Upload size={16} />
-            Choose file
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Your Review <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={reviewText}
+          onChange={(e) => setReviewText(e.target.value)}
+          rows={5}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+          placeholder="Share your experience with our product. What did you like? How was the quality? Would you recommend it?"
+          required
+        />
+        <p className="text-xs text-gray-400 mt-1">Minimum 3 characters</p>
+      </div>
+
+      {/* Customer Name (Optional) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Your Name (Optional)
+        </label>
+        <input
+          type="text"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          placeholder="e.g., John Doe"
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+        />
+        <p className="text-xs text-gray-400 mt-1">Leave blank to remain anonymous</p>
+      </div>
+
+      {/* Image Upload */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Add Photo (Optional)
+        </label>
+        {!imagePreview ? (
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition bg-gray-50">
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Upload size={24} className="text-gray-400 mb-2" />
+              <p className="text-sm text-gray-500">Click to upload</p>
+              <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+            </div>
             <input
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) uploadImage(file)
-              }}
+              onChange={handleImageSelect}
             />
           </label>
-          {uploading && <Loader2 className="animate-spin text-orange-500" size={20} />}
-          {form.image_url && (
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden border">
-              <Image src={form.image_url} alt="Preview" fill className="object-cover" />
-              <button
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, image_url: '' }))}
-                className="absolute top-0 right-0 bg-black/50 rounded-bl-lg p-0.5"
-              >
-                <X size={12} className="text-white" />
-              </button>
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="relative w-32 h-32 rounded-lg overflow-hidden border">
+            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={removeImage}
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{error}</p>}
+      {/* Message */}
+      {message && (
+        <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
+          message.type === 'success' 
+            ? 'bg-green-50 text-green-700 border border-green-200' 
+            : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+          {message.text}
+        </div>
+      )}
 
+      {/* Submit Button */}
       <button
         type="submit"
-        disabled={status === 'loading'}
-        className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium hover:bg-orange-600 disabled:opacity-50 transition"
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {status === 'loading' ? (
-          <><Loader2 size={16} className="animate-spin inline mr-2" /> Submitting...</>
+        {loading ? (
+          <>
+            <Loader2 size={18} className="animate-spin" />
+            Submitting...
+          </>
         ) : (
-          'Submit Review'
+          <>
+            <CheckCircle size={18} />
+            Submit Review
+          </>
         )}
       </button>
     </form>
-  )
+  );
 }
