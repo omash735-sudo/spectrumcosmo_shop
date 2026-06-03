@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { updateOrderStatus, getStatusDisplayInfo } from '@/lib/order-status';
+import { updateOrderStatus, getStatusDisplayInfo, getOrderStatusHistory, getAllowedStatusTransitions } from '@/lib/order-status';
+import { getDb } from '@/lib/db';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
-  const orderId = params.id;
+  const { id: orderId } = await params;
   const body = await req.json();
   const { status, trackingNumber, trackingNotes, adminNotes } = body;
 
@@ -46,13 +47,13 @@ export async function PATCH(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   const sql = getDb();
-  const orderId = params.id;
+  const { id: orderId } = await params;
 
   const [order] = await sql`
     SELECT o.*, 
