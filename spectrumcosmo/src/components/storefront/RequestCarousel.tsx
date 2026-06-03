@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import { Heart, Loader2 } from 'lucide-react';
+import { Heart, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import 'swiper/css';
@@ -15,8 +15,6 @@ interface Request {
   title: string;
   description: string;
   category_name: string;
-  category_id: number | null;
-  status: string;
   like_count: number;
   user_liked: number;
   image_count: number;
@@ -38,13 +36,11 @@ export default function RequestCarousel() {
       
       const data = await res.json();
       
-      // Your API returns { success: true, data: [...] }
       if (data && data.success && Array.isArray(data.data)) {
         setRequests(data.data);
       } else if (Array.isArray(data)) {
         setRequests(data);
       } else {
-        console.error('Unexpected API response:', data);
         setRequests([]);
       }
     } catch (err) {
@@ -88,24 +84,35 @@ export default function RequestCarousel() {
 
   if (requests.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 rounded-2xl">
-        <p className="text-gray-500">No community requests yet. Be the first to submit one!</p>
-        <Link href="/newsletter#submit" className="inline-block mt-3 text-orange-500 hover:text-orange-600 text-sm font-medium">
-          Submit a request →
+      <div className="text-center py-16 bg-gradient-to-br from-orange-50 to-white rounded-2xl">
+        <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Heart size={32} className="text-orange-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">No Requests Yet</h3>
+        <p className="text-gray-500 mb-4">Be the first to suggest a product you'd love to see!</p>
+        <Link href="/newsletter#submit" className="inline-block bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition">
+          Submit a Request
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="my-12">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Trending Requests</h2>
-        <p className="text-gray-500 mt-1">Most liked requests from our community</p>
+    <div className="py-8">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-full mb-4">
+          <TrendingUp size={16} className="text-orange-600" />
+          <span className="text-sm font-medium text-orange-600">Community Driven</span>
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900">Trending Community Requests</h2>
+        <p className="text-gray-500 mt-2 max-w-2xl mx-auto">
+          Most requested items by our community. Vote for what you want to see next!
+        </p>
       </div>
+
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
-        spaceBetween={20}
+        spaceBetween={24}
         slidesPerView={1}
         breakpoints={{
           640: { slidesPerView: 2 },
@@ -115,62 +122,95 @@ export default function RequestCarousel() {
         pagination={{ clickable: true }}
         navigation
         autoplay={{ delay: 5000, disableOnInteraction: false }}
-        className="pb-12"
+        className="pb-14"
       >
         {requests.map((req) => (
           <SwiperSlide key={req.id}>
-            <Link href={`/requests/${req.id}`} className="block">
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group">
-                <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
-                  {req.image_count > 0 ? (
-                    <Image
-                      src={`/api/requests/${req.id}/image?index=0`}
-                      alt={req.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition duration-500"
-                      onError={(e) => {
-                        const img = e.target as HTMLImageElement;
-                        img.src = 'https://via.placeholder.com/400x300?text=No+Image';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                      </svg>
-                      <span className="text-xs mt-2">No image</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={(e) => handleLike(req.id, e)}
-                    className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition duration-200"
-                  >
-                    <Heart
-                      size={18}
-                      className={req.user_liked ? 'fill-red-500 text-red-500' : 'text-gray-600'}
-                    />
-                  </button>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group">
+              {/* Request Image */}
+              <div className="relative h-52 bg-gradient-to-br from-gray-100 to-gray-200">
+                {req.image_count > 0 ? (
+                  <Image
+                    src={`/api/requests/${req.id}/image?index=0`}
+                    alt={req.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition duration-500"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = 'https://via.placeholder.com/400x300?text=Request+Image';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                    <Heart size={48} strokeWidth={1} />
+                    <span className="text-sm mt-2">Request Image</span>
+                  </div>
+                )}
+                
+                {/* Request Badge - distinguishes from products */}
+                <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                  Request
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-orange-500 transition">
-                    {req.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                    {req.description}
-                  </p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-orange-500 font-medium">
-                      {req.like_count} {req.like_count === 1 ? 'like' : 'likes'}
+                
+                {/* Like Button */}
+                <button
+                  onClick={(e) => handleLike(req.id, e)}
+                  className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition duration-200"
+                >
+                  <Heart
+                    size={18}
+                    className={req.user_liked ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                  />
+                </button>
+              </div>
+              
+              {/* Request Content */}
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900 text-lg line-clamp-1 group-hover:text-orange-500 transition">
+                  {req.title}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                  {req.description}
+                </p>
+                
+                {/* Request Stats - Different from product stats */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-1">
+                    <Heart size={14} className="text-red-400" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      {req.like_count} votes
                     </span>
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
-                      {req.category_name || 'General'}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users size={14} className="text-gray-400" />
+                    <span className="text-xs text-gray-500">
+                      {req.like_count} supporters
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar size={14} className="text-gray-400" />
+                    <span className="text-xs text-gray-500">
+                      {new Date(req.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
+                
+                {/* Category Tag */}
+                <div className="mt-3">
+                  <span className="inline-block text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
+                    {req.category_name || 'General Request'}
+                  </span>
+                </div>
+                
+                {/* Vote CTA */}
+                <Link
+                  href={`/requests/${req.id}`}
+                  className="mt-4 w-full block text-center bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 text-orange-700 font-medium py-2 rounded-xl transition text-sm"
+                >
+                  View Request Details →
+                </Link>
               </div>
-            </Link>
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>
