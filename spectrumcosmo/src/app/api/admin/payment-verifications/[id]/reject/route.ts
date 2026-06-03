@@ -6,13 +6,13 @@ import { releaseReservedStock } from '@/lib/stock-manager';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   try {
-    const { id } = params;
+    const { id: verificationId } = await params;
     const { orderId, reason } = await req.json();
     const adminId = (authError as any)?.id || null;
 
@@ -38,7 +38,7 @@ export async function POST(
     await sql`
       UPDATE payment_confirmations
       SET status = 'rejected', rejection_reason = ${reason}, reviewed_by = ${adminId}, reviewed_at = NOW()
-      WHERE id = ${id}
+      WHERE id = ${verificationId}
     `;
 
     // Optionally update order status to 'payment_issue'
