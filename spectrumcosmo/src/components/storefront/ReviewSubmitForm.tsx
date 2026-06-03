@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import StarRating from '@/components/ui/StarRating';
-import { Loader2, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon, Star } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
 export default function ReviewSubmitForm() {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
@@ -18,6 +20,27 @@ export default function ReviewSubmitForm() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          if (data.user?.name) {
+            setCustomerName(data.user.name);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,6 +100,15 @@ export default function ReviewSubmitForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if user is logged in
+    if (!user) {
+      toast.error('Please login to submit a review');
+      setTimeout(() => {
+        router.push('/login?redirect=/reviews/submit');
+      }, 1500);
+      return;
+    }
+    
     if (rating === 0) {
       setMessage({ type: 'error', text: 'Please select a rating' });
       return;
@@ -95,6 +127,9 @@ export default function ReviewSubmitForm() {
       let imageUrl = null;
       if (imageFile) {
         imageUrl = await uploadImage();
+        if (imageFile && !imageUrl) {
+          toast.warning('Image upload failed, but your review will still be submitted');
+        }
       }
       
       // Submit review
@@ -104,7 +139,7 @@ export default function ReviewSubmitForm() {
         body: JSON.stringify({
           rating,
           review_text: reviewText,
-          customer_name: customerName.trim() || 'Anonymous',
+          customer_name: customerName.trim() || user.name || 'Anonymous',
           product_id: productId || null,
           image_url: imageUrl,
         }),
@@ -139,8 +174,25 @@ export default function ReviewSubmitForm() {
     }
   };
 
+  if (loadingUser) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin text-orange-500" size={32} />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Login Warning */}
+      {!user && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <p className="text-sm text-yellow-800">
+            Please <a href="/login?redirect=/reviews/submit" className="font-semibold underline hover:text-yellow-900">login</a> to submit a review.
+          </p>
+        </div>
+      )}
+
       {/* Rating Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,6 +207,7 @@ export default function ReviewSubmitForm() {
               onMouseLeave={() => setHoverRating(0)}
               onClick={() => setRating(star)}
               className="focus:outline-none transition-transform hover:scale-110"
+              disabled={!user}
             >
               <Star 
                 size={32} 
@@ -176,6 +229,7 @@ export default function ReviewSubmitForm() {
           onChange={(e) => setProductId(e.target.value)}
           placeholder="e.g., product-123 (if reviewing a specific product)"
           className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+          disabled={!user}
         />
         <p className="text-xs text-gray-400 mt-1">Leave blank for general website review</p>
       </div>
@@ -192,6 +246,7 @@ export default function ReviewSubmitForm() {
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
           placeholder="Share your experience with our product. What did you like? How was the quality? Would you recommend it?"
           required
+          disabled={!user}
         />
         <p className="text-xs text-gray-400 mt-1">Minimum 3 characters</p>
       </div>
@@ -207,6 +262,7 @@ export default function ReviewSubmitForm() {
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder="e.g., John Doe"
           className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+          disabled={!user}
         />
         <p className="text-xs text-gray-400 mt-1">Leave blank to remain anonymous</p>
       </div>
@@ -217,7 +273,7 @@ export default function ReviewSubmitForm() {
           Add Photo (Optional)
         </label>
         {!imagePreview ? (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition bg-gray-50">
+          <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 transition bg-gray-50 ${!user ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <Upload size={24} className="text-gray-400 mb-2" />
               <p className="text-sm text-gray-500">Click to upload</p>
@@ -228,6 +284,7 @@ export default function ReviewSubmitForm() {
               accept="image/*"
               className="hidden"
               onChange={handleImageSelect}
+              disabled={!user}
             />
           </label>
         ) : (
@@ -259,8 +316,8 @@ export default function ReviewSubmitForm() {
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={loading}
-        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+        disabled={loading || !user}
+        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
