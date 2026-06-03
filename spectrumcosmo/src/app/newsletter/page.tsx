@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart } from 'lucide-react';
+import { 
+  Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart, 
+  Sparkles, ArrowRight, Star, Users, TrendingUp, Clock, Gift, 
+  Zap, Send, BookOpen, Music, Palette 
+} from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
@@ -33,6 +37,7 @@ export default function NewsletterPage() {
   const [feedbackReason, setFeedbackReason] = useState('');
   const [feedbackDetails, setFeedbackDetails] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
     const loadUser = async () => {
@@ -45,6 +50,7 @@ export default function NewsletterPage() {
         const data = await res.json();
         setUser(data.user);
         setSubscribed(data.user?.newsletter_subscribed ?? true);
+        setEmailInput(data.user?.email || '');
       } catch (err) {
         console.error('Failed to load user:', err);
         router.push('/login');
@@ -59,7 +65,7 @@ export default function NewsletterPage() {
         const res = await fetch('/api/content-blocks');
         if (!res.ok) throw new Error('Failed to load blocks');
         const data = await res.json();
-        setBlocks(data);
+        setBlocks(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load blocks:', err);
         setBlocks([]);
@@ -87,21 +93,36 @@ export default function NewsletterPage() {
     }
   };
 
-  const performSubscribe = async () => {
+  const performSubscribe = async (email: string) => {
     setSaving(true);
     try {
-      await fetch('/api/auth/profile', {
-        method: 'PATCH',
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newsletterSubscribed: true }),
+        body: JSON.stringify({ email }),
       });
-      setSubscribed(true);
+      
+      if (res.ok) {
+        setSubscribed(true);
+        alert('Successfully subscribed to the newsletter!');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to subscribe');
+      }
     } catch (error) {
-      console.error('Failed to update subscription', error);
+      console.error('Failed to subscribe', error);
       alert('Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSubscribe = async () => {
+    if (!emailInput.trim()) {
+      alert('Please enter your email address');
+      return;
+    }
+    await performSubscribe(emailInput);
   };
 
   const handleUnsubscribeClick = () => {
@@ -136,7 +157,7 @@ export default function NewsletterPage() {
     if (subscribed) {
       handleUnsubscribeClick();
     } else {
-      await performSubscribe();
+      await performSubscribe(user?.email || emailInput);
     }
   };
 
@@ -144,9 +165,12 @@ export default function NewsletterPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen flex items-center justify-center bg-white">
-          <Loader2 className="animate-spin text-gray-600" size={32} />
-        </main>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        </div>
         <Footer />
       </>
     );
@@ -155,21 +179,91 @@ export default function NewsletterPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Hero Carousel - Entry Point */}
-          <div className="mb-16">
-            <HeroCarousel />
+      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        
+        {/* Hero Section */}
+        <div className="relative bg-gradient-to-r from-orange-500 to-orange-600 overflow-hidden">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+                <Sparkles size={16} className="text-white" />
+                <span className="text-white text-sm font-medium">Join Our Community</span>
+              </div>
+              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
+                The SpectrumCosmo <br />
+                <span className="text-yellow-200">Newsletter</span>
+              </h1>
+              <p className="text-white/90 text-lg max-w-2xl mx-auto mb-8">
+                Get the latest anime merch drops, exclusive offers, and community updates delivered to your inbox.
+              </p>
+              
+              {/* Subscribe Form */}
+              <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="Your email address"
+                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white"
+                />
+                <button
+                  onClick={handleSubscribe}
+                  disabled={saving}
+                  className="bg-white text-orange-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg"
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  Subscribe
+                </button>
+              </div>
+              <p className="text-white/70 text-xs mt-4">No spam. Unsubscribe anytime.</p>
+            </div>
           </div>
+        </div>
 
-          {/* Community Wishlist Section */}
-          <div className="mb-20">
+        {/* Benefits Section */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Why Subscribe?</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">What You'll Get</h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-6 text-center border hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Zap size={28} className="text-orange-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Early Access</h3>
+              <p className="text-gray-500 text-sm">Be the first to know about new drops and restocks before everyone else.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 text-center border hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Gift size={28} className="text-orange-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Exclusive Discounts</h3>
+              <p className="text-gray-500 text-sm">Get subscriber-only promo codes and special offers.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 text-center border hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen size={28} className="text-orange-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Anime News</h3>
+              <p className="text-gray-500 text-sm">Weekly anime updates, merch news, and community highlights.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Community Wishlist Section */}
+        <div className="bg-white py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-[#F97316]/10 px-4 py-2 rounded-full mb-4">
                 <Heart size={18} className="text-[#F97316]" />
                 <span className="text-sm font-medium text-[#F97316]">Community Driven</span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Community Wishlist</h1>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Community Wishlist</h2>
               <p className="text-gray-500 max-w-2xl mx-auto">
                 Request products you want to see. Submit your ideas with images and descriptions. 
                 Trending requests with high demand become reality.
@@ -183,8 +277,8 @@ export default function NewsletterPage() {
 
             {/* Submit Request Form */}
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl border p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h2>
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border p-8 shadow-sm">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h3>
                 <p className="text-gray-500 text-sm mb-5">
                   Have a product in mind? Tell us what you want – upload reference images and describe your idea.
                   Our team will review it and if there's enough interest, we'll make it.
@@ -193,49 +287,49 @@ export default function NewsletterPage() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Content Blocks - Dynamic, admin-managed (includes Inspiration Gallery) */}
-          <div className="space-y-16">
-            {blocks.map((block) => (
-              <ContentBlockRenderer key={block.id} block={block} />
-            ))}
-          </div>
+        {/* Content Blocks - Dynamic */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+          {blocks.map((block) => (
+            <ContentBlockRenderer key={block.id} block={block} />
+          ))}
+        </div>
 
-          {/* Newsletter Subscription - At the bottom */}
-          <div className="max-w-3xl mx-auto mt-20">
-            <div className="bg-white rounded-3xl shadow-xl border p-8">
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Newspaper className="text-[#F97316]" size={40} />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Stay Updated</h2>
-                <p className="text-gray-600">
-                  Get the latest anime merch drops and exclusive offers.
-                </p>
+        {/* Newsletter Subscription Card */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-3xl shadow-xl overflow-hidden">
+            <div className="p-8 md:p-12 text-center">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Newspaper className="text-white" size={40} />
               </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Stay Updated</h2>
+              <p className="text-orange-100 mb-8 max-w-md mx-auto">
+                Get the latest anime merch drops and exclusive offers.
+              </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <Tag className="text-[#F97316]" size={20} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-2xl mx-auto">
+                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
+                  <Tag size={18} />
                   <span className="text-sm font-medium">Early access to sales</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <Bell className="text-[#F97316]" size={20} />
+                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
+                  <Bell size={18} />
                   <span className="text-sm font-medium">Weekly anime news</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <Shield className="text-[#F97316]" size={20} />
+                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
+                  <Shield size={18} />
                   <span className="text-sm font-medium">Unsubscribe anytime</span>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <Mail className="text-[#F97316]" size={24} />
+                    <Mail size={24} className="text-white" />
                     <div>
-                      <p className="font-medium">{user?.email || 'Your email'}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-white">{user?.email || 'Your email'}</p>
+                      <p className="text-sm text-orange-200">
                         {subscribed ? 'Subscribed' : 'Not subscribed'}
                       </p>
                     </div>
@@ -243,11 +337,11 @@ export default function NewsletterPage() {
                   <button
                     onClick={toggleSubscription}
                     disabled={saving}
-                    className={`px-6 py-2 rounded-full font-medium transition ${
+                    className={`px-6 py-2 rounded-full font-semibold transition-all ${
                       subscribed
-                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                        : 'bg-[#F97316] text-white hover:bg-[#e0650f]'
-                    }`}
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-white text-orange-600 hover:bg-gray-100'
+                    } disabled:opacity-50`}
                   >
                     {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
                     {subscribed ? 'Unsubscribe' : 'Subscribe'}
@@ -256,20 +350,16 @@ export default function NewsletterPage() {
               </div>
 
               {subscribed && (
-                <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 py-3 rounded-xl">
-                  <CheckCircle size={20} />
-                  <span>You're all set! Check your inbox for a welcome email.</span>
+                <div className="mt-6 flex items-center justify-center gap-2 text-white bg-green-500/20 py-2 px-4 rounded-full max-w-xs mx-auto">
+                  <CheckCircle size={16} />
+                  <span className="text-sm">You're subscribed! Check your inbox.</span>
                 </div>
               )}
 
-              <div className="mt-4 text-center">
-                <Link href="/newsletter/preferences" className="text-sm text-[#F97316] hover:underline inline-flex items-center gap-1">
-                  Customize your preferences →
+              <div className="mt-6 text-center">
+                <Link href="/newsletter/preferences" className="text-sm text-white/80 hover:text-white underline inline-flex items-center gap-1">
+                  Customize your preferences <ArrowRight size={14} />
                 </Link>
-              </div>
-
-              <div className="mt-6 text-center text-sm text-gray-500">
-                <p>We send about 2-4 emails per month. No spam, just quality content.</p>
               </div>
             </div>
           </div>
