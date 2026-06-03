@@ -132,7 +132,7 @@ async function logApiRequest(origin: string, endpoint: string, method: string, i
 }
 
 // =============================================
-// SECURITY HEADERS HELPER
+// SECURITY HEADERS HELPER - FIXED WITH CLOUDINARY
 // =============================================
 function setSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -143,7 +143,7 @@ function setSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live https://vercel.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;"
   );
   return response;
 }
