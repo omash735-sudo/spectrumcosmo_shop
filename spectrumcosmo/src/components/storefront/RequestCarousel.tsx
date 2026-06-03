@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import 'swiper/css';
@@ -28,8 +28,8 @@ export default function RequestCarousel() {
   const [loading, setLoading] = useState(true);
 
   const fetchRequests = async () => {
+    setLoading(true);
     try {
-      // Use the public API endpoint (no auth required)
       const res = await fetch('/api/requests/public?limit=20');
       
       if (!res.ok) {
@@ -38,11 +38,10 @@ export default function RequestCarousel() {
       
       const data = await res.json();
       
-      // Handle the response format { success: true, data: [] }
-      if (data.success && Array.isArray(data.data)) {
-        setRequests(data.data);
-      } else if (Array.isArray(data)) {
+      if (Array.isArray(data)) {
         setRequests(data);
+      } else if (data && Array.isArray(data.data)) {
+        setRequests(data.data);
       } else {
         console.error('Unexpected API response:', data);
         setRequests([]);
@@ -56,7 +55,7 @@ export default function RequestCarousel() {
   };
 
   const handleLike = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent Link navigation
+    e.preventDefault();
     e.stopPropagation();
     
     try {
@@ -80,23 +79,26 @@ export default function RequestCarousel() {
 
   if (loading) {
     return (
-      <div className="text-center py-10 text-gray-500">
-        Loading requests...
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin text-orange-500" size={32} />
       </div>
     );
   }
 
   if (requests.length === 0) {
     return (
-      <div className="text-center py-10 text-gray-500">
-        No community requests yet. Be the first to submit one!
+      <div className="text-center py-12 bg-gray-50 rounded-2xl">
+        <p className="text-gray-500">No community requests yet. Be the first to submit one!</p>
+        <Link href="/newsletter#submit" className="inline-block mt-3 text-orange-500 hover:text-orange-600 text-sm font-medium">
+          Submit a request →
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="my-12">
-      <div className="text-center mb-6">
+      <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900">Trending Requests</h2>
         <p className="text-gray-500 mt-1">Most liked requests from our community</p>
       </div>
@@ -107,6 +109,7 @@ export default function RequestCarousel() {
         breakpoints={{
           640: { slidesPerView: 2 },
           1024: { slidesPerView: 3 },
+          1280: { slidesPerView: 4 },
         }}
         pagination={{ clickable: true }}
         navigation
@@ -116,26 +119,32 @@ export default function RequestCarousel() {
         {requests.map((req) => (
           <SwiperSlide key={req.id}>
             <Link href={`/requests/${req.id}`} className="block">
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition group">
-                <div className="relative h-48 bg-gray-100">
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
                   {req.image_count > 0 ? (
                     <Image
                       src={`/api/requests/${req.id}/image?index=0`}
                       alt={req.title}
                       fill
-                      className="object-cover group-hover:scale-105 transition duration-300"
+                      className="object-cover group-hover:scale-105 transition duration-500"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=No+Image';
+                        const img = e.target as HTMLImageElement;
+                        img.src = 'https://via.placeholder.com/400x300?text=No+Image';
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      No image
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                      <span className="text-xs mt-2">No image</span>
                     </div>
                   )}
                   <button
                     onClick={(e) => handleLike(req.id, e)}
-                    className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-105 transition"
+                    className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:scale-110 transition duration-200"
                   >
                     <Heart
                       size={18}
@@ -144,11 +153,17 @@ export default function RequestCarousel() {
                   </button>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 line-clamp-1">{req.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{req.description}</p>
+                  <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-orange-500 transition">
+                    {req.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    {req.description}
+                  </p>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-orange-500 font-medium">{req.like_count} likes</span>
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                    <span className="text-xs text-orange-500 font-medium">
+                      {req.like_count} {req.like_count === 1 ? 'like' : 'likes'}
+                    </span>
+                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
                       {req.category_name || 'General'}
                     </span>
                   </div>
