@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, AlertCircle } from 'lucide-react';
 
 interface FeaturedProduct {
   id: string;
@@ -17,22 +17,40 @@ interface FeaturedProduct {
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(4);
 
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const res = await fetch('/api/products/featured');
+        
+        // Check if response is OK (status 200-299)
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
         const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+        
+        // Validate data is an array
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format');
+        }
+        
+        setProducts(data);
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load featured products');
         setProducts([]);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchFeatured();
 
     const handleResize = () => {
@@ -53,6 +71,22 @@ export default function FeaturedProducts() {
   const prevSlide = () => {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="mb-12 p-4 bg-red-50 rounded-xl border border-red-200 text-center">
+        <AlertCircle size={24} className="text-red-500 mx-auto mb-2" />
+        <p className="text-red-600 text-sm">Unable to load featured products</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-xs text-red-500 hover:text-red-600 underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -81,7 +115,6 @@ export default function FeaturedProducts() {
 
   return (
     <div className="mb-12">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
@@ -94,9 +127,7 @@ export default function FeaturedProducts() {
         </Link>
       </div>
 
-      {/* Carousel Container */}
       <div className="relative">
-        {/* Navigation Buttons */}
         {showControls && (
           <>
             <button
@@ -116,7 +147,6 @@ export default function FeaturedProducts() {
           </>
         )}
 
-        {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {visibleProducts.map((product) => {
             const hasDiscount = product.compare_price && product.compare_price > product.price;
@@ -164,7 +194,6 @@ export default function FeaturedProducts() {
         </div>
       </div>
 
-      {/* Dot Indicators */}
       {showControls && (
         <div className="flex justify-center gap-2 mt-4">
           {Array.from({ length: Math.ceil(products.length / itemsPerView) }).map((_, idx) => (
