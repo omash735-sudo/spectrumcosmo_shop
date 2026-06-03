@@ -38,6 +38,37 @@ function shouldRequireCaptcha(ipAddress: string): boolean {
   return attempts.attempts >= 3;
 }
 
+// =============================================
+// CAPTCHA Storage and Helpers (internal)
+// =============================================
+const captchaStore = new Map<string, { answer: string; expires: number }>();
+
+async function generateCaptcha(ipAddress: string): Promise<{ token: string; challenge: string }> {
+  const num1 = Math.floor(Math.random() * 10) + 1;
+  const num2 = Math.floor(Math.random() * 10) + 1;
+  const answer = String(num1 + num2);
+  const token = Buffer.from(`${ipAddress}:${Date.now()}:${Math.random()}`).toString('base64');
+  
+  captchaStore.set(token, {
+    answer,
+    expires: Date.now() + 5 * 60 * 1000,
+  });
+  
+  setTimeout(() => captchaStore.delete(token), 5 * 60 * 1000);
+  
+  return {
+    token,
+    challenge: `What is ${num1} + ${num2}?`,
+  };
+}
+
+async function verifyCaptcha(token: string, answer: string): Promise<boolean> {
+  const captcha = captchaStore.get(token);
+  if (!captcha) return false;
+  if (Date.now() > captcha.expires) return false;
+  return captcha.answer === answer;
+}
+
 async function ensureUsersTable() {
   const sql = getDb();
   await sql`
@@ -344,37 +375,6 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
-
-// =============================================
-// CAPTCHA Verification
-// =============================================
-const captchaStore = new Map<string, { answer: string; expires: number }>();
-
-export async function generateCaptcha(ipAddress: string): Promise<{ token: string; challenge: string }> {
-  const num1 = Math.floor(Math.random() * 10) + 1;
-  const num2 = Math.floor(Math.random() * 10) + 1;
-  const answer = String(num1 + num2);
-  const token = Buffer.from(`${ipAddress}:${Date.now()}:${Math.random()}`).toString('base64');
-  
-  captchaStore.set(token, {
-    answer,
-    expires: Date.now() + 5 * 60 * 1000,
-  });
-  
-  setTimeout(() => captchaStore.delete(token), 5 * 60 * 1000);
-  
-  return {
-    token,
-    challenge: `What is ${num1} + ${num2}?`,
-  };
-}
-
-async function verifyCaptcha(token: string, answer: string): Promise<boolean> {
-  const captcha = captchaStore.get(token);
-  if (!captcha) return false;
-  if (Date.now() > captcha.expires) return false;
-  return captcha.answer === answer;
 }
 
 export async function GET(req: NextRequest) {
