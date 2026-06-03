@@ -1,278 +1,433 @@
 export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  ArrowRight, Sparkles, Shield, Truck, Star, 
-  Heart, ShoppingBag, Zap, CheckCircle, 
-  CreditCard, Headphones, Send, Users, 
-  TrendingUp, Clock, Gift, Award 
-} from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import { getDb } from '@/lib/db';
-import CategoriesSection from '@/components/storefront/CategoriesSection';
+import ProductCard from '@/components/storefront/ProductCard';
+import HeroCarousel from '@/components/storefront/HeroCarousel';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
-import HomepagePopup from '@/components/storefront/HomepagePopup';
-import RecentlyViewed from '@/components/storefront/RecentlyViewed';
-import ContinueShopping from '@/components/storefront/ContinueShopping';
+import { getDb } from '@/lib/db';
+import { Search, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-export default async function HomePage() {
-  let hero: any = null;
-  let products: any[] = [];
-  let reviews: any[] = [];
+const carouselSlides = [
+  {
+    id: 1,
+    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg',
+    title: 'Anime Mugs',
+    subtitle: 'Up to 30% off • Sip in style',
+  },
+  {
+    id: 2,
+    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775346088/WhatsApp_Image_2026-04-03_at_16.15.20_bgw3gq.jpg',
+    title: 'Exclusive Posters',
+    subtitle: 'Limited collection • 20% off',
+  },
+  {
+    id: 3,
+    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775339426/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
+    title: 'Signature Bracelets',
+    subtitle: 'Complete your look • Free shipping',
+  },
+];
 
-  try {
-    const sql = getDb();
-    [hero, products, reviews] = await Promise.all([
-      sql`SELECT * FROM hero_sections WHERE page = 'home' AND active = true LIMIT 1`,
-      sql`SELECT * FROM products WHERE status = 'in_stock' ORDER BY created_at DESC LIMIT 8`,
-      sql`SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 6`
-    ]);
-    hero = hero[0];
-  } catch (err) {
-    console.error('DB error:', err);
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; q?: string; page?: string; sort?: string; minPrice?: string; maxPrice?: string }>;
+}) {
+  const params = await searchParams;
+  const sql = getDb();
+  
+  const cookieStore = cookies();
+  let selectedCategory = params.category;
+  if (!selectedCategory && !params.q) {
+    const savedCategory = cookieStore.get('last_category')?.value;
+    if (savedCategory && savedCategory !== 'All') {
+      selectedCategory = savedCategory;
+      redirect(`/products?category=${encodeURIComponent(selectedCategory)}`);
+    }
   }
 
-  const fallback = {
-    badge_text: 'New collection just dropped',
-    badge_link: '/products',
-    heading_prefix: 'Wear your',
-    highlighted_word: 'excitement',
-    description: 'Custom apparel and anime merchandise handcrafted for those who live boldly. T-shirts, hoodies, pendants, bracelets — every piece tells your story.',
-    button1_text: 'Shop Now',
-    button1_link: '/products',
-    feature1: 'Quality Guaranteed',
-    feature2: 'Fast Shipping',
-    feature3: 'Unique Designs',
-    cat_image1_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg',
-    cat_image1_alt: 'T-Shirt collection',
-    cat_image2_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_23.58.16_a0z7ns.jpg',
-    cat_image2_alt: 'Hoodie collection',
-    cat_image3_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.34_c2lzfq.jpg',
-    cat_image3_alt: 'Pendant collection',
-    cat_image4_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
-    cat_image4_alt: 'Bracelet collection',
+  let categories = [];
+  try {
+    categories = await sql`
+      SELECT name, slug FROM categories WHERE is_active = true ORDER BY sort_order ASC
+    `;
+  } catch (err) {
+    console.error('Failed to fetch categories:', err);
+  }
+  const categoryNames = ['All', ...categories.map((c: any) => c.name)];
+
+  let products: any[] = [];
+  let totalCount = 0;
+  const currentPage = parseInt(params.page || '1');
+  const pageSize = 12;
+  const offset = (currentPage - 1) * pageSize;
+  const sortBy = params.sort || 'newest';
+  const minPrice = params.minPrice ? parseInt(params.minPrice) : null;
+  const maxPrice = params.maxPrice ? parseInt(params.maxPrice) : null;
+
+  try {
+    let orderClause = '';
+    let priceFilter = '';
+    
+    switch (sortBy) {
+      case 'price_low':
+        orderClause = 'p.price ASC';
+        break;
+      case 'price_high':
+        orderClause = 'p.price DESC';
+        break;
+      case 'popular':
+        orderClause = 'p.view_count DESC';
+        break;
+      default:
+        orderClause = 'p.created_at DESC';
+    }
+    
+    if (minPrice !== null && maxPrice !== null) {
+      priceFilter = `AND p.price BETWEEN ${minPrice} AND ${maxPrice}`;
+    } else if (minPrice !== null) {
+      priceFilter = `AND p.price >= ${minPrice}`;
+    } else if (maxPrice !== null) {
+      priceFilter = `AND p.price <= ${maxPrice}`;
+    }
+    
+    let countQuery, dataQuery;
+    
+    if (params.q) {
+      if (selectedCategory && selectedCategory !== 'All') {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${selectedCategory}
+            AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+            ${sql.raw(priceFilter)}
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${selectedCategory}
+            AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+            ${sql.raw(priceFilter)}
+          ORDER BY ${sql.raw(orderClause)}
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      } else {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+            ${sql.raw(priceFilter)}
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+            AND p.status = 'in_stock'
+            ${sql.raw(priceFilter)}
+          ORDER BY ${sql.raw(orderClause)}
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      }
+    } else {
+      if (selectedCategory && selectedCategory !== 'All') {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${selectedCategory} AND p.status = 'in_stock'
+          ${sql.raw(priceFilter)}
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          JOIN categories c ON p.category_id = c.id
+          WHERE c.name = ${selectedCategory} AND p.status = 'in_stock'
+          ${sql.raw(priceFilter)}
+          ORDER BY ${sql.raw(orderClause)}
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      } else {
+        countQuery = sql`
+          SELECT COUNT(*) as count
+          FROM products p
+          WHERE p.status = 'in_stock'
+          ${sql.raw(priceFilter)}
+        `;
+        dataQuery = sql`
+          SELECT p.*, c.name as category_name 
+          FROM products p
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE p.status = 'in_stock'
+          ${sql.raw(priceFilter)}
+          ORDER BY ${sql.raw(orderClause)}
+          LIMIT ${pageSize} OFFSET ${offset}
+        `;
+      }
+    }
+    
+    const [countResult, productsResult] = await Promise.all([countQuery, dataQuery]);
+    totalCount = parseInt(countResult[0]?.count || '0');
+    products = productsResult;
+  } catch (err) {
+    console.error('Products query error:', err);
+    products = [];
+    totalCount = 0;
+  }
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const getPageUrl = (page: number, sort?: string, minP?: number, maxP?: number) => {
+    const urlParams = new URLSearchParams();
+    if (params.q) urlParams.set('q', params.q);
+    if (selectedCategory && selectedCategory !== 'All') urlParams.set('category', selectedCategory);
+    if (sort) urlParams.set('sort', sort);
+    else if (params.sort) urlParams.set('sort', params.sort);
+    if (minP !== undefined) urlParams.set('minPrice', minP.toString());
+    if (maxP !== undefined) urlParams.set('maxPrice', maxP.toString());
+    urlParams.set('page', page.toString());
+    return `/products?${urlParams.toString()}`;
   };
-  const h = hero || fallback;
+
+  const sortOptions = [
+    { value: 'newest', label: 'Newest First' },
+    { value: 'price_low', label: 'Price: Low to High' },
+    { value: 'price_high', label: 'Price: High to Low' },
+    { value: 'popular', label: 'Most Popular' },
+  ];
+
+  const clearFilters = () => {
+    const urlParams = new URLSearchParams();
+    if (params.q) urlParams.set('q', params.q);
+    if (selectedCategory && selectedCategory !== 'All') urlParams.set('category', selectedCategory);
+    if (params.sort) urlParams.set('sort', params.sort);
+    return `/products?${urlParams.toString()}`;
+  };
+
+  const hasFilters = minPrice !== null || maxPrice !== null;
 
   return (
     <>
       <Navbar />
-      <main>
-        {/* Hero Section */}
-        <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/20 to-white">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/30 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          </div>
+      <main className="min-h-screen bg-white">
+        <HeroCarousel slides={carouselSlides} textColor="#F97316" autoplayDelay={5000} />
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="text-center lg:text-left">
-                <Link
-                  href={h.badge_link || '#'}
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 text-sm font-semibold px-4 py-2 rounded-full mb-6 hover:scale-105 transition-transform duration-300"
-                >
-                  <Sparkles size={14} className="text-orange-500" />
-                  {h.badge_text}
-                  <ArrowRight size={12} />
-                </Link>
-
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] mb-6">
-                  {h.heading_prefix}{' '}
-                  <span className="relative inline-block">
-                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                      {h.highlighted_word}
-                    </span>
-                    <svg className="absolute -bottom-3 left-0 w-full" height="10" viewBox="0 0 300 10" fill="none">
-                      <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#F97316" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                    </svg>
-                  </span>{' '}
-                  with pride.
-                </h1>
-
-                <p className="text-lg text-gray-500 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-8">
-                  {h.description}
-                </p>
-
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                  <Link href={h.button1_link} className="group bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 shadow-lg shadow-orange-200 hover:shadow-xl hover:scale-105 inline-flex items-center gap-2">
-                    {h.button1_text}
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  <Link href="#featured" className="group border-2 border-gray-300 hover:border-orange-500 text-gray-700 hover:text-orange-600 px-8 py-4 rounded-full font-semibold transition-all duration-300 inline-flex items-center gap-2">
-                    View Collection
-                    <ShoppingBag size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-
-                <div className="flex flex-wrap gap-6 justify-center lg:justify-start mt-12 pt-8 border-t border-gray-100">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Shield size={18} className="text-orange-500" />
-                    <span className="text-sm">{h.feature1}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Truck size={18} className="text-orange-500" />
-                    <span className="text-sm">{h.feature2}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Sparkles size={18} className="text-orange-500" />
-                    <span className="text-sm">{h.feature3}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden lg:grid grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer">
-                    <Image src={h.cat_image1_url} alt={h.cat_image1_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all"></div>
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-sm font-medium">Shop T-Shirts →</span>
-                    </div>
-                  </div>
-                  <div className="relative h-44 rounded-2xl overflow-hidden group cursor-pointer">
-                    <Image src={h.cat_image4_url} alt={h.cat_image4_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                  </div>
-                </div>
-                <div className="space-y-4 pt-8">
-                  <div className="relative h-44 rounded-2xl overflow-hidden group cursor-pointer">
-                    <Image src={h.cat_image3_url} alt={h.cat_image3_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                  </div>
-                  <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer">
-                    <Image src={h.cat_image2_url} alt={h.cat_image2_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-sm font-medium">Shop Hoodies →</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Trust Bar */}
-        <div className="bg-gray-900 text-white py-4">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex flex-wrap justify-center gap-8 md:gap-12 text-sm">
-              <div className="flex items-center gap-2"><CheckCircle size={16} className="text-orange-400" /> 100% Authentic Products</div>
-              <div className="flex items-center gap-2"><Truck size={16} className="text-orange-400" /> Free Shipping Over 50,000 MWK</div>
-              <div className="flex items-center gap-2"><CreditCard size={16} className="text-orange-400" /> Secure Payments</div>
-              <div className="flex items-center gap-2"><Headphones size={16} className="text-orange-400" /> 24/7 Customer Support</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Categories Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Shop by Category</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Explore Our Collections</h2>
-            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Find the perfect piece that matches your style and passion</p>
-          </div>
-          <CategoriesSection />
-        </div>
-
-        {/* Featured Products */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="featured">
-          <div className="text-center mb-12">
-            <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Trending Now</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Featured Products</h2>
-            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Handpicked items our customers love</p>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          
+          {/* Featured Products Section */}
           <FeaturedProducts />
-        </div>
 
-        {/* Reviews Section - Connected to your reviews table */}
-        {reviews && reviews.length > 0 && (
-          <div className="bg-gradient-to-br from-orange-50 to-white py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Testimonials</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">What Our Customers Say</h2>
-                <p className="text-gray-500 mt-3">Join thousands of happy customers who love their SpectrumCosmo gear</p>
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {params.q ? `Search results for "${params.q}"` : selectedCategory && selectedCategory !== 'All' ? selectedCategory : 'All Products'}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {totalCount} {totalCount === 1 ? 'product' : 'products'} found
+              </p>
+            </div>
+            
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                onChange={(e) => {
+                  const url = getPageUrl(1, e.target.value, minPrice || undefined, maxPrice || undefined);
+                  window.location.href = url;
+                }}
+                defaultValue={sortBy}
+                className="appearance-none bg-white border border-gray-200 rounded-full px-5 py-2.5 pr-10 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+              >
+                {sortOptions.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-8">
+            <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  name="q"
+                  defaultValue={params.q || ''}
+                  placeholder="Search for anime merch, apparel, accessories..."
+                  className="w-full border border-gray-200 rounded-2xl py-4 pl-6 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-2.5 rounded-xl hover:from-orange-600 hover:to-orange-700 transition shadow-md"
+                  aria-label="Search"
+                >
+                  <Search size={18} />
+                </button>
               </div>
-              <div className="grid md:grid-cols-3 gap-6">
-                {reviews.slice(0, 3).map((review, idx) => (
-                  <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-lg transition-shadow">
-                    <div className="flex gap-1 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-orange-400 text-orange-400' : 'text-gray-300'} />
-                      ))}
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">"{review.review_text || review.comment || 'Amazing quality! The design is perfect.'}"</p>
-                    <div className="mt-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span className="text-orange-600 font-semibold">
-                          {(review.customer_name || review.user_name || review.name || 'A').charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">
-                          {review.customer_name || review.user_name || review.name || 'Verified Buyer'}
-                        </p>
-                        <p className="text-xs text-gray-400">Verified Purchase</p>
-                      </div>
-                    </div>
-                  </div>
+              {params.q && (
+                <div className="text-center mt-3">
+                  <Link href={clearFilters()} className="text-sm text-orange-500 hover:text-orange-600">
+                    Clear search
+                  </Link>
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Filter by price:</span>
+              <form method="GET" action="/products" className="flex items-center gap-2">
+                {params.q && <input type="hidden" name="q" value={params.q} />}
+                {selectedCategory && selectedCategory !== 'All' && <input type="hidden" name="category" value={selectedCategory} />}
+                {params.sort && <input type="hidden" name="sort" value={params.sort} />}
+                <input
+                  type="number"
+                  name="minPrice"
+                  placeholder="Min"
+                  defaultValue={minPrice || ''}
+                  className="w-24 px-3 py-1.5 border border-gray-200 rounded-lg text-sm"
+                />
+                <span className="text-gray-400">-</span>
+                <input
+                  type="number"
+                  name="maxPrice"
+                  placeholder="Max"
+                  defaultValue={maxPrice || ''}
+                  className="w-24 px-3 py-1.5 border border-gray-200 rounded-lg text-sm"
+                />
+                <button type="submit" className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">Apply</button>
+              </form>
+            </div>
+            {hasFilters && (
+              <Link href={clearFilters()} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+                <X size={12} /> Clear filters
+              </Link>
+            )}
+          </div>
+
+          {/* Categories - Scrollable Tabs */}
+          <div className="mb-10">
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
+              <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
+                {categoryNames.map((cat) => {
+                  const isActive = (!selectedCategory && cat === 'All') || selectedCategory === cat;
+                  let href;
+                  if (params.q) {
+                    href = cat === 'All'
+                      ? `/products?q=${encodeURIComponent(params.q)}`
+                      : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
+                  } else {
+                    href = cat === 'All'
+                      ? '/products'
+                      : `/products?category=${encodeURIComponent(cat)}`;
+                  }
+                  if (minPrice) href += `&minPrice=${minPrice}`;
+                  if (maxPrice) href += `&maxPrice=${maxPrice}`;
+                  return (
+                    <a
+                      key={cat}
+                      href={href}
+                      className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {cat}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Products Grid */}
+          {products.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-2xl">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search size={32} className="text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+              <p className="text-gray-500">Try adjusting your search or browse our categories.</p>
+              <Link href="/products" className="inline-block mt-4 text-orange-500 hover:text-orange-600 font-medium">
+                View all products →
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {products.map((product: any) => (
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-              <div className="text-center mt-8">
-                <Link href="/reviews" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium">
-                  Read all reviews <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Recently Viewed */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <RecentlyViewed />
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-12">
+                  <nav className="flex items-center gap-2">
+                    {currentPage > 1 && (
+                      <a
+                        href={getPageUrl(currentPage - 1, sortBy, minPrice || undefined, maxPrice || undefined)}
+                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-orange-200 transition"
+                      >
+                        Previous
+                      </a>
+                    )}
+                    <div className="flex gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <a
+                            key={pageNum}
+                            href={getPageUrl(pageNum, sortBy, minPrice || undefined, maxPrice || undefined)}
+                            className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition ${
+                              currentPage === pageNum
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum}
+                          </a>
+                        );
+                      })}
+                    </div>
+                    {currentPage < totalPages && (
+                      <a
+                        href={getPageUrl(currentPage + 1, sortBy, minPrice || undefined, maxPrice || undefined)}
+                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-orange-200 transition"
+                      >
+                        Next
+                      </a>
+                    )}
+                  </nav>
+                </div>
+              )}
+            </>
+          )}
         </div>
-
-        {/* Newsletter Section */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 py-16">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 px-4 py-2 rounded-full mb-6">
-              <Zap size={16} className="text-orange-400" />
-              <span className="text-orange-400 text-sm font-medium">Stay Updated</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Join Our Newsletter</h2>
-            <p className="text-gray-300 mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
-            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input type="email" name="email" placeholder="Your email address" className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-              <button type="submit" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center">
-                Subscribe <Send size={16} />
-              </button>
-            </form>
-            <p className="text-gray-500 text-xs mt-4">No spam. Unsubscribe anytime.</p>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <section className="bg-gradient-to-br from-orange-500 to-orange-600 py-20">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Ready to wear your <span className="text-white underline decoration-2">excitement?</span>
-            </h2>
-            <p className="text-orange-100 text-lg mb-10 max-w-xl mx-auto">
-              Browse our full collection and find the piece that speaks to your passion.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/products" className="bg-white text-orange-600 px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 shadow-lg hover:shadow-xl">
-                Explore Products <ArrowRight size={18} />
-              </Link>
-              <Link href="/reviews/submit" className="border-2 border-white/30 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/10 transition-all inline-flex items-center gap-2">
-                Share Your Story
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
       <Footer />
-      <HomepagePopup />
-      <ContinueShopping />
     </>
   );
 }
