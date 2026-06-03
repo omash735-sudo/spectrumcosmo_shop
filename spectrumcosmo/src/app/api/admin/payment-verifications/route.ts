@@ -26,14 +26,33 @@ export async function GET(req: NextRequest) {
       JOIN orders o ON o.id = pc.order_id
       ORDER BY pc.submitted_at DESC
     `;
-    return NextResponse.json(verifications);
+    
+    // Sanitize total_amount to proper number
+    const sanitizedVerifications = verifications.map(v => {
+      let totalAmount = 0;
+      if (typeof v.total_amount === 'number') {
+        totalAmount = v.total_amount;
+      } else if (typeof v.total_amount === 'string') {
+        const cleaned = v.total_amount.replace(/[^0-9.-]/g, '');
+        const num = parseFloat(cleaned);
+        totalAmount = isNaN(num) ? 0 : num;
+      } else {
+        totalAmount = 0;
+      }
+      
+      return {
+        ...v,
+        total_amount: totalAmount
+      };
+    });
+    
+    return NextResponse.json(sanitizedVerifications);
   } catch (err: any) {
     console.error('Verifications fetch error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// ADD THIS POST ENDPOINT below the GET endpoint
 export async function POST(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -68,7 +87,7 @@ export async function POST(req: NextRequest) {
         RETURNING referrer_user_id
       `;
 
-      if (referral) {
+      if (referral && referral.referrer_user_id) {
         await sql`
           UPDATE user_referrals 
           SET total_referrals = total_referrals + 1
@@ -80,15 +99,17 @@ export async function POST(req: NextRequest) {
           WHERE user_id = ${referral.referrer_user_id}
         `;
         
-        const rewardThresholds = [5, 10, 20];
-        const reachedThreshold = rewardThresholds.includes(referrer.total_referrals);
-        
-        if (reachedThreshold && !referrer.eligible_reward) {
-          await sql`
-            UPDATE user_referrals 
-            SET eligible_reward = true
-            WHERE user_id = ${referral.referrer_user_id}
-          `;
+        if (referrer) {
+          const rewardThresholds = [5, 10, 20];
+          const reachedThreshold = rewardThresholds.includes(referrer.total_referrals);
+          
+          if (reachedThreshold && !referrer.eligible_reward) {
+            await sql`
+              UPDATE user_referrals 
+              SET eligible_reward = true
+              WHERE user_id = ${referral.referrer_user_id}
+            `;
+          }
         }
       }
 
