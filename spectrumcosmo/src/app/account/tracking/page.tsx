@@ -7,7 +7,7 @@ import {
   Loader2, CheckCircle2, Truck, Package, CreditCard, MapPin, 
   Hash, Calendar, Clock, Phone, Mail, User, Sparkles,
   ArrowRight, RefreshCw, Share2, ShoppingBag, AlertCircle,
-  Map, Navigation, Wifi, WifiOff
+  Map, Navigation, Wifi, WifiOff, ChevronRight, XCircle
 } from 'lucide-react';
 
 type BasicOrder = {
@@ -74,6 +74,14 @@ function getStatusColor(status: string): string {
     case 'pending': return 'bg-yellow-500';
     default: return 'bg-gray-500';
   }
+}
+
+// Helper function to format order number
+function formatOrderNumber(order: any): string {
+  if (order.order_number && order.order_number !== 'null') {
+    return order.order_number;
+  }
+  return `#${order.id.slice(-8).toUpperCase()}`;
 }
 
 export default function TrackingPage() {
@@ -183,7 +191,7 @@ export default function TrackingPage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Order List Sidebar - Premium */}
+          {/* Order List Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky top-24">
               <div className="px-5 py-4 border-b bg-gradient-to-r from-gray-50 to-white">
@@ -202,52 +210,55 @@ export default function TrackingPage() {
                     </Link>
                   </div>
                 ) : (
-                  orders.map((order) => (
-                    <button
-                      key={order.id}
-                      onClick={() => setSelectedOrder(order)}
-                      className={`w-full text-left p-4 transition-all duration-200 group ${
-                        selectedOrder?.id === order.id
-                          ? 'bg-orange-50 border-l-4 border-orange-500'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                          {order.product_image ? (
-                            <Image src={order.product_image} alt={order.product_name} width={48} height={48} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package size={20} className="text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm line-clamp-1">{order.product_name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                              order.status === 'shipped' ? 'bg-purple-100 text-purple-700' :
-                              order.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {order.status}
-                            </span>
-                            <span className="text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString()}</span>
+                  orders.map((order) => {
+                    const orderDisplayNumber = formatOrderNumber(order);
+                    return (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className={`w-full text-left p-4 transition-all duration-200 group ${
+                          selectedOrder?.id === order.id
+                            ? 'bg-orange-50 border-l-4 border-orange-500'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                            {order.product_image ? (
+                              <Image src={order.product_image} alt={order.product_name} width={48} height={48} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package size={20} className="text-gray-400" />
+                              </div>
+                            )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">MWK {order.total_amount?.toLocaleString()}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm line-clamp-1">{order.product_name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                order.status === 'shipped' ? 'bg-purple-100 text-purple-700' :
+                                order.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {order.status}
+                              </span>
+                              <span className="text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">MWK {order.total_amount?.toLocaleString()}</p>
+                          </div>
+                          <ChevronRight size={16} className={`text-gray-400 mt-3 transition-transform group-hover:translate-x-0.5 ${selectedOrder?.id === order.id ? 'translate-x-0.5 text-orange-500' : ''}`} />
                         </div>
-                        <ChevronRight size={16} className={`text-gray-400 mt-3 transition-transform group-hover:translate-x-0.5 ${selectedOrder?.id === order.id ? 'translate-x-0.5 text-orange-500' : ''}`} />
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
           </div>
 
-          {/* Tracking Details Panel - Premium */}
+          {/* Tracking Details Panel */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               {!selectedOrder ? (
@@ -494,11 +505,11 @@ export default function TrackingPage() {
                       </Link>
                       {trackingDetails.order_status === 'delivered' && (
                         <Link
-                          href={`/products/${trackingDetails.order_id}`}
+                          href="/products"
                           className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition"
                         >
                           <ShoppingBag size={14} />
-                          Buy Again
+                          Shop Again
                         </Link>
                       )}
                       <Link
@@ -517,16 +528,5 @@ export default function TrackingPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Helper component for XCircle
-function XCircle(props: any) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <circle cx="12" cy="12" r="10" />
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
   );
 }
