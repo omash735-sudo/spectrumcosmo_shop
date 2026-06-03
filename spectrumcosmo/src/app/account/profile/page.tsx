@@ -63,32 +63,66 @@ export default function ProfilePage() {
   }
 
   const uploadImage = async (file: File) => {
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file')
+      return
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB')
+      return
+    }
+
     setUploading(true)
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv'
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload'
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    
+    // Check if Cloudinary config exists
+    if (!cloudName || !uploadPreset) {
+      toast.error('Cloudinary configuration missing')
+      setUploading(false)
+      return
+    }
+    
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', uploadPreset)
 
     try {
+      // Upload to Cloudinary
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
       })
+      
       const data = await res.json()
-      if (!data?.secure_url) throw new Error('Upload failed')
+      
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Upload failed')
+      }
+      
+      if (!data?.secure_url) {
+        throw new Error('No secure_url in response')
+      }
 
+      // Save to your API
       const profileRes = await fetch('/api/auth/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileImage: data.secure_url }),
       })
-      if (!profileRes.ok) throw new Error('Failed to save image')
+      
+      if (!profileRes.ok) {
+        const errorData = await profileRes.json()
+        throw new Error(errorData.error || 'Failed to save image')
+      }
 
       await loadUser()
       toast.success('Profile picture updated!')
-    } catch (err) {
-      toast.error('Image upload failed')
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      toast.error(err.message || 'Image upload failed')
     } finally {
       setUploading(false)
     }
@@ -132,7 +166,13 @@ export default function ProfilePage() {
             <div className="relative group">
               <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 ring-4 ring-white shadow-md">
                 {user?.profileImage ? (
-                  <Image src={user.profileImage} alt={user.name || 'Profile'} width={112} height={112} className="w-full h-full object-cover" />
+                  <Image 
+                    src={user.profileImage} 
+                    alt={user.name || 'Profile'} 
+                    width={112} 
+                    height={112} 
+                    className="w-full h-full object-cover" 
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
                     <User size={48} className="text-orange-400" />
@@ -141,10 +181,15 @@ export default function ProfilePage() {
               </div>
               <label className="absolute bottom-1 right-1 bg-orange-500 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-all duration-200 hover:scale-105">
                 <Camera size={14} />
-                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) uploadImage(file)
-                }} />
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/jpeg,image/png,image/webp" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadImage(file)
+                  }} 
+                />
               </label>
               {uploading && (
                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
