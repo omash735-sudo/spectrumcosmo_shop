@@ -1,8 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, Upload, User, Mail, Phone } from 'lucide-react'
+import Link from 'next/link'
 import Image from 'next/image'
+import { 
+  Loader2, Upload, User, Mail, Phone, Sparkles, 
+  CheckCircle, ArrowLeft, Camera, Save, X
+} from 'lucide-react'
+import toast from 'react-hot-toast'
 
 type User = {
   id: string
@@ -17,29 +22,17 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-  })
+  const [form, setForm] = useState({ name: '', phone: '' })
 
   const loadUser = async () => {
     setLoading(true)
-    setMessage(null)
-
     try {
       const res = await fetch('/api/auth/me')
       if (!res.ok) throw new Error('Not authenticated')
-
       const data = await res.json()
       if (!data?.user) throw new Error('No user data')
-
       setUser(data.user)
-      setForm({
-        name: data.user.name || '',
-        phone: data.user.phone || '',
-      })
+      setForm({ name: data.user.name || '', phone: data.user.phone || '' })
     } catch (err) {
       console.error('Failed to load user:', err)
       window.location.href = '/login'
@@ -48,29 +41,22 @@ export default function ProfilePage() {
     }
   }
 
-  useEffect(() => {
-    loadUser()
-  }, [])
+  useEffect(() => { loadUser() }, [])
 
   const updateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setMessage(null)
-
     try {
       const res = await fetch('/api/auth/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-
       if (!res.ok) throw new Error('Update failed')
-
       await loadUser()
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
+      toast.success('Profile updated successfully!')
     } catch (err) {
-      console.error('Update failed:', err)
-      setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' })
+      toast.error('Failed to update profile')
     } finally {
       setSaving(false)
     }
@@ -78,22 +64,17 @@ export default function ProfilePage() {
 
   const uploadImage = async (file: File) => {
     setUploading(true)
-    setMessage(null)
-
-    // Replace with your Cloudinary cloud name
-    const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'
-    const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo'
-
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv'
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload'
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', UPLOAD_PRESET)
+    formData.append('upload_preset', uploadPreset)
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
       })
-
       const data = await res.json()
       if (!data?.secure_url) throw new Error('Upload failed')
 
@@ -102,14 +83,12 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileImage: data.secure_url }),
       })
-
-      if (!profileRes.ok) throw new Error('Failed to save image URL')
+      if (!profileRes.ok) throw new Error('Failed to save image')
 
       await loadUser()
-      setMessage({ type: 'success', text: 'Profile picture updated!' })
+      toast.success('Profile picture updated!')
     } catch (err) {
-      console.error('Upload error:', err)
-      setMessage({ type: 'error', text: 'Image upload failed. Please try again.' })
+      toast.error('Image upload failed')
     } finally {
       setUploading(false)
     }
@@ -118,122 +97,119 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-orange-500 w-8 h-8" />
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading your profile...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Profile</h1>
-        <p className="text-gray-500 mt-1">Manage your personal information</p>
+        <div className="flex items-center gap-4">
+          <Link href="/account" className="p-2 hover:bg-gray-100 rounded-full transition">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Profile</h1>
+              <Sparkles size={18} className="text-orange-400" />
+            </div>
+            <p className="text-gray-500 text-sm mt-1">Manage your personal information</p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 md:p-8">
-          {/* Profile Image Section */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 pb-6 border-b border-gray-100">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 ring-4 ring-white shadow-sm">
+      {/* Profile Card */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        {/* Avatar Section */}
+        <div className="relative bg-gradient-to-r from-orange-50 to-white px-6 py-8 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group">
+              <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 ring-4 ring-white shadow-md">
                 {user?.profileImage ? (
-                  <Image
-                    src={user.profileImage}
-                    alt={user.name || 'Profile'}
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-cover"
-                  />
+                  <Image src={user.profileImage} alt={user.name || 'Profile'} width={112} height={112} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <User size={40} />
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                    <User size={48} className="text-orange-400" />
                   </div>
                 )}
               </div>
-
-              <label className="absolute bottom-0 right-0 bg-orange-500 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-colors">
-                <Upload size={14} />
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) uploadImage(file)
-                  }}
-                />
+              <label className="absolute bottom-1 right-1 bg-orange-500 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-all duration-200 hover:scale-105">
+                <Camera size={14} />
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) uploadImage(file)
+                }} />
               </label>
-
               {uploading && (
                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                   <Loader2 className="animate-spin text-white w-6 h-6" />
                 </div>
               )}
             </div>
-
             <div className="text-center sm:text-left">
-              <h2 className="text-xl font-semibold text-gray-900">{user?.name || 'User'}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{user?.name || 'User'}</h2>
               <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 text-sm mt-1">
                 <Mail size={14} />
                 <span>{user?.email}</span>
               </div>
+              {user?.phone && (
+                <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 text-sm mt-0.5">
+                  <Phone size={14} />
+                  <span>{user.phone}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <form onSubmit={updateProfile} className="p-6 space-y-6">
+          <div className="grid sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="tel"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="Add your phone number"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Form Section */}
-          <form onSubmit={updateProfile} className="space-y-6">
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="tel"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Message */}
-            {message && (
-              <div
-                className={`p-3 rounded-xl text-sm ${
-                  message.type === 'success'
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-
+          <div className="pt-4 border-t border-gray-100">
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
             >
-              {saving && <Loader2 className="animate-spin w-4 h-4" />}
+              {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   )
