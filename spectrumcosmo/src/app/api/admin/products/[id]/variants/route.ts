@@ -5,15 +5,16 @@ import { getDb } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
   
+  const { id: productId } = await params;
   const sql = getDb();
   const variants = await sql`
     SELECT * FROM product_variants 
-    WHERE product_id = ${params.id}
+    WHERE product_id = ${productId}
     ORDER BY display_order ASC
   `;
   return NextResponse.json(variants);
@@ -21,17 +22,18 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
   
+  const { id: productId } = await params;
   const { size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order } = await req.json();
   
   const sql = getDb();
   const result = await sql`
     INSERT INTO product_variants (product_id, size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order)
-    VALUES (${params.id}, ${size || null}, ${color || null}, ${price_override || null}, ${compare_price_override || null}, ${stock_quantity || 0}, ${sku || null}, ${image_url || null}, ${display_order || 0})
+    VALUES (${productId}, ${size || null}, ${color || null}, ${price_override || null}, ${compare_price_override || null}, ${stock_quantity || 0}, ${sku || null}, ${image_url || null}, ${display_order || 0})
     RETURNING *
   `;
   return NextResponse.json(result[0]);
@@ -39,11 +41,12 @@ export async function POST(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
   
+  const { id: productId } = await params;
   const { variantId, size, color, price_override, compare_price_override, stock_quantity, sku, image_url, is_active, display_order } = await req.json();
   
   if (!variantId) {
@@ -63,7 +66,7 @@ export async function PATCH(
       is_active = COALESCE(${is_active}, is_active),
       display_order = COALESCE(${display_order}, display_order),
       updated_at = NOW()
-    WHERE id = ${variantId} AND product_id = ${params.id}
+    WHERE id = ${variantId} AND product_id = ${productId}
     RETURNING *
   `;
   return NextResponse.json(result[0]);
@@ -71,11 +74,12 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAdmin(req);
   if (authError) return authError;
   
+  const { id: productId } = await params;
   const url = new URL(req.url);
   const variantId = url.searchParams.get('variantId');
   
@@ -84,6 +88,6 @@ export async function DELETE(
   }
   
   const sql = getDb();
-  await sql`DELETE FROM product_variants WHERE id = ${variantId} AND product_id = ${params.id}`;
+  await sql`DELETE FROM product_variants WHERE id = ${variantId} AND product_id = ${productId}`;
   return NextResponse.json({ success: true });
 }
