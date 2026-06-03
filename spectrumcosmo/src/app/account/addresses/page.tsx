@@ -1,197 +1,458 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import {
-  ShoppingBag,
-  Heart,
-  MapPin,
-  PackageSearch,
-  ChevronRight,
-  CheckCircle,
-  Truck,
-  Clock,
-  Loader2,
-  User,
-  Settings,
-  Calendar,
-  DollarSign,
-} from 'lucide-react'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { 
+  Loader2, Plus, Trash2, Edit2, MapPin, Phone, Mail, 
+  Home, Building, CheckCircle, X, AlertCircle, Sparkles,
+  ArrowLeft, Globe, Clock, Star
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const STATUS_STYLE: Record<string, string> = {
-  pending: 'text-yellow-600 bg-yellow-50',
-  processing: 'text-blue-600 bg-blue-50',
-  shipped: 'text-purple-600 bg-purple-50',
-  delivered: 'text-green-600 bg-green-50',
-  cancelled: 'text-red-600 bg-red-50',
-  declined: 'text-red-600 bg-red-50',
+interface Address {
+  id: string;
+  full_name: string;
+  phone_number: string;
+  email: string | null;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  state: string | null;
+  postal_code: string | null;
+  country: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-const StatusIcon = ({ status }: { status: string }) => {
-  if (status === 'delivered') return <CheckCircle size={14} className="text-green-600" />
-  if (status === 'shipped') return <Truck size={14} className="text-purple-600" />
-  if (status === 'cancelled') return <Clock size={14} className="text-red-600" />
-  return <Clock size={14} className="text-yellow-600" />
-}
+export default function AddressesPage() {
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-export default function AccountOverview() {
-  const [orders, setOrders] = useState<any[]>([])
-  const [wishlistCount, setWishlistCount] = useState(0)
-  const [addressesCount, setAddressesCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [form, setForm] = useState({
+    full_name: '',
+    phone_number: '',
+    email: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'Malawi',
+    is_default: false,
+  });
+
+  const loadAddresses = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/account/addresses');
+      const data = await res.json();
+      setAddresses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load addresses:', err);
+      toast.error('Failed to load addresses');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const userRes = await fetch('/api/auth/me')
-        if (userRes.ok) {
-          const userData = await userRes.json()
-          setUser(userData.user)
-        }
+    loadAddresses();
+  }, []);
 
-        const ordersRes = await fetch('/api/account/orders')
-        const ordersData = ordersRes.ok ? await ordersRes.json() : []
-        setOrders(ordersData)
+  const openAddModal = () => {
+    setEditingAddress(null);
+    setForm({
+      full_name: '',
+      phone_number: '',
+      email: '',
+      address_line1: '',
+      address_line2: '',
+      city: '',
+      state: '',
+      postal_code: '',
+      country: 'Malawi',
+      is_default: addresses.length === 0,
+    });
+    setShowModal(true);
+  };
 
-        const wishlistRes = await fetch('/api/account/wishlist')
-        const wishlistData = wishlistRes.ok ? await wishlistRes.json() : []
-        setWishlistCount(wishlistData.length)
+  const openEditModal = (address: Address) => {
+    setEditingAddress(address);
+    setForm({
+      full_name: address.full_name,
+      phone_number: address.phone_number,
+      email: address.email || '',
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 || '',
+      city: address.city,
+      state: address.state || '',
+      postal_code: address.postal_code || '',
+      country: address.country || 'Malawi',
+      is_default: address.is_default,
+    });
+    setShowModal(true);
+  };
 
-        const addressesRes = await fetch('/api/account/addresses')
-        const addressesData = addressesRes.ok ? await addressesRes.json() : []
-        setAddressesCount(addressesData.length)
-      } catch (error) {
-        console.error('Failed to load overview data', error)
-      } finally {
-        setLoading(false)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    const payload = {
+      ...form,
+      is_default: form.is_default,
+    };
+
+    try {
+      const url = editingAddress 
+        ? `/api/account/addresses?id=${editingAddress.id}`
+        : '/api/account/addresses';
+      const method = editingAddress ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save address');
       }
-    }
-    fetchData()
-  }, [])
 
-  const recentOrders = [...orders].slice(0, 3)
-  const activeOrdersCount = orders.filter(o => 
-    o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
-  ).length
+      toast.success(editingAddress ? 'Address updated' : 'Address added');
+      setShowModal(false);
+      loadAddresses();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/account/addresses?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      
+      toast.success('Address deleted');
+      loadAddresses();
+    } catch (err) {
+      toast.error('Failed to delete address');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const setDefaultAddress = async (id: string) => {
+    const address = addresses.find(a => a.id === id);
+    if (!address) return;
+
+    try {
+      const res = await fetch(`/api/account/addresses`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...address, is_default: true }),
+      });
+      
+      if (!res.ok) throw new Error('Failed to set default');
+      
+      toast.success('Default address updated');
+      loadAddresses();
+    } catch (err) {
+      toast.error('Failed to set default address');
+    }
+  };
 
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-orange-500" size={32} />
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading your addresses...</p>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome banner */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg">
-        <h1 className="text-2xl md:text-3xl font-bold">
-          Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
-        </h1>
-        <p className="text-gray-300 text-sm mt-1">
-          Track your orders and manage your account
-        </p>
-      </div>
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href="/account/orders" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
-          <ShoppingBag className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
-          <p className="text-2xl font-bold">{orders.length}</p>
-          <p className="text-xs text-gray-500">Total orders</p>
-        </Link>
-        
-        <Link href="/account/wishlist" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
-          <Heart className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
-          <p className="text-2xl font-bold">{wishlistCount}</p>
-          <p className="text-xs text-gray-500">Wishlist items</p>
-        </Link>
-        
-        <Link href="/account/addresses" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
-          <MapPin className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
-          <p className="text-2xl font-bold">{addressesCount}</p>
-          <p className="text-xs text-gray-500">Saved addresses</p>
-        </Link>
-        
-        <Link href="/account/orders" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-orange-200 transition group">
-          <PackageSearch className="text-orange-500 mb-2 group-hover:scale-105 transition" size={24} />
-          <p className="text-2xl font-bold">{activeOrdersCount}</p>
-          <p className="text-xs text-gray-500">Active orders</p>
-        </Link>
-      </div>
-
-      {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-gray-800">Recent Orders</h3>
-          <Link href="/account/orders" className="text-sm text-orange-600 flex items-center gap-1 hover:gap-2 transition">
-            View all <ChevronRight size={16} />
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-2">
+          <Link href="/account" className="p-2 hover:bg-gray-100 rounded-full transition">
+            <ArrowLeft size={20} />
           </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Addresses</h1>
+            <Sparkles size={18} className="text-orange-400" />
+          </div>
         </div>
+        <p className="text-gray-500 text-sm ml-14">Manage your shipping addresses</p>
+      </div>
 
-        {recentOrders.length === 0 ? (
-          <div className="text-center py-8">
-            <ShoppingBag className="mx-auto text-gray-300 mb-3" size={48} />
-            <p className="text-gray-400">No orders yet.</p>
-            <Link href="/products" className="inline-block mt-3 text-orange-500 text-sm hover:underline">
-              Start Shopping →
-            </Link>
+      {/* Add Button */}
+      <div className="mb-6">
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-medium hover:from-orange-600 hover:to-orange-700 transition shadow-sm"
+        >
+          <Plus size={18} />
+          Add New Address
+        </button>
+      </div>
+
+      {/* Addresses Grid */}
+      {addresses.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <MapPin size={48} className="text-gray-300" />
           </div>
-        ) : (
-          <div className="space-y-3">
-            {recentOrders.map((order) => (
-              <Link 
-                key={order.id} 
-                href={`/account/orders/${order.id}`}
-                className="block border border-gray-100 rounded-lg p-3 hover:shadow-md transition group"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800 group-hover:text-orange-600 transition">
-                      Order #{order.order_number || order.id.slice(0, 8)}
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign size={12} />
-                        Total: ${order.total_amount?.toLocaleString() || 0}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${STATUS_STYLE[order.status] || 'text-gray-600 bg-gray-50'}`}>
-                        <StatusIcon status={order.status} />
-                        {order.status}
-                      </span>
-                    </div>
-                    {order.items && order.items.length > 0 && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                      </p>
-                    )}
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">No addresses yet</h2>
+          <p className="text-gray-500 mb-6">Add your first shipping address</p>
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition"
+          >
+            <Plus size={18} />
+            Add Address
+          </button>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-5">
+          {addresses.map((address) => (
+            <div
+              key={address.id}
+              className={`relative bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-200 ${
+                address.is_default ? 'border-orange-300 bg-orange-50/30' : 'border-gray-100'
+              }`}
+            >
+              {/* Default Badge */}
+              {address.is_default && (
+                <div className="absolute top-4 right-4">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                    <Star size={12} fill="currentColor" />
+                    Default
+                  </span>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+              )}
 
-      {/* Quick links to other sections */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link href="/account/profile" className="bg-white p-4 rounded-xl border border-gray-100 text-center hover:border-orange-200 transition group">
-          <User className="mx-auto text-gray-400 group-hover:text-orange-500 mb-1 transition" size={22} />
-          <span className="text-sm">Profile</span>
-        </Link>
-        <Link href="/account/settings" className="bg-white p-4 rounded-xl border border-gray-100 text-center hover:border-orange-200 transition group">
-          <Settings className="mx-auto text-gray-400 group-hover:text-orange-500 mb-1 transition" size={22} />
-          <span className="text-sm">Settings</span>
-        </Link>
-      </div>
+              {/* Address Content */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-gray-900 text-lg">{address.full_name}</h3>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p>{address.address_line1}</p>
+                      {address.address_line2 && <p>{address.address_line2}</p>}
+                      <p>{address.city}, {address.state || ''} {address.postal_code || ''}</p>
+                      <p>{address.country}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="text-gray-400" />
+                    <span>{address.phone_number}</span>
+                  </div>
+                  {address.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail size={14} className="text-gray-400" />
+                      <span>{address.email}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                {!address.is_default && (
+                  <button
+                    onClick={() => setDefaultAddress(address.id)}
+                    className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                  >
+                    <Star size={12} /> Set as default
+                  </button>
+                )}
+                <button
+                  onClick={() => openEditModal(address)}
+                  className="text-xs text-gray-500 hover:text-blue-600 font-medium flex items-center gap-1"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(address.id)}
+                  disabled={deletingId === address.id}
+                  className="text-xs text-gray-500 hover:text-red-600 font-medium flex items-center gap-1 disabled:opacity-50"
+                >
+                  {deletingId === address.id ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Address Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white flex justify-between items-center p-5 border-b">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingAddress ? 'Edit Address' : 'Add New Address'}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={form.full_name}
+                      onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={form.phone_number}
+                      onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1 *</label>
+                  <input
+                    type="text"
+                    value={form.address_line1}
+                    onChange={(e) => setForm({ ...form, address_line1: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+                  <input
+                    type="text"
+                    value={form.address_line2}
+                    onChange={(e) => setForm({ ...form, address_line2: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                    <input
+                      type="text"
+                      value={form.city}
+                      onChange={(e) => setForm({ ...form, city: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                    <input
+                      type="text"
+                      value={form.state}
+                      onChange={(e) => setForm({ ...form, state: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                    <input
+                      type="text"
+                      value={form.postal_code}
+                      onChange={(e) => setForm({ ...form, postal_code: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <select
+                      value={form.country}
+                      onChange={(e) => setForm({ ...form, country: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="Malawi">Malawi</option>
+                      <option value="Zambia">Zambia</option>
+                      <option value="Tanzania">Tanzania</option>
+                      <option value="South Africa">South Africa</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_default}
+                    onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
+                    className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">Set as default address</span>
+                </label>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl py-2.5 font-medium hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                    {submitting ? 'Saving...' : editingAddress ? 'Update Address' : 'Save Address'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
