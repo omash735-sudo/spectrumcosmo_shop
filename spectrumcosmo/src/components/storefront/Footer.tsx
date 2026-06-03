@@ -2,7 +2,24 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Instagram, Twitter, Mail, Facebook, MessageCircle, Music2, Send, Loader2 } from 'lucide-react'
+import { 
+  Instagram, 
+  Twitter, 
+  Mail, 
+  Facebook, 
+  MessageCircle, 
+  Music2, 
+  Send, 
+  Loader2, 
+  ArrowUp,
+  Sparkles,
+  Heart,
+  Shield,
+  Truck,
+  CreditCard,
+  Apple,
+  Smartphone
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type SocialLinks = {
@@ -27,9 +44,22 @@ export default function Footer() {
   const [subStatus, setSubStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const [checking, setChecking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
-  // Logo for dark background (navbar dark mode logo)
   const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+
+  // Back to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 500)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // Fetch social links
   useEffect(() => {
@@ -42,7 +72,6 @@ export default function Footer() {
       .catch(() => null)
   }, [])
 
-  // Check subscription status on email blur
   const checkSubscriptionStatus = async (email: string) => {
     if (!email || !email.includes('@')) return
     setChecking(true)
@@ -52,13 +81,12 @@ export default function Footer() {
       if (data.subscribed) {
         setSubStatus({ type: 'error', msg: 'This email is already subscribed!' })
       } else {
-        // Clear error only if previous error was about duplicate
         if (subStatus?.type === 'error' && subStatus.msg.includes('already subscribed')) {
           setSubStatus(null)
         }
       }
     } catch (err) {
-      // Silently ignore – we'll rely on POST error
+      // Silent fail
     } finally {
       setChecking(false)
     }
@@ -79,7 +107,6 @@ export default function Footer() {
     setSubStatus(null)
 
     try {
-      // Final check before sending (in case user changed email after blur)
       const checkRes = await fetch(`/api/subscribe?email=${encodeURIComponent(emailSub)}`)
       const checkData = await checkRes.json()
       if (checkData.subscribed) {
@@ -88,7 +115,6 @@ export default function Footer() {
         return
       }
 
-      // Submit subscription
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,9 +122,8 @@ export default function Footer() {
       })
 
       if (res.ok) {
-        setSubStatus({ type: 'success', msg: 'Subscribed! Check your inbox.' })
+        setSubStatus({ type: 'success', msg: '🎉 Subscribed! Check your inbox.' })
         setEmailSub('')
-        // Clear the checking error if any
       } else {
         const err = await res.json()
         setSubStatus({ type: 'error', msg: err.error || 'Subscription failed' })
@@ -110,144 +135,224 @@ export default function Footer() {
     }
   }
 
+  const quickLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/products', label: 'Products' },
+    { href: '/reviews', label: 'Customer Reviews' },
+    { href: '/account', label: 'My Account' },
+    { href: '/contact', label: 'Contact Us' },
+    { href: '/faq', label: 'FAQ' },
+  ]
+
+  const socialLinks = [
+    { key: 'instagram', icon: Instagram, color: 'hover:bg-gradient-to-br from-pink-500 to-orange-500' },
+    { key: 'twitter', icon: Twitter, color: 'hover:bg-blue-400' },
+    { key: 'facebook', icon: Facebook, color: 'hover:bg-blue-600' },
+    { key: 'tiktok', icon: Music2, color: 'hover:bg-black' },
+    { key: 'whatsapp', icon: MessageCircle, color: 'hover:bg-green-500' },
+  ]
+
+  const paymentIcons = [
+    { icon: CreditCard, name: 'Credit Card' },
+    { icon: Smartphone, name: 'Mobile Money' },
+    { icon: Apple, name: 'Apple Pay' },
+  ]
+
   return (
-    <footer className="bg-[#111111] text-white" id="contact">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Brand + About */}
-          <div className="md:col-span-1">
-            <div className="mb-4">
-              <Image
-                src={logoSrc}
-                alt="SpectrumCosmo"
-                width={140}
-                height={48}
-                className="object-contain"
-                priority
-              />
-            </div>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Wear your excitement with pride. Custom apparel and anime merchandise crafted for those who live boldly.
-            </p>
-            <div className="flex gap-3 mt-5">
-              {links.instagram && (
-                <a href={links.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                  <Instagram size={16} />
-                </a>
-              )}
-              {links.twitter && (
-                <a href={links.twitter} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                  <Twitter size={16} />
-                </a>
-              )}
-              {links.facebook && (
-                <a href={links.facebook} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                  <Facebook size={16} />
-                </a>
-              )}
-              {links.tiktok && (
-                <a href={links.tiktok} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                  <Music2 size={16} />
-                </a>
-              )}
-              {links.whatsapp && (
-                <a href={links.whatsapp} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                  <MessageCircle size={16} />
-                </a>
-              )}
-              <a href={`mailto:${links.email}`} className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#F97316] transition-colors">
-                <Mail size={16} />
-              </a>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Quick Links</h3>
-            <ul className="space-y-3">
-              {[
-                { href: '/', label: 'Home' },
-                { href: '/products', label: 'Products' },
-                { href: '/reviews/submit', label: 'Write a Review' },
-                { href: '/#reviews', label: 'Customer Reviews' },
-                { href: '/account', label: 'My Account' },
-                { href: '/contact', label: 'Contact' },
-              ].map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-gray-400 hover:text-[#FDBA74] transition-colors">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-            <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Newsletter</h3>
-            <p className="text-sm text-gray-400 mb-3">
-              Get the latest drops, discounts & anime news.
-            </p>
-            <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
-              <div className="flex">
-                <input
-                  type="email"
-                  value={emailSub}
-                  onChange={(e) => setEmailSub(e.target.value)}
-                  onBlur={() => checkSubscriptionStatus(emailSub)}
-                  placeholder="Your email"
-                  className="flex-1 px-3 py-2 rounded-l-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[#F97316]"
-                  required
-                  disabled={submitting}
-                />
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-[#F97316] px-3 rounded-r-lg hover:bg-[#ea6c0f] transition-colors disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                </button>
+    <>
+      <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
+        {/* Newsletter Banner */}
+        <div className="border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="text-center md:text-left">
+                <div className="inline-flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full mb-3">
+                  <Sparkles size={14} className="text-orange-400" />
+                  <span className="text-xs font-medium text-orange-400">Stay Updated</span>
+                </div>
+                <h3 className="text-xl font-bold text-white">Get 10% off your first order</h3>
+                <p className="text-gray-400 text-sm mt-1">Subscribe to get exclusive offers and anime news</p>
               </div>
-              {(checking || submitting) && !subStatus && (
-                <p className="text-xs text-gray-400">Checking...</p>
-              )}
-              {subStatus && (
-                <p className={`text-xs ${subStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                  {subStatus.msg}
-                </p>
-              )}
-            </form>
+              <form onSubmit={handleSubscribe} className="w-full md:w-auto min-w-[300px]">
+                <div className="flex">
+                  <input
+                    type="email"
+                    value={emailSub}
+                    onChange={(e) => setEmailSub(e.target.value)}
+                    onBlur={() => checkSubscriptionStatus(emailSub)}
+                    placeholder="Your email address"
+                    className="flex-1 px-4 py-3 rounded-l-xl bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400"
+                    required
+                    disabled={submitting}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 rounded-r-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50"
+                  >
+                    {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  </button>
+                </div>
+                {(checking || submitting) && !subStatus && (
+                  <p className="text-xs text-gray-400 mt-2">Checking...</p>
+                )}
+                {subStatus && (
+                  <p className={`text-xs mt-2 ${subStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {subStatus.msg}
+                  </p>
+                )}
+              </form>
+            </div>
           </div>
+        </div>
 
-          {/* Contact / CTA */}
-          <div>
-            <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Get in Touch</h3>
-            <ul className="space-y-3 text-sm text-gray-400">
-              <li className="flex items-center gap-2">
-                <Mail size={14} />
-                <a href={`mailto:${links.email}`} className="hover:text-white transition">
-                  {links.email}
-                </a>
-              </li>
-              <li>Mon–Fri, 9am–6pm WAT</li>
-              <li className="pt-2">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center gap-2 bg-[#F97316] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#ea6c0f] transition-colors"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            
+            {/* Brand Column */}
+            <div className="md:col-span-4">
+              <div className="mb-4">
+                <Image
+                  src={logoSrc}
+                  alt="SpectrumCosmo"
+                  width={140}
+                  height={48}
+                  className="object-contain brightness-0 invert"
+                  priority
+                />
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                Wear your excitement with pride. Custom apparel and anime merchandise crafted for those who live boldly.
+              </p>
+              <div className="flex gap-2">
+                {socialLinks.map((social) => {
+                  const url = links[social.key as keyof SocialLinks]
+                  if (!url) return null
+                  const Icon = social.icon
+                  return (
+                    <a
+                      key={social.key}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-9 h-9 bg-white/10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${social.color}`}
+                    >
+                      <Icon size={16} />
+                    </a>
+                  )
+                })}
+                <a
+                  href={`mailto:${links.email}`}
+                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-orange-500"
                 >
-                  Shop the Collection
-                </Link>
-              </li>
-            </ul>
+                  <Mail size={16} />
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="md:col-span-2">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Quick Links</h3>
+              <ul className="space-y-2">
+                {quickLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-gray-400 hover:text-orange-400 transition-colors duration-200 flex items-center gap-1 group"
+                    >
+                      <span className="w-0 group-hover:w-2 h-0.5 bg-orange-500 transition-all duration-200"></span>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div className="md:col-span-3">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Support</h3>
+              <ul className="space-y-3">
+                <li>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Heart size={14} className="text-orange-500" />
+                    <span>100% Authentic Products</span>
+                  </div>
+                </li>
+                <li>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Truck size={14} className="text-orange-500" />
+                    <span>Free Shipping Over 50,000 MWK</span>
+                  </div>
+                </li>
+                <li>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Shield size={14} className="text-orange-500" />
+                    <span>Secure Payments</span>
+                  </div>
+                </li>
+                <li className="pt-2">
+                  <a
+                    href={`mailto:${links.email}`}
+                    className="inline-flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300 transition"
+                  >
+                    <Mail size={14} />
+                    {links.email}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="md:col-span-3">
+              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">We Accept</h3>
+              <div className="flex flex-wrap gap-3">
+                {paymentIcons.map((payment, idx) => {
+                  const Icon = payment.icon
+                  return (
+                    <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
+                      <Icon size={18} className="text-gray-300" />
+                      <span className="text-xs text-gray-400">{payment.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Sparkles size={14} className="text-orange-500" />
+                  <span>Anime Merchandise Since 2024</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-gray-500">
+              © {new Date().getFullYear()} SpectrumCosmo. All rights reserved.
+            </p>
+            <div className="flex gap-6 text-xs text-gray-500">
+              <Link href="/terms" className="hover:text-orange-400 transition">Terms</Link>
+              <Link href="/privacy" className="hover:text-orange-400 transition">Privacy</Link>
+              <Link href="/shipping" className="hover:text-orange-400 transition">Shipping</Link>
+              <Link href="/returns" className="hover:text-orange-400 transition">Returns</Link>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              "Wear your excitement with pride"
+            </p>
           </div>
         </div>
+      </footer>
 
-        {/* Bottom bar */}
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500">© {new Date().getFullYear()} SpectrumCosmo. All rights reserved.</p>
-          <p className="text-xs text-gray-500 italic">"Wear your excitement with pride."</p>
-        </div>
-      </div>
-    </footer>
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all duration-300 hover:scale-110 group"
+          aria-label="Back to top"
+        >
+          <ArrowUp size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+      )}
+    </>
   )
 }
