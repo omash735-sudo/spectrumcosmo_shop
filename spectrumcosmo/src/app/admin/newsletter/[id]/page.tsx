@@ -9,8 +9,10 @@ import Image from 'next/image';
 export default async function NewsletterPreviewPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+  
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
@@ -20,7 +22,7 @@ export default async function NewsletterPreviewPage({
 
   // Use the correct table name: newsletter_campaigns
   const [newsletter] = await sql`
-    SELECT * FROM newsletter_campaigns WHERE id = ${params.id}
+    SELECT * FROM newsletter_campaigns WHERE id = ${id}
   `;
 
   if (!newsletter) {
