@@ -75,15 +75,10 @@ export default function ProfilePage() {
     }
 
     setUploading(true)
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
     
-    // Check if Cloudinary config exists
-    if (!cloudName || !uploadPreset) {
-      toast.error('Cloudinary configuration missing')
-      setUploading(false)
-      return
-    }
+    // Use fallback values like the old working version
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv'
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload'
     
     const formData = new FormData()
     formData.append('file', file)
