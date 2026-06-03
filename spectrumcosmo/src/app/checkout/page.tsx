@@ -12,7 +12,8 @@ import {
   Loader2, Tag, Gift, X, CheckCircle, Info, Truck, 
   CreditCard, Shield, User, Mail, Phone, MapPin, 
   MessageSquare, ChevronRight, Lock, Sparkles, 
-  Banknote, Building2, Smartphone, Clock, ArrowRight
+  Banknote, Building2, Smartphone, Clock, ArrowRight,
+  ShoppingBag
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -272,7 +273,8 @@ export default function CheckoutPage() {
         alert('Payment request sent to your phone. Please check your mobile money app.');
         router.push(`/account/orders?payment=pending&order=${orderId}`);
       } else {
-        router.push(`/payment?orderId=${orderId}`);
+        // CHANGED: Redirect to /checkout/payment instead of /payment
+        router.push(`/checkout/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
@@ -355,7 +357,7 @@ export default function CheckoutPage() {
                             onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                             required
                             className={`${inputClasses('name')} pl-10`}
-                            placeholder="Your_name"
+                            placeholder="Your name"
                           />
                         </div>
                       </div>
@@ -785,6 +787,3 @@ export default function CheckoutPage() {
     </>
   );
 }
-
-// ShoppingBag icon was missing - add this import or use from lucide-react
-import { ShoppingBag } from 'lucide-react';
