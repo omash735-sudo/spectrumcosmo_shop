@@ -64,6 +64,18 @@ export default function AddressesPage() {
     loadAddresses();
   }, []);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showModal]);
+
   const openAddModal = () => {
     setEditingAddress(null);
     setForm({
@@ -305,11 +317,12 @@ export default function AddressesPage() {
         </div>
       )}
 
-      {/* Address Modal */}
+      {/* Address Modal - Fixed Scrolling */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white flex justify-between items-center p-5 border-b">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
+            {/* Fixed Header */}
+            <div className="flex justify-between items-center p-5 border-b flex-shrink-0">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingAddress ? 'Edit Address' : 'Add New Address'}
               </h2>
@@ -317,7 +330,9 @@ export default function AddressesPage() {
                 <X size={20} />
               </button>
             </div>
-            <div className="overflow-y-auto p-5">
+            
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto p-5 flex-1">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -369,7 +384,7 @@ export default function AddressesPage() {
                     type="text"
                     value={form.address_line2}
                     onChange={(e) => setForm({ ...form, address_line2: e.target.value })}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-2.5 border border-gray-200 rounded-xl"
                   />
                 </div>
 
@@ -431,7 +446,8 @@ export default function AddressesPage() {
                   <span className="text-sm text-gray-700">Set as default address</span>
                 </label>
 
-                <div className="flex gap-3 pt-4">
+                {/* Fixed Footer Buttons - Inside scrollable area but at bottom */}
+                <div className="flex gap-3 pt-4 sticky bottom-0 bg-white">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
