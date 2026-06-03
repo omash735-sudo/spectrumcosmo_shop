@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart, 
-  Sparkles, ArrowRight, Zap, Send, Gift, BookOpen 
+  Sparkles, ArrowRight, Star, Users, TrendingUp, Clock, Gift, 
+  Zap, Send, BookOpen, Music, Palette 
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -84,10 +85,9 @@ export default function NewsletterPage() {
         body: JSON.stringify({ email: user?.email }),
       });
       setSubscribed(false);
-      alert('Unsubscribed from newsletter');
     } catch (error) {
       console.error('Failed to unsubscribe', error);
-      alert('Something went wrong');
+      alert('Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -104,14 +104,14 @@ export default function NewsletterPage() {
       
       if (res.ok) {
         setSubscribed(true);
-        alert('Successfully subscribed to the newsletter');
+        alert('Successfully subscribed to the newsletter!');
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to subscribe');
       }
     } catch (error) {
       console.error('Failed to subscribe', error);
-      alert('Something went wrong');
+      alert('Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -120,10 +120,6 @@ export default function NewsletterPage() {
   const handleSubscribe = async () => {
     if (!emailInput.trim()) {
       alert('Please enter your email address');
-      return;
-    }
-    if (!emailInput.includes('@')) {
-      alert('Please enter a valid email address');
       return;
     }
     await performSubscribe(emailInput);
@@ -149,10 +145,9 @@ export default function NewsletterPage() {
       setShowFeedback(false);
       setFeedbackReason('');
       setFeedbackDetails('');
-      alert('Unsubscribed successfully');
     } catch (err) {
       console.error('Unsubscribe failed', err);
-      alert('Could not unsubscribe');
+      alert('Could not unsubscribe. Please try again.');
     } finally {
       setSubmittingFeedback(false);
     }
@@ -205,6 +200,7 @@ export default function NewsletterPage() {
                 Get the latest anime merch drops, exclusive offers, and community updates delivered to your inbox.
               </p>
               
+              {/* Subscribe Form */}
               <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
@@ -230,7 +226,7 @@ export default function NewsletterPage() {
         {/* Benefits Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
-            <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Why Subscribe</span>
+            <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Why Subscribe?</span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">What You'll Get</h2>
             <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
           </div>
@@ -274,10 +270,12 @@ export default function NewsletterPage() {
               </p>
             </div>
 
+            {/* Trending Requests Carousel */}
             <div className="mb-16">
               <RequestCarousel />
             </div>
 
+            {/* Submit Request Form */}
             <div className="max-w-2xl mx-auto">
               <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border p-8 shadow-sm">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h3>
@@ -291,7 +289,7 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        {/* Content Blocks */}
+        {/* Content Blocks - Dynamic */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
           {blocks.map((block) => (
             <ContentBlockRenderer key={block.id} block={block} />
@@ -371,7 +369,7 @@ export default function NewsletterPage() {
 
       {/* Feedback Modal */}
       {showFeedback && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">We're sad to see you go</h3>
