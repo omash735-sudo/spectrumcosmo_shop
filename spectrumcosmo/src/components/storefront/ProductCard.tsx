@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { ShoppingCart, Heart, Eye, Star, Clock, Ban, CheckCircle } from 'lucide-react';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 import { useCart } from '@/components/storefront/CartProvider';
+import { useWishlist } from '@/components/storefront/WishlistProvider';
 import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 import { saveLastCategory } from '@/lib/recentlyViewedUtils';
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   product: {
@@ -32,13 +34,15 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const priceMwk = Number(product.price ?? 0);
   const { addItem } = useCart();
+  const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
   const [localLoading, setLocalLoading] = useState(false);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  const isWishlisted = isInWishlist(product.id);
+  const loading = wishlistLoading || localLoading;
 
   const isOutOfStock = product.status === 'out_of_stock' || (product.stock_quantity ?? 0) === 0;
   const isComingSoon = product.status === 'coming_soon';
@@ -71,25 +75,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     fetchRating();
   }, [product.id]);
 
-  // Check wishlist status
-  useEffect(() => {
-    const checkWishlist = async () => {
-      try {
-        const userRes = await fetch('/api/auth/me');
-        if (!userRes.ok) return;
-        
-        const wishlistRes = await fetch('/api/account/wishlist');
-        if (wishlistRes.ok) {
-          const wishlist = await wishlistRes.json();
-          setIsWishlisted(wishlist.some((item: any) => item.product_id === product.id));
-        }
-      } catch (err) {
-        // Silent fail - wishlist not critical
-      }
-    };
-    checkWishlist();
-  }, [product.id]);
-
   const handleProductClick = () => {
     const categoryToSave = product.category_name || product.category;
     if (categoryToSave && categoryToSave !== 'Uncategorized') {
@@ -101,28 +86,24 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     
+    // Check login first
     const userRes = await fetch('/api/auth/me');
     if (!userRes.ok) {
-      alert('Please login to add items to wishlist');
-      window.location.href = '/login';
+      toast.error('Please login to add items to wishlist');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
       return;
     }
     
-    setWishlistLoading(true);
+    setLocalLoading(true);
     try {
-      const method = isWishlisted ? 'DELETE' : 'POST';
-      const res = await fetch('/api/account/wishlist', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id }),
-      });
-      if (res.ok) {
-        setIsWishlisted(!isWishlisted);
-      }
+      await toggleWishlist(product.id);
     } catch (err) {
       console.error('Wishlist error:', err);
+      toast.error('Something went wrong');
     } finally {
-      setWishlistLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -135,6 +116,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       image_url: productImage, 
       priceUsd: priceMwk
     });
+    toast.success('Added to cart');
   };
 
   const getStatusBadge = () => {
@@ -209,7 +191,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
-          disabled={wishlistLoading}
+          disabled={loading}
           className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
