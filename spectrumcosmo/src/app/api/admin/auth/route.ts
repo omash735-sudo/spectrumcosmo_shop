@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = users[0];
-    console.log('Admin found - ID:', admin.id, 'Username:', admin.username, 'Is Admin:', admin.is_admin);
+    console.log('Admin found - ID:', admin.id, 'Username:', admin.username, 'Email:', admin.email);
     
     // Check account status
     if (admin.account_status === 'frozen') {
@@ -54,9 +54,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
-    // FIX: Remove 'name' property - only include allowed fields
+    // FIX: Include ALL required fields from AdminPayload: id, username, email, role
     const token = signAdminToken({ 
-      id: admin.id, 
+      id: admin.id,
+      username: admin.username,
       email: admin.email,
       role: 'admin'
     });
@@ -74,12 +75,12 @@ export async function POST(req: NextRequest) {
       }
     });
     
-    // Set cookie - secure: false for local development
+    // Set cookie
     res.cookies.set('admin_token', token, {
       httpOnly: true,
-      secure: false, // Set to false for local development (HTTP)
+      secure: false,
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: '/',
     });
     
