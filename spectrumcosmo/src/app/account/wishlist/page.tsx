@@ -3,12 +3,11 @@
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft, Package } from 'lucide-react';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useWishlist } from '@/components/storefront/WishlistProvider';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 
-// Constants
 const MAX_STARS = 5;
 
 export default function WishlistPage() {
@@ -36,7 +35,6 @@ export default function WishlistPage() {
     return effectiveRating.toFixed(1);
   };
 
-  // Loading skeleton
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -102,8 +100,8 @@ export default function WishlistPage() {
                         className="object-cover group-hover:scale-105 transition duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">
-                        📦
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package size={48} className="text-gray-400 dark:text-gray-600" />
                       </div>
                     )}
                     {!item.in_stock && (
@@ -152,7 +150,7 @@ export default function WishlistPage() {
 
                   {/* Price */}
                   <CurrencyPrice 
-                    amount={item.price} 
+                    amountUsd={item.price} 
                     className="text-orange-500 dark:text-orange-400 font-bold text-xl mt-3"
                   />
 
@@ -164,7 +162,7 @@ export default function WishlistPage() {
                         : 'text-red-500 dark:text-red-400'
                     }`}
                   >
-                    {item.in_stock ? '✓ In stock' : '✗ Out of stock'}
+                    {item.in_stock ? 'In stock' : 'Out of stock'}
                   </p>
 
                   {/* Action buttons */}
