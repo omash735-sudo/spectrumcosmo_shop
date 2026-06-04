@@ -87,7 +87,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // =============================================
-    // INVOICE EMAIL - PUT THIS HERE
+    // INVOICE EMAIL - FIXED VERSION
     // =============================================
     if (status === 'delivered' && updatedOrder.payment_status === 'paid') {
       try {
@@ -124,11 +124,17 @@ export async function PUT(req: NextRequest) {
           companyPhone: '',
         };
 
-        const pdfStream = await renderToStream(<InvoicePDF data={pdfData} />);
+        // CORRECT WAY: Create the React element first
+        const invoiceElement = InvoicePDF({ data: pdfData });
+        
+        // Then render to stream
+        const pdfStream = await renderToStream(invoiceElement);
         
         // Convert stream to buffer
         const chunks: Uint8Array[] = [];
-        for await (const chunk of pdfStream) chunks.push(chunk);
+        for await (const chunk of pdfStream) {
+          chunks.push(chunk);
+        }
         const pdfBuffer = Buffer.concat(chunks);
 
         const transporter = nodemailer.createTransport({
