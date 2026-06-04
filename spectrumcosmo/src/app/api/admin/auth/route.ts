@@ -54,15 +54,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
-    // Generate admin token
+    // FIX: Remove 'name' property - only include allowed fields
     const token = signAdminToken({ 
       id: admin.id, 
-      name: admin.name || admin.username,
       email: admin.email,
       role: 'admin'
     });
     
-    console.log('Token generated:', token.substring(0, 50) + '...');
+    console.log('Token generated successfully');
     
     // Create response
     const res = NextResponse.json({ 
