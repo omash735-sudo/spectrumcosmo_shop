@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } next/navigation';
 import Image from 'next/image';
 import { Loader2, Plus, Trash2, Save, X, Edit, ChevronDown, Package, Tag, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -475,7 +475,7 @@ export default function AdminProductEditPage() {
                         <th className="px-4 py-3">SKU</th>
                         <th className="px-4 py-3 text-center">Status</th>
                         <th className="px-4 py-3 text-center">Actions</th>
-                      </tr>
+                      </table>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {variants.map((variant) => (
@@ -603,11 +603,17 @@ function VariantModal({
   onSave: (data: Partial<Variant>) => void; 
   onClose: () => void;
 }) {
+  // Helper to safely get variant value
+  const getVariantValue = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    return String(value);
+  };
+
   const [formData, setFormData] = useState<VariantFormData>({
     size: variant?.size || '',
     color: variant?.color || '',
-    price_override: variant?.price_override !== null ? String(variant.price_override) : '',
-    compare_price_override: variant?.compare_price_override !== null ? String(variant.compare_price_override) : '',
+    price_override: getVariantValue(variant?.price_override),
+    compare_price_override: getVariantValue(variant?.compare_price_override),
     stock_quantity: variant?.stock_quantity || 0,
     sku: variant?.sku || '',
     image_url: variant?.image_url || '',
@@ -621,7 +627,7 @@ function VariantModal({
     if (formData.size) data.size = formData.size;
     if (formData.color) data.color = formData.color;
     
-    // Fixed: Safely parse price values
+    // Safely parse price values
     const priceOverride = safeParseFloat(formData.price_override);
     if (priceOverride !== null) data.price_override = priceOverride;
     
@@ -683,12 +689,12 @@ function VariantModal({
                 Price Override
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">MK</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">MWK</span>
                 <input
                   type="number"
                   value={formData.price_override}
                   onChange={(e) => setFormData({ ...formData, price_override: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-12 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-orange-500"
                   placeholder="Leave empty for default"
                   step="100"
                   min="0"
@@ -700,12 +706,12 @@ function VariantModal({
                 Compare Price
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">MK</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">MWK</span>
                 <input
                   type="number"
                   value={formData.compare_price_override}
                   onChange={(e) => setFormData({ ...formData, compare_price_override: e.target.value })}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-12 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-orange-500"
                   step="100"
                   min="0"
                 />
