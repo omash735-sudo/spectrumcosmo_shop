@@ -4,16 +4,17 @@ import { getDb } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(req.url);
     const index = parseInt(searchParams.get('index') || '0');
     
     const sql = getDb();
     const images = await sql`
       SELECT image_url FROM request_images
-      WHERE request_id = ${params.id}
+      WHERE request_id = ${id}
       ORDER BY display_order ASC
     `;
     
