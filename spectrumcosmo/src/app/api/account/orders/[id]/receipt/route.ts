@@ -98,25 +98,26 @@ export async function GET(
           }
         );
 
-        // Handle different return types from PDF generator
-        let body: BodyInit;
+        // FIX: Convert Uint8Array to Buffer for compatibility
+        let buffer: Buffer;
         if (pdfBytes instanceof Uint8Array) {
-          body = pdfBytes;
+          buffer = Buffer.from(pdfBytes);
         } else if (Buffer.isBuffer(pdfBytes)) {
-          body = pdfBytes;
+          buffer = pdfBytes;
         } else if (typeof pdfBytes === 'string') {
-          body = Buffer.from(pdfBytes);
+          buffer = Buffer.from(pdfBytes);
         } else {
           throw new Error('Invalid PDF format returned from generator');
         }
 
-        return new NextResponse(body, {
+        // Use Response constructor instead of NextResponse for binary data
+        return new Response(buffer, {
           status: 200,
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `attachment; filename="receipt-${order.id.slice(-8).toUpperCase()}.pdf"`,
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Content-Length': String(body.byteLength || (body as Buffer).length || 0),
+            'Content-Length': String(buffer.length),
           },
         });
       } catch (pdfError) {
