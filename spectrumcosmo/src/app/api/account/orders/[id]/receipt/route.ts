@@ -98,7 +98,7 @@ export async function GET(
           }
         );
 
-        // FIX: Convert Uint8Array to Buffer for compatibility
+        // Convert to Buffer
         let buffer: Buffer;
         if (pdfBytes instanceof Uint8Array) {
           buffer = Buffer.from(pdfBytes);
@@ -110,8 +110,8 @@ export async function GET(
           throw new Error('Invalid PDF format returned from generator');
         }
 
-        // Use Response constructor instead of NextResponse for binary data
-        return new Response(buffer, {
+        // FIX: Use NextResponse with arrayBuffer and manual response
+        const response = new NextResponse(buffer as any, {
           status: 200,
           headers: {
             'Content-Type': 'application/pdf',
@@ -120,6 +120,8 @@ export async function GET(
             'Content-Length': String(buffer.length),
           },
         });
+        
+        return response;
       } catch (pdfError) {
         console.error('PDF generation error:', pdfError);
         const errorMessage = pdfError instanceof Error ? pdfError.message : 'Failed to generate PDF';
