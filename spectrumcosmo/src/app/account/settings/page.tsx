@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   User, MapPin, DollarSign, Globe, Bell, Mail, Star, Shield, FileText, Trash2,
   Loader2, X, Star as StarIcon, FileCheck, Lock, KeyRound, Sparkles,
   ArrowLeft, CheckCircle, AlertCircle, CreditCard, Smartphone, Heart,
-  ShoppingBag, LogOut, HelpCircle, MessageCircle
+  ShoppingBag, LogOut, HelpCircle, MessageCircle, Settings, ChevronRight
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -15,10 +15,39 @@ import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import CurrencySelector from '@/components/storefront/CurrencySelector';
 import toast from 'react-hot-toast';
 
+// Types
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  profileImage?: string;
+};
+
+type SettingsItem = {
+  icon: any;
+  label: string;
+  href?: string;
+  action?: 'password' | 'rating' | 'delete' | 'currency';
+  description: string;
+  value?: string;
+  danger?: boolean;
+};
+
+type SettingsSection = {
+  title: string;
+  icon: any;
+  items: SettingsItem[];
+};
+
+// Constants
+const DELETE_CONFIRM_TEXT = 'DELETE';
+const MIN_PASSWORD_LENGTH = 8;
+
 export default function SettingsPage() {
   const router = useRouter();
   const { currency } = useCurrency();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -38,10 +67,9 @@ export default function SettingsPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const loadUser = async () => {
+  const loadUser = useCallback(async () => {
+    try {
       const res = await fetch('/api/auth/me');
       if (!res.ok) {
         router.push('/login');
@@ -49,10 +77,18 @@ export default function SettingsPage() {
       }
       const data = await res.json();
       setUser(data.user);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Failed to load user:', errorMessage);
+      toast.error('Failed to load user data');
+    } finally {
       setLoading(false);
-    };
-    loadUser();
+    }
   }, [router]);
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   const handleRatingSubmit = async () => {
     if (rating === 0) {
@@ -71,15 +107,16 @@ export default function SettingsPage() {
       setRating(0);
       setRatingComment('');
     } catch (err) {
-      toast.error('Failed to submit rating');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit rating';
+      toast.error(errorMessage);
     } finally {
       setRatingSubmitting(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') {
-      toast.error('Please type DELETE to confirm');
+    if (deleteConfirmText !== DELETE_CONFIRM_TEXT) {
+      toast.error(`Please type ${DELETE_CONFIRM_TEXT} to confirm`);
       return;
     }
     setDeleting(true);
@@ -89,10 +126,12 @@ export default function SettingsPage() {
         toast.success('Account deleted successfully');
         router.push('/');
       } else {
-        toast.error('Failed to delete account');
+        const error = await res.json();
+        toast.error(error.error || 'Failed to delete account');
       }
     } catch (err) {
-      toast.error('Something went wrong');
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      toast.error(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -107,8 +146,8 @@ export default function SettingsPage() {
       setPasswordError('New passwords do not match');
       return;
     }
-    if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
     
@@ -131,7 +170,8 @@ export default function SettingsPage() {
         setPasswordError(data.error || 'Failed to change password');
       }
     } catch (err) {
-      setPasswordError('Something went wrong');
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setPasswordError(errorMessage);
     } finally {
       setChangingPassword(false);
     }
@@ -142,22 +182,25 @@ export default function SettingsPage() {
     router.push('/');
   };
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <main className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading settings...</p>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
+  const handleItemClick = (item: SettingsItem) => {
+    if (item.href) {
+      router.push(item.href);
+    }
+    if (item.action === 'rating') {
+      setShowRatingModal(true);
+    }
+    if (item.action === 'delete') {
+      setShowDeleteModal(true);
+    }
+    if (item.action === 'currency') {
+      document.getElementById('currency-selector-trigger')?.click();
+    }
+    if (item.action === 'password') {
+      setShowPasswordModal(true);
+    }
+  };
 
-  const settingsSections = [
+  const settingsSections: SettingsSection[] = [
     {
       title: 'Account Settings',
       icon: User,
@@ -197,25 +240,40 @@ export default function SettingsPage() {
     },
   ];
 
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+          <div className="text-center">
+            <Loader2 className="animate-spin text-orange-500 w-10 h-10 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">Loading settings...</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-8">
+      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-2">
-              <Link href="/account" className="p-2 hover:bg-gray-100 rounded-full transition">
-                <ArrowLeft size={20} />
+              <Link href="/account" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
+                <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
               </Link>
               <div className="flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Settings</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
                 <Sparkles size={18} className="text-orange-400" />
               </div>
             </div>
-            <p className="text-gray-500 text-sm ml-14">Manage your account preferences and security</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm ml-14">Manage your account preferences and security</p>
           </div>
 
           {/* User Info Card */}
@@ -244,40 +302,40 @@ export default function SettingsPage() {
               <div key={sectionIdx}>
                 <div className="flex items-center gap-2 mb-4">
                   <section.icon size={18} className="text-orange-500" />
-                  <h3 className="font-semibold text-gray-800 text-lg">{section.title}</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">{section.title}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {section.items.map((item, idx) => {
                     const Icon = item.icon;
-                    const isDanger = item.danger;
+                    const isDanger = item.danger || false;
                     return (
                       <div
                         key={idx}
-                        onClick={() => {
-                          if (item.href) router.push(item.href);
-                          if (item.action === 'rating') setShowRatingModal(true);
-                          if (item.action === 'delete') setShowDeleteModal(true);
-                          if (item.action === 'currency') {
-                            document.getElementById('currency-selector-trigger')?.click();
-                          }
-                          if (item.action === 'password') setShowPasswordModal(true);
-                        }}
-                        className={`bg-white rounded-2xl border p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all duration-200 group ${
-                          isDanger ? 'hover:border-red-200' : 'hover:border-orange-200'
+                        onClick={() => handleItemClick(item)}
+                        className={`bg-white dark:bg-gray-900 rounded-2xl border p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all duration-200 group ${
+                          isDanger 
+                            ? 'hover:border-red-200 dark:hover:border-red-800' 
+                            : 'hover:border-orange-200 dark:hover:border-orange-800'
                         }`}
                       >
                         <div className={`p-3 rounded-xl ${
-                          isDanger ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'
+                          isDanger 
+                            ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' 
+                            : 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
                         } group-hover:scale-105 transition`}>
                           <Icon size={22} />
                         </div>
                         <div className="flex-1">
-                          <h4 className={`font-semibold ${isDanger ? 'text-red-600' : 'text-gray-800'}`}>{item.label}</h4>
-                          <p className="text-xs text-gray-400">{item.description}</p>
-                          {item.value && <p className="text-xs text-gray-500 mt-1">{item.value}</p>}
-                          {item.label === 'Currency' && <p className="text-xs text-orange-500 mt-1">{currency}</p>}
+                          <h4 className={`font-semibold ${isDanger ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                            {item.label}
+                          </h4>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{item.description}</p>
+                          {item.value && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.value}</p>}
+                          {item.label === 'Currency' && <p className="text-xs text-orange-500 dark:text-orange-400 mt-1">{currency}</p>}
                         </div>
-                        <ChevronRight size={16} className={`text-gray-400 group-hover:translate-x-1 transition ${isDanger ? 'group-hover:text-red-500' : 'group-hover:text-orange-500'}`} />
+                        <ChevronRight size={16} className={`text-gray-400 group-hover:translate-x-1 transition ${
+                          isDanger ? 'group-hover:text-red-500' : 'group-hover:text-orange-500'
+                        }`} />
                       </div>
                     );
                   })}
@@ -289,27 +347,27 @@ export default function SettingsPage() {
           {/* Hidden Currency Selector Trigger */}
           <div className="hidden">
             <CurrencySelector />
-            <button id="currency-selector-trigger" onClick={() => {}} />
+            <button id="currency-selector-trigger" onClick={() => {}} aria-hidden="true" />
           </div>
         </div>
       </main>
 
-      {/* Rating Modal - Premium */}
+      {/* Rating Modal */}
       {showRatingModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowRatingModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b dark:border-gray-800">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-900">Rate SpectrumCosmo</h3>
-                <button onClick={() => setShowRatingModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Rate SpectrumCosmo</h3>
+                <button onClick={() => setShowRatingModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
                   <X size={20} />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">Your feedback helps us improve</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your feedback helps us improve</p>
             </div>
             <div className="p-6">
               <div className="flex justify-center gap-2 mb-4">
-                {[1,2,3,4,5].map(star => (
+                {[1, 2, 3, 4, 5].map(star => (
                   <button
                     key={star}
                     onMouseEnter={() => setHoverRating(star)}
@@ -317,12 +375,12 @@ export default function SettingsPage() {
                     onClick={() => setRating(star)}
                     className="focus:outline-none transition-transform hover:scale-110"
                   >
-                    <StarIcon size={40} className={`${(hoverRating || rating) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} transition`} />
+                    <StarIcon size={40} className={`${(hoverRating || rating) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-700'} transition`} />
                   </button>
                 ))}
               </div>
               <textarea
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 rows={3}
                 placeholder="Share your experience (optional)..."
                 value={ratingComment}
@@ -340,36 +398,36 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Delete Account Modal - Premium */}
+      {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowDeleteModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b bg-red-50 rounded-t-2xl">
-              <h3 className="text-xl font-bold text-red-600">Delete Account</h3>
-              <p className="text-sm text-red-500 mt-1">This action cannot be undone</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b bg-red-50 dark:bg-red-950/30 rounded-t-2xl">
+              <h3 className="text-xl font-bold text-red-600 dark:text-red-400">Delete Account</h3>
+              <p className="text-sm text-red-500 dark:text-red-500 mt-1">This action cannot be undone</p>
             </div>
             <div className="p-6">
-              <p className="text-gray-600 mb-4">All your data, orders, wishlist, and profile information will be permanently deleted.</p>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
-                <p className="text-sm text-yellow-800 flex items-center gap-2">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">All your data, orders, wishlist, and profile information will be permanently deleted.</p>
+              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-3 mb-4">
+                <p className="text-sm text-yellow-800 dark:text-yellow-400 flex items-center gap-2">
                   <AlertCircle size={16} />
-                  Type <code className="font-mono bg-white px-2 py-0.5 rounded text-sm font-bold">DELETE</code> to confirm
+                  Type <code className="font-mono bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-sm font-bold">DELETE</code> to confirm
                 </p>
               </div>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={e => setDeleteConfirmText(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Type DELETE here"
               />
               <div className="flex gap-3">
-                <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition">
+                <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== 'DELETE' || deleting}
+                  disabled={deleteConfirmText !== DELETE_CONFIRM_TEXT || deleting}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-medium transition disabled:opacity-50"
                 >
                   {deleting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Permanently Delete'}
@@ -380,50 +438,50 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Change Password Modal - Premium */}
+      {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPasswordModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b dark:border-gray-800">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-gray-900">Change Password</h3>
-                <button onClick={() => setShowPasswordModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Change Password</h3>
+                <button onClick={() => setShowPasswordModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
                   <X size={20} />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">Create a strong password for your account</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a strong password for your account</p>
             </div>
             <form onSubmit={handleChangePassword} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
                 <div className="relative">
                   <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type="password"
                     required
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
                 <div className="relative">
                   <KeyRound size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="password"
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Minimum {MIN_PASSWORD_LENGTH} characters</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
                 <div className="relative">
                   <KeyRound size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -431,24 +489,24 @@ export default function SettingsPage() {
                     required
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
               {passwordError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2">
                   <AlertCircle size={16} className="text-red-500" />
-                  <p className="text-sm text-red-600">{passwordError}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>
                 </div>
               )}
               {passwordSuccess && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-3 flex items-center gap-2">
                   <CheckCircle size={16} className="text-green-500" />
-                  <p className="text-sm text-green-600">{passwordSuccess}</p>
+                  <p className="text-sm text-green-600 dark:text-green-400">{passwordSuccess}</p>
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition">
+                <button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                   Cancel
                 </button>
                 <button
@@ -468,6 +526,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-// Missing imports
-import { Settings, ChevronRight } from 'lucide-react';
