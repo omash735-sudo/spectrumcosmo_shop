@@ -4,13 +4,14 @@ import { getDb } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const sql = getDb();
     const variants = await sql`
       SELECT * FROM product_variants 
-      WHERE product_id = ${params.id} AND is_active = true
+      WHERE product_id = ${id} AND is_active = true
       ORDER BY display_order ASC
     `;
     return NextResponse.json(variants);
