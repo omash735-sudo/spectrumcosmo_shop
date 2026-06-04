@@ -69,8 +69,9 @@ function getStatusMessage(status: string): string {
   }
 }
 
-export default async function RequestDetailPage({ params }: { params: { id: string } }) {
-  const request = await getRequest(params.id);
+export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const request = await getRequest(id);
   
   if (!request) {
     notFound();
