@@ -1,4 +1,3 @@
-// src/app/api/admin/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { signAdminToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const admin = users[0];
-    console.log('Admin found - ID:', admin.id, 'Username:', admin.username);
+    console.log('Admin found - ID:', admin.id, 'Username:', admin.username, 'Email:', admin.email);
     
     // Check account status
     if (admin.account_status === 'frozen') {
@@ -55,9 +54,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
-    // Generate admin token - ONLY use id and role (as defined in AdminPayload)
+    // Generate admin token - includes id, username, email, and role
     const token = signAdminToken({ 
-      id: admin.id, 
+      id: admin.id,
+      username: admin.username,
+      email: admin.email,
       role: 'admin'
     });
     
