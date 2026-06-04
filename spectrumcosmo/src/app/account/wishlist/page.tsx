@@ -1,31 +1,18 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft } from 'lucide-react';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useWishlist } from '@/components/storefront/WishlistProvider';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
-import { useCurrency } from '@/components/storefront/CurrencyProvider';
-
-// Types
-type WishlistItem = {
-  id: string;
-  product_id: string;
-  name: string;
-  image: string | null;
-  price: number;
-  rating?: number;
-  in_stock: boolean;
-};
 
 // Constants
 const MAX_STARS = 5;
 
 export default function WishlistPage() {
   const { wishlist, loading, removeFromWishlist, refreshWishlist } = useWishlist();
-  const { currency } = useCurrency();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const { addItem } = useCart();
 
@@ -35,7 +22,7 @@ export default function WishlistPage() {
     setRemovingId(null);
   }, [removeFromWishlist]);
 
-  const handleAddToCart = useCallback((item: WishlistItem) => {
+  const handleAddToCart = useCallback((item: any) => {
     addItem({
       id: String(item.product_id),
       name: item.name,
@@ -43,11 +30,6 @@ export default function WishlistPage() {
       priceUsd: item.price,
     });
   }, [addItem]);
-
-  const getStarFillLevel = (rating: number | undefined, starIndex: number): boolean => {
-    const effectiveRating = rating ?? 0;
-    return starIndex <= Math.floor(effectiveRating);
-  };
 
   const getFormattedRating = (rating: number | undefined): string => {
     const effectiveRating = rating ?? 0;
@@ -101,9 +83,8 @@ export default function WishlistPage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {wishlist.map((item: WishlistItem) => {
+          {wishlist.map((item) => {
             const hasRating = (item.rating ?? 0) > 0;
-            const starFillLevel = getStarFillLevel(item.rating, 0);
             
             return (
               <div
