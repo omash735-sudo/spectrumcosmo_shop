@@ -3,10 +3,10 @@ import { getDb } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const { orderId } = params;
+    const { orderId } = await params;
     const sql = getDb();
 
     // Get order with payment info - using correct column names
