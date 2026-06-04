@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Loader2, Plus, Trash2, Save, X, Edit, ChevronDown, Package, Tag, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -475,7 +475,7 @@ export default function AdminProductEditPage() {
                         <th className="px-4 py-3">SKU</th>
                         <th className="px-4 py-3 text-center">Status</th>
                         <th className="px-4 py-3 text-center">Actions</th>
-                      </table>
+                      </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {variants.map((variant) => (
