@@ -5,14 +5,14 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
   try {
+    const { id: requestId } = await params;
     const sql = getDb();
-    const requestId = params.id;
 
     // Check if already liked
     const [existing] = await sql`
