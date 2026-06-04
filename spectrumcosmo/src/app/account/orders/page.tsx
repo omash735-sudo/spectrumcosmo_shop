@@ -523,7 +523,7 @@ export default function OrdersPage() {
                 </div>
               </div>
               
-              {/* Price Breakdown */}
+              {/* Price Breakdown - FIXED: discount_amount undefined check */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
@@ -537,7 +537,7 @@ export default function OrdersPage() {
                     MWK {parseAmount(selectedOrder.shipping_cost || 0).toLocaleString()}
                   </span>
                 </div>
-                {selectedOrder.discount_amount > 0 && (
+                {selectedOrder.discount_amount && selectedOrder.discount_amount > 0 && (
                   <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                     <span>Discount</span>
                     <span>- MWK {parseAmount(selectedOrder.discount_amount).toLocaleString()}</span>
