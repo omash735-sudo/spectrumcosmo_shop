@@ -3,78 +3,148 @@ import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { generateReceiptPDF } from '@/lib/pdf-generator';
 
+// Types
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: string;
+  order_number: string | null;
+  customer_name: string;
+  customer_email: string;
+  created_at: string;
+  total_amount: number;
+  status: string;
+  items: OrderItem[];
+}
+
+interface Receipt {
+  id: string;
+  image_url: string;
+  extracted_data: any;
+  created_at: string;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
+  try {
+    const { user, error } = await getVerifiedUser(req);
+    if (error) return error;
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const { id: orderId } = await params;
-  const sql = getDb();
-  const { searchParams } = new URL(req.url);
-  const download = searchParams.get('download') === 'true';
+    const { id: orderId } = await params;
+    const sql = getDb();
+    const { searchParams } = new URL(req.url);
+    const download = searchParams.get('download') === 'true';
 
-  // Verify order belongs to user
-  const [order] = await sql`
-    SELECT o.*, 
-           array_agg(jsonb_build_object('name', oi.product_name, 'quantity', oi.quantity, 'price', oi.unit_price_usd)) as items
-    FROM orders o
-    LEFT JOIN order_items oi ON oi.order_id = o.id::uuid
-    WHERE o.id = ${orderId} AND o.user_id = ${user.id}
-    GROUP BY o.id
-  `;
+    // Verify order belongs to user
+    const orders = await sql`
+      SELECT o.*, 
+             COALESCE(
+               jsonb_agg(
+                 jsonb_build_object(
+                   'name', oi.product_name, 
+                   'quantity', oi.quantity, 
+                   'price', oi.unit_price_usd
+                 )
+               ) FILTER (WHERE oi.id IS NOT NULL),
+               '[]'::jsonb
+             ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id::uuid
+      WHERE o.id = ${orderId} AND o.user_id = ${user.id}
+      GROUP BY o.id
+    `;
 
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
+    const order = orders[0] as Order | undefined;
 
-  // Get receipt
-  const [receipt] = await sql`
-    SELECT * FROM order_receipts 
-    WHERE order_id = ${orderId} 
-    ORDER BY created_at DESC 
-    LIMIT 1
-  `;
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
-  if (!receipt) {
-    return NextResponse.json({ error: 'No receipt found for this order' }, { status: 404 });
-  }
+    // Get receipt
+    const receipts = await sql`
+      SELECT * FROM order_receipts 
+      WHERE order_id = ${orderId} 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
 
-  // If download requested, generate PDF
-  if (download) {
-    const pdfBytes = await generateReceiptPDF(
-      receipt.extracted_data,
-      {
-        orderNumber: order.order_number || order.id.slice(-8),
-        customerName: order.customer_name,
-        customerEmail: order.customer_email,
-        orderDate: order.created_at,
-        totalAmount: order.total_amount,
-        items: order.items || [],
+    const receipt = receipts[0] as Receipt | undefined;
+
+    if (!receipt) {
+      return NextResponse.json({ error: 'No receipt found for this order' }, { status: 404 });
+    }
+
+    // If download requested, generate PDF
+    if (download) {
+      try {
+        const pdfBytes = await generateReceiptPDF(
+          receipt.extracted_data || {},
+          {
+            orderNumber: order.order_number || order.id.slice(-8).toUpperCase(),
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            orderDate: order.created_at,
+            totalAmount: order.total_amount,
+            items: order.items || [],
+          }
+        );
+
+        // Handle different return types from PDF generator
+        let body: BodyInit;
+        if (pdfBytes instanceof Uint8Array) {
+          body = pdfBytes;
+        } else if (Buffer.isBuffer(pdfBytes)) {
+          body = pdfBytes;
+        } else if (typeof pdfBytes === 'string') {
+          body = Buffer.from(pdfBytes);
+        } else {
+          throw new Error('Invalid PDF format returned from generator');
+        }
+
+        return new NextResponse(body, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="receipt-${order.id.slice(-8).toUpperCase()}.pdf"`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Content-Length': String(body.byteLength || (body as Buffer).length || 0),
+          },
+        });
+      } catch (pdfError) {
+        console.error('PDF generation error:', pdfError);
+        const errorMessage = pdfError instanceof Error ? pdfError.message : 'Failed to generate PDF';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
       }
-    );
+    }
 
-    return new NextResponse(pdfBytes, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="receipt-${order.id.slice(-8)}.pdf"`,
+    // Return JSON response for preview
+    return NextResponse.json({
+      success: true,
+      receipt: {
+        id: receipt.id,
+        imageUrl: receipt.image_url,
+        extractedData: receipt.extracted_data,
+        createdAt: receipt.created_at,
+      },
+      order: {
+        id: order.id,
+        orderNumber: order.order_number || order.id.slice(-8).toUpperCase(),
+        totalAmount: order.total_amount,
+        status: order.status,
       },
     });
+  } catch (err) {
+    console.error('Receipt API error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-
-  return NextResponse.json({
-    receipt: {
-      id: receipt.id,
-      imageUrl: receipt.image_url,
-      extractedData: receipt.extracted_data,
-      createdAt: receipt.created_at,
-    },
-    order: {
-      id: order.id,
-      orderNumber: order.order_number || order.id.slice(-8),
-      totalAmount: order.total_amount,
-      status: order.status,
-    },
-  });
 }
