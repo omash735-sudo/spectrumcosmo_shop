@@ -4,10 +4,10 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const { orderId } = params;
+    const { orderId } = await params;
     
     // Optional: Verify user ownership
     const { user, error } = await getVerifiedUser(req);
