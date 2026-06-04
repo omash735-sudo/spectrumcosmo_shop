@@ -16,26 +16,53 @@ import {
   TrendingUp,
   Award,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  LucideIcon
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
+// Define types for stat and team members
+interface StatItem {
+  value: string;
+  label: string;
+  icon?: LucideIcon;
+}
+
+interface TeamMember {
+  name: string;
+  role: string;
+  image?: string;
+}
+
+interface PageContent {
+  history?: string;
+  vision?: string;
+  mission?: string;
+  stats?: StatItem[];
+  team?: TeamMember[];
+  future_plans?: string;
+  image_mode?: string;
+  single_image_url?: string;
+  carousel_images?: string[];
+  community_link?: string;
+}
+
 export default async function AboutPage() {
   const sql = getDb();
   const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
-  const content = row?.content || {};
+  const content = (row?.content || {}) as PageContent;
 
   const history = content.history || '';
   const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
   const mission = content.mission || 'Celebrate anime passion and help fans express themselves proudly.';
-  const stats = content.stats || [
+  const stats: StatItem[] = content.stats || [
     { value: '2024', label: 'Year Started', icon: Calendar },
     { value: '1000+', label: 'Products Sold', icon: ShoppingBag },
     { value: '400+', label: 'Community Members', icon: Users },
     { value: '5+', label: 'Countries Served', icon: Globe }
   ];
-  const team = content.team || [];
+  const team: TeamMember[] = content.team || [];
   const futurePlans = content.future_plans || 'Participate in conventions, host watch parties, support local anime culture.';
   const imageMode = content.image_mode || 'single';
   const singleImage = content.single_image_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_21.52.23_bik6wg.jpg';
@@ -142,7 +169,7 @@ export default async function AboutPage() {
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">The milestones we're proud to have achieved</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map((stat, idx) => {
+              {stats.map((stat: StatItem, idx: number) => {
                 const Icon = stat.icon || (idx === 0 ? Calendar : idx === 1 ? ShoppingBag : idx === 2 ? Users : Globe);
                 return (
                   <div key={idx} className="text-center bg-gradient-to-br from-orange-50 to-white p-6 rounded-2xl border border-orange-100 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
@@ -168,7 +195,7 @@ export default async function AboutPage() {
                 <p className="text-gray-500 mt-3 max-w-2xl mx-auto">The passionate people making it all happen</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {team.map((member, idx) => (
+                {team.map((member: TeamMember, idx: number) => (
                   <div key={idx} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                     <div className="relative h-64 overflow-hidden">
                       {member.image ? (
