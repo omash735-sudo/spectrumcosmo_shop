@@ -1,6 +1,7 @@
 export interface AdminPayload {
   id: string
   username: string
+  email?: string  // Add this line
   role: 'admin'
 }
 
