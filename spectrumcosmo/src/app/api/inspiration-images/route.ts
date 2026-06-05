@@ -1,35 +1,11 @@
 // app/api/inspiration/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-
-// Types
-interface InspirationImage {
-  id: string;
-  image_url: string;
-  title: string | null;
-  description: string | null;
-  like_count: number;
-  display_order: number;
-  created_at: Date;
-}
-
-interface InspirationImageWithLike extends InspirationImage {
-  user_liked: boolean;
-}
-
-interface PaginatedResponse {
-  images: InspirationImageWithLike[];
-  pagination: {
-    total: number;
-    limit: number;
-    hasMore: boolean;
-    nextCursor?: string;
-  };
-}
+import { InspirationImage, InspirationImageWithLike, PaginatedResponse } from '@/types';
 
 export const revalidate = 60;
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const url = new URL(req.url);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '12'), 50);
@@ -41,24 +17,25 @@ export async function GET(req: NextRequest) {
     
     const sql = getDb();
     
-    // Get total count
-    const [countResult] = await sql`
+    // Get total count - typed as { total: number }[]
+    const [countResult] = await sql.query<{ total: string }>`
       SELECT COUNT(*) as total FROM inspiration_images WHERE is_active = true
     `;
     const total = parseInt(countResult?.total || '0', 10);
     
-    // Build query with cursor-based pagination
-    let imagesQuery;
+    // Get images - typed as InspirationImage[]
+    let images: InspirationImage[];
+    
     if (cursor) {
-      imagesQuery = await sql`
+      images = await sql.query<InspirationImage>`
         SELECT id, image_url, title, description, like_count, display_order, created_at
         FROM inspiration_images
-        WHERE is_active = true AND display_order > (SELECT display_order FROM inspiration_images WHERE id = ${cursor})
+        WHERE is_active = true AND id > ${cursor}
         ORDER BY display_order ASC, created_at DESC
         LIMIT ${limit}
       `;
     } else {
-      imagesQuery = await sql`
+      images = await sql.query<InspirationImage>`
         SELECT id, image_url, title, description, like_count, display_order, created_at
         FROM inspiration_images
         WHERE is_active = true
@@ -67,25 +44,22 @@ export async function GET(req: NextRequest) {
       `;
     }
     
-    const images = imagesQuery as InspirationImage[];
-    
-    // Add user_liked flag (false by default, will be populated by separate endpoint if user logged in)
+    // Add user_liked flag - now TypeScript knows the type
     const imagesWithLike: InspirationImageWithLike[] = images.map((image: InspirationImage) => ({
       ...image,
       user_liked: false,
     }));
     
-    // Determine if there are more images
     const hasMore = images.length === limit;
     const nextCursor = hasMore && images.length > 0 ? images[images.length - 1].id : undefined;
     
-    const response: PaginatedResponse = {
-      images: imagesWithLike,
+    const response: PaginatedResponse<InspirationImageWithLike> = {
+      data: imagesWithLike,
       pagination: {
         total,
         limit,
+        offset: 0,
         hasMore,
-        nextCursor,
       },
     };
     
