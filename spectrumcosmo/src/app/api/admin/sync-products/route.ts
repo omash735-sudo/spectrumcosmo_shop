@@ -192,7 +192,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Stable Algolia v4 client
     const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
 
@@ -270,10 +269,8 @@ export async function GET(req: NextRequest) {
     const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
     
-    const [settings, stats] = await Promise.all([
-      index.getSettings(),
-      index.getStats(),
-    ]);
+    // FIX: getSettings only - getStats doesn't exist in v4
+    const settings = await index.getSettings();
 
     const sql = getDb();
     const [productCount] = await sql`
@@ -293,7 +290,6 @@ export async function GET(req: NextRequest) {
       indexName: ALGOLIA_INDEX_NAME,
       appId: ALGOLIA_APP_ID.slice(0, 4) + '...',
       dbProductCount: safeParseInt(productCount?.count),
-      algoliaProductCount: stats.numberOfObjects || 0,
       lastSync: lastSync ? {
         completedAt: lastSync.completed_at,
         syncedProducts: lastSync.synced_products,
