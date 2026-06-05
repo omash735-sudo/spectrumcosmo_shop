@@ -1,4 +1,4 @@
-// app/api/admin/algolia/sync/route.ts
+// app/api/admin/sync-products/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -85,8 +85,7 @@ async function getLastSyncTime(sql: any): Promise<Date | null> {
       LIMIT 1
     `;
     return lastSync?.completed_at || null;
-  } catch (err) {
-    console.warn('Could not get last sync time, table might not exist:', err);
+  } catch {
     return null;
   }
 }
@@ -103,9 +102,15 @@ async function createSyncLog(sql: any, status: string): Promise<string> {
 
 // Update sync log
 async function updateSyncLog(sql: any, logId: string, updates: Partial<SyncLog>) {
+  const setClause = Object.entries(updates)
+    .filter(([_, value]) => value !== undefined)
+    .map(([key, value]) => `${key} = ${value === null ? 'NULL' : `'${value}'`}`);
+  
+  if (setClause.length === 0) return;
+  
   await sql`
     UPDATE algolia_sync_logs 
-    SET ${sql(updates)}
+    SET ${sql.unsafe(setClause.join(', '))}
     WHERE id = ${logId}
   `;
 }
@@ -113,40 +118,22 @@ async function updateSyncLog(sql: any, logId: string, updates: Partial<SyncLog>)
 // Get products changed since last sync
 async function getChangedProducts(sql: any, since: Date | null): Promise<Product[]> {
   if (since) {
-    // Delta sync - only get changed products
     return await sql`
       SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.price,
-        p.currency,
-        p.image_url,
-        p.category_id,
-        p.status,
-        p.stock_quantity,
-        p.updated_at,
-        p.created_at,
+        p.id, p.name, p.description, p.price, p.currency,
+        p.image_url, p.category_id, p.status, p.stock_quantity,
+        p.updated_at, p.created_at,
         c.name as category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.updated_at > ${since}
     ` as Product[];
   } else {
-    // Full sync - get all active products
     return await sql`
       SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.price,
-        p.currency,
-        p.image_url,
-        p.category_id,
-        p.status,
-        p.stock_quantity,
-        p.updated_at,
-        p.created_at,
+        p.id, p.name, p.description, p.price, p.currency,
+        p.image_url, p.category_id, p.status, p.stock_quantity,
+        p.updated_at, p.created_at,
         c.name as category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
@@ -165,8 +152,7 @@ async function getDeletedProductIds(sql: any, since: Date | null): Promise<strin
       WHERE deleted_at > ${since}
     `;
     return deletedProducts.map((row: any) => row.product_id);
-  } catch (err) {
-    console.warn('Could not get deleted products, table might not exist:', err);
+  } catch {
     return [];
   }
 }
@@ -175,7 +161,6 @@ export async function POST(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
-  // Validate environment variables
   if (!process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || !process.env.ALGOLIA_ADMIN_KEY) {
     return NextResponse.json({ 
       success: false, 
@@ -191,13 +176,8 @@ export async function POST(req: NextRequest) {
   let logId: string | null = null;
 
   try {
-    // Create sync log
     logId = await createSyncLog(sql, 'running');
-
-    // Get last successful sync time
     const lastSyncTime = await getLastSyncTime(sql);
-    
-    // Get products changed since last sync
     const products = await getChangedProducts(sql, lastSyncTime);
     const deletedProductIds = await getDeletedProductIds(sql, lastSyncTime);
 
@@ -218,14 +198,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Initialize Algolia client
+    // Initialize Algolia client for v5
     const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
     const index = client.initIndex(ALGOLIA_INDEX_NAME);
 
     let syncedCount = 0;
     let deletedCount = 0;
 
-    // Batch update changed products
     if (products.length > 0) {
       const algoliaObjects: AlgoliaProduct[] = products.map(formatForAlgolia);
       const BATCH_SIZE = 100;
@@ -237,13 +216,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Delete products that no longer exist
     if (deletedProductIds.length > 0) {
       await index.deleteObjects(deletedProductIds);
       deletedCount = deletedProductIds.length;
     }
 
-    // Update sync log
     await updateSyncLog(sql, logId, {
       status: 'completed',
       completed_at: new Date(),
@@ -275,6 +252,68 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ 
       success: false, 
+      error: errorMessage 
+    }, { status: 500 });
+  }
+}
+
+// GET endpoint to check sync status
+export async function GET(req: NextRequest) {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
+  if (!process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || !process.env.ALGOLIA_ADMIN_KEY) {
+    return NextResponse.json({ 
+      configured: false, 
+      error: 'Algolia is not configured properly' 
+    }, { status: 500 });
+  }
+
+  const ALGOLIA_APP_ID = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!;
+  const ALGOLIA_ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY!;
+  const ALGOLIA_INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'products';
+
+  try {
+    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = client.initIndex(ALGOLIA_INDEX_NAME);
+    
+    const [settings, stats] = await Promise.all([
+      index.getSettings(),
+      index.getStats(),
+    ]);
+
+    const sql = getDb();
+    const [productCount] = await sql`
+      SELECT COUNT(*) as count FROM products WHERE status = 'in_stock'
+    `;
+    
+    const [lastSync] = await sql`
+      SELECT completed_at, synced_products, deleted_products 
+      FROM algolia_sync_logs 
+      WHERE status = 'completed' 
+      ORDER BY completed_at DESC 
+      LIMIT 1
+    `;
+
+    return NextResponse.json({
+      configured: true,
+      indexName: ALGOLIA_INDEX_NAME,
+      appId: ALGOLIA_APP_ID.slice(0, 4) + '...',
+      dbProductCount: safeParseInt(productCount?.count),
+      algoliaProductCount: stats.numberOfObjects || 0,
+      lastSync: lastSync ? {
+        completedAt: lastSync.completed_at,
+        syncedProducts: lastSync.synced_products,
+        deletedProducts: lastSync.deleted_products,
+      } : null,
+      settings,
+    });
+    
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Algolia status error:', errorMessage);
+    return NextResponse.json({ 
+      configured: false, 
       error: errorMessage 
     }, { status: 500 });
   }
