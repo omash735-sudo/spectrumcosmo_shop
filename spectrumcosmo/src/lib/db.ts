@@ -1,6 +1,5 @@
 // lib/db.ts
 import { neon, neonConfig, NeonQueryFunction } from '@neondatabase/serverless';
-import { Pool, neon as neonPg } from '@neondatabase/serverless';
 
 // Types
 export type DatabaseClient = NeonQueryFunction<boolean, boolean>;
@@ -21,6 +20,8 @@ export interface DatabaseConfig {
   queryTimeoutMs?: number;
   maxRetries?: number;
   retryDelayMs?: number;
+  enableQueryLogging?: boolean;
+  slowQueryThresholdMs?: number;
 }
 
 // Configuration
@@ -31,6 +32,8 @@ const DEFAULT_CONFIG: DatabaseConfig = {
   queryTimeoutMs: 30000,
   maxRetries: 3,
   retryDelayMs: 1000,
+  enableQueryLogging: process.env.NODE_ENV === 'development',
+  slowQueryThresholdMs: 1000,
 };
 
 // Connection pooling configuration
@@ -40,6 +43,8 @@ neonConfig.poolDefaultMaxClients = DEFAULT_CONFIG.poolSize;
 let sql: DatabaseClient | null = null;
 let isConnecting = false;
 let connectionError: Error | null = null;
+let activeQueries = 0;
+let totalQueries = 0;
 
 // Validate environment
 function validateConfig(): void {
@@ -63,7 +68,8 @@ async function createConnection(retries: number = DEFAULT_CONFIG.maxRetries!): P
       console.error(`Database connection attempt ${i + 1} failed:`, connectionError.message);
       
       if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, DEFAULT_CONFIG.retryDelayMs! * Math.pow(2, i)));
+        const delay = DEFAULT_CONFIG.retryDelayMs! * Math.pow(2, i);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
@@ -75,7 +81,6 @@ export async function initDb(): Promise<DatabaseClient> {
   if (sql) return sql;
   
   if (isConnecting) {
-    // Wait for existing connection attempt
     await new Promise(resolve => setTimeout(resolve, 100));
     return initDb();
   }
@@ -107,11 +112,15 @@ export async function getDbAsync(): Promise<DatabaseClient> {
   return getDb();
 }
 
-// Execute query with timeout
+// Execute query with timeout and logging
 export async function executeQuery<T = any>(
   queryFn: (client: DatabaseClient) => Promise<T[]>,
   timeoutMs: number = DEFAULT_CONFIG.queryTimeoutMs!
 ): Promise<T[]> {
+  const startTime = Date.now();
+  activeQueries++;
+  totalQueries++;
+  
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error(`Query timeout after ${timeoutMs}ms`)), timeoutMs);
   });
@@ -121,11 +130,19 @@ export async function executeQuery<T = any>(
   
   try {
     const result = await Promise.race([queryPromise, timeoutPromise]);
+    const duration = Date.now() - startTime;
+    
+    if (DEFAULT_CONFIG.enableQueryLogging && duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
+      console.warn(`Slow query detected: ${duration}ms`);
+    }
+    
     return result;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Query failed';
     console.error('Query execution error:', errorMessage);
     throw new Error(errorMessage);
+  } finally {
+    activeQueries--;
   }
 }
 
@@ -171,12 +188,32 @@ export function getPoolStatus(): {
   isConnected: boolean;
   hasError: boolean;
   errorMessage: string | null;
+  activeQueries: number;
+  totalQueries: number;
 } {
   return {
     isConnected: sql !== null,
     hasError: connectionError !== null,
     errorMessage: connectionError?.message || null,
+    activeQueries,
+    totalQueries,
   };
+}
+
+// Get database metrics
+export function getDbMetrics() {
+  return {
+    activeQueries,
+    totalQueries,
+    isConnected: sql !== null,
+    uptime: sql ? Date.now() - (global as any).dbStartTime || 0 : 0,
+  };
+}
+
+// Reset metrics (for testing)
+export function resetMetrics(): void {
+  activeQueries = 0;
+  totalQueries = 0;
 }
 
 // Close connection (for graceful shutdown)
@@ -191,6 +228,9 @@ export async function closeDb(): Promise<void> {
 
 // Graceful shutdown handler
 export function setupGracefulShutdown(): void {
+  // Store start time
+  (global as any).dbStartTime = Date.now();
+  
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, closing database connection...');
     await closeDb();
@@ -212,8 +252,17 @@ export async function queryOne<T = any>(
   strings: TemplateStringsArray,
   ...values: any[]
 ): Promise<T | null> {
+  const startTime = Date.now();
   const client = getDb();
   const result = await client(strings, ...values);
+  
+  if (DEFAULT_CONFIG.enableQueryLogging) {
+    const duration = Date.now() - startTime;
+    if (duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
+      console.warn(`Slow queryOne detected: ${duration}ms`);
+    }
+  }
+  
   return (result as T[])[0] || null;
 }
 
@@ -221,8 +270,17 @@ export async function queryMany<T = any>(
   strings: TemplateStringsArray,
   ...values: any[]
 ): Promise<T[]> {
+  const startTime = Date.now();
   const client = getDb();
   const result = await client(strings, ...values);
+  
+  if (DEFAULT_CONFIG.enableQueryLogging) {
+    const duration = Date.now() - startTime;
+    if (duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
+      console.warn(`Slow queryMany detected: ${duration}ms, returned ${(result as T[]).length} rows`);
+    }
+  }
+  
   return result as T[];
 }
 
@@ -243,4 +301,19 @@ export async function queryManyWithTx<T = any>(
 ): Promise<T[]> {
   const result = await client(strings, ...values);
   return result as T[];
+}
+
+// Batch query helper
+export async function batchQuery<T = any>(
+  queries: Array<{ strings: TemplateStringsArray; values: any[] }>
+): Promise<T[][]> {
+  const client = getDb();
+  const results: T[][] = [];
+  
+  for (const query of queries) {
+    const result = await client(query.strings, ...query.values);
+    results.push(result as T[]);
+  }
+  
+  return results;
 }
