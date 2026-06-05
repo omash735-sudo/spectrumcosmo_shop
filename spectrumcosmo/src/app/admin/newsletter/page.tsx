@@ -9,20 +9,35 @@ import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import NewsletterClient from '@/components/admin/NewsletterClient';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import type { NewsletterCampaign, NewsletterStatsData } from '@/types/newsletter';
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Newsletter Hub | Admin Dashboard | SpectrumCosmo',
-  description: 'Manage email campaigns, track subscriber engagement, and view newsletter analytics.',
-  robots: 'noindex, nofollow',
-};
+// Local types matching the client component
+type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+type AudienceType = 'all' | 'active' | 'inactive' | 'segment';
+
+interface Campaign {
+  id: string;
+  title: string;
+  status: CampaignStatus;
+  audience: AudienceType;
+  open_count: number;
+  click_count: number;
+  created_at: string;
+  sent_at?: string | null;
+  total_subscribers: number;
+}
 
 interface NewsletterStats {
   totalSubscribers: number;
   totalCampaigns: number;
   averageOpenRate: number;
 }
+
+export const metadata: Metadata = {
+  title: 'Newsletter Hub | Admin Dashboard | SpectrumCosmo',
+  description: 'Manage email campaigns, track subscriber engagement, and view newsletter analytics.',
+  robots: 'noindex, nofollow',
+};
 
 async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
   try {
@@ -63,7 +78,7 @@ export default async function AdminNewsletterPage() {
     redirect('/admin/login');
   }
 
-  let campaigns: NewsletterCampaign[] = [];
+  let campaigns: Campaign[] = [];
   let stats: NewsletterStats | null = null;
   let error: string | null = null;
 
@@ -77,8 +92,8 @@ export default async function AdminNewsletterPage() {
           c.title,
           c.status,
           c.audience,
-          c.open_count,
-          c.click_count,
+          COALESCE(c.open_count, 0) as open_count,
+          COALESCE(c.click_count, 0) as click_count,
           c.created_at,
           c.sent_at,
           COALESCE(
@@ -92,20 +107,12 @@ export default async function AdminNewsletterPage() {
       getNewsletterStats(sql),
     ]);
     
-    campaigns = campaignsResult as NewsletterCampaign[];
+    campaigns = campaignsResult as Campaign[];
     stats = statsResult;
   } catch (err) {
     console.error('Failed to fetch newsletter data:', err);
     error = err instanceof Error ? err.message : 'Unable to load newsletter data. Please try again later.';
   }
-
-  // Prepare initial stats for client
-  const initialStats: NewsletterStatsData | null = stats ? {
-    totalActive: stats.totalSubscribers,
-    growth: [],
-    performance: [],
-    unsubscribes: [],
-  } : null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -178,7 +185,6 @@ export default async function AdminNewsletterPage() {
         ) : (
           <NewsletterClient 
             initialCampaigns={campaigns} 
-            initialStats={initialStats}
           />
         )}
       </div>
