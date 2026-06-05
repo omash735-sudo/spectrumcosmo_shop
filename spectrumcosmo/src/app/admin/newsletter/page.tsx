@@ -1,6 +1,6 @@
 // app/admin/newsletter/page.tsx
 export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -9,20 +9,14 @@ import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import NewsletterClient from '@/components/admin/NewsletterClient';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import type { Campaign } from '@/types/newsletter';
+import type { NewsletterCampaign, NewsletterStatsData } from '@/types/newsletter';
 import Link from 'next/link';
 
-// Metadata for SEO
 export const metadata: Metadata = {
   title: 'Newsletter Hub | Admin Dashboard | SpectrumCosmo',
   description: 'Manage email campaigns, track subscriber engagement, and view newsletter analytics.',
   robots: 'noindex, nofollow',
 };
-
-// Types
-interface CampaignWithSubscribers extends Campaign {
-  total_subscribers: number;
-}
 
 interface NewsletterStats {
   totalSubscribers: number;
@@ -62,7 +56,6 @@ async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
 }
 
 export default async function AdminNewsletterPage() {
-  // Authentication check
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
   
@@ -70,18 +63,24 @@ export default async function AdminNewsletterPage() {
     redirect('/admin/login');
   }
 
-  let campaigns: CampaignWithSubscribers[] = [];
+  let campaigns: NewsletterCampaign[] = [];
   let stats: NewsletterStats | null = null;
   let error: string | null = null;
 
   try {
     const sql = getDb();
     
-    // Fetch campaigns and stats in parallel
     const [campaignsResult, statsResult] = await Promise.all([
       sql`
         SELECT 
-          c.*,
+          c.id,
+          c.title,
+          c.status,
+          c.audience,
+          c.open_count,
+          c.click_count,
+          c.created_at,
+          c.sent_at,
           COALESCE(
             (SELECT COUNT(*) FROM subscribers WHERE status = 'confirmed'),
             0
@@ -93,16 +92,23 @@ export default async function AdminNewsletterPage() {
       getNewsletterStats(sql),
     ]);
     
-    campaigns = campaignsResult as CampaignWithSubscribers[];
+    campaigns = campaignsResult as NewsletterCampaign[];
     stats = statsResult;
   } catch (err) {
     console.error('Failed to fetch newsletter data:', err);
     error = err instanceof Error ? err.message : 'Unable to load newsletter data. Please try again later.';
   }
 
+  // Prepare initial stats for client
+  const initialStats: NewsletterStatsData | null = stats ? {
+    totalActive: stats.totalSubscribers,
+    growth: [],
+    performance: [],
+    unsubscribes: [],
+  } : null;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -113,7 +119,6 @@ export default async function AdminNewsletterPage() {
               </p>
             </div>
             
-            {/* Stats Summary in Header */}
             {stats && !error && (
               <div className="hidden md:flex items-center gap-4 text-sm">
                 <div className="text-right">
@@ -144,7 +149,6 @@ export default async function AdminNewsletterPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {error ? (
-          // Professional Error State
           <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -174,12 +178,7 @@ export default async function AdminNewsletterPage() {
         ) : (
           <NewsletterClient 
             initialCampaigns={campaigns} 
-            initialStats={stats ? {
-              totalActive: stats.totalSubscribers,
-              growth: [],
-              performance: [],
-              unsubscribes: [],
-            } : null}
+            initialStats={initialStats}
           />
         )}
       </div>
