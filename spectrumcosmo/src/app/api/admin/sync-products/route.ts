@@ -102,17 +102,22 @@ async function createSyncLog(sql: any, status: string): Promise<string> {
 
 // Update sync log
 async function updateSyncLog(sql: any, logId: string, updates: Partial<SyncLog>) {
-  const setClause = Object.entries(updates)
-    .filter(([_, value]) => value !== undefined)
-    .map(([key, value]) => `${key} = ${value === null ? 'NULL' : `'${value}'`}`);
+  const entries = Object.entries(updates)
+    .filter(([_, value]) => value !== undefined);
   
-  if (setClause.length === 0) return;
+  if (entries.length === 0) return;
   
-  await sql`
-    UPDATE algolia_sync_logs 
-    SET ${sql.unsafe(setClause.join(', '))}
-    WHERE id = ${logId}
-  `;
+  for (const [key, value] of entries) {
+    if (key === 'completed_at' && value instanceof Date) {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
+    } else if (typeof value === 'string') {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
+    } else if (typeof value === 'number') {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
+    } else if (value === null) {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = NULL WHERE id = ${logId}`;
+    }
+  }
 }
 
 // Get products changed since last sync
@@ -198,9 +203,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Initialize Algolia client for v5
-    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-    const index = client.initIndex(ALGOLIA_INDEX_NAME);
+    // FIX: Algolia v5 uses a different API - get the search client first
+    const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = searchClient.initIndex(ALGOLIA_INDEX_NAME);
 
     let syncedCount = 0;
     let deletedCount = 0;
@@ -274,8 +279,8 @@ export async function GET(req: NextRequest) {
   const ALGOLIA_INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'products';
 
   try {
-    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-    const index = client.initIndex(ALGOLIA_INDEX_NAME);
+    const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = searchClient.initIndex(ALGOLIA_INDEX_NAME);
     
     const [settings, stats] = await Promise.all([
       index.getSettings(),
