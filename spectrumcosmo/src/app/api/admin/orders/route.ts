@@ -38,7 +38,6 @@ interface UpdatedOrder {
 }
 
 export async function PUT(req: NextRequest) {
-  // Check admin authentication
   const authError = requireAdmin(req);
   if (authError) return authError;
 
@@ -120,7 +119,6 @@ export async function PUT(req: NextRequest) {
           });
         } catch (emailErr) {
           console.error('Failed to send status email:', emailErr);
-          // Don't fail the request if email fails
         }
       }
     }
@@ -128,7 +126,6 @@ export async function PUT(req: NextRequest) {
     // Invoice Email on Delivery
     if (status === 'delivered' && updatedOrder.payment_status === 'paid') {
       try {
-        // Dynamic imports for heavy modules
         const { renderToStream } = await import('@react-pdf/renderer');
         const { InvoicePDF } = await import('@/components/invoice/InvoicePDF');
         const QRCode = await import('qrcode');
@@ -168,10 +165,16 @@ export async function PUT(req: NextRequest) {
         const invoiceElement = InvoicePDF({ data: pdfData });
         const pdfStream = await renderToStream(invoiceElement);
         
-        // Convert stream to buffer
-        const chunks: Uint8Array[] = [];
+        // FIX: Handle both string and Buffer chunks
+        const chunks: Buffer[] = [];
         for await (const chunk of pdfStream) {
-          chunks.push(chunk);
+          if (typeof chunk === 'string') {
+            chunks.push(Buffer.from(chunk));
+          } else if (Buffer.isBuffer(chunk)) {
+            chunks.push(chunk);
+          } else if (chunk instanceof Uint8Array) {
+            chunks.push(Buffer.from(chunk));
+          }
         }
         const pdfBuffer = Buffer.concat(chunks);
 
@@ -213,7 +216,6 @@ export async function PUT(req: NextRequest) {
         }
       } catch (emailErr) {
         console.error('Failed to send invoice email:', emailErr);
-        // Don't fail the request if email fails
       }
     }
 
