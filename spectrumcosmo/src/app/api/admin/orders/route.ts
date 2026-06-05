@@ -1,20 +1,58 @@
 // app/api/admin/orders/route.ts
 
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth';
+import { getDb } from '@/lib/db';
+import { deductStock, releaseReservedStock, getStatusDisplayInfo, sendDynamicStatusEmail } from '@/lib/order-utils';
+
+// Types
+interface OrderUpdateBody {
+  id: string;
+  status: string;
+  trackingNumber?: string;
+  trackingNotes?: string;
+  adminNotes?: string;
+}
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  product_name?: string;
+}
+
+interface UpdatedOrder {
+  id: string;
+  customer_email: string;
+  customer_name: string;
+  order_number: string | null;
+  total_amount: number;
+  tracking_number: string | null;
+  payment_status: string;
+  created_at: string;
+  phone_number: string;
+  location: string;
+  payment_method: string;
+  delivery_fee?: number;
+  invoice_number?: string;
+}
+
 export async function PUT(req: NextRequest) {
+  // Check admin authentication
   const authError = requireAdmin(req);
   if (authError) return authError;
 
-  const body = await req.json();
-  const { id, status, trackingNumber, trackingNotes, adminNotes } = body;
-  
-  if (!id || !status) {
-    return NextResponse.json({ error: 'ID and status required' }, { status: 400 });
-  }
-
-  const sql = getDb();
-  const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
-  
   try {
+    const body = await req.json() as OrderUpdateBody;
+    const { id, status, trackingNumber, trackingNotes, adminNotes } = body;
+    
+    if (!id || !status) {
+      return NextResponse.json({ error: 'ID and status required' }, { status: 400 });
+    }
+
+    const sql = getDb();
+    const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
+    
     // Get current order status
     const [currentOrder] = await sql`
       SELECT status, paid_at FROM orders WHERE id = ${id}
@@ -24,7 +62,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    // === STOCK MANAGEMENT ===
+    // Stock Management
     if (status === 'approved' && currentOrder.status !== 'approved') {
       const stockDeducted = await deductStock(id);
       if (!stockDeducted) {
@@ -56,7 +94,7 @@ export async function PUT(req: NextRequest) {
         END
       WHERE id = ${id}
       RETURNING *
-    `;
+    ` as UpdatedOrder[];
     
     // Log status change
     if (currentOrder.status !== status) {
@@ -77,27 +115,29 @@ export async function PUT(req: NextRequest) {
             oldStatus: currentOrder.status,
             newStatus: status,
             totalAmount: updatedOrder.total_amount,
-            trackingNumber: trackingNumber || updatedOrder.tracking_number,
+            trackingNumber: trackingNumber || updatedOrder.tracking_number || undefined,
             adminNotes: trackingNotes || adminNotes,
           });
         } catch (emailErr) {
           console.error('Failed to send status email:', emailErr);
+          // Don't fail the request if email fails
         }
       }
     }
 
-    // =============================================
-    // INVOICE EMAIL - FIXED VERSION
-    // =============================================
+    // Invoice Email on Delivery
     if (status === 'delivered' && updatedOrder.payment_status === 'paid') {
       try {
+        // Dynamic imports for heavy modules
         const { renderToStream } = await import('@react-pdf/renderer');
         const { InvoicePDF } = await import('@/components/invoice/InvoicePDF');
         const QRCode = await import('qrcode');
         const nodemailer = await import('nodemailer');
         
-        const items = await sql`SELECT * FROM order_items WHERE order_id = ${id}`;
-        const subtotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unit_price), 0);
+        // Fetch order items
+        const items = await sql`SELECT * FROM order_items WHERE order_id = ${id}` as OrderItem[];
+        
+        const subtotal = items.reduce((sum: number, item: OrderItem) => sum + (item.quantity * item.unit_price), 0);
         
         const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${id}/tracking`;
         const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, { width: 120, margin: 1 });
@@ -124,10 +164,8 @@ export async function PUT(req: NextRequest) {
           companyPhone: '',
         };
 
-        // CORRECT WAY: Create the React element first
+        // Create React element and render to stream
         const invoiceElement = InvoicePDF({ data: pdfData });
-        
-        // Then render to stream
         const pdfStream = await renderToStream(invoiceElement);
         
         // Convert stream to buffer
@@ -137,44 +175,53 @@ export async function PUT(req: NextRequest) {
         }
         const pdfBuffer = Buffer.concat(chunks);
 
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT),
-          secure: false,
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
-        });
+        // Check SMTP configuration
+        const smtpHost = process.env.SMTP_HOST;
+        const smtpUser = process.env.SMTP_USER;
+        const smtpPass = process.env.SMTP_PASS;
 
-        await transporter.sendMail({
-          from: `"SpectrumCosmo" <${process.env.SMTP_USER}>`,
-          to: updatedOrder.customer_email,
-          subject: `Invoice for Order ${pdfData.invoiceNumber}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px;">
-              <h2 style="color: #F97316;">Thank you for your purchase!</h2>
-              <p>Your order has been delivered. Please find your invoice attached.</p>
-              <a href="${trackingUrl}" style="background: #F97316; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track Your Order</a>
-              <hr />
-              <p style="font-size: 12px; color: #666;">SpectrumCosmo – Wear your excitement with pride.</p>
-            </div>
-          `,
-          attachments: [{
-            filename: `invoice-${pdfData.invoiceNumber}.pdf`,
-            content: pdfBuffer,
-          }],
-        });
-        
-        console.log(`Invoice email sent to ${updatedOrder.customer_email}`);
+        if (!smtpHost || !smtpUser || !smtpPass) {
+          console.error('SMTP configuration missing');
+        } else {
+          const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: { user: smtpUser, pass: smtpPass },
+          });
+
+          await transporter.sendMail({
+            from: `"SpectrumCosmo" <${smtpUser}>`,
+            to: updatedOrder.customer_email,
+            subject: `Invoice for Order ${pdfData.invoiceNumber}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                <h2 style="color: #F97316;">Thank you for your purchase!</h2>
+                <p>Your order has been delivered. Please find your invoice attached.</p>
+                <a href="${trackingUrl}" style="background: #F97316; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track Your Order</a>
+                <hr />
+                <p style="font-size: 12px; color: #666;">SpectrumCosmo – Wear your excitement with pride.</p>
+              </div>
+            `,
+            attachments: [{
+              filename: `invoice-${pdfData.invoiceNumber}.pdf`,
+              content: pdfBuffer,
+            }],
+          });
+          
+          console.log(`Invoice email sent to ${updatedOrder.customer_email}`);
+        }
       } catch (emailErr) {
         console.error('Failed to send invoice email:', emailErr);
+        // Don't fail the request if email fails
       }
     }
 
     return NextResponse.json({ success: true, order: updatedOrder });
-  } catch (err: any) {
-    console.error('Admin order update error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Internal server error';
+    console.error('Admin order update error:', errorMessage);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
