@@ -8,21 +8,22 @@ import toast from 'react-hot-toast';
 
 // Types
 type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+type AudienceType = 'all' | 'active' | 'inactive' | 'segment';
 
 interface Campaign {
-  id: number;
+  id: string;
   title: string;
   status: CampaignStatus;
-  audience: string;
+  audience: AudienceType;
   open_count: number;
   click_count: number;
   created_at: string;
-  sent_at?: string;
+  sent_at?: string | null;
   total_subscribers: number;
 }
 
 interface CampaignPerformance {
-  id: number;
+  id: string;
   title: string;
   sent_at: string;
   open_count: number;
@@ -101,7 +102,7 @@ export default function NewsletterClient({ initialCampaigns, initialStats = null
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
   const [stats, setStats] = useState<StatData | null>(initialStats);
   const [loadingStats, setLoadingStats] = useState(!initialStats);
-  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch stats if not provided
@@ -122,7 +123,7 @@ export default function NewsletterClient({ initialCampaigns, initialStats = null
     }
   }, []);
 
-  const handleSendCampaign = useCallback(async (campaignId: number) => {
+  const handleSendCampaign = useCallback(async (campaignId: string) => {
     setSendingId(campaignId);
     try {
       const res = await fetch('/api/newsletter/send', {
@@ -275,16 +276,16 @@ export default function NewsletterClient({ initialCampaigns, initialStats = null
                        </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={campaign.status} />
-                      </td>
+                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
                         {campaign.audience || 'All Subscribers'}
-                      </td>
+                       </td>
                       <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
                         {statsDisplay}
-                      </td>
+                       </td>
                       <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
                         {new Date(campaign.created_at).toLocaleDateString()}
-                      </td>
+                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Link
@@ -312,7 +313,7 @@ export default function NewsletterClient({ initialCampaigns, initialStats = null
                             <span className="text-xs text-yellow-600 dark:text-yellow-400">Sending...</span>
                           )}
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   );
                 })}
