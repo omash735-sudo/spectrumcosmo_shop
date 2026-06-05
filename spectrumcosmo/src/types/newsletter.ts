@@ -1,4 +1,5 @@
 // types/newsletter.ts
+
 export interface Campaign {
   id: string;
   title: string;
@@ -10,6 +11,10 @@ export interface Campaign {
   sent_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  // Database direct fields (for queries that don't join stats)
+  open_count?: number;
+  click_count?: number;
+  // Aggregated stats (for detailed views)
   stats?: {
     sent: number;
     delivered: number;
@@ -39,4 +44,37 @@ export interface Subscriber {
   subscribed_at: Date;
   confirmed_at: Date | null;
   unsubscribed_at: Date | null;
+}
+
+// Newsletter client expected type
+export interface NewsletterCampaign {
+  id: string;
+  title: string;
+  status: Campaign['status'];
+  audience: Campaign['audience'];
+  open_count: number;
+  click_count: number;
+  created_at: Date;
+  sent_at: Date | null;
+  total_subscribers: number;
+}
+
+export interface NewsletterStatsData {
+  totalActive: number;
+  growth: { month: string; new: number }[];
+  performance: Array<{
+    id: string;
+    title: string;
+    sent_at: string;
+    open_count: number;
+    click_count: number;
+    open_rate: number;
+    click_rate: number;
+  }>;
+  unsubscribes: Array<{
+    email: string;
+    reason: string | null;
+    details: string | null;
+    created_at: string;
+  }>;
 }
