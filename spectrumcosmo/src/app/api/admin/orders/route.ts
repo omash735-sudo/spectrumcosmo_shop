@@ -165,16 +165,11 @@ export async function PUT(req: NextRequest) {
         const invoiceElement = InvoicePDF({ data: pdfData });
         const pdfStream = await renderToStream(invoiceElement);
         
-        // FIX: Handle both string and Buffer chunks
+        // FIX: Convert all chunks to Buffer without instanceof check
         const chunks: Buffer[] = [];
         for await (const chunk of pdfStream) {
-          if (typeof chunk === 'string') {
-            chunks.push(Buffer.from(chunk));
-          } else if (Buffer.isBuffer(chunk)) {
-            chunks.push(chunk);
-          } else if (chunk instanceof Uint8Array) {
-            chunks.push(Buffer.from(chunk));
-          }
+          // Convert any chunk type to Buffer
+          chunks.push(Buffer.from(chunk as any));
         }
         const pdfBuffer = Buffer.concat(chunks);
 
