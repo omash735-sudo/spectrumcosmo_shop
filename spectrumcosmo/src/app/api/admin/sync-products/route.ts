@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { algoliasearch } from 'algoliasearch';
+import algoliasearch from 'algoliasearch';
 
 // Types
 interface Product {
@@ -47,7 +47,6 @@ interface AlgoliaProduct {
   updated_at: string;
 }
 
-// Helper functions
 function safeParseInt(value: string | number | null | undefined, defaultValue: number = 0): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
@@ -75,7 +74,6 @@ function formatForAlgolia(product: Product): AlgoliaProduct {
   };
 }
 
-// Get last sync timestamp
 async function getLastSyncTime(sql: any): Promise<Date | null> {
   try {
     const [lastSync] = await sql`
@@ -90,7 +88,6 @@ async function getLastSyncTime(sql: any): Promise<Date | null> {
   }
 }
 
-// Create sync log entry
 async function createSyncLog(sql: any, status: string): Promise<string> {
   const [log] = await sql`
     INSERT INTO algolia_sync_logs (status, started_at) 
@@ -100,27 +97,20 @@ async function createSyncLog(sql: any, status: string): Promise<string> {
   return log.id;
 }
 
-// Update sync log
 async function updateSyncLog(sql: any, logId: string, updates: Partial<SyncLog>) {
-  const entries = Object.entries(updates)
-    .filter(([_, value]) => value !== undefined);
-  
-  if (entries.length === 0) return;
+  const entries = Object.entries(updates).filter(([_, v]) => v !== undefined);
   
   for (const [key, value] of entries) {
-    if (key === 'completed_at' && value instanceof Date) {
-      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
-    } else if (typeof value === 'string') {
-      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
-    } else if (typeof value === 'number') {
-      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
-    } else if (value === null) {
+    if (value === null) {
       await sql`UPDATE algolia_sync_logs SET ${sql(key)} = NULL WHERE id = ${logId}`;
+    } else if (value instanceof Date) {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
+    } else {
+      await sql`UPDATE algolia_sync_logs SET ${sql(key)} = ${value} WHERE id = ${logId}`;
     }
   }
 }
 
-// Get products changed since last sync
 async function getChangedProducts(sql: any, since: Date | null): Promise<Product[]> {
   if (since) {
     return await sql`
@@ -133,21 +123,20 @@ async function getChangedProducts(sql: any, since: Date | null): Promise<Product
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.updated_at > ${since}
     ` as Product[];
-  } else {
-    return await sql`
-      SELECT 
-        p.id, p.name, p.description, p.price, p.currency,
-        p.image_url, p.category_id, p.status, p.stock_quantity,
-        p.updated_at, p.created_at,
-        c.name as category_name
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.status = 'in_stock'
-    ` as Product[];
   }
+  
+  return await sql`
+    SELECT 
+      p.id, p.name, p.description, p.price, p.currency,
+      p.image_url, p.category_id, p.status, p.stock_quantity,
+      p.updated_at, p.created_at,
+      c.name as category_name
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    WHERE p.status = 'in_stock'
+  ` as Product[];
 }
 
-// Get deleted product IDs since last sync
 async function getDeletedProductIds(sql: any, since: Date | null): Promise<string[]> {
   if (!since) return [];
   
@@ -203,9 +192,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // FIX: Algolia v5 uses a different API - get the search client first
-    const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-    const index = searchClient.initIndex(ALGOLIA_INDEX_NAME);
+    // Stable Algolia v4 client
+    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = client.initIndex(ALGOLIA_INDEX_NAME);
 
     let syncedCount = 0;
     let deletedCount = 0;
@@ -262,7 +251,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET endpoint to check sync status
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -279,8 +267,8 @@ export async function GET(req: NextRequest) {
   const ALGOLIA_INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'products';
 
   try {
-    const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-    const index = searchClient.initIndex(ALGOLIA_INDEX_NAME);
+    const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+    const index = client.initIndex(ALGOLIA_INDEX_NAME);
     
     const [settings, stats] = await Promise.all([
       index.getSettings(),
