@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import { getDb, healthCheck, getPoolStatus } from '@/lib/db';
 import { getQueueHealth } from '@/lib/queue-worker';
-import packageJson from '@/package.json';
 
 // Types
 interface HealthCheckResponse {
@@ -160,7 +159,7 @@ export async function GET(): Promise<NextResponse> {
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptime: getUptime(),
-    version: packageJson.version || '0.1.0',
+    version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
     services: {
       database: databaseStatus,
@@ -174,7 +173,6 @@ export async function GET(): Promise<NextResponse> {
   const responseTime = Date.now() - startTime;
   const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 503 : 500;
   
-  // Add response time header
   const nextResponse = NextResponse.json(response, { status: statusCode });
   nextResponse.headers.set('X-Response-Time', `${responseTime}ms`);
   
