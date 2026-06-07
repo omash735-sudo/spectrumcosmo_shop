@@ -175,5 +175,6 @@ export function createAlgoliaSyncWorker() {
 
 export async function addSyncJob(type: SyncJobData['type'], productId?: string): Promise<string> {
   const job = await algoliaSyncQueue.add(`sync-${type}`, { type, productId });
-  return job.id;
+  // job.id is always defined at runtime; type definition says it could be undefined, so we assert it's a string.
+  return job.id!;
 }
