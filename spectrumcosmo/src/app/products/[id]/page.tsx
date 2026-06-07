@@ -53,8 +53,9 @@ interface Variant {
   display_order: number;
 }
 
+// FIX: Review.id must be number to match ProductReviews component's expectation
 interface Review {
-  id: string;
+  id: number;
   customer_name: string;
   rating: number;
   review_text: string;
@@ -281,7 +282,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <AddToCartButton
                   productId={String(product.id)}
                   productName={product.name}
-                  imageUrl={product.image_url ?? undefined}   // ← FIX: null → undefined
+                  imageUrl={product.image_url ?? undefined}
                   priceUsd={basePrice}
                   disabled={!isInStock}
                 />
@@ -350,6 +351,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
               </div>
               <div className="md:col-span-2">
+                {/* Reviews component now receives reviews with number id */}
                 <ProductReviews productId={id} initialReviews={reviews} />
               </div>
             </div>
