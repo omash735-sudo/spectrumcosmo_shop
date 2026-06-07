@@ -1,16 +1,34 @@
+// app/api/admin/dashboard/stats/route.ts
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryAsArray } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth';
 
 export const revalidate = 60;
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+interface DashboardStats {
+  active_users_today: number;
+  orders_today: number;
+  revenue_today: number;
+  abandoned_carts: number;
+  active_carts: number;
+  failed_payments: number;
+  avg_api_response_ms: number;
+  failed_logins_last_hour: number;
+}
+
+export async function GET(req: Request) {
+  // Admin authentication
+  const authError = requireAdmin(req as any);
+  if (authError) return authError;
+
   const start = performance.now();
-  
+
   try {
     const sql = getDb();
-    
-    const result = await sql`
+
+    // Use queryAsArray to get a properly typed array
+    const result = await queryAsArray<DashboardStats>`
       WITH 
       today_stats AS (
         SELECT 
@@ -56,11 +74,8 @@ export async function GET() {
         (SELECT avg_response FROM api_stats) as avg_api_response_ms,
         (SELECT failed_logins FROM login_stats) as failed_logins_last_hour
     `;
-    
-    const end = performance.now();
-    console.log(`Stats API took ${(end - start).toFixed(0)}ms`);
-    
-    return NextResponse.json(result[0] || {
+
+    const stats = result[0] || {
       active_users_today: 0,
       orders_today: 0,
       revenue_today: 0,
@@ -69,22 +84,33 @@ export async function GET() {
       failed_payments: 0,
       avg_api_response_ms: 0,
       failed_logins_last_hour: 0,
-    }, {
+    };
+
+    const end = performance.now();
+    // Keep log for debugging (could be removed in production)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Stats API took ${(end - start).toFixed(0)}ms`);
+    }
+
+    return NextResponse.json(stats, {
       headers: {
         'Cache-Control': 's-maxage=60, stale-while-revalidate=30',
       },
     });
   } catch (err) {
-    console.error('Failed to fetch stats:', err);
-    return NextResponse.json({ 
-      active_users_today: 0,
-      orders_today: 0,
-      revenue_today: 0,
-      abandoned_carts: 0,
-      active_carts: 0,
-      failed_payments: 0,
-      avg_api_response_ms: 0,
-      failed_logins_last_hour: 0,
-    }, { status: 500 });
+    console.error('Failed to fetch dashboard stats:', err);
+    return NextResponse.json(
+      {
+        active_users_today: 0,
+        orders_today: 0,
+        revenue_today: 0,
+        abandoned_carts: 0,
+        active_carts: 0,
+        failed_payments: 0,
+        avg_api_response_ms: 0,
+        failed_logins_last_hour: 0,
+      },
+      { status: 500 }
+    );
   }
 }
