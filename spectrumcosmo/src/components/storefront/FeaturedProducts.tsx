@@ -1,3 +1,4 @@
+// components/storefront/FeaturedProducts.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,7 +38,7 @@ export default function FeaturedProducts() {
         setLoading(false);
       }
     };
-    
+
     fetchFeatured();
 
     const handleResize = () => {
@@ -48,7 +49,7 @@ export default function FeaturedProducts() {
       else setItemsPerView(4);
       setCurrentIndex(0);
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -116,10 +117,14 @@ export default function FeaturedProducts() {
         {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {visibleProducts.map((product) => {
-            const hasDiscount = product.compare_price && product.compare_price > product.price;
-            const discountPercent = hasDiscount
-              ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100)
-              : 0;
+            // Safe discount calculation
+            let discountPercent = 0;
+            const hasDiscount = !!product.compare_price && product.compare_price > product.price;
+            if (hasDiscount && product.compare_price) {
+              discountPercent = Math.round(
+                ((product.compare_price - product.price) / product.compare_price) * 100
+              );
+            }
 
             return (
               <Link
@@ -149,7 +154,7 @@ export default function FeaturedProducts() {
                     <span className="text-orange-600 font-bold text-base">
                       <CurrencyPrice amountUsd={Number(product.price)} />
                     </span>
-                    {hasDiscount && (
+                    {hasDiscount && product.compare_price && (
                       <span className="text-xs text-gray-400 line-through">
                         <CurrencyPrice amountUsd={Number(product.compare_price)} />
                       </span>
