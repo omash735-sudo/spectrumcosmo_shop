@@ -1,7 +1,12 @@
+// app/api/subscribe/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import crypto from 'crypto';
+
+interface SubscriberStatus {
+  status: string;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,12 +19,16 @@ export async function POST(req: NextRequest) {
     const sql = getDb();
     const normalizedEmail = email.toLowerCase();
 
-    // Check if already confirmed
-    const existing = await sql`SELECT status FROM subscribers WHERE email = ${normalizedEmail}`;
-    if (existing.length && existing[0].status === 'confirmed') {
+    // Check if already confirmed – use queryAsArray to get a real array
+    const existingRows = await queryAsArray<SubscriberStatus>`
+      SELECT status FROM subscribers WHERE email = ${normalizedEmail}
+    `;
+    const existingStatus = existingRows.length ? existingRows[0].status : null;
+
+    if (existingStatus === 'confirmed') {
       return NextResponse.json({ error: 'Already subscribed' }, { status: 400 });
     }
-    if (existing.length && existing[0].status === 'pending') {
+    if (existingStatus === 'pending') {
       // Resend confirmation
       const token = crypto.randomBytes(32).toString('hex');
       await sql`UPDATE subscribers SET token = ${token} WHERE email = ${normalizedEmail}`;
@@ -47,16 +56,27 @@ export async function POST(req: NextRequest) {
       text: `Confirm: ${confirmUrl}`,
     });
     return NextResponse.json({ success: true, message: 'Check your email to confirm' });
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  } catch (err) {
+    console.error('Subscription POST error:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get('email');
-  if (!email) return NextResponse.json({ subscribed: false }, { status: 400 });
-  const sql = getDb();
-  const result = await sql`SELECT 1 FROM subscribers WHERE email = ${email.toLowerCase()} AND status = 'confirmed'`;
-  return NextResponse.json({ subscribed: result.length > 0 });
+  try {
+    const email = req.nextUrl.searchParams.get('email');
+    if (!email) return NextResponse.json({ subscribed: false }, { status: 400 });
+
+    const sql = getDb();
+    const result = await queryAsArray<{ id: string }>`
+      SELECT 1 FROM subscribers WHERE email = ${email.toLowerCase()} AND status = 'confirmed'
+    `;
+    return NextResponse.json({ subscribed: result.length > 0 });
+  } catch (err) {
+    console.error('Subscription GET error:', err);
+    return NextResponse.json({ subscribed: false }, { status: 500 });
+  }
 }
