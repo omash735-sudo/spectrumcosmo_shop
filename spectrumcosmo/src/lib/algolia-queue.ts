@@ -1,12 +1,39 @@
 // lib/algolia-queue.ts
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { algoliasearch } from 'algoliasearch';
-import { getDb } from './db';
+import algoliasearch from 'algoliasearch';
+import { getDb, queryOne, queryMany } from './db';
 
 interface SyncJobData {
   type: 'full_sync' | 'delta_sync' | 'single_product';
   productId?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  image_url: string | null;
+  category_id: string | null;
+  status: string;
+  stock_quantity: number;
+  category_name?: string;
+}
+
+interface AlgoliaProduct {
+  objectID: string;
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  image_url: string;
+  category_id: string | null;
+  category_name: string | null;
+  stock_quantity: number;
+  is_available: boolean;
 }
 
 const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
@@ -42,7 +69,7 @@ export function createAlgoliaSyncWorker() {
       const sql = getDb();
 
       if (type === 'single_product' && productId) {
-        const [product] = await sql`
+        const product = await queryOne<Product>`
           SELECT 
             p.id, p.name, p.description, p.price, p.currency,
             p.image_url, p.category_id, p.status, p.stock_quantity,
@@ -62,7 +89,7 @@ export function createAlgoliaSyncWorker() {
             currency: product.currency || 'MWK',
             image_url: product.image_url || '',
             category_id: product.category_id,
-            category_name: product.category_name,
+            category_name: product.category_name || null,
             stock_quantity: product.stock_quantity,
             is_available: product.status === 'in_stock' && product.stock_quantity > 0,
           });
@@ -74,7 +101,7 @@ export function createAlgoliaSyncWorker() {
       }
 
       if (type === 'delta_sync') {
-        const products = await sql`
+        const products = await queryMany<Product>`
           SELECT 
             p.id, p.name, p.description, p.price, p.currency,
             p.image_url, p.category_id, p.status, p.stock_quantity,
@@ -84,7 +111,7 @@ export function createAlgoliaSyncWorker() {
           WHERE p.updated_at > NOW() - INTERVAL '1 hour'
         `;
 
-        const objects = products.map((p: any) => ({
+        const objects: AlgoliaProduct[] = products.map((p) => ({
           objectID: p.id,
           id: p.id,
           name: p.name,
@@ -93,7 +120,7 @@ export function createAlgoliaSyncWorker() {
           currency: p.currency || 'MWK',
           image_url: p.image_url || '',
           category_id: p.category_id,
-          category_name: p.category_name,
+          category_name: p.category_name || null,
           stock_quantity: p.stock_quantity,
           is_available: p.status === 'in_stock' && p.stock_quantity > 0,
         }));
@@ -106,7 +133,7 @@ export function createAlgoliaSyncWorker() {
       }
 
       if (type === 'full_sync') {
-        const products = await sql`
+        const products = await queryMany<Product>`
           SELECT 
             p.id, p.name, p.description, p.price, p.currency,
             p.image_url, p.category_id, p.status, p.stock_quantity,
@@ -116,7 +143,7 @@ export function createAlgoliaSyncWorker() {
           WHERE p.status = 'in_stock'
         `;
 
-        const objects = products.map((p: any) => ({
+        const objects: AlgoliaProduct[] = products.map((p) => ({
           objectID: p.id,
           id: p.id,
           name: p.name,
@@ -125,7 +152,7 @@ export function createAlgoliaSyncWorker() {
           currency: p.currency || 'MWK',
           image_url: p.image_url || '',
           category_id: p.category_id,
-          category_name: p.category_name,
+          category_name: p.category_name || null,
           stock_quantity: p.stock_quantity,
           is_available: true,
         }));
