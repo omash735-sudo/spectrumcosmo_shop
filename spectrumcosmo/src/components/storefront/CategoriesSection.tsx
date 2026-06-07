@@ -1,11 +1,24 @@
+// components/storefront/CategoriesSection.tsx
 import Link from 'next/link';
 import Image from 'next/image';
-import { getDb } from '@/lib/db';
+import { getDb, queryMany } from '@/lib/db';
 import { FolderOpen, ArrowRight, Sparkles } from 'lucide-react';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  product_count: number;
+}
 
 export default async function CategoriesSection() {
   const sql = getDb();
-  const categories = await sql`
+  
+  // Use queryMany to get a real array with .length
+  const categories = await queryMany<Category>`
     SELECT 
       c.id, 
       c.name, 
