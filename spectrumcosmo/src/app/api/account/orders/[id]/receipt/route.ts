@@ -45,7 +45,7 @@ export async function GET(
     const download = searchParams.get('download') === 'true';
 
     // Verify order belongs to user
-    const orders = await sql`
+    const ordersResult = await sql`
       SELECT o.*, 
              COALESCE(
                jsonb_agg(
@@ -63,21 +63,24 @@ export async function GET(
       GROUP BY o.id
     `;
 
-    const order = orders[0] as Order | undefined;
+    // Fix: Cast to array before indexing
+    const ordersArray = ordersResult as any[];
+    const order = ordersArray[0] as Order | undefined;
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     // Get receipt
-    const receipts = await sql`
+    const receiptsResult = await sql`
       SELECT * FROM order_receipts 
       WHERE order_id = ${orderId} 
       ORDER BY created_at DESC 
       LIMIT 1
     `;
 
-    const receipt = receipts[0] as Receipt | undefined;
+    const receiptsArray = receiptsResult as any[];
+    const receipt = receiptsArray[0] as Receipt | undefined;
 
     if (!receipt) {
       return NextResponse.json({ error: 'No receipt found for this order' }, { status: 404 });
@@ -110,7 +113,6 @@ export async function GET(
           throw new Error('Invalid PDF format returned from generator');
         }
 
-        // FIX: Use NextResponse with arrayBuffer and manual response
         const response = new NextResponse(buffer as any, {
           status: 200,
           headers: {
