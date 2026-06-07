@@ -1,23 +1,32 @@
+// app/api/payment-settings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
-// GET – fetch current payment settings
+interface PaymentSettings {
+  automatic_enabled: boolean;
+  manual_enabled: boolean;
+}
+
 export async function GET() {
   try {
-    const sql = getDb();
-    const settings = await sql`
+    const settings = await queryOne<PaymentSettings>`
       SELECT automatic_enabled, manual_enabled 
       FROM payment_settings 
       LIMIT 1
     `;
-    return NextResponse.json(settings[0] || { automatic_enabled: true, manual_enabled: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+
+    const defaultSettings = { automatic_enabled: true, manual_enabled: true };
+    return NextResponse.json(settings || defaultSettings);
+  } catch (err) {
+    console.error('Failed to fetch payment settings:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
-// PATCH – update payment settings (admin only)
 export async function PATCH(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -26,17 +35,22 @@ export async function PATCH(req: NextRequest) {
     const { automatic_enabled, manual_enabled } = await req.json();
     const sql = getDb();
 
+    // Insert or update the settings row (assumes id = 1)
     await sql`
-      UPDATE payment_settings 
-      SET 
-        automatic_enabled = ${automatic_enabled ?? true},
-        manual_enabled = ${manual_enabled ?? true},
-        updated_at = NOW()
-      WHERE id = 1
+      INSERT INTO payment_settings (id, automatic_enabled, manual_enabled, updated_at)
+      VALUES (1, ${automatic_enabled ?? true}, ${manual_enabled ?? true}, NOW())
+      ON CONFLICT (id) DO UPDATE
+      SET automatic_enabled = EXCLUDED.automatic_enabled,
+          manual_enabled = EXCLUDED.manual_enabled,
+          updated_at = NOW()
     `;
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('Failed to update payment settings:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
