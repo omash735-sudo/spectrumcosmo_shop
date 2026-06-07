@@ -15,16 +15,12 @@ import ProductViewTracker from '@/components/storefront/ProductViewTracker';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
 import { getDb, queryOne, queryMany } from '@/lib/db';
 import { 
-  ArrowLeft, 
   Heart, 
   Shield, 
   Truck, 
   RotateCcw, 
   CheckCircle,
-  Minus,
-  Plus,
-  ChevronRight,
-  Check
+  ChevronRight
 } from 'lucide-react';
 
 // Types
@@ -76,13 +72,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   try {
     const sql = getDb();
 
-    // Use queryOne for single product
     product = await queryOne<Product>`
       SELECT * FROM products WHERE id = ${id}
     `;
 
     if (product) {
-      // Use queryMany for reviews and variants
       reviews = await queryMany<Review>`
         SELECT * FROM reviews WHERE product_id = ${id} AND status = 'approved' ORDER BY created_at DESC LIMIT 20
       `;
@@ -109,7 +103,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const basePrice = Number(product.price ?? 0);
   const baseComparePrice = product.compare_price ? Number(product.compare_price) : null;
   
-  // Calculate total stock
   const totalStock = hasVariants 
     ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
     : (product.stock_quantity || 0);
@@ -127,11 +120,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     : 0;
 
   const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
+  // FIX: Ensure image_url is never null (use empty string as fallback)
   const productForTracking = {
     id: product.id,
     name: product.name,
     price: basePrice,
-    image_url: product.image_url,
+    image_url: product.image_url || '',
   };
 
   const trustBadges = [
