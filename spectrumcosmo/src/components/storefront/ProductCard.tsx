@@ -171,8 +171,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Status Badge (Out of Stock / Coming Soon) */}
-        {statusBadge && (
+        {/* Status Badge (Out of Stock / Coming Soon) – FIXED: check StatusIcon exists */}
+        {statusBadge && StatusIcon && (
           <div className="absolute top-3 left-3 z-10">
             <span className={`${statusBadge.color} text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1`}>
               <StatusIcon size={12} />
