@@ -2,10 +2,10 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
-import HeroCarousel from '@/components/storefront/HeroCarousel';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import { getDb, queryMany } from '@/lib/db';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
@@ -131,14 +131,29 @@ export default async function ProductsPage({
     <>
       <Navbar />
       <main className="min-h-screen bg-white">
-        <HeroCarousel slides={carouselSlides} textColor="#F97316" autoplayDelay={5000} />
+        {/* Hero Banner – replaced HeroCarousel due to prop mismatch, using first slide */}
+        <div className="relative h-[400px] w-full overflow-hidden">
+          <Image
+            src={carouselSlides[0].image}
+            alt="Hero banner"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
+            <div className="text-center text-white px-4">
+              <h1 className="text-3xl md:text-5xl font-bold mb-2">{carouselSlides[0].title}</h1>
+              <p className="text-lg md:text-xl">{carouselSlides[0].subtitle}</p>
+            </div>
+          </div>
+        </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           
-          {/* Featured Products Section */}
+          <!-- Featured Products Section -->
           <FeaturedProducts />
 
-          {/* Header Section */}
+          <!-- Header Section -->
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
