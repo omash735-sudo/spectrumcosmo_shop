@@ -1,5 +1,6 @@
+// app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import { getVerifiedUser } from '@/lib/auth';
 
@@ -14,7 +15,7 @@ function renderEmailTemplate(template: string, placeholders: Record<string, stri
 
 // Helper to get email template from database
 async function getEmailTemplate(sql: any, name: string) {
-  const templates = await sql`
+  const templates = await queryAsArray<{ html_template: string; subject: string }>`
     SELECT html_template, subject FROM email_templates 
     WHERE name = ${name} AND is_active = true 
     LIMIT 1
@@ -24,7 +25,6 @@ async function getEmailTemplate(sql: any, name: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Check authenticated user – if frozen/banned, reject.
     const { user, error: authError } = await getVerifiedUser(req);
     if (authError && authError.status === 403) {
       return authError;
@@ -60,15 +60,21 @@ export async function POST(req: NextRequest) {
     let isAutomatic = false;
     let paymentInstructions = '';
     if (payment_provider_id) {
-      const [provider] = await sql`
-        SELECT type, instructions, account_name, account_number, branch 
+      const provider = await queryOne<{
+        type: string;
+        instructions: string;
+        name: string;
+        account_name: string;
+        account_number: string;
+        branch: string;
+      }>`
+        SELECT type, instructions, name, account_name, account_number, branch 
         FROM payment_providers 
         WHERE id = ${payment_provider_id}
       `;
       isAutomatic = provider?.type === 'automatic';
       paymentInstructions = provider?.instructions || '';
       
-      // Build formatted instructions if it's a manual provider
       if (!isAutomatic && provider) {
         paymentInstructions = `
           <strong>${provider.name}</strong><br/>
@@ -80,15 +86,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get system settings
-    const settings = await sql`
+    // Get system settings – use queryAsArray
+    const settingsRows = await queryAsArray<{ setting_key: string; setting_value: string }>`
       SELECT setting_key, setting_value FROM system_settings
     `;
     const settingsMap: Record<string, string> = {};
-    settings.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value; });
+    settingsRows.forEach((s) => {
+      settingsMap[s.setting_key] = s.setting_value;
+    });
 
-    // Insert order
-    const [order] = await sql`
+    // Insert order – use queryOne to get the created row
+    const order = await queryOne<{ id: string }>`
       INSERT INTO orders (
         customer_name, customer_email, phone_number, delivery_address,
         payment_note, payment_method, total_amount, status, user_id, created_at,
@@ -105,15 +113,13 @@ export async function POST(req: NextRequest) {
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
-    // FIXED: Insert order items with safe product name fallback
+    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
       const quantity = Number(item.quantity);
       if (isNaN(quantity)) continue;
       const subtotalUsd = quantity * unitPriceUsd;
-      
-      // Safe: Try multiple field names for product name, fallback to 'Product'
       const productName = item.product_name || item.name || 'Product';
       
       await sql`
@@ -127,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build order items HTML for email
-    const orderItemsHtml = items.map(item => `
+    const orderItemsHtml = items.map((item: any) => `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
         <span>${item.name} x ${item.quantity}</span>
         <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
@@ -138,7 +144,6 @@ export async function POST(req: NextRequest) {
     const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/orders/${order.id}/payment`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
-    // Common placeholders for all emails
     const commonPlaceholders = {
       customer_name,
       order_number: orderNumber,
@@ -162,7 +167,6 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        // Fallback email template
         const fallbackHtml = `
           <div style="font-family: Arial; max-width:600px;">
             <h2>Order Confirmed</h2>
@@ -188,8 +192,14 @@ export async function POST(req: NextRequest) {
       // MANUAL PAYMENT – send payment instructions email
       let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
       
-      // Get promotional banner (if active)
-      const [activeBanner] = await sql`
+      // Get promotional banner – use queryOne
+      const activeBanner = await queryOne<{
+        title: string;
+        description: string;
+        discount_code: string;
+        button_text: string;
+        button_url: string;
+      }>`
         SELECT title, description, discount_code, button_text, button_url 
         FROM promotional_banners 
         WHERE is_active = true 
@@ -223,8 +233,7 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        // Fallback email template
-        const orderItemsTable = items.map(item => `
+        const orderItemsTable = items.map((item: any) => `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span>${item.name} x ${item.quantity}</span>
             <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
@@ -283,8 +292,11 @@ export async function POST(req: NextRequest) {
       id: order.id,
       total_amount: safeTotal,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Order creation error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
