@@ -74,7 +74,7 @@ async function checkAlgolia() {
     const algoliasearch = algoliasearchModule.default;
     const client = algoliasearch(appId, apiKey);
     const index = client.initIndex(process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'products');
-    await index.getSettings(); // light connectivity check
+    await index.getSettings();
     const latencyMs = Date.now() - startTime;
     return { status: 'connected' as const, latencyMs };
   } catch {
@@ -87,7 +87,7 @@ export async function GET(): Promise<NextResponse> {
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
   // Database health
-  let databaseStatus: HealthCheckResponse['services']['database'] = { status: 'unknown' };
+  let databaseStatus: HealthCheckResponse['services']['database'] = { status: 'error' }; // 'unknown' not allowed
   try {
     const dbHealth = await healthCheck();
     const poolStatus = getPoolStatus();
@@ -104,7 +104,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   // Redis / Queue health
-  let redisStatus: HealthCheckResponse['services']['redis'] = { status: 'unknown', configured: false };
+  let redisStatus: HealthCheckResponse['services']['redis'] = { status: 'error', configured: false };
   try {
     const queueHealth = await getQueueHealth();
     redisStatus = {
