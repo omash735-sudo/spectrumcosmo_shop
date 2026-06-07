@@ -70,11 +70,11 @@ async function checkAlgolia() {
   if (!appId || !apiKey) return { status: 'not_configured' as const };
   const startTime = Date.now();
   try {
-    // Fix: default import for Algolia v5
     const algoliasearchModule = await import('algoliasearch');
     const algoliasearch = algoliasearchModule.default;
     const client = algoliasearch(appId, apiKey);
-    await client.getTimeouts();
+    const index = client.initIndex(process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'products');
+    await index.getSettings(); // light connectivity check
     const latencyMs = Date.now() - startTime;
     return { status: 'connected' as const, latencyMs };
   } catch {
