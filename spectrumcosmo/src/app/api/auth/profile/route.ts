@@ -4,7 +4,7 @@ import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
 
-// Types
+// Types (unchanged)
 interface UserProfile {
   id: string;
   name: string;
@@ -44,13 +44,12 @@ async function ensureUsersTable(): Promise<void> {
 
 async function getRecentProducts(limit: number = 4): Promise<Product[]> {
   try {
-    const products = await queryAsArray<Product>`
+    return await queryAsArray<Product>`
       SELECT name, price, image, currency
       FROM products
       ORDER BY created_at DESC
       LIMIT ${limit}
     `;
-    return products;
   } catch (err) {
     console.error('Failed to fetch products for email:', err);
     return [];
@@ -126,36 +125,36 @@ export async function PATCH(req: NextRequest) {
     
     const sql = getDb();
 
-    // Build dynamic update query using parameterized SQL
-    const updateParts: string[] = [];
+    // Build dynamic update using raw SQL with parameters (safe)
+    const updates: string[] = [];
     const params: any[] = [];
-    let paramIndex = 1;
 
     if (name !== undefined) {
-      updateParts.push(`name = $${paramIndex++}`);
+      updates.push(`name = $${params.length + 1}`);
       params.push(name);
     }
     if (phone !== undefined) {
-      updateParts.push(`phone = $${paramIndex++}`);
+      updates.push(`phone = $${params.length + 1}`);
       params.push(phone);
     }
     if (profileImage !== undefined) {
-      updateParts.push(`profile_image = $${paramIndex++}`);
+      updates.push(`profile_image = $${params.length + 1}`);
       params.push(profileImage);
     }
 
     let updated: UserProfile | null = null;
 
-    if (updateParts.length > 0) {
+    if (updates.length > 0) {
       params.push(user.id);
-      const updateQuery = `
+      const query = `
         UPDATE users 
-        SET ${updateParts.join(', ')}
-        WHERE id = $${paramIndex}
+        SET ${updates.join(', ')}
+        WHERE id = $${params.length}
         RETURNING id, name, email, phone, profile_image AS "profileImage"
       `;
-      // Use unsafe with parameters for dynamic query
-      const result = await sql.unsafe(updateQuery, params);
+      // Execute raw query with parameters (Neon client accepts string + params)
+      const result = await sql(query, params);
+      // result should be an array of rows (Neon returns array)
       updated = (result as any[])[0] || null;
     } else {
       updated = await queryOne<UserProfile>`
