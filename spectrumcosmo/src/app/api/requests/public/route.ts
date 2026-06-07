@@ -5,7 +5,7 @@ import { getDb } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const limit = parseInt(url.searchParams.get('limit') || '12');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '12'), 50);
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const sortBy = url.searchParams.get('sort') || 'popular';
     const category = url.searchParams.get('category');
@@ -13,17 +13,23 @@ export async function GET(req: NextRequest) {
 
     const sql = getDb();
 
-    // Build WHERE clause
-    let whereConditions = ["r.status = 'approved'"];
+    // Build WHERE conditions and parameter array
+    const whereConditions: string[] = ["r.status = 'approved'"];
+    const params: any[] = [];
+    let paramIndex = 1;
+
     if (category && category !== 'all') {
-      whereConditions.push(`c.name = '${category}'`);
+      whereConditions.push(`c.name = $${paramIndex++}`);
+      params.push(category);
     }
     if (search) {
-      whereConditions.push(`(r.title ILIKE '%${search}%' OR r.description ILIKE '%${search}%')`);
+      whereConditions.push(`(r.title ILIKE $${paramIndex} OR r.description ILIKE $${paramIndex})`);
+      params.push(`%${search}%`);
+      paramIndex++;
     }
     const whereClause = whereConditions.join(' AND ');
 
-    // Build ORDER BY clause
+    // ORDER BY clause (safe because values are controlled)
     let orderClause = '';
     switch (sortBy) {
       case 'newest':
@@ -39,17 +45,18 @@ export async function GET(req: NextRequest) {
         orderClause = 'r.like_count DESC, r.created_at DESC';
     }
 
-    // Get total count
-    const totalQuery = await sql`
+    // Total count query
+    const countSql = `
       SELECT COUNT(*) as total
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
-      WHERE ${sql.raw(whereClause)}
+      WHERE ${whereClause}
     `;
-    const total = parseInt(totalQuery[0]?.total || '0');
+    const countResult = await sql(countSql, params);
+    const total = Number((countResult as any[])[0]?.total ?? 0);
 
-    // Get requests (simplified - no JWT parsing)
-    const query = await sql`
+    // Main data query
+    const dataSql = `
       SELECT 
         r.id,
         r.title,
@@ -63,14 +70,17 @@ export async function GET(req: NextRequest) {
         0 as user_liked
       FROM product_requests r
       LEFT JOIN categories c ON c.id = r.category_id
-      WHERE ${sql.raw(whereClause)}
-      ORDER BY ${sql.raw(orderClause)}
-      LIMIT ${limit} OFFSET ${offset}
+      WHERE ${whereClause}
+      ORDER BY ${orderClause}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
+    const dataParams = [...params, limit, offset];
+    const dataResult = await sql(dataSql, dataParams);
+    const requests = dataResult as any[];
 
     return NextResponse.json({
       success: true,
-      data: Array.isArray(query) ? query : [],
+      data: requests,
       pagination: {
         total,
         limit,
@@ -81,12 +91,15 @@ export async function GET(req: NextRequest) {
         sort: sortBy,
         category: category || null,
         search: search || null,
-      }
+      },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Public requests API error:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
-      { success: false, error: err.message || 'Internal server error', data: [] },
+      { success: false, error: errorMessage, data: [] },
       { status: 500 }
     );
   }
