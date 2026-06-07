@@ -1,7 +1,15 @@
 // app/api/admin/inventory/alerts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { getDb } from '@/lib/db';
+import { getDb, queryAsArray } from '@/lib/db';
+
+interface InventoryAlert {
+  product_id: string;
+  product_name: string;
+  stock_quantity: number;
+  low_stock_threshold: number | null;
+  alert_type: 'out' | 'critical' | 'low' | null;
+}
 
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
@@ -9,8 +17,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
-    
-    const alerts = await sql`
+
+    // Use queryAsArray to get a proper array
+    const alerts = await queryAsArray<InventoryAlert>`
       SELECT 
         p.id as product_id,
         p.name as product_name,
@@ -36,17 +45,20 @@ export async function GET(req: NextRequest) {
         END,
         p.stock_quantity ASC
     `;
-    
+
     const summary = {
-      out_of_stock: alerts.filter((a: any) => a.alert_type === 'out').length,
-      critical: alerts.filter((a: any) => a.alert_type === 'critical').length,
-      low: alerts.filter((a: any) => a.alert_type === 'low').length,
+      out_of_stock: alerts.filter((a) => a.alert_type === 'out').length,
+      critical: alerts.filter((a) => a.alert_type === 'critical').length,
+      low: alerts.filter((a) => a.alert_type === 'low').length,
       total_alerts: alerts.length,
     };
-    
+
     return NextResponse.json({ success: true, summary, alerts });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Failed to fetch stock alerts:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
