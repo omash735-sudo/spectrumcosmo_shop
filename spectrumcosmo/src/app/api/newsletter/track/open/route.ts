@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const campaignId = parseInt(campaign, 10);
   const subscriberId = parseInt(subscriber, 10);
-  const ip = req.headers.get('x-forwarded-for') || req.ip || null;
+  const ip = req.headers.get('x-forwarded-for') || null;
   const userAgent = req.headers.get('user-agent') || null;
 
   try {
