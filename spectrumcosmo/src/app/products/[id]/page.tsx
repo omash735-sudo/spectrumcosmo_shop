@@ -120,7 +120,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     : 0;
 
   const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
-  // FIX: Ensure image_url is never null (use empty string as fallback)
   const productForTracking = {
     id: product.id,
     name: product.name,
@@ -282,7 +281,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <AddToCartButton
                   productId={String(product.id)}
                   productName={product.name}
-                  imageUrl={product.image_url}
+                  imageUrl={product.image_url ?? undefined}   // ← FIX: null → undefined
                   priceUsd={basePrice}
                   disabled={!isInStock}
                 />
