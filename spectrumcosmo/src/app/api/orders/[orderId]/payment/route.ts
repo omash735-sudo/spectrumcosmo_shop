@@ -1,5 +1,37 @@
+// app/api/orders/[orderId]/payment-status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
+
+interface OrderWithProvider {
+  id: string;
+  customer_name: string;
+  total_amount: number;
+  payment_status: string;
+  payment_method: string;
+  payment_provider_id: string | null;
+  proof_of_payment_url: string | null;
+  payment_note: string | null;
+  provider_name: string | null;
+  provider_type: string | null;
+  provider_category: string | null;
+  account_name: string | null;
+  account_number: string | null;
+  branch: string | null;
+  instructions: string | null;
+}
+
+interface PaymentConfirmation {
+  id: string;
+  order_id: string;
+  proof_image_url: string;
+  transaction_reference: string | null;
+  notes: string | null;
+  status: string;
+  submitted_at: Date;
+  reviewed_at: Date | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+}
 
 export async function GET(
   req: NextRequest,
@@ -9,8 +41,8 @@ export async function GET(
     const { orderId } = await params;
     const sql = getDb();
 
-    // Get order with payment info - using correct column names
-    const [order] = await sql`
+    // Get order with payment info – use queryOne for single row
+    const order = await queryOne<OrderWithProvider>`
       SELECT 
         o.id,
         o.customer_name,
@@ -36,16 +68,16 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get payment confirmations
-    let confirmations = [];
+    // Get payment confirmations – use queryAsArray to get a real array
+    let confirmations: PaymentConfirmation[] = [];
     try {
-      confirmations = await sql`
+      confirmations = await queryAsArray<PaymentConfirmation>`
         SELECT * FROM payment_confirmations
         WHERE order_id = ${orderId}
         ORDER BY submitted_at DESC
       `;
     } catch (err) {
-      console.log('payment_confirmations table not yet created');
+      console.log('payment_confirmations table not yet created:', err);
     }
 
     return NextResponse.json({
@@ -69,8 +101,11 @@ export async function GET(
       existing_note: order.payment_note,
       confirmations,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Payment status error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
