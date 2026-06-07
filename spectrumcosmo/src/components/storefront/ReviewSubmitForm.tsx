@@ -128,7 +128,15 @@ export default function ReviewSubmitForm() {
       if (imageFile) {
         imageUrl = await uploadImage();
         if (imageFile && !imageUrl) {
-          toast.warning('Image upload failed, but your review will still be submitted');
+          // FIX: Use toast() instead of toast.warning
+          toast('Image upload failed, but your review will still be submitted', {
+            icon: '⚠️',
+            duration: 4000,
+            style: {
+              background: '#f59e0b',
+              color: '#fff',
+            },
+          });
         }
       }
       
