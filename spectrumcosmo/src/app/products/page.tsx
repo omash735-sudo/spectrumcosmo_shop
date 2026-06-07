@@ -33,7 +33,35 @@ interface Product {
   category_name?: string;
 }
 
-// Static banner image (first slide)
+// Props expected by ProductCard component
+interface ProductCardProps {
+  id: string;
+  name: string;
+  price: number;
+  compare_price?: number;
+  image_url: string;
+  status?: string;
+  stock_quantity?: number;
+  category_name?: string;
+  category?: string;
+  description?: string;
+}
+
+// Helper to convert database product to ProductCard props
+function toProductCardProps(product: Product): ProductCardProps {
+  return {
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    compare_price: product.compare_price ?? undefined,
+    image_url: product.image_url ?? '',
+    status: product.status,
+    stock_quantity: product.stock_quantity,
+    category_name: product.category_name,
+    description: product.description ?? undefined,
+  };
+}
+
 const bannerImage = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg';
 
 export default async function ProductsPage({
@@ -101,6 +129,9 @@ export default async function ProductsPage({
     products = [];
   }
 
+  // Convert to ProductCard props
+  const productCardProps = products.map(toProductCardProps);
+
   const clearFilters = () => {
     const urlParams = new URLSearchParams();
     if (params.q) urlParams.set('q', params.q);
@@ -113,7 +144,7 @@ export default async function ProductsPage({
     <>
       <Navbar />
       <main className="min-h-screen bg-white">
-        {/* Simple Hero Banner – no external component, safe JSX */}
+        {/* Hero Banner */}
         <div className="relative h-[400px] w-full overflow-hidden">
           <Image
             src={bannerImage}
@@ -132,22 +163,22 @@ export default async function ProductsPage({
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           
-          {/* Featured Products Section */}
+          {/* Featured Products */}
           <FeaturedProducts />
 
-          {/* Header Section */}
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 {params.q ? `Search results for "${params.q}"` : params.category && params.category !== 'All' ? params.category : 'All Products'}
               </h1>
               <p className="text-gray-500 text-sm mt-1">
-                {products.length} {products.length === 1 ? 'product' : 'products'} found
+                {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
               </p>
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* Search */}
           <div className="mb-8">
             <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
               <div className="relative">
@@ -176,7 +207,7 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Filter Bar */}
+          {/* Filters */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <SlidersHorizontal size={16} className="text-gray-500" />
@@ -232,7 +263,7 @@ export default async function ProductsPage({
           </div>
 
           {/* Products Grid */}
-          {products.length === 0 ? (
+          {productCardProps.length === 0 ? (
             <div className="text-center py-20 bg-gray-50 rounded-2xl">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search size={32} className="text-gray-400" />
@@ -245,7 +276,7 @@ export default async function ProductsPage({
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {products.map((product) => (
+              {productCardProps.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
