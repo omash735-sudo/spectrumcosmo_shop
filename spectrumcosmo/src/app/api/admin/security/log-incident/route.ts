@@ -1,43 +1,14 @@
+// app/api/security/log-incident/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { queryMany } from '@/lib/db';
 
-export async function POST(req: NextRequest) {
-  try {
-    const { type, severity, ip, userAgent, endpoint, details } = await req.json();
-    
-    const sql = getDb();
-    
-    // Insert into security_logs
-    await sql`
-      INSERT INTO security_logs (
-        action_type, endpoint, ip_address, user_agent, 
-        risk_level, details, blocked, created_at
-      ) VALUES (
-        ${type}, ${endpoint}, ${ip}, ${userAgent},
-        ${severity === 'high' ? 'high' : severity === 'critical' ? 'critical' : 'medium'},
-        ${JSON.stringify(details)}, true, NOW()
-      )
-    `;
-    
-    // Create alert for high/critical severity
-    if (severity === 'high' || severity === 'critical') {
-      await sql`
-        INSERT INTO security_alerts (
-          alert_type, severity, title, description, 
-          ip_address, endpoint, action_taken, created_at
-        ) VALUES (
-          ${type}, ${severity}, ${getAlertTitle(type)},
-          ${getAlertDescription(type, details)}, ${ip}, ${endpoint},
-          'Blocked', NOW()
-        )
-      `;
-    }
-    
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Failed to log incident:', err);
-    return NextResponse.json({ error: 'Failed to log incident' }, { status: 500 });
-  }
+interface IncidentBody {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  ip: string;
+  userAgent: string;
+  endpoint: string;
+  details?: any;
 }
 
 function getAlertTitle(type: string): string {
@@ -54,10 +25,55 @@ function getAlertTitle(type: string): string {
 
 function getAlertDescription(type: string, details: any): string {
   const descriptions: Record<string, string> = {
-    unauthorized_admin_access: `Someone attempted to access admin area without proper authorization.`,
+    unauthorized_admin_access: 'Someone attempted to access admin area without proper authorization.',
     bot_detected: `Bot-like behavior detected: ${details?.reason || 'rapid requests'}`,
     rate_limit_exceeded: `IP exceeded rate limit: ${details?.count}/${details?.limit} requests.`,
     checkout_abuse: `Multiple checkout attempts detected: ${details?.attempts} attempts.`,
   };
   return descriptions[type] || 'Suspicious activity was detected and blocked.';
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body: IncidentBody = await req.json();
+    const { type, severity, ip, userAgent, endpoint, details } = body;
+
+    // Determine risk level from severity
+    let riskLevel = 'medium';
+    if (severity === 'high') riskLevel = 'high';
+    if (severity === 'critical') riskLevel = 'critical';
+
+    // Insert into security_logs
+    await queryMany`
+      INSERT INTO security_logs (
+        action_type, endpoint, ip_address, user_agent, 
+        risk_level, details, blocked, created_at
+      ) VALUES (
+        ${type}, ${endpoint}, ${ip}, ${userAgent},
+        ${riskLevel}, ${JSON.stringify(details || {})}, true, NOW()
+      )
+    `;
+
+    // Create alert for high/critical severity
+    if (severity === 'high' || severity === 'critical') {
+      await queryMany`
+        INSERT INTO security_alerts (
+          alert_type, severity, title, description, 
+          ip_address, endpoint, action_taken, created_at
+        ) VALUES (
+          ${type}, ${severity}, ${getAlertTitle(type)},
+          ${getAlertDescription(type, details)}, ${ip}, ${endpoint},
+          'Blocked', NOW()
+        )
+      `;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Failed to log incident:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
 }
