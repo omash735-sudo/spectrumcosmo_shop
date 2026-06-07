@@ -13,12 +13,13 @@ type CurrencyContextType = {
 
 const CurrencyContext = createContext<CurrencyContextType | null>(null);
 
+// Only include currencies supported by CurrencyCode type
 const DEFAULT_RATES: Record<CurrencyCode, number> = {
   MWK: 1,
   USD: 0.00057,
   ZAR: 0.0105,
   EUR: 0.00053,
-  GBP: 0.00045,
+  // GBP is not in CurrencyCode – remove until type is extended
 };
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
@@ -38,7 +39,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
           USD: 1 / usdToMwk,
           ZAR: data.ZAR ? data.ZAR / usdToMwk : DEFAULT_RATES.ZAR,
           EUR: data.EUR ? data.EUR / usdToMwk : DEFAULT_RATES.EUR,
-          GBP: data.GBP ? data.GBP / usdToMwk : DEFAULT_RATES.GBP,
+          // GBP omitted – add when CurrencyCode includes it
         });
       })
       .catch(() => null);
