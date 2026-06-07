@@ -1,6 +1,5 @@
 // lib/algolia-queue.ts
 import { Queue, Worker } from 'bullmq';
-import Redis from 'ioredis';
 import algoliasearch from 'algoliasearch';
 import { getDb, queryOne, queryMany } from './db';
 
@@ -36,14 +35,18 @@ interface AlgoliaProduct {
   is_available: boolean;
 }
 
-const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+// Redis connection configuration (avoids ioredis instance type conflict)
+const redisConfig = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: null,
-});
+};
 
 const QUEUE_NAME = 'algolia-sync-queue';
 
 export const algoliaSyncQueue = new Queue<SyncJobData>(QUEUE_NAME, {
-  connection: redisConnection,
+  connection: redisConfig,
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 5000 },
@@ -164,7 +167,7 @@ export function createAlgoliaSyncWorker() {
       return { synced: 0 };
     },
     {
-      connection: redisConnection,
+      connection: redisConfig,
       concurrency: 1,
     }
   );
