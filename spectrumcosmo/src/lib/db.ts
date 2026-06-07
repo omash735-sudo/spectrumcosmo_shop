@@ -303,6 +303,16 @@ export async function queryManyWithTx<T = any>(
   return result as T[];
 }
 
+// NEW: queryAsArray - returns a properly typed array (works around Neon's union type)
+export async function queryAsArray<T = any>(
+  strings: TemplateStringsArray,
+  ...values: any[]
+): Promise<T[]> {
+  const client = getDb();
+  const result = await client(strings, ...values);
+  return result as T[];
+}
+
 // Batch query helper
 export async function batchQuery<T = any>(
   queries: Array<{ strings: TemplateStringsArray; values: any[] }>
