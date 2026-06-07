@@ -13,7 +13,7 @@ import ProductReviews from '@/components/storefront/ProductReviews';
 import ShareButton from '@/components/storefront/ShareButton';
 import ProductViewTracker from '@/components/storefront/ProductViewTracker';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryMany } from '@/lib/db';
 import { 
   ArrowLeft, 
   Heart, 
@@ -27,6 +27,23 @@ import {
   Check
 } from 'lucide-react';
 
+// Types
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  compare_price: number | null;
+  currency: string;
+  image_url: string | null;
+  category_id: string | null;
+  status: string;
+  stock_quantity: number;
+  is_featured: boolean;
+  sku: string | null;
+  created_at: Date;
+}
+
 interface Variant {
   id: string;
   size: string | null;
@@ -37,36 +54,49 @@ interface Variant {
   sku: string | null;
   image_url: string | null;
   is_active: boolean;
+  display_order: number;
+}
+
+interface Review {
+  id: string;
+  customer_name: string;
+  rating: number;
+  review_text: string;
+  created_at: Date;
 }
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let product: any = null;
-  let reviews: any[] = [];
-  let relatedProducts: any[] = [];
+  let product: Product | null = null;
+  let reviews: Review[] = [];
   let variants: Variant[] = [];
+  let relatedProducts: Product[] = [];
 
   try {
     const sql = getDb();
-    const [products, revs, vars] = await Promise.all([
-      sql`SELECT * FROM products WHERE id = ${id}`,
-      sql`SELECT * FROM reviews WHERE product_id = ${id} AND status = 'approved' ORDER BY created_at DESC LIMIT 20`,
-      sql`SELECT * FROM product_variants WHERE product_id = ${id} AND is_active = true ORDER BY display_order ASC`,
-    ]);
-    product = products[0];
-    reviews = revs;
-    variants = vars;
+
+    // Use queryOne for single product
+    product = await queryOne<Product>`
+      SELECT * FROM products WHERE id = ${id}
+    `;
 
     if (product) {
-      relatedProducts = await sql`
+      // Use queryMany for reviews and variants
+      reviews = await queryMany<Review>`
+        SELECT * FROM reviews WHERE product_id = ${id} AND status = 'approved' ORDER BY created_at DESC LIMIT 20
+      `;
+      variants = await queryMany<Variant>`
+        SELECT * FROM product_variants WHERE product_id = ${id} AND is_active = true ORDER BY display_order ASC
+      `;
+      relatedProducts = await queryMany<Product>`
         SELECT * FROM products
         WHERE category_id = ${product.category_id} AND id != ${id} AND status = 'in_stock'
         ORDER BY created_at DESC LIMIT 4
       `;
     }
   } catch (err) {
-    console.error(err);
+    console.error('Product detail error:', err);
   }
 
   if (!product) notFound();
@@ -79,20 +109,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const basePrice = Number(product.price ?? 0);
   const baseComparePrice = product.compare_price ? Number(product.compare_price) : null;
   
-  // Calculate stock status
+  // Calculate total stock
   const totalStock = hasVariants 
     ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
     : (product.stock_quantity || 0);
   const isInStock = totalStock > 0;
 
+  // Rating breakdown
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  reviews.forEach((r: any) => {
+  reviews.forEach((r) => {
     const star = Math.floor(r.rating);
     if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
   });
   const totalReviews = reviews.length;
   const avgRating = totalReviews > 0
-    ? reviews.reduce((s: number, r: any) => s + r.rating, 0) / totalReviews
+    ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
     : 0;
 
   const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
@@ -336,7 +367,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="mt-16">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">You May Also Like</h2>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                {relatedProducts.map((rel: any) => (
+                {relatedProducts.map((rel) => (
                   <Link key={rel.id} href={`/products/${rel.id}`} className="group">
                     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300">
                       <div className="relative h-48 bg-gray-100">
