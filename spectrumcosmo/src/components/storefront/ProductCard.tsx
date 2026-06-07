@@ -47,9 +47,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = product.status === 'out_of_stock' || (product.stock_quantity ?? 0) === 0;
   const isComingSoon = product.status === 'coming_soon';
   const hasDiscount = product.compare_price && product.compare_price > product.price;
-  const discountPercent = hasDiscount 
-    ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) 
-    : 0;
+
+  // Safe discount percent calculation
+  let discountPercent = 0;
+  if (hasDiscount && product.compare_price) {
+    discountPercent = Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
+  }
 
   const productName = product.name || 'Product';
   const productImage = product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600';
@@ -237,7 +240,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="text-xl font-bold text-orange-600">
             <CurrencyPrice amountUsd={priceMwk} />
           </span>
-          {hasDiscount && (
+          {hasDiscount && product.compare_price && (
             <span className="text-sm text-gray-400 line-through">
               <CurrencyPrice amountUsd={Number(product.compare_price)} />
             </span>
