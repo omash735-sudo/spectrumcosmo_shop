@@ -1,12 +1,19 @@
+// app/api/admin/active-users/route.ts
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getAdminFromRequest } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Admin authentication
+  const admin = getAdminFromRequest(req as any);
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const sql = getDb();
-    
-    // Get active sessions from last 15 minutes (real-time)
-    const activeUsers = await sql`
+
+    const result = await sql`
       SELECT 
         us.session_id,
         us.user_id,
@@ -34,12 +41,17 @@ export async function GET() {
       WHERE us.visited_at >= NOW() - INTERVAL '15 minutes'
       ORDER BY us.visited_at DESC
     `;
-    
+
+    // Cast to array to satisfy TypeScript (Neon returns a union that lacks .length)
+    const activeUsers = result as any[];
     const count = activeUsers.length;
-    
+
     return NextResponse.json({ count, users: activeUsers });
   } catch (err) {
     console.error('Failed to fetch active users:', err);
-    return NextResponse.json({ count: 0, users: [] });
+    return NextResponse.json(
+      { error: 'Failed to fetch active users', count: 0, users: [] },
+      { status: 500 }
+    );
   }
 }
