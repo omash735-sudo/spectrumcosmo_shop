@@ -1,5 +1,6 @@
+// app/api/admin/protection-rules/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryAsArray, queryMany } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -10,18 +11,20 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
-    
+
     // Check if protection_rules table exists
-    const tableCheck = await sql`
+    const tableExistsResult = await queryAsArray<{ exists: boolean }>`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_name = 'protection_rules'
       ) as exists
     `;
-    
-    if (!tableCheck[0]?.exists) {
+
+    const tableExists = tableExistsResult[0]?.exists ?? false;
+
+    if (!tableExists) {
       // Return default rules
-      return NextResponse.json([
+      const defaultRules = [
         { id: 1, rule_key: 'login_protection', rule_name: 'Login Protection', description: 'Blocks IP after multiple failed login attempts', is_enabled: true, config: { max_attempts: 5, window_minutes: 10, block_minutes: 15 } },
         { id: 2, rule_key: 'rate_limiting', rule_name: 'Rate Limiting', description: 'Limits requests per IP per minute', is_enabled: true, config: { max_requests: 60, window_seconds: 60 } },
         { id: 3, rule_key: 'suspicious_activity', rule_name: 'Suspicious Activity', description: 'Detects bot-like rapid requests', is_enabled: true, config: { max_requests: 20, window_seconds: 10, block_minutes: 30 } },
@@ -29,11 +32,14 @@ export async function GET(req: NextRequest) {
         { id: 5, rule_key: 'bot_detection', rule_name: 'Bot Detection', description: 'Detects and blocks bot user agents', is_enabled: true, config: { block_bots: true, log_only: false } },
         { id: 6, rule_key: 'auto_block', rule_name: 'Auto-Block', description: 'Auto-blocks IPs with high risk score', is_enabled: true, config: { risk_threshold: 80, block_minutes: 30 } },
         { id: 7, rule_key: 'captcha_trigger', rule_name: 'CAPTCHA Trigger', description: 'Shows CAPTCHA after failed attempts', is_enabled: true, config: { failed_attempts_threshold: 3 } },
-        { id: 8, rule_key: 'admin_protection', rule_name: 'Admin Protection', description: 'Protects admin routes from unauthorized access', is_enabled: true, config: { enabled: true } }
-      ]);
+        { id: 8, rule_key: 'admin_protection', rule_name: 'Admin Protection', description: 'Protects admin routes from unauthorized access', is_enabled: true, config: { enabled: true } },
+      ];
+      return NextResponse.json(defaultRules);
     }
-    
-    const rules = await sql`SELECT * FROM protection_rules ORDER BY id`;
+
+    const rules = await queryMany`
+      SELECT * FROM protection_rules ORDER BY id
+    `;
     return NextResponse.json(rules);
   } catch (err) {
     console.error('Failed to fetch rules:', err);
@@ -51,7 +57,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { ruleKey, enabled, config } = body;
     const sql = getDb();
-    
+
     if (enabled !== undefined) {
       await sql`
         UPDATE protection_rules 
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
         WHERE rule_key = ${ruleKey}
       `;
     }
-    
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to update rule:', err);
