@@ -76,7 +76,7 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
-  const { settings } = useSettings();
+  const { resolvedTheme } = useSettings();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -103,7 +103,8 @@ export default function Navbar() {
 
   const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path));
 
-  const logoSrc = settings?.darkMode
+  // Logo based on resolved theme (dark/light)
+  const logoSrc = resolvedTheme === 'dark'
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
@@ -434,12 +435,13 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
+      {/* WhatsApp Float Button – raised position */}
       {showWhatsApp && (
         <a 
           href={WHATSAPP_URL} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="fixed bottom-6 right-6 z-[9999] whatsapp-float md:bottom-8 md:right-8"
+          className="fixed bottom-12 right-6 z-[9999] whatsapp-float md:bottom-14 md:right-8"
         >
           <div className="relative">
             <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
