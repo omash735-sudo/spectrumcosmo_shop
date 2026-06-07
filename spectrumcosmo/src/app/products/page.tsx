@@ -33,26 +33,8 @@ interface Product {
   category_name?: string;
 }
 
-const carouselSlides = [
-  {
-    id: 1,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg',
-    title: 'Anime Mugs',
-    subtitle: 'Up to 30% off • Sip in style',
-  },
-  {
-    id: 2,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775346088/WhatsApp_Image_2026-04-03_at_16.15.20_bgw3gq.jpg',
-    title: 'Exclusive Posters',
-    subtitle: 'Limited collection • 20% off',
-  },
-  {
-    id: 3,
-    image: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1775339426/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
-    title: 'Signature Bracelets',
-    subtitle: 'Complete your look • Free shipping',
-  },
-];
+// Static banner image (first slide)
+const bannerImage = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg';
 
 export default async function ProductsPage({
   searchParams,
@@ -62,7 +44,7 @@ export default async function ProductsPage({
   const params = await searchParams;
   const sql = getDb();
 
-  // Fetch categories using queryMany (returns a real array)
+  // Fetch categories
   let categories: Category[] = [];
   try {
     categories = await queryMany<Category>`
@@ -73,7 +55,7 @@ export default async function ProductsPage({
   }
   const categoryNames = ['All', ...categories.map((c) => c.name)];
 
-  // Fetch products based on search and category filters
+  // Fetch products based on filters
   let products: Product[] = [];
   try {
     let query;
@@ -131,10 +113,10 @@ export default async function ProductsPage({
     <>
       <Navbar />
       <main className="min-h-screen bg-white">
-        {/* Hero Banner – replaced HeroCarousel due to prop mismatch, using first slide */}
+        {/* Simple Hero Banner – no external component, safe JSX */}
         <div className="relative h-[400px] w-full overflow-hidden">
           <Image
-            src={carouselSlides[0].image}
+            src={bannerImage}
             alt="Hero banner"
             fill
             className="object-cover"
@@ -142,18 +124,18 @@ export default async function ProductsPage({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
             <div className="text-center text-white px-4">
-              <h1 className="text-3xl md:text-5xl font-bold mb-2">{carouselSlides[0].title}</h1>
-              <p className="text-lg md:text-xl">{carouselSlides[0].subtitle}</p>
+              <h1 className="text-3xl md:text-5xl font-bold mb-2">Anime Mugs</h1>
+              <p className="text-lg md:text-xl">Up to 30% off • Sip in style</p>
             </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           
-          <!-- Featured Products Section -->
+          {/* Featured Products Section */}
           <FeaturedProducts />
 
-          <!-- Header Section -->
+          {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -194,7 +176,7 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Filter Bar - Simplified */}
+          {/* Filter Bar */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <SlidersHorizontal size={16} className="text-gray-500" />
@@ -215,7 +197,7 @@ export default async function ProductsPage({
             )}
           </div>
 
-          {/* Categories - Premium Tabs */}
+          {/* Categories Tabs */}
           <div className="mb-10">
             <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
               <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
