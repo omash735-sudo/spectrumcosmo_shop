@@ -1,6 +1,12 @@
+// app/api/admin/security/attack-stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { queryMany } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
+
+interface AttackStat {
+  attack_type: string;
+  count: number;
+}
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -9,8 +15,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const sql = getDb();
-    const stats = await sql`
+    const stats = await queryMany<AttackStat>`
       SELECT 
         COALESCE(details->>'attack_type', 'other') as attack_type,
         COUNT(*) as count
@@ -24,6 +29,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(stats);
   } catch (err) {
     console.error('Failed to fetch attack stats:', err);
-    return NextResponse.json([]);
+    return NextResponse.json({ error: 'Failed to fetch attack stats' }, { status: 500 });
   }
 }
