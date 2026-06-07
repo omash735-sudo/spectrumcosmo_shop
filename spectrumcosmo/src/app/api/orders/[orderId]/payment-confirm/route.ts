@@ -1,7 +1,28 @@
+// app/api/orders/[orderId]/confirm-payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
+
+interface Order {
+  id: string;
+  customer_name: string;
+  customer_email: string;
+  total_amount: number;
+  payment_status: string;
+  proof_of_payment_url: string | null;
+}
+
+interface EmailTemplate {
+  html_template: string;
+  subject: string;
+  text_content: string | null;
+}
+
+interface SystemSetting {
+  setting_key: string;
+  setting_value: string;
+}
 
 function replacePlaceholders(template: string, data: Record<string, string>): string {
   let result = template;
@@ -11,8 +32,8 @@ function replacePlaceholders(template: string, data: Record<string, string>): st
   return result;
 }
 
-async function getEmailTemplate(sql: any, templateName: string) {
-  const templates = await sql`
+async function getEmailTemplate(sql: any, templateName: string): Promise<EmailTemplate | null> {
+  const templates = await queryAsArray<EmailTemplate>`
     SELECT html_template, subject, text_content 
     FROM email_templates 
     WHERE name = ${templateName} AND is_active = true 
@@ -35,7 +56,7 @@ export async function POST(
 
     const sql = getDb();
 
-    const [order] = await sql`
+    const order = await queryOne<Order>`
       SELECT id, customer_name, customer_email, total_amount, payment_status, proof_of_payment_url
       FROM orders 
       WHERE id::text = ${orderId}
@@ -77,12 +98,16 @@ export async function POST(
         )
       `;
     } catch (err) {
-      console.log('Payment confirmation insert skipped');
+      console.log('Payment confirmation insert skipped:', err);
     }
 
-    const settings = await sql`SELECT setting_key, setting_value FROM system_settings`;
+    const settingsRows = await queryAsArray<SystemSetting>`
+      SELECT setting_key, setting_value FROM system_settings
+    `;
     const settingsMap: Record<string, string> = {};
-    settings.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value; });
+    settingsRows.forEach((s) => {
+      settingsMap[s.setting_key] = s.setting_value;
+    });
 
     const placeholders = {
       customer_name: order.customer_name,
@@ -97,11 +122,9 @@ export async function POST(
 
     if (order.customer_email) {
       const emailTemplate = await getEmailTemplate(sql, 'payment_proof_received');
-      
       if (emailTemplate) {
         const emailHtml = replacePlaceholders(emailTemplate.html_template, placeholders);
         const emailSubject = replacePlaceholders(emailTemplate.subject, placeholders);
-        
         await sendMail({
           to: order.customer_email,
           subject: emailSubject,
@@ -114,11 +137,9 @@ export async function POST(
     const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
     if (adminEmail) {
       const adminTemplate = await getEmailTemplate(sql, 'admin_payment_proof_notification');
-      
       if (adminTemplate) {
         const adminHtml = replacePlaceholders(adminTemplate.html_template, placeholders);
         const adminSubject = replacePlaceholders(adminTemplate.subject, placeholders);
-        
         await sendMail({
           to: adminEmail,
           subject: adminSubject,
@@ -128,12 +149,15 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Payment proof submitted. Admin will verify shortly.' 
+    return NextResponse.json({
+      success: true,
+      message: 'Payment proof submitted. Admin will verify shortly.',
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Payment confirmation error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
