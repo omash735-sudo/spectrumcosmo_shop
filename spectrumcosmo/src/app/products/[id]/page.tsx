@@ -23,7 +23,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-// Types
+// Types for database results (Date type for created_at)
 interface Product {
   id: string;
   name: string;
@@ -53,8 +53,7 @@ interface Variant {
   display_order: number;
 }
 
-// FIX: Review.id must be number to match ProductReviews component's expectation
-interface Review {
+interface DbReview {
   id: number;
   customer_name: string;
   rating: number;
@@ -62,11 +61,20 @@ interface Review {
   created_at: Date;
 }
 
+// Type that matches ProductReviews component expectation
+interface ComponentReview {
+  id: number;
+  customer_name: string;
+  rating: number;
+  review_text: string;
+  created_at: string; // string, not Date
+}
+
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   let product: Product | null = null;
-  let reviews: Review[] = [];
+  let dbReviews: DbReview[] = [];
   let variants: Variant[] = [];
   let relatedProducts: Product[] = [];
 
@@ -78,7 +86,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     `;
 
     if (product) {
-      reviews = await queryMany<Review>`
+      dbReviews = await queryMany<DbReview>`
         SELECT * FROM reviews WHERE product_id = ${id} AND status = 'approved' ORDER BY created_at DESC LIMIT 20
       `;
       variants = await queryMany<Variant>`
@@ -96,6 +104,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   if (!product) notFound();
 
+  // Convert reviews to the format expected by ProductReviews component
+  const reviewsForComponent: ComponentReview[] = dbReviews.map((review) => ({
+    id: review.id,
+    customer_name: review.customer_name,
+    rating: review.rating,
+    review_text: review.review_text,
+    created_at: review.created_at.toISOString(),
+  }));
+
   // Extract unique sizes and colors from variants
   const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
   const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
@@ -109,15 +126,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     : (product.stock_quantity || 0);
   const isInStock = totalStock > 0;
 
-  // Rating breakdown
+  // Rating breakdown using dbReviews (or reviewsForComponent)
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  reviews.forEach((r) => {
+  dbReviews.forEach((r) => {
     const star = Math.floor(r.rating);
     if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
   });
-  const totalReviews = reviews.length;
+  const totalReviews = dbReviews.length;
   const avgRating = totalReviews > 0
-    ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
+    ? dbReviews.reduce((s, r) => s + r.rating, 0) / totalReviews
     : 0;
 
   const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
@@ -351,8 +368,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
               </div>
               <div className="md:col-span-2">
-                {/* Reviews component now receives reviews with number id */}
-                <ProductReviews productId={id} initialReviews={reviews} />
+                {/* Pass the converted reviews array (strings for dates) */}
+                <ProductReviews productId={id} initialReviews={reviewsForComponent} />
               </div>
             </div>
           </div>
