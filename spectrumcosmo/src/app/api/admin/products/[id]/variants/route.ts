@@ -1,7 +1,23 @@
 // app/api/admin/products/[id]/variants/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryMany } from '@/lib/db';
+
+interface ProductVariant {
+  id: string;
+  product_id: string;
+  size: string | null;
+  color: string | null;
+  price_override: number | null;
+  compare_price_override: number | null;
+  stock_quantity: number;
+  sku: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export async function GET(
   req: NextRequest,
@@ -11,8 +27,7 @@ export async function GET(
   if (authError) return authError;
   
   const { id: productId } = await params;
-  const sql = getDb();
-  const variants = await sql`
+  const variants = await queryMany<ProductVariant>`
     SELECT * FROM product_variants 
     WHERE product_id = ${productId}
     ORDER BY display_order ASC
@@ -30,13 +45,16 @@ export async function POST(
   const { id: productId } = await params;
   const { size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order } = await req.json();
   
-  const sql = getDb();
-  const result = await sql`
+  const newVariant = await queryOne<ProductVariant>`
     INSERT INTO product_variants (product_id, size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order)
-    VALUES (${productId}, ${size || null}, ${color || null}, ${price_override || null}, ${compare_price_override || null}, ${stock_quantity || 0}, ${sku || null}, ${image_url || null}, ${display_order || 0})
+    VALUES (${productId}, ${size || null}, ${color || null}, ${price_override ?? null}, ${compare_price_override ?? null}, ${stock_quantity || 0}, ${sku || null}, ${image_url || null}, ${display_order ?? 0})
     RETURNING *
   `;
-  return NextResponse.json(result[0]);
+  
+  if (!newVariant) {
+    return NextResponse.json({ error: 'Failed to create variant' }, { status: 500 });
+  }
+  return NextResponse.json(newVariant, { status: 201 });
 }
 
 export async function PATCH(
@@ -53,23 +71,26 @@ export async function PATCH(
     return NextResponse.json({ error: 'Variant ID required' }, { status: 400 });
   }
   
-  const sql = getDb();
-  const result = await sql`
+  const updated = await queryOne<ProductVariant>`
     UPDATE product_variants SET
-      size = COALESCE(${size}, size),
-      color = COALESCE(${color}, color),
-      price_override = COALESCE(${price_override}, price_override),
-      compare_price_override = COALESCE(${compare_price_override}, compare_price_override),
-      stock_quantity = COALESCE(${stock_quantity}, stock_quantity),
-      sku = COALESCE(${sku}, sku),
-      image_url = COALESCE(${image_url}, image_url),
-      is_active = COALESCE(${is_active}, is_active),
-      display_order = COALESCE(${display_order}, display_order),
+      size = COALESCE(${size ?? null}, size),
+      color = COALESCE(${color ?? null}, color),
+      price_override = COALESCE(${price_override ?? null}, price_override),
+      compare_price_override = COALESCE(${compare_price_override ?? null}, compare_price_override),
+      stock_quantity = COALESCE(${stock_quantity ?? null}, stock_quantity),
+      sku = COALESCE(${sku ?? null}, sku),
+      image_url = COALESCE(${image_url ?? null}, image_url),
+      is_active = COALESCE(${is_active ?? null}, is_active),
+      display_order = COALESCE(${display_order ?? null}, display_order),
       updated_at = NOW()
     WHERE id = ${variantId} AND product_id = ${productId}
     RETURNING *
   `;
-  return NextResponse.json(result[0]);
+  
+  if (!updated) {
+    return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
+  }
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -87,7 +108,14 @@ export async function DELETE(
     return NextResponse.json({ error: 'Variant ID required' }, { status: 400 });
   }
   
-  const sql = getDb();
-  await sql`DELETE FROM product_variants WHERE id = ${variantId} AND product_id = ${productId}`;
+  const result = await queryMany<{ id: string }>`
+    DELETE FROM product_variants
+    WHERE id = ${variantId} AND product_id = ${productId}
+    RETURNING id
+  `;
+  
+  if (result.length === 0) {
+    return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
+  }
   return NextResponse.json({ success: true });
 }
