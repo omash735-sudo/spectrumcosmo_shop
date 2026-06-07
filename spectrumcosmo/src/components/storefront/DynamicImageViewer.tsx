@@ -1,15 +1,28 @@
+// components/storefront/DynamicImageViewer.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+// CSS imports – moved to top level to avoid module resolution errors
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 
-export default function DynamicImageViewer({ mode, singleImage, carouselImages }: { mode: string; singleImage: string; carouselImages: string[] }) {
+export default function DynamicImageViewer({
+  mode,
+  singleImage,
+  carouselImages,
+}: {
+  mode: string;
+  singleImage: string;
+  carouselImages: string[];
+}) {
   const [isClient, setIsClient] = useState(false);
   const [SwiperModule, setSwiperModule] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
-    // Dynamically import Swiper and its modules only on client
+    // Dynamically import Swiper React components and modules (only client-side)
     Promise.all([
       import('swiper/react'),
       import('swiper/modules'),
@@ -22,15 +35,12 @@ export default function DynamicImageViewer({ mode, singleImage, carouselImages }
         Navigation: swiperModules.Navigation,
       });
     });
-    // Also load CSS dynamically (optional, but CSS won't break server)
-    import('swiper/css');
-    import('swiper/css/pagination');
-    import('swiper/css/navigation');
   }, []);
 
-  // While loading or on server, show a static fallback (first image)
+  // Fallback for server-side or before Swiper loads
   if (!isClient || !SwiperModule) {
-    const fallbackImage = mode === 'carousel' && carouselImages.length > 0 ? carouselImages[0] : singleImage;
+    const fallbackImage =
+      mode === 'carousel' && carouselImages.length > 0 ? carouselImages[0] : singleImage;
     return (
       <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
         <Image src={fallbackImage} alt="About SpectrumCosmo" fill className="object-cover" />
@@ -56,7 +66,13 @@ export default function DynamicImageViewer({ mode, singleImage, carouselImages }
           {carouselImages.map((img, idx) => (
             <SwiperSlide key={idx}>
               <div className="relative w-full h-96">
-                <Image src={img} alt={`Slide ${idx + 1}`} fill className="object-cover" priority={idx === 0} />
+                <Image
+                  src={img}
+                  alt={`Slide ${idx + 1}`}
+                  fill
+                  className="object-cover"
+                  priority={idx === 0}
+                />
               </div>
             </SwiperSlide>
           ))}
