@@ -89,6 +89,7 @@ export default function CheckoutPage() {
   const totalBeforeDiscount = subtotal + deliveryFee;
   const finalTotal = Math.max(0, totalBeforeDiscount - discountAmount);
 
+  // Fetch delivery methods and payment providers
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -121,6 +122,7 @@ export default function CheckoutPage() {
     fetchData();
   }, []);
 
+  // Apply promo code
   const applyPromoCode = async () => {
     if (!promoCode.trim()) {
       setPromoError('Please enter a promo code');
@@ -273,7 +275,6 @@ export default function CheckoutPage() {
         alert('Payment request sent to your phone. Please check your mobile money app.');
         router.push(`/account/orders?payment=pending&order=${orderId}`);
       } else {
-        // CHANGED: Redirect to /checkout/payment instead of /payment
         router.push(`/checkout/payment?orderId=${orderId}`);
       }
     } catch (err: any) {
@@ -289,7 +290,7 @@ export default function CheckoutPage() {
         <Navbar />
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-gray-500">Loading checkout...</p>
           </div>
         </div>
@@ -332,7 +333,6 @@ export default function CheckoutPage() {
             
             {/* Left Column - Form */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Contact & Delivery Section */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
                   <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -342,6 +342,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="p-6">
                   <form onSubmit={handleCheckout} className="space-y-5">
+                    {/* Form fields (unchanged) */}
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -432,7 +433,7 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    {/* Promo Code Section */}
+                    {/* Promo Code Section (unchanged) */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <Tag size={16} className="text-orange-500" /> 
@@ -484,7 +485,7 @@ export default function CheckoutPage() {
                       {promoSuccess && <p className="text-green-500 text-sm mt-2">{promoSuccess}</p>}
                     </div>
 
-                    {/* Referral Code Section */}
+                    {/* Referral Code Section (unchanged) */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <Gift size={16} className="text-orange-500" /> 
@@ -530,7 +531,7 @@ export default function CheckoutPage() {
                       {referralMessage && <p className="text-green-500 text-sm mt-2">{referralMessage}</p>}
                     </div>
 
-                    {/* Delivery Method */}
+                    {/* Delivery Method (unchanged) */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                         <Truck size={16} className="text-orange-500" /> 
@@ -567,7 +568,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* Payment Method */}
+                    {/* Payment Method (unchanged) */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                         <CreditCard size={16} className="text-orange-500" /> 
@@ -708,8 +709,9 @@ export default function CheckoutPage() {
                     {items.map((item) => (
                       <div key={item.id} className="flex gap-3">
                         <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          {item.image && (
-                            <Image src={item.image} alt={item.name} width={48} height={48} className="w-full h-full object-cover" />
+                          {/* FIX: Changed 'item.image' to 'item.image_url' */}
+                          {item.image_url && (
+                            <Image src={item.image_url} alt={item.name} width={48} height={48} className="w-full h-full object-cover" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
