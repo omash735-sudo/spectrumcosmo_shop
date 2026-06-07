@@ -1,5 +1,6 @@
+// app/api/admin/security/resolve-alert/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { queryMany } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -10,12 +11,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const { alertId } = await req.json();
-    const sql = getDb();
-    await sql`
+    if (!alertId) {
+      return NextResponse.json({ error: 'Alert ID required' }, { status: 400 });
+    }
+
+    await queryMany`
       UPDATE security_alerts
       SET resolved = TRUE, resolved_at = NOW()
       WHERE id = ${alertId}
     `;
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to resolve alert:', err);
