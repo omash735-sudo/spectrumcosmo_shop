@@ -12,7 +12,7 @@ import {
   Loader2, Tag, Gift, X, CheckCircle, Info, Truck, 
   CreditCard, Shield, User, Mail, Phone, MapPin, 
   MessageSquare, ChevronRight, Lock, Sparkles, 
-  Banknote, Building2, Smartphone, Clock, ArrowRight,
+  Banknote, Smartphone, Clock, ArrowRight,
   ShoppingBag
 } from 'lucide-react';
 import Image from 'next/image';
@@ -89,7 +89,6 @@ export default function CheckoutPage() {
   const totalBeforeDiscount = subtotal + deliveryFee;
   const finalTotal = Math.max(0, totalBeforeDiscount - discountAmount);
 
-  // Fetch delivery methods and payment providers
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -122,7 +121,6 @@ export default function CheckoutPage() {
     fetchData();
   }, []);
 
-  // Apply promo code
   const applyPromoCode = async () => {
     if (!promoCode.trim()) {
       setPromoError('Please enter a promo code');
@@ -342,7 +340,6 @@ export default function CheckoutPage() {
                 </div>
                 <div className="p-6">
                   <form onSubmit={handleCheckout} className="space-y-5">
-                    {/* Form fields (unchanged) */}
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -433,7 +430,7 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    {/* Promo Code Section (unchanged) */}
+                    {/* Promo Code Section */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <Tag size={16} className="text-orange-500" /> 
@@ -485,7 +482,7 @@ export default function CheckoutPage() {
                       {promoSuccess && <p className="text-green-500 text-sm mt-2">{promoSuccess}</p>}
                     </div>
 
-                    {/* Referral Code Section (unchanged) */}
+                    {/* Referral Code Section */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <Gift size={16} className="text-orange-500" /> 
@@ -531,7 +528,7 @@ export default function CheckoutPage() {
                       {referralMessage && <p className="text-green-500 text-sm mt-2">{referralMessage}</p>}
                     </div>
 
-                    {/* Delivery Method (unchanged) */}
+                    {/* Delivery Method */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                         <Truck size={16} className="text-orange-500" /> 
@@ -568,7 +565,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* Payment Method (unchanged) */}
+                    {/* Payment Method */}
                     <div className="border-t border-gray-100 pt-5">
                       <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                         <CreditCard size={16} className="text-orange-500" /> 
@@ -704,25 +701,28 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div className="p-6">
-                  {/* Items List */}
+                  {/* Items List - FIXED: use priceUsd and currency conversion */}
                   <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex gap-3">
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          {/* FIX: Changed 'item.image' to 'item.image_url' */}
-                          {item.image_url && (
-                            <Image src={item.image_url} alt={item.name} width={48} height={48} className="w-full h-full object-cover" />
-                          )}
+                    {items.map((item) => {
+                      const itemPriceInSelectedCurrency = item.priceUsd * (rates[currency] ?? 1);
+                      const totalItemPrice = itemPriceInSelectedCurrency * item.quantity;
+                      return (
+                        <div key={item.id} className="flex gap-3">
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                            {item.image_url && (
+                              <Image src={item.image_url} alt={item.name} width={48} height={48} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
+                            <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                          </div>
+                          <p className="text-sm font-medium text-gray-800">
+                            {formatCurrencyAmount(totalItemPrice, currency)}
+                          </p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
-                          <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
-                        </div>
-                        <p className="text-sm font-medium text-gray-800">
-                          {formatCurrencyAmount(item.price * item.quantity, currency)}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="space-y-3 pt-3 border-t border-gray-100">
