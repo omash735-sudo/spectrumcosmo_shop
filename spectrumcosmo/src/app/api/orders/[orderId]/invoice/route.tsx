@@ -1,10 +1,30 @@
 // app/api/orders/[orderId]/invoice/route.tsx
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import QRCode from 'qrcode';
-import { Resend } from 'resend'; // optional for email – install resend if needed
 import { renderToStream } from '@react-pdf/renderer';
 import { InvoicePDF } from '@/components/invoice/InvoicePDF';
+
+interface OrderWithItems {
+  id: string;
+  invoice_number: string | null;
+  created_at: Date;
+  customer_name: string;
+  customer_email: string;
+  phone_number: string | null;
+  delivery_address: string | null;
+  location: string | null;
+  payment_method: string;
+  payment_status: string;
+  delivery_fee: number | null;
+  total_amount: number;
+  items: any[]; // will be JSON array
+}
+
+interface SettingRow {
+  setting_key: string;
+  setting_value: string;
+}
 
 export async function GET(
   req: NextRequest,
@@ -14,8 +34,8 @@ export async function GET(
     const { orderId } = await params;
     const sql = getDb();
 
-    // 1. Get order with items and generate invoice number if missing
-    const [order] = await sql`
+    // 1. Get order with items – use queryOne to get single row
+    const order = await queryOne<OrderWithItems>`
       SELECT o.*, 
              COALESCE(
                (SELECT json_agg(oi.*) FROM order_items oi WHERE oi.order_id = o.id),
@@ -25,19 +45,20 @@ export async function GET(
       WHERE o.id::text = ${orderId}
       GROUP BY o.id
     `;
+
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Generate a proper invoice number if not already set
+    // Generate invoice number if missing
     let invoiceNumber = order.invoice_number;
     if (!invoiceNumber) {
       const year = new Date(order.created_at).getFullYear();
-      const countResult = await sql`
+      const countResult = await queryOne<{ seq: string | number }>`
         SELECT COUNT(*) + 1 as seq FROM orders 
         WHERE EXTRACT(YEAR FROM created_at) = ${year}
       `;
-      const seq = countResult[0]?.seq || 1;
+      const seq = Number(countResult?.seq ?? 1);
       invoiceNumber = `INV-${year}-${seq.toString().padStart(4, '0')}`;
       await sql`
         UPDATE orders SET invoice_number = ${invoiceNumber} 
@@ -45,10 +66,14 @@ export async function GET(
       `;
     }
 
-    // 2. Get company settings
-    const settings = await sql`SELECT setting_key, setting_value FROM system_settings`;
+    // 2. Get company settings – use queryAsArray to get a real array
+    const settingsRows = await queryAsArray<SettingRow>`
+      SELECT setting_key, setting_value FROM system_settings
+    `;
     const settingsMap: Record<string, string> = {};
-    settings.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value; });
+    settingsRows.forEach((row) => {
+      settingsMap[row.setting_key] = row.setting_value;
+    });
 
     // 3. Generate QR code (tracking URL)
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${order.id}/tracking`;
@@ -68,7 +93,7 @@ export async function GET(
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerPhone: order.phone_number,
-      deliveryAddress: order.delivery_address || order.location,
+      deliveryAddress: order.delivery_address || order.location || '',
       paymentMethod: order.payment_method,
       paymentStatus: order.payment_status,
       trackingUrl,
@@ -86,16 +111,32 @@ export async function GET(
 
     // 5. Render PDF stream
     const pdfStream = await renderToStream(<InvoicePDF data={pdfData} />);
-    const response = new NextResponse(pdfStream as any, {
+
+    // Convert stream to Buffer (NextResponse accepts Buffer or Uint8Array)
+    const chunks: Buffer[] = [];
+    for await (const chunk of pdfStream) {
+      if (typeof chunk === 'string') {
+        chunks.push(Buffer.from(chunk));
+      } else if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk);
+      } else if (chunk instanceof Uint8Array) {
+        chunks.push(Buffer.from(chunk));
+      }
+    }
+    const pdfBuffer = Buffer.concat(chunks);
+
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="invoice-${invoiceNumber}.pdf"`,
       },
     });
-    return response;
-  } catch (err: any) {
+  } catch (err) {
     console.error('Invoice generation error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
