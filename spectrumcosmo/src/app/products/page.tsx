@@ -1,14 +1,37 @@
+// app/products/page.tsx
 export const dynamic = 'force-dynamic';
 
+import Link from 'next/link';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
-import { getDb } from '@/lib/db';
-import { Search, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { getDb, queryMany } from '@/lib/db';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+
+// Types
+interface Category {
+  name: string;
+  slug: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  compare_price: number | null;
+  currency: string;
+  image_url: string | null;
+  category_id: string | null;
+  status: string;
+  stock_quantity: number;
+  is_featured: boolean;
+  sku: string | null;
+  created_at: Date;
+  category_name?: string;
+}
 
 const carouselSlides = [
   {
@@ -39,22 +62,33 @@ export default async function ProductsPage({
   const params = await searchParams;
   const sql = getDb();
 
-  let categories = [];
+  // Fetch categories using queryMany (returns a real array)
+  let categories: Category[] = [];
   try {
-    categories = await sql`
+    categories = await queryMany<Category>`
       SELECT name, slug FROM categories WHERE is_active = true ORDER BY sort_order ASC
     `;
   } catch (err) {
     console.error('Failed to fetch categories:', err);
   }
-  const categoryNames = ['All', ...categories.map((c: any) => c.name)];
+  const categoryNames = ['All', ...categories.map((c) => c.name)];
 
-  let products: any[] = [];
+  // Fetch products based on search and category filters
+  let products: Product[] = [];
   try {
-    let baseQuery;
-
-    if (params.q) {
-      baseQuery = sql`
+    let query;
+    if (params.q && params.category && params.category !== 'All') {
+      query = queryMany<Product>`
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE c.name = ${params.category}
+          AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
+          AND p.status = 'in_stock'
+        ORDER BY p.created_at DESC
+      `;
+    } else if (params.q) {
+      query = queryMany<Product>`
         SELECT p.*, c.name as category_name 
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
@@ -62,8 +96,16 @@ export default async function ProductsPage({
           AND p.status = 'in_stock'
         ORDER BY p.created_at DESC
       `;
+    } else if (params.category && params.category !== 'All') {
+      query = queryMany<Product>`
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE c.name = ${params.category} AND p.status = 'in_stock'
+        ORDER BY p.created_at DESC
+      `;
     } else {
-      baseQuery = sql`
+      query = queryMany<Product>`
         SELECT p.*, c.name as category_name 
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
@@ -71,29 +113,7 @@ export default async function ProductsPage({
         ORDER BY p.created_at DESC
       `;
     }
-
-    if (params.category && params.category !== 'All') {
-      if (params.q) {
-        baseQuery = sql`
-          SELECT p.*, c.name as category_name 
-          FROM products p
-          JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category}
-            AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
-            AND p.status = 'in_stock'
-          ORDER BY p.created_at DESC
-        `;
-      } else {
-        baseQuery = sql`
-          SELECT p.*, c.name as category_name 
-          FROM products p
-          JOIN categories c ON p.category_id = c.id
-          WHERE c.name = ${params.category} AND p.status = 'in_stock'
-          ORDER BY p.created_at DESC
-        `;
-      }
-    }
-    products = await baseQuery;
+    products = await query;
   } catch (err) {
     console.error('Products query error:', err);
     products = [];
@@ -228,7 +248,7 @@ export default async function ProductsPage({
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {products.map((product: any) => (
+              {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
