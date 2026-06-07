@@ -1,3 +1,4 @@
+// app/reviews/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,7 +14,30 @@ import {
   ArrowRight, Calendar, User, ShoppingBag, Verified
 } from 'lucide-react';
 
-const statusConfig = {
+// Types
+type ReviewStatus = 'pending' | 'reviewing' | 'approved' | 'denied';
+
+interface Review {
+  id: number;
+  customer_name: string;
+  user_id?: number;
+  review_text: string;
+  rating: number;
+  status: ReviewStatus;
+  created_at: string;
+  updated_at?: string;
+  image_url?: string;
+  product_name?: string;
+  product_id?: string;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+const statusConfig: Record<ReviewStatus, { label: string; icon: any; color: string }> = {
   pending: { label: 'Pending', icon: Clock, color: 'text-yellow-600 bg-yellow-50' },
   reviewing: { label: 'Reviewing', icon: AlertCircle, color: 'text-blue-600 bg-blue-50' },
   approved: { label: 'Approved', icon: CheckCircle, color: 'text-green-600 bg-green-50' },
@@ -29,10 +53,10 @@ const sortOptions = [
 
 export default function ReviewsPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
-  const [allReviews, setAllReviews] = useState<any[]>([]);
-  const [filteredReviews, setFilteredReviews] = useState<any[]>([]);
-  const [myReviews, setMyReviews] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [loadingAll, setLoadingAll] = useState(true);
   const [loadingMy, setLoadingMy] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -40,12 +64,10 @@ export default function ReviewsPage() {
   const [editRating, setEditRating] = useState(5);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Filters
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Calculate overall stats
   const totalReviews = allReviews.length;
   const averageRating = totalReviews > 0 
     ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
@@ -108,16 +130,11 @@ export default function ReviewsPage() {
     fetchMyReviews();
   }, [activeTab, user]);
 
-  // Apply filters and sorting to all reviews
   useEffect(() => {
     let filtered = [...allReviews];
-    
-    // Apply rating filter
     if (ratingFilter !== null) {
       filtered = filtered.filter(r => Math.floor(r.rating) === ratingFilter);
     }
-    
-    // Apply sorting
     switch (sortBy) {
       case 'oldest':
         filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -131,11 +148,10 @@ export default function ReviewsPage() {
       default: // newest
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
-    
     setFilteredReviews(filtered);
   }, [allReviews, ratingFilter, sortBy]);
 
-  const handleEdit = (review: any) => {
+  const handleEdit = (review: Review) => {
     setEditingId(review.id);
     setEditText(review.review_text);
     setEditRating(review.rating);
@@ -179,7 +195,6 @@ export default function ReviewsPage() {
   const handleHelpful = async (reviewId: number) => {
     try {
       await fetch(`/api/reviews/${reviewId}/helpful`, { method: 'POST' });
-      // Refresh reviews or update local state
     } catch (err) {
       console.error('Failed to mark as helpful');
     }
@@ -258,7 +273,6 @@ export default function ReviewsPage() {
               </button>
             </div>
             
-            {/* Filters and Sort */}
             {activeTab === 'all' && allReviews.length > 0 && (
               <div className="flex items-center gap-2">
                 {ratingFilter !== null && (
@@ -334,8 +348,12 @@ export default function ReviewsPage() {
             ) : (
               <div className="space-y-5">
                 {myReviews.map((review) => {
-                  const StatusIcon = statusConfig[review.status]?.icon || AlertCircle;
-                  const statusClass = statusConfig[review.status]?.color || 'text-gray-600 bg-gray-50';
+                  // Safe lookup with fallback for unknown status
+                  const statusKey = (review.status === 'pending' || review.status === 'reviewing' || review.status === 'approved' || review.status === 'denied')
+                    ? review.status
+                    : 'pending';
+                  const StatusIcon = statusConfig[statusKey]?.icon || AlertCircle;
+                  const statusClass = statusConfig[statusKey]?.color || 'text-gray-600 bg-gray-50';
                   const canEdit = review.status === 'pending';
                   const isEditing = editingId === review.id;
 
@@ -397,7 +415,7 @@ export default function ReviewsPage() {
                         <div className="flex flex-col items-end gap-2">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${statusClass}`}>
                             <StatusIcon size={12} />
-                            {statusConfig[review.status]?.label || review.status}
+                            {statusConfig[statusKey]?.label || review.status}
                           </span>
                           {canEdit && !isEditing && (
                             <button
@@ -421,7 +439,7 @@ export default function ReviewsPage() {
                             <Calendar size={12} />
                             <span>{new Date(review.created_at).toLocaleDateString()}</span>
                           </div>
-                          {review.updated_at !== review.created_at && (
+                          {review.updated_at && review.updated_at !== review.created_at && (
                             <div className="flex items-center gap-1 text-xs text-gray-400">
                               <Edit2 size={12} />
                               <span>Edited</span>
