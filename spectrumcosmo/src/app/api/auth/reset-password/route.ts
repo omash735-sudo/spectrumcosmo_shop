@@ -1,6 +1,7 @@
+// app/api/auth/reset-password/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +23,8 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Step 1: Find the reset token
-    const [reset] = await sql`
+    // 1. Find the reset token
+    const reset = await queryOne<{ user_id: string; expires_at: Date }>`
       SELECT user_id, expires_at FROM password_reset_tokens
       WHERE token = ${token} AND expires_at > NOW()
     `;
@@ -35,62 +36,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 2: Get the user before update (for debugging)
-    const [userBefore] = await sql`
-      SELECT id, email, LEFT(password_hash, 20) as hash_prefix
-      FROM users WHERE id = ${reset.user_id}
-    `;
-
-    if (!userBefore) {
-      return NextResponse.json(
-        { error: 'User not found for this reset token' },
-        { status: 400 }
-      );
-    }
-
-    // Step 3: Hash the new password
+    // 2. Hash new password
     const hashed = await bcrypt.hash(newPassword, 10);
 
-    // Step 4: Update the password
-    const updateResult = await sql`
+    // 3. Update the password – use queryAsArray to get a real array
+    const updatedUsers = await queryAsArray<{ id: string; email: string }>`
       UPDATE users 
       SET password_hash = ${hashed} 
       WHERE id = ${reset.user_id}
       RETURNING id, email
     `;
 
-    if (updateResult.length === 0) {
+    if (updatedUsers.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to update password' },
-        { status: 500 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // Step 5: Delete the used token
+    // 4. Delete the used token
     await sql`DELETE FROM password_reset_tokens WHERE user_id = ${reset.user_id}`;
 
-    // Step 6: Verify the update worked by fetching the user again
-    const [userAfter] = await sql`
-      SELECT id, email, LEFT(password_hash, 20) as hash_prefix
-      FROM users WHERE id = ${reset.user_id}
-    `;
-
-    // Return success with debug info
     return NextResponse.json({
       success: true,
       message: 'Password reset successful',
-      debug: {
-        userId: updateResult[0].id,
-        userEmail: updateResult[0].email,
-        oldHashPrefix: userBefore.hash_prefix,
-        newHashPrefix: userAfter.hash_prefix,
-        hashChanged: userBefore.hash_prefix !== userAfter.hash_prefix
-      }
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Reset password error:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
-      { error: err.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
