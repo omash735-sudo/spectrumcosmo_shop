@@ -1,6 +1,6 @@
 // app/api/auth/profile/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
 
@@ -43,14 +43,13 @@ async function ensureUsersTable(): Promise<void> {
 }
 
 async function getRecentProducts(limit: number = 4): Promise<Product[]> {
-  const sql = getDb();
   try {
-    const products = await sql`
+    const products = await queryAsArray<Product>`
       SELECT name, price, image, currency
       FROM products
       ORDER BY created_at DESC
       LIMIT ${limit}
-    ` as Product[];
+    `;
     return products;
   } catch (err) {
     console.error('Failed to fetch products for email:', err);
@@ -62,7 +61,6 @@ function generateProductCards(products: Product[]): string {
   if (products.length === 0) {
     return '<p>Check out our new arrivals on our website!</p>';
   }
-  
   return products.map((product) => `
     <div style="flex: 1; min-width: 120px; text-align: center; background: #f9f9f9; padding: 12px; border-radius: 12px; margin: 4px;">
       <img src="${product.image || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'}" 
@@ -77,7 +75,6 @@ function generateProductCards(products: Product[]): string {
 async function sendWelcomeBackEmail(email: string, name: string | null, products: Product[]): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.com';
   const productsHtml = generateProductCards(products);
-  
   const html = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
       <div style="background: #F97316; padding: 20px; text-align: center;">
@@ -101,7 +98,6 @@ async function sendWelcomeBackEmail(email: string, name: string | null, products
       </div>
     </div>
   `;
-  
   await sendMail({
     to: email,
     subject: 'We missed you! Here\'s what\'s new at SpectrumCosmo',
@@ -112,7 +108,6 @@ async function sendWelcomeBackEmail(email: string, name: string | null, products
 
 async function sendUnsubscribeEmail(email: string): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.com';
-  
   await sendMail({
     to: email,
     subject: 'You\'ve unsubscribed from SpectrumCosmo newsletters',
@@ -131,43 +126,43 @@ export async function PATCH(req: NextRequest) {
     
     const sql = getDb();
 
-    // Build update query safely using template literals
-    const updates: string[] = [];
-    const values: (string | null)[] = [];
-    
-    if (name !== undefined) {
-      updates.push(`name = ${sql.param(name)}`);
-    }
-    
-    if (phone !== undefined) {
-      updates.push(`phone = ${sql.param(phone)}`);
-    }
-    
-    if (profileImage !== undefined) {
-      updates.push(`profile_image = ${sql.param(profileImage)}`);
-    }
+    // Build dynamic update query using parameterized SQL
+    const updateParts: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    if (updates.length === 0 && newsletterSubscribed === undefined) {
-      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    if (name !== undefined) {
+      updateParts.push(`name = $${paramIndex++}`);
+      params.push(name);
+    }
+    if (phone !== undefined) {
+      updateParts.push(`phone = $${paramIndex++}`);
+      params.push(phone);
+    }
+    if (profileImage !== undefined) {
+      updateParts.push(`profile_image = $${paramIndex++}`);
+      params.push(profileImage);
     }
 
     let updated: UserProfile | null = null;
 
-    if (updates.length > 0) {
-      const result = await sql`
+    if (updateParts.length > 0) {
+      params.push(user.id);
+      const updateQuery = `
         UPDATE users 
-        SET ${sql.unsafe(updates.join(', '))}
-        WHERE id = ${user.id}
+        SET ${updateParts.join(', ')}
+        WHERE id = $${paramIndex}
         RETURNING id, name, email, phone, profile_image AS "profileImage"
       `;
-      updated = result[0] as UserProfile | undefined || null;
+      // Use unsafe with parameters for dynamic query
+      const result = await sql.unsafe(updateQuery, params);
+      updated = (result as any[])[0] || null;
     } else {
-      const [existing] = await sql`
+      updated = await queryOne<UserProfile>`
         SELECT id, name, email, phone, profile_image AS "profileImage"
         FROM users
         WHERE id = ${user.id}
       `;
-      updated = existing as UserProfile | undefined || null;
     }
 
     if (!updated) {
@@ -177,11 +172,11 @@ export async function PATCH(req: NextRequest) {
     // Handle newsletter subscription
     if (newsletterSubscribed !== undefined) {
       const normalizedEmail = updated.email.toLowerCase();
-      const [current] = await sql`
+      const currentSub = await queryOne<{ is_subscribed: boolean }>`
         SELECT is_subscribed FROM newsletter_subscriptions
         WHERE email = ${normalizedEmail}
       `;
-      const wasSubscribed = current?.is_subscribed === true;
+      const wasSubscribed = currentSub?.is_subscribed === true;
 
       await sql`
         INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
@@ -192,7 +187,6 @@ export async function PATCH(req: NextRequest) {
           updated_at = NOW()
       `;
 
-      // Send email notifications (fire and forget - don't block response)
       if (newsletterSubscribed === true && !wasSubscribed) {
         const recentProducts = await getRecentProducts(4);
         sendWelcomeBackEmail(updated.email, updated.name, recentProducts).catch(err => {
@@ -206,7 +200,6 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json({ user: updated });
-    
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
     console.error('Profile update error:', errorMessage);
@@ -219,19 +212,15 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   try {
-    const sql = getDb();
-    const [userData] = await sql`
+    const userData = await queryOne<UserProfile>`
       SELECT id, name, email, phone, profile_image AS "profileImage"
       FROM users
       WHERE id = ${user.id}
     `;
-    
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
     return NextResponse.json({ user: userData });
-    
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
     console.error('Error fetching user:', errorMessage);
