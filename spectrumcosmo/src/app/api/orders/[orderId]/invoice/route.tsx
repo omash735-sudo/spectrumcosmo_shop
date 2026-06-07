@@ -18,7 +18,7 @@ interface OrderWithItems {
   payment_status: string;
   delivery_fee: number | null;
   total_amount: number;
-  items: any[]; // will be JSON array
+  items: any[];
 }
 
 interface SettingRow {
@@ -34,7 +34,6 @@ export async function GET(
     const { orderId } = await params;
     const sql = getDb();
 
-    // 1. Get order with items – use queryOne to get single row
     const order = await queryOne<OrderWithItems>`
       SELECT o.*, 
              COALESCE(
@@ -50,7 +49,6 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Generate invoice number if missing
     let invoiceNumber = order.invoice_number;
     if (!invoiceNumber) {
       const year = new Date(order.created_at).getFullYear();
@@ -66,7 +64,6 @@ export async function GET(
       `;
     }
 
-    // 2. Get company settings – use queryAsArray to get a real array
     const settingsRows = await queryAsArray<SettingRow>`
       SELECT setting_key, setting_value FROM system_settings
     `;
@@ -75,11 +72,9 @@ export async function GET(
       settingsMap[row.setting_key] = row.setting_value;
     });
 
-    // 3. Generate QR code (tracking URL)
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${order.id}/tracking`;
     const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, { width: 120, margin: 1 });
 
-    // 4. Prepare data for PDF
     const items = order.items || [];
     const subtotal = items.reduce((sum: number, item: any) => {
       return sum + ((item.quantity || 1) * Number(item.unit_price || item.price || 0));
@@ -109,18 +104,16 @@ export async function GET(
       companyPhone: settingsMap.company_phone || '',
     };
 
-    // 5. Render PDF stream
     const pdfStream = await renderToStream(<InvoicePDF data={pdfData} />);
 
-    // Convert stream to Buffer (NextResponse accepts Buffer or Uint8Array)
+    // Convert stream to Buffer – safe for all chunk types
     const chunks: Buffer[] = [];
     for await (const chunk of pdfStream) {
-      if (typeof chunk === 'string') {
-        chunks.push(Buffer.from(chunk));
-      } else if (Buffer.isBuffer(chunk)) {
+      if (Buffer.isBuffer(chunk)) {
         chunks.push(chunk);
-      } else if (chunk instanceof Uint8Array) {
-        chunks.push(Buffer.from(chunk));
+      } else {
+        // Convert string, Uint8Array, or any other type
+        chunks.push(Buffer.from(chunk as any));
       }
     }
     const pdfBuffer = Buffer.concat(chunks);
