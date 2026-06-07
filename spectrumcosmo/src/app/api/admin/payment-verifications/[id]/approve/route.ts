@@ -1,9 +1,37 @@
+// app/api/admin/payment-verifications/[id]/approve/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryAsArray, queryOne } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
 import { updateOrderStatus } from '@/lib/order-status';
 import { deductStock } from '@/lib/stock-manager';
+
+// Types
+interface Verification {
+  proof_image_url: string;
+  transaction_reference: string | null;
+  notes: string | null;
+}
+
+interface Order {
+  customer_email: string;
+  customer_name: string;
+  total_amount: number;
+  delivery_address: string;
+  id: string;
+  status: string;
+}
+
+interface SystemSetting {
+  setting_key: string;
+  setting_value: string;
+}
+
+interface EmailTemplate {
+  html_template: string;
+  subject: string;
+  text_content: string | null;
+}
 
 function replacePlaceholders(template: string, data: Record<string, string>): string {
   let result = template;
@@ -13,8 +41,8 @@ function replacePlaceholders(template: string, data: Record<string, string>): st
   return result;
 }
 
-async function getEmailTemplate(sql: any, templateName: string) {
-  const templates = await sql`
+async function getEmailTemplate(sql: any, templateName: string): Promise<EmailTemplate | null> {
+  const templates = await queryAsArray<EmailTemplate>`
     SELECT html_template, subject, text_content 
     FROM email_templates 
     WHERE name = ${templateName} AND is_active = true 
@@ -39,30 +67,28 @@ export async function POST(
     const sql = getDb();
 
     // Get payment verification details
-    const [verification] = await sql`
+    const verificationArray = await queryAsArray<Verification>`
       SELECT proof_image_url, transaction_reference, notes
       FROM payment_confirmations 
       WHERE id = ${verificationId}
     `;
-
+    const verification = verificationArray[0];
     if (!verification) {
       return NextResponse.json({ error: 'Verification not found' }, { status: 404 });
     }
 
     // Get order details
-    const [order] = await sql`
+    const orderArray = await queryAsArray<Order>`
       SELECT customer_email, customer_name, total_amount, delivery_address, id, status
       FROM orders 
       WHERE id = ${orderId}::uuid
     `;
-
+    const order = orderArray[0];
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // ============================================
-    // STEP 1: DEDUCT STOCK
-    // ============================================
+    // Deduct stock
     const stockDeducted = await deductStock(orderId);
     if (!stockDeducted) {
       return NextResponse.json({ 
@@ -70,10 +96,7 @@ export async function POST(
       }, { status: 409 });
     }
 
-    // ============================================
-    // STEP 2: CREATE RECEIPT FROM VERIFICATION
-    // ============================================
-    // Create a receipt record from the payment proof
+    // Create receipt
     const receiptData = {
       receiptType: 'payment_proof',
       paymentStatus: 'paid',
@@ -83,15 +106,17 @@ export async function POST(
       verifiedBy: adminId,
     };
 
-    const [receipt] = await sql`
+    const receiptArray = await queryAsArray<{ id: string }>`
       INSERT INTO order_receipts (order_id, image_url, extracted_data, receipt_type, uploaded_by, created_at)
       VALUES (${orderId}, ${verification.proof_image_url}, ${JSON.stringify(receiptData)}, 'payment_proof', ${adminId}, NOW())
-      RETURNING *
+      RETURNING id
     `;
+    const receipt = receiptArray[0];
+    if (!receipt) {
+      return NextResponse.json({ error: 'Failed to create receipt' }, { status: 500 });
+    }
 
-    // ============================================
-    // STEP 3: UPDATE ORDER STATUS
-    // ============================================
+    // Update order status
     await updateOrderStatus({
       orderId,
       newStatusSlug: 'approved',
@@ -108,15 +133,17 @@ export async function POST(
       WHERE id = ${verificationId}
     `;
 
-    // ============================================
-    // STEP 4: SEND CONFIRMATION EMAIL
-    // ============================================
+    // Send confirmation email
     const orderNumber = order.id.slice(-8);
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
-    const settings = await sql`SELECT setting_key, setting_value FROM system_settings`;
+    const settingsArray = await queryAsArray<SystemSetting>`
+      SELECT setting_key, setting_value FROM system_settings
+    `;
     const settingsMap: Record<string, string> = {};
-    settings.forEach((s: any) => { settingsMap[s.setting_key] = s.setting_value; });
+    settingsArray.forEach((s) => {
+      settingsMap[s.setting_key] = s.setting_value;
+    });
 
     const defaultDays = parseInt(settingsMap.default_delivery_days || '5');
     const estimatedDelivery = new Date();
@@ -137,11 +164,9 @@ export async function POST(
     };
 
     const emailTemplate = await getEmailTemplate(sql, 'payment_approved');
-    
     if (emailTemplate && order.customer_email) {
       const emailHtml = replacePlaceholders(emailTemplate.html_template, placeholders);
       const emailSubject = replacePlaceholders(emailTemplate.subject, placeholders);
-      
       await sendMail({
         to: order.customer_email,
         subject: emailSubject,
@@ -155,8 +180,11 @@ export async function POST(
       receiptId: receipt.id,
       message: 'Payment approved, stock deducted, and receipt created'
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Approve error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
