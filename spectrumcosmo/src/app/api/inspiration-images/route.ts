@@ -1,6 +1,6 @@
 // app/api/inspiration/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { queryOne, queryAsArray } from '@/lib/db';
 import { InspirationImage, InspirationImageWithLike, PaginatedResponse } from '@/types';
 
 export const revalidate = 60;
@@ -10,24 +10,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const url = new URL(req.url);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '12'), 50);
     const cursor = url.searchParams.get('cursor');
-    
+
     if (isNaN(limit) || limit < 1) {
       return NextResponse.json({ error: 'Invalid limit parameter' }, { status: 400 });
     }
-    
-    const sql = getDb();
-    
-    // Get total count - typed as { total: number }[]
-    const [countResult] = await sql.query<{ total: string }>`
+
+    // Get total count – use queryOne
+    const countResult = await queryOne<{ total: string }>`
       SELECT COUNT(*) as total FROM inspiration_images WHERE is_active = true
     `;
     const total = parseInt(countResult?.total || '0', 10);
-    
-    // Get images - typed as InspirationImage[]
+
+    // Get images – use queryAsArray (returns a typed array)
     let images: InspirationImage[];
-    
     if (cursor) {
-      images = await sql.query<InspirationImage>`
+      images = await queryAsArray<InspirationImage>`
         SELECT id, image_url, title, description, like_count, display_order, created_at
         FROM inspiration_images
         WHERE is_active = true AND id > ${cursor}
@@ -35,7 +32,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         LIMIT ${limit}
       `;
     } else {
-      images = await sql.query<InspirationImage>`
+      images = await queryAsArray<InspirationImage>`
         SELECT id, image_url, title, description, like_count, display_order, created_at
         FROM inspiration_images
         WHERE is_active = true
@@ -43,16 +40,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         LIMIT ${limit}
       `;
     }
-    
-    // Add user_liked flag - now TypeScript knows the type
-    const imagesWithLike: InspirationImageWithLike[] = images.map((image: InspirationImage) => ({
+
+    // Add user_liked flag (false by default)
+    const imagesWithLike: InspirationImageWithLike[] = images.map((image) => ({
       ...image,
       user_liked: false,
     }));
-    
+
     const hasMore = images.length === limit;
     const nextCursor = hasMore && images.length > 0 ? images[images.length - 1].id : undefined;
-    
+
     const response: PaginatedResponse<InspirationImageWithLike> = {
       data: imagesWithLike,
       pagination: {
@@ -62,9 +59,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         hasMore,
       },
     };
-    
+
     return NextResponse.json(response);
-    
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
     console.error('Failed to fetch inspiration images:', errorMessage);
