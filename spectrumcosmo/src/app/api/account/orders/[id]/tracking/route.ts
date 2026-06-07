@@ -24,6 +24,7 @@ interface OrderTracking {
   admin_notes: string | null;
   promo_code: string | null;
   referral_code: string | null;
+  delivery_method_id: string | null;  // Added
 }
 
 interface OrderItem {
@@ -109,7 +110,7 @@ export async function GET(
     const itemsArray = itemsResult as any[];
     const items: OrderItem[] = itemsArray;
 
-    // Get delivery method (using delivery_method_id if available)
+    // Get delivery method
     let deliveryMethod: DeliveryMethod | null = null;
     if (order.delivery_method_id) {
       const dmResult = await sql`
@@ -121,7 +122,7 @@ export async function GET(
       deliveryMethod = dmArray[0] as DeliveryMethod | null;
     }
 
-    // Get payment provider (using payment_method name)
+    // Get payment provider
     let paymentProvider: PaymentProvider | null = null;
     if (order.payment_method) {
       const ppResult = await sql`
