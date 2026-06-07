@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Plus, ShoppingCart, Loader2, CheckCircle } from 'lucide-react'
-import { useCart } from '@/components/storefront/CartProvider'
+import { useState } from 'react';
+import { Plus, ShoppingCart, Loader2, CheckCircle } from 'lucide-react';
+import { useCart } from '@/components/storefront/CartProvider';
 
 interface AddToCartButtonProps {
-  productId: string
-  productName: string
-  imageUrl?: string
-  priceUsd: number
-  variantId?: string | null
-  disabled?: boolean
-  className?: string
-  showIcon?: boolean
-  onSuccess?: () => void
+  productId: string;
+  productName: string;
+  imageUrl?: string;
+  priceUsd: number;
+  variantId?: string | null;
+  disabled?: boolean;
+  className?: string;
+  showIcon?: boolean;
+  onSuccess?: () => void;
 }
 
 export default function AddToCartButton({
@@ -27,35 +27,35 @@ export default function AddToCartButton({
   showIcon = true,
   onSuccess,
 }: AddToCartButtonProps) {
-  const { addItem } = useCart()
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const { addItem } = useCart();
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleAddToCart = async () => {
-    if (disabled) return
-    
-    setLoading(true)
+    if (disabled) return;
+
+    setLoading(true);
     try {
-      addItem({ 
-        id: productId, 
-        name: productName, 
-        image_url: imageUrl, 
+      addItem({
+        id: productId,
+        name: productName,
+        image_url: imageUrl,
         priceUsd,
-        variant_id: variantId || undefined,
-      })
-      
-      setSuccess(true)
-      if (onSuccess) onSuccess()
-      
+        // variant_id is not supported by the current cart provider type – removed
+      });
+
+      setSuccess(true);
+      if (onSuccess) onSuccess();
+
       setTimeout(() => {
-        setSuccess(false)
-      }, 2000)
+        setSuccess(false);
+      }, 2000);
     } catch (err) {
-      console.error('Failed to add to cart:', err)
+      console.error('Failed to add to cart:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (disabled) {
     return (
@@ -65,7 +65,7 @@ export default function AddToCartButton({
       >
         Out of Stock
       </button>
-    )
+    );
   }
 
   if (success) {
@@ -77,7 +77,7 @@ export default function AddToCartButton({
         <CheckCircle size={18} />
         Added to Cart
       </button>
-    )
+    );
   }
 
   return (
@@ -95,5 +95,5 @@ export default function AddToCartButton({
       )}
       {loading ? 'Adding...' : showIcon ? 'Add to Cart' : 'Add'}
     </button>
-  )
+  );
 }
