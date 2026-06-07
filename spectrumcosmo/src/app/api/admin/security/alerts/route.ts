@@ -1,5 +1,6 @@
+// app/api/admin/security/alerts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { queryMany } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -9,8 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const sql = getDb();
-    const alerts = await sql`
+    const alerts = await queryMany`
       SELECT * FROM security_alerts
       ORDER BY created_at DESC
       LIMIT 100
@@ -18,6 +18,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(alerts);
   } catch (err) {
     console.error('Failed to fetch alerts:', err);
-    return NextResponse.json([]);
+    return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
   }
 }
