@@ -1,5 +1,6 @@
+// app/api/admin/protection-settings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, queryAsArray } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -32,8 +33,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const sql = getDb();
-    const settings = await sql`
+    const settingsArray = await queryAsArray<{ value: any }>`
       SELECT value FROM system_settings WHERE key = 'security_settings'
     `;
     
@@ -45,11 +45,12 @@ export async function GET(req: NextRequest) {
       autoBlockEnabled: true,
     };
     
-    if (settings.length === 0) {
+    if (settingsArray.length === 0) {
       return NextResponse.json(defaultSettings);
     }
     
-    return NextResponse.json({ ...defaultSettings, ...settings[0].value });
+    const savedSettings = settingsArray[0].value;
+    return NextResponse.json({ ...defaultSettings, ...savedSettings });
   } catch (err) {
     console.error('Failed to fetch protection settings:', err);
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
