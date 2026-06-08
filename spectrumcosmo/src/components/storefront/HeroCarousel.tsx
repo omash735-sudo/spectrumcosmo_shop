@@ -45,21 +45,25 @@ export default function HeroCarousel({
     fetch('/api/hero-slides')
       .then(res => res.json())
       .then(data => {
+        console.log('🔥 Slides received:', data);
         if (data && data.length > 0) {
           setSlides(data);
         }
         setLoading(false);
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('Failed to load hero slides:', err);
         setLoading(false);
       });
   }, []);
 
   if (loading) {
-    return <div className="w-full aspect-[16/9] bg-gray-100 animate-pulse rounded-2xl" />;
+    return <div className="h-[300px] sm:h-[400px] md:h-[500px] bg-gray-100 animate-pulse" />;
   }
 
-  if (slides.length === 0) return null;
+  if (slides.length === 0) {
+    return null;
+  }
 
   const verticalClass = {
     top: 'items-start',
@@ -68,34 +72,45 @@ export default function HeroCarousel({
   }[verticalPosition];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl shadow-lg">
+    <div className="relative w-full overflow-hidden">
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         spaceBetween={0}
         slidesPerView={1}
-        autoplay={{ delay: 6000, disableOnInteraction: false }}
+        autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         navigation
         loop={slides.length > 1}
-        className="w-full aspect-[16/9]"
+        className="w-full h-[300px] sm:h-[400px] md:h-[500px]"
       >
         {slides.map((slide, idx) => (
           <SwiperSlide key={slide.id}>
             <div className="relative w-full h-full">
-              <Image
-                src={slide.image_url}
-                alt={slide.title || 'Hero'}
-                fill
-                className="object-cover"
-                priority={idx === 0}
-                sizes="100vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
-              <div className={`absolute inset-0 flex flex-col ${verticalClass} justify-center p-4 sm:p-6 md:p-8`}>
-                <div className="container mx-auto px-2 sm:px-4 text-center">
+              {/* Debug: Check if image_url exists */}
+              {console.log(`Slide ${idx}: image_url =`, slide.image_url)}
+              
+              {slide.image_url ? (
+                <Image
+                  src={slide.image_url}
+                  alt={slide.title || 'Hero'}
+                  fill
+                  className="object-cover"
+                  priority={idx === 0}
+                  sizes="100vw"
+                  onError={(e) => console.error('Image failed to load:', slide.image_url, e)}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
+                  <span className="text-white text-xl">No Image</span>
+                </div>
+              )}
+              
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent pointer-events-none" />
+              <div className={`absolute inset-0 flex flex-col ${verticalClass} justify-center p-6`}>
+                <div className="container mx-auto px-4 text-center">
                   {slide.title && (
                     <h2
-                      className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow-lg mb-2 sm:mb-3"
+                      className="text-2xl sm:text-4xl md:text-5xl font-bold drop-shadow-lg mb-2"
                       style={{ color: titleColor, textAlign: titleAlignment }}
                     >
                       {slide.title}
@@ -103,14 +118,14 @@ export default function HeroCarousel({
                   )}
                   {slide.description && (
                     <p
-                      className="text-sm sm:text-base md:text-lg drop-shadow max-w-2xl mx-auto px-2"
+                      className="text-sm sm:text-base md:text-lg drop-shadow max-w-2xl mx-auto"
                       style={{ color: subtitleColor, textAlign: subtitleAlignment }}
                     >
                       {slide.description}
                     </p>
                   )}
                   {slide.button_text && slide.button_link && (
-                    <div className="mt-3 sm:mt-4 md:mt-6" style={{ textAlign: titleAlignment }}>
+                    <div className="mt-4" style={{ textAlign: titleAlignment }}>
                       <Link
                         href={slide.button_link}
                         className="inline-block px-4 py-2 sm:px-6 sm:py-3 rounded-full font-medium text-sm sm:text-base transition hover:opacity-90"
@@ -131,20 +146,18 @@ export default function HeroCarousel({
         .swiper-button-next,
         .swiper-button-prev {
           color: white !important;
-          background: rgba(0,0,0,0.3);
+          background: rgba(0,0,0,0.4);
           width: 35px;
           height: 35px;
           border-radius: 50%;
-          transition: all 0.2s;
         }
         .swiper-button-next:hover,
         .swiper-button-prev:hover {
-          background: rgba(0,0,0,0.6);
+          background: rgba(0,0,0,0.7);
         }
         .swiper-button-next:after,
         .swiper-button-prev:after {
           font-size: 14px;
-          font-weight: bold;
         }
         .swiper-pagination-bullet {
           background: white !important;
