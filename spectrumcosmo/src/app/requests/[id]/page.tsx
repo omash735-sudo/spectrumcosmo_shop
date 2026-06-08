@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getDb } from '@/lib/db';
+import { getDb, queryOne, queryMany } from '@/lib/db';
 import { ArrowLeft, Heart, Calendar, Share2 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -19,10 +19,28 @@ interface RequestDetail {
   images: Array<{ id: string; image_url: string; display_order: number }>;
 }
 
+interface RequestRow {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  like_count: number;
+  created_at: string;
+  category_name: string;
+  user_name?: string;
+}
+
+interface ImageRow {
+  id: string;
+  image_url: string;
+  display_order: number;
+}
+
 async function getRequest(id: string): Promise<RequestDetail | null> {
   const sql = getDb();
-  
-  const [request] = await sql`
+
+  // Use queryOne to get a single row (or null)
+  const request = await queryOne<RequestRow>`
     SELECT 
       r.id,
       r.title,
@@ -37,16 +55,17 @@ async function getRequest(id: string): Promise<RequestDetail | null> {
     LEFT JOIN users u ON u.id = r.user_id
     WHERE r.id = ${id}
   `;
-  
+
   if (!request) return null;
-  
-  const images = await sql`
+
+  // Use queryMany to get the images array with proper typing
+  const images = await queryMany<ImageRow>`
     SELECT id, image_url, display_order
     FROM request_images
     WHERE request_id = ${id}
     ORDER BY display_order ASC
   `;
-  
+
   return { ...request, images };
 }
 
@@ -54,7 +73,7 @@ function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 }
 
@@ -72,29 +91,28 @@ function getStatusMessage(status: string): string {
 export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const request = await getRequest(id);
-  
+
   if (!request) {
     notFound();
   }
-  
+
   const statusMessage = getStatusMessage(request.status);
   const statusIcon = request.status === 'approved' ? '✓' : request.status === 'pending' ? '⏳' : '✗';
-  
+
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           {/* Back Button */}
-          <Link 
-            href="/newsletter" 
+          <Link
+            href="/newsletter"
             className="inline-flex items-center gap-2 text-gray-500 hover:text-orange-600 mb-6 transition group"
           >
             <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition" />
             Back to Community Wishlist
           </Link>
-          
+
           {/* Request Header */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
             <div className="p-6 md:p-8">
@@ -123,14 +141,14 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </div>
               </div>
-              
+
               {/* Description */}
               <div className="prose prose-sm max-w-none text-gray-600 mt-4">
                 <p>{request.description}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Images Gallery */}
           {request.images.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
@@ -141,7 +159,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               <div className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {request.images.map((image) => (
-                    <div key={image.id} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
+                    <div
+                      key={image.id}
+                      className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group"
+                    >
                       <Image
                         src={image.image_url}
                         alt="Request reference"
@@ -154,7 +175,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           )}
-          
+
           {/* Stats Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-6">
@@ -175,7 +196,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <p className="text-sm text-gray-500 text-center">
                   {statusIcon} {statusMessage}
@@ -183,7 +204,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           </div>
-          
+
           {/* Share Section */}
           <div className="mt-6 text-center">
             <button
