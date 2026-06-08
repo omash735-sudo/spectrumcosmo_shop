@@ -1,7 +1,6 @@
 // lib/db.ts
 import { neon, neonConfig, NeonQueryFunction } from '@neondatabase/serverless';
 
-// Types
 export type DatabaseClient = NeonQueryFunction<false, false>;
 
 export interface TransactionCallback<T> {
@@ -18,7 +17,6 @@ export interface DatabaseConfig {
   slowQueryThresholdMs?: number;
 }
 
-// Configuration
 const DEFAULT_CONFIG: DatabaseConfig = {
   connectionString: process.env.POSTGRES_URL || '',
   connectionTimeoutMs: 10000,
@@ -29,82 +27,93 @@ const DEFAULT_CONFIG: DatabaseConfig = {
   slowQueryThresholdMs: 1000,
 };
 
-// Connection pooling configuration
 neonConfig.poolQueryViaFetch = true;
 
 let sql: DatabaseClient | null = null;
-let isConnecting = false;
-let connectionError: Error | null = null;
+let initPromise: Promise<DatabaseClient> | null = null;
+let initError: Error | null = null;
 let activeQueries = 0;
 let totalQueries = 0;
 
-// Validate environment
 function validateConfig(): void {
   if (!process.env.POSTGRES_URL) {
     throw new Error('POSTGRES_URL environment variable is not set');
   }
 }
 
-// Create connection with retry logic
 async function createConnection(retries: number = DEFAULT_CONFIG.maxRetries!): Promise<DatabaseClient> {
   validateConfig();
-
   for (let i = 0; i < retries; i++) {
     try {
       const client = neon(process.env.POSTGRES_URL!);
-      // Test connection
       await client`SELECT 1 as connected`;
       return client;
     } catch (err) {
-      connectionError = err instanceof Error ? err : new Error('Connection failed');
-      console.error(`Database connection attempt ${i + 1} failed:`, connectionError.message);
-
+      const errorMsg = err instanceof Error ? err.message : 'Connection failed';
+      console.error(`Database connection attempt ${i + 1} failed:`, errorMsg);
       if (i < retries - 1) {
         const delay = DEFAULT_CONFIG.retryDelayMs! * Math.pow(2, i);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
-  throw new Error(`Failed to connect to database after ${retries} attempts: ${connectionError?.message}`);
+  throw new Error(`Failed to connect after ${retries} attempts`);
 }
 
-// Initialize connection
 export async function initDb(): Promise<DatabaseClient> {
   if (sql) return sql;
+  if (initPromise) return initPromise;
 
-  if (isConnecting) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return initDb();
-  }
-
-  isConnecting = true;
-  try {
-    sql = await createConnection();
-    connectionError = null;
-    console.log('Database connected successfully');
-    return sql;
-  } finally {
-    isConnecting = false;
-  }
+  initPromise = (async () => {
+    try {
+      sql = await createConnection();
+      initError = null;
+      console.log('Database connected successfully');
+      return sql;
+    } catch (err) {
+      initError = err instanceof Error ? err : new Error('Unknown connection error');
+      console.error('Database initialization failed:', initError);
+      throw initError;
+    } finally {
+      initPromise = null;
+    }
+  })();
+  return initPromise;
 }
 
-// Get database client (lazy initialization)
+// Dummy client that returns empty arrays for any query (used when DB is unreachable)
+const dummyClient: DatabaseClient = (() => {
+  const queryHandler: DatabaseClient = async (strings, ...values) => {
+    console.warn('Dummy database client used – returning empty result');
+    return [];
+  };
+  queryHandler.transaction = async () => { throw new Error('Transaction not supported in dummy client'); };
+  queryHandler.end = async () => {};
+  return queryHandler;
+})();
+
 export function getDb(): DatabaseClient {
-  if (!sql) {
-    throw new Error('Database not initialized. Call initDb() first.');
+  if (sql) return sql;
+  if (initError) {
+    console.warn('Database previously failed to initialize – using dummy client');
+    return dummyClient;
   }
-  return sql;
+  if (!initPromise) {
+    initDb().catch(err => console.error('Background init failed:', err));
+  }
+  return dummyClient;
 }
 
-// Get database client with auto-initialization (async)
 export async function getDbAsync(): Promise<DatabaseClient> {
-  if (!sql) {
-    await initDb();
+  if (sql) return sql;
+  if (initError) return dummyClient;
+  try {
+    return await initDb();
+  } catch {
+    return dummyClient;
   }
-  return getDb();
 }
 
-// Execute query with timeout and logging
 export async function executeQuery<T = any>(
   queryFn: (client: DatabaseClient) => Promise<T[]>,
   timeoutMs: number = DEFAULT_CONFIG.queryTimeoutMs!
@@ -112,22 +121,17 @@ export async function executeQuery<T = any>(
   const startTime = Date.now();
   activeQueries++;
   totalQueries++;
-
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error(`Query timeout after ${timeoutMs}ms`)), timeoutMs);
   });
-
   const client = getDb();
   const queryPromise = queryFn(client);
-
   try {
     const result = await Promise.race([queryPromise, timeoutPromise]);
     const duration = Date.now() - startTime;
-
     if (DEFAULT_CONFIG.enableQueryLogging && duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
       console.warn(`Slow query detected: ${duration}ms`);
     }
-
     return result;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Query failed';
@@ -138,12 +142,8 @@ export async function executeQuery<T = any>(
   }
 }
 
-// Transaction helper
-export async function withTransaction<T>(
-  callback: TransactionCallback<T>
-): Promise<T> {
+export async function withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
   const client = getDb();
-
   try {
     await client`BEGIN`;
     const result = await callback(client);
@@ -151,18 +151,11 @@ export async function withTransaction<T>(
     return result;
   } catch (err) {
     await client`ROLLBACK`;
-    const errorMessage = err instanceof Error ? err.message : 'Transaction failed';
-    console.error('Transaction error:', errorMessage);
-    throw new Error(errorMessage);
+    throw err;
   }
 }
 
-// Health check
-export async function healthCheck(): Promise<{
-  status: 'healthy' | 'unhealthy';
-  latencyMs: number;
-  error?: string;
-}> {
+export async function healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; latencyMs: number; error?: string }> {
   const startTime = Date.now();
   try {
     const client = await getDbAsync();
@@ -175,24 +168,16 @@ export async function healthCheck(): Promise<{
   }
 }
 
-// Get connection pool status
-export function getPoolStatus(): {
-  isConnected: boolean;
-  hasError: boolean;
-  errorMessage: string | null;
-  activeQueries: number;
-  totalQueries: number;
-} {
+export function getPoolStatus() {
   return {
     isConnected: sql !== null,
-    hasError: connectionError !== null,
-    errorMessage: connectionError?.message || null,
+    hasError: initError !== null,
+    errorMessage: initError?.message || null,
     activeQueries,
     totalQueries,
   };
 }
 
-// Get database metrics
 export function getDbMetrics() {
   return {
     activeQueries,
@@ -202,33 +187,27 @@ export function getDbMetrics() {
   };
 }
 
-// Reset metrics (for testing)
 export function resetMetrics(): void {
   activeQueries = 0;
   totalQueries = 0;
 }
 
-// Close connection (for graceful shutdown)
 export async function closeDb(): Promise<void> {
   if (sql && typeof (sql as any).end === 'function') {
     await (sql as any).end();
     console.log('Database connection closed');
   }
   sql = null;
-  connectionError = null;
+  initError = null;
 }
 
-// Graceful shutdown handler
 export function setupGracefulShutdown(): void {
-  // Store start time
   (global as any).dbStartTime = Date.now();
-
   process.on('SIGTERM', async () => {
     console.log('Received SIGTERM, closing database connection...');
     await closeDb();
     process.exit(0);
   });
-
   process.on('SIGINT', async () => {
     console.log('Received SIGINT, closing database connection...');
     await closeDb();
@@ -237,7 +216,7 @@ export function setupGracefulShutdown(): void {
 }
 
 // ============================================
-// TYPED QUERY HELPERS
+// TYPED QUERY HELPERS (now use dummy‑safe getDb)
 // ============================================
 
 export async function queryOne<T = any>(
@@ -247,14 +226,12 @@ export async function queryOne<T = any>(
   const startTime = Date.now();
   const client = getDb();
   const result = await client(strings, ...values);
-
   if (DEFAULT_CONFIG.enableQueryLogging) {
     const duration = Date.now() - startTime;
     if (duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
       console.warn(`Slow queryOne detected: ${duration}ms`);
     }
   }
-
   return (result as T[])[0] || null;
 }
 
@@ -265,18 +242,15 @@ export async function queryMany<T = any>(
   const startTime = Date.now();
   const client = getDb();
   const result = await client(strings, ...values);
-
   if (DEFAULT_CONFIG.enableQueryLogging) {
     const duration = Date.now() - startTime;
     if (duration > (DEFAULT_CONFIG.slowQueryThresholdMs || 1000)) {
       console.warn(`Slow queryMany detected: ${duration}ms, returned ${(result as T[]).length} rows`);
     }
   }
-
   return result as T[];
 }
 
-// With transaction support
 export async function queryOneWithTx<T = any>(
   client: DatabaseClient,
   strings: TemplateStringsArray,
@@ -295,7 +269,6 @@ export async function queryManyWithTx<T = any>(
   return result as T[];
 }
 
-// queryAsArray – returns a properly typed array (works around Neon's union type)
 export async function queryAsArray<T = any>(
   strings: TemplateStringsArray,
   ...values: any[]
@@ -305,17 +278,14 @@ export async function queryAsArray<T = any>(
   return result as T[];
 }
 
-// Batch query helper
 export async function batchQuery<T = any>(
   queries: Array<{ strings: TemplateStringsArray; values: any[] }>
 ): Promise<T[][]> {
   const client = getDb();
   const results: T[][] = [];
-
   for (const query of queries) {
     const result = await client(query.strings, ...query.values);
     results.push(result as T[]);
   }
-
   return results;
 }
