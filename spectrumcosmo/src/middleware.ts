@@ -33,19 +33,29 @@ export async function middleware(request: NextRequest) {
     const nonce = generateNonce();
     const response = NextResponse.next();
 
-    // Security headers (always set)
-    const csp = [
-      "default-src 'self'",
-      `script-src 'self' https://vercel.live https://vercel.com 'nonce-${nonce}'`,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: https://res.cloudinary.com",
-      "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
-      "frame-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; ');
+    const { pathname } = request.nextUrl;
+    
+    // Choose CSP based on route (permissive for admin)
+    let csp: string;
+    if (isAdminRoute(pathname)) {
+      // Permissive CSP for admin panel (allows all inline scripts & styles)
+      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
+    } else {
+      // Strict CSP for public pages (with unsafe-inline added for compatibility)
+      csp = [
+        "default-src 'self'",
+        `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'nonce-${nonce}'`,
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: https://res.cloudinary.com",
+        "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
+        "frame-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ');
+    }
+
     response.headers.set('Content-Security-Policy', csp);
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
@@ -53,7 +63,6 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
 
-    const { pathname } = request.nextUrl;
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || '';
     const method = request.method;
