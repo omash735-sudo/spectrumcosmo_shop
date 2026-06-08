@@ -1,4 +1,5 @@
-import { getDb } from './db';
+// lib/order-status.ts
+import { getDb, queryMany, queryOne } from './db';
 import { sendDynamicStatusEmail } from './email';
 
 export interface StatusUpdateOptions {
@@ -25,6 +26,17 @@ export interface OrderStatus {
   send_email: boolean;
 }
 
+interface OrderRow {
+  id: string;
+  customer_name: string;
+  customer_email: string;
+  total_amount: number;
+  status: string;
+  order_number: string | null;
+  tracking_number: string | null;
+  tracking_notes: string | null;
+}
+
 // Cache for statuses to avoid repeated DB queries
 let statusCache: OrderStatus[] | null = null;
 let statusCacheTime: number = 0;
@@ -32,17 +44,16 @@ const CACHE_TTL = 60000; // 1 minute
 
 async function getStatuses(): Promise<OrderStatus[]> {
   const now = Date.now();
-  if (statusCache && (now - statusCacheTime) < CACHE_TTL) {
+  if (statusCache && now - statusCacheTime < CACHE_TTL) {
     return statusCache;
   }
-  
-  const sql = getDb();
-  const statuses = await sql`
+
+  const statuses = await queryMany<OrderStatus>`
     SELECT * FROM order_statuses 
     WHERE is_active = true 
     ORDER BY display_order ASC
   `;
-  
+
   statusCache = statuses;
   statusCacheTime = now;
   return statuses;
@@ -57,8 +68,6 @@ export async function getAllowedStatusTransitions(currentSlug: string): Promise<
   const statuses = await getStatuses();
   const current = statuses.find(s => s.slug === currentSlug);
   if (!current) return [];
-  
-  // Return statuses with higher display_order (forward only) or specific rules
   return statuses.filter(s => s.display_order > current.display_order);
 }
 
@@ -71,13 +80,13 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
     trackingNotes,
     changedBy = 'admin',
     changedById,
-    ipAddress = 'unknown'
+    ipAddress = 'unknown',
   } = options;
 
   const sql = getDb();
 
-  // Get current order
-  const [order] = await sql`
+  // Get current order – use queryOne for single row
+  const order = await queryOne<OrderRow>`
     SELECT id, customer_name, customer_email, total_amount, status as old_status,
            order_number, tracking_number, tracking_notes
     FROM orders 
@@ -98,8 +107,8 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
     throw new Error(`Invalid status: ${newStatusSlug}`);
   }
 
-  // Update order
-  const [updatedOrder] = await sql`
+  // Update order – use queryOne to get the updated row
+  const updatedOrder = await queryOne<OrderRow>`
     UPDATE orders 
     SET status = ${newStatusSlug}, 
         updated_at = NOW(),
@@ -109,6 +118,10 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
     WHERE id = ${orderId}
     RETURNING *
   `;
+
+  if (!updatedOrder) {
+    throw new Error('Failed to update order');
+  }
 
   // Log status change to history
   await sql`
@@ -141,7 +154,7 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
 export async function cancelOrder(orderId: string, userId: string, reason?: string) {
   const sql = getDb();
 
-  const [order] = await sql`
+  const order = await queryOne<{ status: string }>`
     SELECT status FROM orders WHERE id = ${orderId} AND user_id = ${userId}
   `;
 
@@ -149,7 +162,6 @@ export async function cancelOrder(orderId: string, userId: string, reason?: stri
     throw new Error('Order not found');
   }
 
-  // Only pending orders can be cancelled (dynamic check)
   const pendingStatus = await getStatusBySlug('pending');
   if (order.status !== pendingStatus?.slug) {
     throw new Error(`Cannot cancel order with status: ${order.status}`);
@@ -165,8 +177,14 @@ export async function cancelOrder(orderId: string, userId: string, reason?: stri
 }
 
 export async function getOrderStatusHistory(orderId: string) {
-  const sql = getDb();
-  const history = await sql`
+  const history = await queryMany<{
+    id: string;
+    old_status: string;
+    new_status: string;
+    changed_at: Date;
+    status_name: string;
+    color: string;
+  }>`
     SELECT h.*, s.name as status_name, s.color
     FROM order_status_history h
     LEFT JOIN order_statuses s ON h.new_status = s.slug
