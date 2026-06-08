@@ -7,7 +7,7 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
-import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
+import HeroCarousel from '@/components/storefront/admin/HeroSlideModal'; // ADD THIS
 import { getDb, queryMany } from '@/lib/db';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
