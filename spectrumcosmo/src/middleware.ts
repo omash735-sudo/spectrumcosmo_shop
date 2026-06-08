@@ -13,7 +13,7 @@ function isAdminRoute(pathname: string): boolean {
   return pathname.startsWith('/api/admin/') || pathname.startsWith('/admin');
 }
 
-// ADD THIS: Check if route needs carousel-friendly CSP
+// Check if route needs carousel-friendly CSP
 function isCarouselRoute(pathname: string): boolean {
   const carouselRoutes = ['/', '/products', '/product/'];
   return carouselRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
     
     // OPTION 1: Admin routes get permissive CSP
     if (isAdminRoute(pathname)) {
-      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
+      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
     } 
     // OPTION 2: Carousel routes (homepage, products) get carousel-friendly CSP
     else if (isCarouselRoute(pathname)) {
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
         `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:`,
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
+        "font-src 'self' https://fonts.gstatic.com data: blob:",
         "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:",
         "connect-src 'self' https://api.upstash.com https://api.cloudinary.com https://*.cloudinary.com",
         "frame-src 'self'",
@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
         "default-src 'self'",
         `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'nonce-${nonce}'`,
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
+        "font-src 'self' https://fonts.gstatic.com data: blob:",
         "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
         "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
         "frame-src 'self'",
@@ -210,7 +210,7 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware fatal error (fallback activated):', error);
     const fallbackResponse = NextResponse.next();
     const nonce = generateNonce();
-    fallbackResponse.headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:;`);
+    fallbackResponse.headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:;`);
     return fallbackResponse;
   }
 }
