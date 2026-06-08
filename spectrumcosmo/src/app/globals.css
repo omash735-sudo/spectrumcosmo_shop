@@ -3,21 +3,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================
-   BASE THEME (light mode)
-   ============================================ */
+/* Use only one modern sans‑serif font stack (Etsy‑style) */
 :root {
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --background: #ffffff;
   --foreground: #111111;
   --foreground-muted: #4b5563;
   --border: #e5e7eb;
-  --primary: #F97316;
+  --primary: #F97316;        /* kept for tiny accents (price, sale badge) */
   --primary-dark: #ea6c0f;
   --header-height: 80px;
 }
 
-/* Manual dark mode class (for future toggle) */
+/* Manual dark mode class (if you add a toggle) */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
@@ -25,9 +23,6 @@
   --border: #1f2937;
 }
 
-/* ============================================
-   RESET & GLOBALS
-   ============================================ */
 * {
   box-sizing: border-box;
 }
@@ -45,7 +40,7 @@ body {
   line-height: 1.5;
 }
 
-/* Headings – same sans-serif font (no serif) */
+/* Headings use the same font (no serif) */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -63,9 +58,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   h3 { font-size: 1.25rem; }
 }
 
-/* ============================================
-   UTILITY CLASSES
-   ============================================ */
+/* Utility classes */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -90,9 +83,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* ============================================
-   GLOBAL COMPONENT STYLES
-   ============================================ */
+/* Minimal global component styles – buttons use gray/black */
 @layer components {
   .btn-primary {
     @apply bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 inline-flex items-center gap-2 shadow-sm;
@@ -106,13 +97,13 @@ h4 { font-size: 1.25rem; font-weight: 600; }
    DARK MODE OVERRIDES (system preference)
    ============================================ */
 @media (prefers-color-scheme: dark) {
-  /* Base body */
+  /* Force a dark background on the whole page */
   body {
     background-color: #0a0a0a !important;
     color: #e5e5e5 !important;
   }
 
-  /* Common backgrounds */
+  /* Make all white/gray backgrounds dark */
   .bg-white,
   .bg-gray-50,
   .bg-gray-100,
@@ -126,7 +117,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     background-image: none !important;
   }
 
-  /* Semi‑transparent backgrounds */
+  /* Cards, sections, containers */
   .bg-white\/90,
   .bg-white\/80,
   .bg-white\/70,
@@ -135,7 +126,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     backdrop-filter: blur(4px);
   }
 
-  /* Text colors – light grey */
+  /* Text colors – make everything light */
   .text-gray-900,
   .text-gray-800,
   .text-gray-700,
@@ -145,7 +136,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #d1d5db !important;
   }
 
-  /* Headings */
+  /* Headings – keep dark, but we make them light */
   h1, h2, h3, h4, h5, h6,
   .text-gray-900,
   .font-bold,
@@ -153,7 +144,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #f3f4f6 !important;
   }
 
-  /* Orange accents (keep visible) */
+  /* Keep brand orange for small accents (price, sale badge) */
   .text-orange-500,
   .text-orange-600,
   .text-orange-700,
@@ -194,7 +185,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #ccc !important;
   }
 
-  /* Trust bar */
+  /* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
   .bg-gray-900 {
     background-color: #0a0a0a !important;
   }
@@ -208,7 +199,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     border-color: #2a2a2a !important;
   }
 
-  /* Inputs */
+  /* Input fields */
   input, textarea, select {
     background-color: #2a2a2a !important;
     border-color: #4a4a4a !important;
@@ -223,57 +214,38 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     background-color: #0f0f0f !important;
     border-top-color: #2a2a2a !important;
   }
-}
 
-/* ============================================
-   TARGETED FIXES FOR LEFTOVER LIGHT BLOCKS
-   (replaces the aggressive "nuclear" block)
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-  /* Any element that still has a white background */
-  .bg-white,
-  .bg-gray-50,
-  .bg-gray-100,
-  .bg-gray-200,
-  .card,
-  [class*="rounded-2xl"]:not([class*="bg-orange"]) {
-    background-color: #1e1e1e !important;
+  /* ============================================
+     EXTRA DARK MODE FIXES (kills the squares)
+     ============================================ */
+  /* Every div/section/article without a specific background becomes transparent */
+  div, section, article, aside, main, nav, header, footer {
+    background-color: transparent !important;
   }
 
-  /* Profile avatars and review circles */
-  .w-10.h-10.rounded-full,
-  .bg-orange-100.rounded-full {
-    background-color: #3a3a3a !important;
-  }
-  .text-orange-600.font-semibold {
-    color: #f97316 !important;
+  /* Any leftover white/light background from unknown classes */
+  [class*="bg-"]:not(.bg-orange-500):not(.bg-orange-600) {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
   }
 
-  /* Price and stock warning */
-  .text-orange-600.font-bold,
-  .text-orange-500 {
-    color: #f97316 !important;
+  /* Kill white box‑shadows that become visible in dark mode */
+  * {
+    box-shadow: none !important;
   }
 
-  /* All text inside product cards */
-  .text-gray-800,
-  .text-gray-700,
-  .text-gray-600 {
-    color: #d1d5db !important;
+  /* Force all borders to dark grey */
+  * {
+    border-color: #2a2a2a !important;
   }
 
-  /* Sale badge (keep red) */
-  .bg-red-500 {
-    background-color: #dc2626 !important;
-  }
-
-  /* Input fields (already covered, but ensure consistency) */
-  input, textarea, select {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e5e5e5 !important;
-  }
-  input::placeholder, textarea::placeholder {
-    color: #888 !important;
+  /* Specific fix for the "Wear your excitement with pride" section */
+  /* Give it a solid Tailwind Gray‑900 background (no gradient) */
+  .hero-section,
+  .wear-excitement-section,
+  section:has(h2:contains("Wear your excitement")),
+  div:has(> p:contains("Wear your excitement")) {
+    background-color: #111827 !important;
+    background-image: none !important;
   }
 }
