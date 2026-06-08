@@ -31,10 +31,16 @@ interface OrderRow {
   customer_name: string;
   customer_email: string;
   total_amount: number;
-  status: string;
+  old_status: string;           // aliased from `status as old_status`
   order_number: string | null;
   tracking_number: string | null;
   tracking_notes: string | null;
+}
+
+interface UpdatedOrderRow {
+  id: string;
+  status: string;
+  // other fields if needed (not used)
 }
 
 // Cache for statuses to avoid repeated DB queries
@@ -85,7 +91,7 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
 
   const sql = getDb();
 
-  // Get current order – use queryOne for single row
+  // Get current order – use queryOne with explicit type for aliased column
   const order = await queryOne<OrderRow>`
     SELECT id, customer_name, customer_email, total_amount, status as old_status,
            order_number, tracking_number, tracking_notes
@@ -107,8 +113,8 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
     throw new Error(`Invalid status: ${newStatusSlug}`);
   }
 
-  // Update order – use queryOne to get the updated row
-  const updatedOrder = await queryOne<OrderRow>`
+  // Update order – use queryOne to get the updated row (has `status`, not `old_status`)
+  const updatedOrder = await queryOne<UpdatedOrderRow>`
     UPDATE orders 
     SET status = ${newStatusSlug}, 
         updated_at = NOW(),
@@ -116,7 +122,7 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
         tracking_number = COALESCE(${trackingNumber}, tracking_number),
         tracking_notes = COALESCE(${trackingNotes}, tracking_notes)
     WHERE id = ${orderId}
-    RETURNING *
+    RETURNING id, status
   `;
 
   if (!updatedOrder) {
@@ -148,7 +154,10 @@ export async function updateOrderStatus(options: StatusUpdateOptions) {
     }
   }
 
-  return { order: updatedOrder, changed: true };
+  // Return the full order object (fetch again or construct)
+  // For simplicity, we return the updated row with status and the original order data
+  const fullUpdatedOrder = { ...order, status: updatedOrder.status };
+  return { order: fullUpdatedOrder, changed: true };
 }
 
 export async function cancelOrder(orderId: string, userId: string, reason?: string) {
