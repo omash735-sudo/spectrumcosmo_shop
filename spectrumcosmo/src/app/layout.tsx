@@ -1,3 +1,6 @@
+// app/layout.tsx
+import '@/lib/db-init'; // 🔹 Initialize database on server start
+
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
