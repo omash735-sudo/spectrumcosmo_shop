@@ -7,10 +7,11 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
+import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
 import { getDb, queryMany } from '@/lib/db';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
-// Types
+// Types (keep all your existing types)
 interface Category {
   name: string;
   slug: string;
@@ -33,7 +34,6 @@ interface Product {
   category_name?: string;
 }
 
-// Props expected by ProductCard component
 interface ProductCardProps {
   id: string;
   name: string;
@@ -47,7 +47,6 @@ interface ProductCardProps {
   description?: string;
 }
 
-// Helper to convert database product to ProductCard props
 function toProductCardProps(product: Product): ProductCardProps {
   return {
     id: product.id,
@@ -62,7 +61,16 @@ function toProductCardProps(product: Product): ProductCardProps {
   };
 }
 
-const bannerImage = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1778101210/pc97xdh08ivrbtvdzins.jpg';
+// Hero carousel settings (customize as needed)
+const heroSettings = {
+  titleColor: '#FFFFFF',
+  subtitleColor: '#FFFFFF',
+  titleAlignment: 'center' as const,
+  subtitleAlignment: 'center' as const,
+  verticalPosition: 'bottom' as const,
+  buttonBgColor: '#F97316',
+  buttonTextColor: '#FFFFFF',
+};
 
 export default async function ProductsPage({
   searchParams,
@@ -129,7 +137,6 @@ export default async function ProductsPage({
     products = [];
   }
 
-  // Convert to ProductCard props
   const productCardProps = products.map(toProductCardProps);
 
   const clearFilters = () => {
@@ -144,22 +151,16 @@ export default async function ProductsPage({
     <>
       <Navbar />
       <main className="min-h-screen bg-white">
-        {/* Hero Banner */}
-        <div className="relative h-[400px] w-full overflow-hidden">
-          <Image
-            src={bannerImage}
-            alt="Hero banner"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
-            <div className="text-center text-white px-4">
-              <h1 className="text-3xl md:text-5xl font-bold mb-2">Anime Mugs</h1>
-              <p className="text-lg md:text-xl">Up to 30% off • Sip in style</p>
-            </div>
-          </div>
-        </div>
+        {/* REPLACED: Static banner image with HeroCarousel */}
+        <HeroCarousel
+          titleColor={heroSettings.titleColor}
+          subtitleColor={heroSettings.subtitleColor}
+          titleAlignment={heroSettings.titleAlignment}
+          subtitleAlignment={heroSettings.subtitleAlignment}
+          verticalPosition={heroSettings.verticalPosition}
+          buttonBgColor={heroSettings.buttonBgColor}
+          buttonTextColor={heroSettings.buttonTextColor}
+        />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           
