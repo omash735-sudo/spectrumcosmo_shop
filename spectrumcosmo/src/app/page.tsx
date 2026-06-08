@@ -15,9 +15,9 @@ import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
-import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
+import HeroCarousel from '@/components/storefront/HeroCarousel';
 
-// Types (keep all your existing types)
+// Types
 interface HeroSection {
   id: string;
   badge_text: string;
@@ -127,7 +127,6 @@ const marqueeStyles = `
   }
 `;
 
-// Hero carousel settings for mobile replacement only
 const heroSettings = {
   titleColor: '#FFFFFF',
   subtitleColor: '#FFFFFF',
@@ -166,7 +165,7 @@ export default async function HomePage() {
       <style>{marqueeStyles}</style>
       <Navbar />
       <main>
-        {/* Hero Section - KEPT INTACT */}
+        {/* Hero Section */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/10 to-white">
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
@@ -175,7 +174,7 @@ export default async function HomePage() {
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Left Content - KEPT INTACT */}
+              {/* Left Content */}
               <div className="text-center lg:text-left">
                 <Link
                   href={h.badge_link || '#'}
@@ -186,17 +185,18 @@ export default async function HomePage() {
                   <ArrowRight size={12} />
                 </Link>
 
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] mb-6 tracking-tight">
-                  {h.heading_prefix}{' '}
+                {/* FIXED: Mobile text now fits without tilting phone */}
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 leading-[1.2] mb-6 tracking-tight">
+                  <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
-                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent whitespace-nowrap">
                       {h.highlighted_word}
                     </span>
                     <svg className="absolute -bottom-3 left-0 w-full" height="10" viewBox="0 0 300 10" fill="none">
                       <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#F97316" strokeWidth="3" strokeLinecap="round" fill="none"/>
                     </svg>
                   </span>{' '}
-                  with pride.
+                  <span className="whitespace-nowrap">with pride.</span>
                 </h1>
 
                 <p className="text-lg text-gray-600 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-8">
@@ -236,7 +236,7 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* Right Images Gallery (desktop only) - KEPT INTACT */}
+              {/* Right Images Gallery (desktop only) */}
               <div className="hidden lg:grid grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -264,7 +264,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* REPLACED: Mobile static image with HeroCarousel */}
+            {/* Mobile HeroCarousel */}
             <div className="lg:hidden mt-8">
               <HeroCarousel
                 titleColor={heroSettings.titleColor}
@@ -281,7 +281,7 @@ export default async function HomePage() {
 
         <TrustBar />
 
-        {/* Rest of your page - KEPT INTACT */}
+        {/* Rest of the page */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
           <div className="text-center mb-12">
             <span className="text-gray-600 text-sm font-medium uppercase tracking-wider">Shop by Category</span>
@@ -389,4 +389,3 @@ export default async function HomePage() {
     </>
   );
 }
-
