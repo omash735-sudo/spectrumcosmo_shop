@@ -1,4 +1,3 @@
-// app/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -16,9 +15,9 @@ import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
-import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
+import HeroCarousel from '@/components/storefront/HeroCarousel';
 
-// Types (keep all your existing types)
+// Types
 interface HeroSection {
   id: string;
   badge_text: string;
@@ -128,7 +127,7 @@ const marqueeStyles = `
   }
 `;
 
-// Hero carousel settings for mobile replacement only
+// Responsive carousel settings
 const heroSettings = {
   titleColor: '#FFFFFF',
   subtitleColor: '#FFFFFF',
@@ -167,7 +166,20 @@ export default async function HomePage() {
       <style>{marqueeStyles}</style>
       <Navbar />
       <main>
-        {/* Hero Section - KEPT INTACT */}
+        {/* RESPONSIVE CAROUSEL - Shows on mobile & tablet, hidden on desktop */}
+        <div className="block lg:hidden">
+          <HeroCarousel
+            titleColor={heroSettings.titleColor}
+            subtitleColor={heroSettings.subtitleColor}
+            titleAlignment={heroSettings.titleAlignment}
+            subtitleAlignment={heroSettings.subtitleAlignment}
+            verticalPosition={heroSettings.verticalPosition}
+            buttonBgColor={heroSettings.buttonBgColor}
+            buttonTextColor={heroSettings.buttonTextColor}
+          />
+        </div>
+
+        {/* Hero Section - Original design (shows on all screens, but carousel is above on mobile) */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/10 to-white">
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
@@ -176,7 +188,7 @@ export default async function HomePage() {
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Left Content - KEPT INTACT */}
+              {/* Left Content */}
               <div className="text-center lg:text-left">
                 <Link
                   href={h.badge_link || '#'}
@@ -237,7 +249,7 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* Right Images Gallery (desktop only) - KEPT INTACT */}
+              {/* Right Images Gallery (desktop only) */}
               <div className="hidden lg:grid grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -264,25 +276,12 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
-
-            {/* REPLACED: Mobile static image with HeroCarousel */}
-            <div className="lg:hidden mt-8">
-              <HeroCarousel
-                titleColor={heroSettings.titleColor}
-                subtitleColor={heroSettings.subtitleColor}
-                titleAlignment={heroSettings.titleAlignment}
-                subtitleAlignment={heroSettings.subtitleAlignment}
-                verticalPosition={heroSettings.verticalPosition}
-                buttonBgColor={heroSettings.buttonBgColor}
-                buttonTextColor={heroSettings.buttonTextColor}
-              />
-            </div>
           </div>
         </section>
 
         <TrustBar />
 
-        {/* Rest of your page - KEPT INTACT */}
+        {/* Rest of your page */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
           <div className="text-center mb-12">
             <span className="text-gray-600 text-sm font-medium uppercase tracking-wider">Shop by Category</span>
