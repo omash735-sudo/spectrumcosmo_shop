@@ -1,15 +1,31 @@
+// lib/auth.ts
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 import nodemailer from "nodemailer";
 
-// Reuse your existing email transporter configuration
+// Validate required environment variables
+const requiredEnvVars = [
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "POSTGRES_URL",
+  "BETTER_AUTH_SECRET",
+] as const;
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing environment variable: ${envVar}`);
+  }
+}
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
+  host: process.env.SMTP_HOST!,
   port: Number(process.env.SMTP_PORT),
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER!,
+    pass: process.env.SMTP_PASS!,
   },
 });
 
@@ -19,7 +35,7 @@ const pool = new Pool({
 
 export const auth = betterAuth({
   database: pool,
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: process.env.BETTER_AUTH_SECRET!,
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -40,15 +56,13 @@ export const auth = betterAuth({
       });
     },
   },
-  emailVerification: {
-    enabled: false,
-  },
+  // emailVerification is omitted – it is disabled by default
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24,     // 1 day
   },
   rateLimit: {
-    window: 10,
-    max: 5,
+    window: 10, // seconds
+    max: 5,     // requests per window
   },
 });
