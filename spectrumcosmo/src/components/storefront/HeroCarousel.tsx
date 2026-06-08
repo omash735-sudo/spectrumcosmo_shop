@@ -40,25 +40,49 @@ export default function HeroCarousel({
 }: HeroCarouselProps) {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/hero-slides')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        setSlides(data);
+        console.log('Hero slides loaded:', data);
+        if (data && data.length > 0) {
+          setSlides(data);
+        } else {
+          console.warn('No slides found in API response');
+        }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('Failed to load hero slides:', err);
+        setError(true);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) {
+    return <div className="h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse" />;
+  }
+
+  if (error) {
+    console.warn('HeroCarousel: Error loading slides');
+    return null;
+  }
+
+  if (slides.length === 0) {
+    console.warn('HeroCarousel: No slides to display');
+    return null;
+  }
 
   const verticalClass = {
     top: 'items-start',
     center: 'items-center',
     bottom: 'items-end',
   }[verticalPosition];
-
-  if (loading) return <div className="h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse" />;
-  if (slides.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -69,7 +93,7 @@ export default function HeroCarousel({
         autoplay={{ delay: slides[0]?.autoplay_delay || 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         navigation
-        loop={true}
+        loop={slides.length > 1}
         className="w-full h-[400px] sm:h-[500px] md:h-[600px]"
       >
         {slides.map((slide, idx) => (
