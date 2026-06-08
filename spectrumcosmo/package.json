@@ -52,6 +52,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.8",
     "@tailwindcss/typography": "^0.5.15",
-    "@better-auth/cli": "1.0.11"
+    "@better-auth/cli": "1.0.11",
+    "critters": "^0.0.24"
   }
 }
