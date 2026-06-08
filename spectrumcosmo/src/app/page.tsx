@@ -166,20 +166,7 @@ export default async function HomePage() {
       <style>{marqueeStyles}</style>
       <Navbar />
       <main>
-        {/* RESPONSIVE CAROUSEL - Shows on mobile & tablet, hidden on desktop */}
-        <div className="block lg:hidden">
-          <HeroCarousel
-            titleColor={heroSettings.titleColor}
-            subtitleColor={heroSettings.subtitleColor}
-            titleAlignment={heroSettings.titleAlignment}
-            subtitleAlignment={heroSettings.subtitleAlignment}
-            verticalPosition={heroSettings.verticalPosition}
-            buttonBgColor={heroSettings.buttonBgColor}
-            buttonTextColor={heroSettings.buttonTextColor}
-          />
-        </div>
-
-        {/* Hero Section - Original design (shows on all screens, but carousel is above on mobile) */}
+        {/* Hero Section */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/10 to-white">
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
@@ -275,6 +262,19 @@ export default async function HomePage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Carousel - Replaces static mobile image (inside hero section) */}
+            <div className="lg:hidden mt-8">
+              <HeroCarousel
+                titleColor={heroSettings.titleColor}
+                subtitleColor={heroSettings.subtitleColor}
+                titleAlignment={heroSettings.titleAlignment}
+                subtitleAlignment={heroSettings.subtitleAlignment}
+                verticalPosition={heroSettings.verticalPosition}
+                buttonBgColor={heroSettings.buttonBgColor}
+                buttonTextColor={heroSettings.buttonTextColor}
+              />
             </div>
           </div>
         </section>
