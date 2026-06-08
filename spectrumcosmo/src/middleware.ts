@@ -13,6 +13,12 @@ function isAdminRoute(pathname: string): boolean {
   return pathname.startsWith('/api/admin/') || pathname.startsWith('/admin');
 }
 
+// ADD THIS: Check if route needs carousel-friendly CSP
+function isCarouselRoute(pathname: string): boolean {
+  const carouselRoutes = ['/', '/products', '/product/'];
+  return carouselRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+}
+
 function isPublicAsset(pathname: string): boolean {
   return pathname.startsWith('/_next/') || pathname.includes('favicon') || pathname.includes('.ico');
 }
@@ -35,19 +41,37 @@ export async function middleware(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
     
-    // Choose CSP based on route (permissive for admin)
+    // Choose CSP based on route
     let csp: string;
+    
+    // OPTION 1: Admin routes get permissive CSP
     if (isAdminRoute(pathname)) {
-      // Permissive CSP for admin panel (allows all inline scripts & styles)
-      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
-    } else {
-      // Strict CSP for public pages (with unsafe-inline added for compatibility)
+      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
+    } 
+    // OPTION 2: Carousel routes (homepage, products) get carousel-friendly CSP
+    else if (isCarouselRoute(pathname)) {
+      csp = [
+        "default-src 'self'",
+        `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:`,
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:",
+        "connect-src 'self' https://api.upstash.com https://api.cloudinary.com https://*.cloudinary.com",
+        "frame-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ');
+    }
+    // OPTION 3: Other public routes get strict CSP
+    else {
       csp = [
         "default-src 'self'",
         `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'nonce-${nonce}'`,
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
-        "img-src 'self' data: https://res.cloudinary.com",
+        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
         "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
         "frame-src 'self'",
         "object-src 'none'",
@@ -186,7 +210,7 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware fatal error (fallback activated):', error);
     const fallbackResponse = NextResponse.next();
     const nonce = generateNonce();
-    fallbackResponse.headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-inline' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline';`);
+    fallbackResponse.headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:;`);
     return fallbackResponse;
   }
 }
