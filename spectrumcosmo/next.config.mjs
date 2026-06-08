@@ -20,8 +20,6 @@ const nextConfig = {
   },
   
   async headers() {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
     return [
       {
         source: '/(.*)',
@@ -50,21 +48,7 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' https://vercel.live https://vercel.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https://res.cloudinary.com",
-              "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
-              "frame-src 'self'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
+          // CSP is now set in middleware (so we can use a dynamic nonce)
         ],
       },
       {
