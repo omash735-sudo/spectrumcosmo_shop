@@ -17,7 +17,7 @@ import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
 
-// Types (same as before)
+// Types
 interface HeroSection {
   id: string;
   badge_text: string;
@@ -81,7 +81,6 @@ const fallbackHero: HeroSection = {
   cat_image4_alt: 'Bracelet collection',
 };
 
-// Trust Bar with seamless infinite horizontal scroll
 function TrustBar() {
   const trustItems = [
     { icon: CheckCircle, text: '100% Authentic Products' },
@@ -91,10 +90,7 @@ function TrustBar() {
     { icon: Shield, text: 'Buyer Protection' },
     { icon: Zap, text: 'Fast Delivery' },
   ];
-
-  // Duplicate items to create seamless loop
   const doubledItems = [...trustItems, ...trustItems];
-
   return (
     <div className="bg-gray-900 text-white overflow-hidden py-3">
       <div className="relative w-full">
@@ -105,10 +101,7 @@ function TrustBar() {
           {doubledItems.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div 
-                key={idx} 
-                className="flex items-center gap-2 mx-6 text-sm font-medium"
-              >
+              <div key={idx} className="flex items-center gap-2 mx-6 text-sm font-medium">
                 <Icon size={16} className="text-orange-400 flex-shrink-0" />
                 <span>{item.text}</span>
               </div>
@@ -120,7 +113,6 @@ function TrustBar() {
   );
 }
 
-// CSS for marquee animation
 const marqueeStyles = `
   @keyframes marquee {
     0% { transform: translateX(0); }
@@ -153,7 +145,9 @@ export default async function HomePage() {
       SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 6
     `;
   } catch (err) {
-    console.error('DB error:', err);
+    console.error('Homepage DB error:', err);
+    // Fallback data is used later (hero from fallbackHero, empty products/reviews)
+    // This ensures the page still renders even if DB fails.
   }
 
   const h = hero || fallbackHero;
@@ -163,9 +157,8 @@ export default async function HomePage() {
       <style>{marqueeStyles}</style>
       <Navbar />
       <main>
-        {/* Hero Section - Premium Design (improved hover & spacing) */}
+        {/* Hero Section */}
         <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/10 to-white">
-          {/* Animated Background Shapes (softened) */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-300/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -228,7 +221,7 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* Right Images Gallery (improved hover effects) */}
+              {/* Right Images Gallery */}
               <div className="hidden lg:grid grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -258,10 +251,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Enhanced Trust Bar - Infinite Horizontal Scroll */}
         <TrustBar />
 
-        {/* Categories Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
           <div className="text-center mb-12">
             <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Shop by Category</span>
@@ -271,7 +262,6 @@ export default async function HomePage() {
           <CategoriesSection />
         </div>
 
-        {/* Featured Products */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20" id="featured">
           <div className="text-center mb-12">
             <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Trending Now</span>
@@ -281,7 +271,6 @@ export default async function HomePage() {
           <FeaturedProducts />
         </div>
 
-        {/* Reviews Section */}
         {reviews && reviews.length > 0 && (
           <div className="bg-gradient-to-br from-orange-50 to-white py-16 lg:py-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -324,12 +313,10 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Recently Viewed */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
           <RecentlyViewed />
         </div>
 
-        {/* Newsletter Section */}
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 py-16 lg:py-20">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-500/10 px-4 py-2 rounded-full mb-6">
@@ -348,7 +335,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* CTA Section */}
         <section className="bg-gradient-to-br from-orange-500 to-orange-600 py-20 lg:py-24">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
