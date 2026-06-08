@@ -3,19 +3,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Use only one modern sans‑serif font stack (Etsy‑style) */
+/* ============================================
+   BASE THEME (light mode)
+   ============================================ */
 :root {
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --background: #ffffff;
   --foreground: #111111;
   --foreground-muted: #4b5563;
   --border: #e5e7eb;
-  --primary: #F97316;        /* kept for tiny accents (price, sale badge) */
+  --primary: #F97316;
   --primary-dark: #ea6c0f;
   --header-height: 80px;
 }
 
-/* Manual dark mode class (if you add a toggle) */
+/* Manual dark mode class (for future toggle) */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
@@ -23,6 +25,9 @@
   --border: #1f2937;
 }
 
+/* ============================================
+   RESET & GLOBALS
+   ============================================ */
 * {
   box-sizing: border-box;
 }
@@ -40,7 +45,7 @@ body {
   line-height: 1.5;
 }
 
-/* Headings use the same font (no serif) */
+/* Headings – same sans-serif font (no serif) */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -58,7 +63,9 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   h3 { font-size: 1.25rem; }
 }
 
-/* Utility classes */
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -83,7 +90,9 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* Minimal global component styles – buttons use gray/black */
+/* ============================================
+   GLOBAL COMPONENT STYLES
+   ============================================ */
 @layer components {
   .btn-primary {
     @apply bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 inline-flex items-center gap-2 shadow-sm;
@@ -97,13 +106,13 @@ h4 { font-size: 1.25rem; font-weight: 600; }
    DARK MODE OVERRIDES (system preference)
    ============================================ */
 @media (prefers-color-scheme: dark) {
-  /* Force a dark background on the whole page */
+  /* Base body */
   body {
     background-color: #0a0a0a !important;
     color: #e5e5e5 !important;
   }
 
-  /* Make all white/gray backgrounds dark */
+  /* Common backgrounds */
   .bg-white,
   .bg-gray-50,
   .bg-gray-100,
@@ -117,7 +126,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     background-image: none !important;
   }
 
-  /* Cards, sections, containers */
+  /* Semi‑transparent backgrounds */
   .bg-white\/90,
   .bg-white\/80,
   .bg-white\/70,
@@ -126,7 +135,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     backdrop-filter: blur(4px);
   }
 
-  /* Text colors – make everything light */
+  /* Text colors – light grey */
   .text-gray-900,
   .text-gray-800,
   .text-gray-700,
@@ -136,7 +145,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #d1d5db !important;
   }
 
-  /* Headings – keep dark, but we make them light */
+  /* Headings */
   h1, h2, h3, h4, h5, h6,
   .text-gray-900,
   .font-bold,
@@ -144,7 +153,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #f3f4f6 !important;
   }
 
-  /* Keep brand orange for small accents (price, sale badge) */
+  /* Orange accents (keep visible) */
   .text-orange-500,
   .text-orange-600,
   .text-orange-700,
@@ -185,7 +194,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     color: #ccc !important;
   }
 
-  /* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
+  /* Trust bar */
   .bg-gray-900 {
     background-color: #0a0a0a !important;
   }
@@ -199,7 +208,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     border-color: #2a2a2a !important;
   }
 
-  /* Input fields */
+  /* Inputs */
   input, textarea, select {
     background-color: #2a2a2a !important;
     border-color: #4a4a4a !important;
@@ -213,5 +222,58 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   footer {
     background-color: #0f0f0f !important;
     border-top-color: #2a2a2a !important;
+  }
+}
+
+/* ============================================
+   TARGETED FIXES FOR LEFTOVER LIGHT BLOCKS
+   (replaces the aggressive "nuclear" block)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  /* Any element that still has a white background */
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-gray-200,
+  .card,
+  [class*="rounded-2xl"]:not([class*="bg-orange"]) {
+    background-color: #1e1e1e !important;
+  }
+
+  /* Profile avatars and review circles */
+  .w-10.h-10.rounded-full,
+  .bg-orange-100.rounded-full {
+    background-color: #3a3a3a !important;
+  }
+  .text-orange-600.font-semibold {
+    color: #f97316 !important;
+  }
+
+  /* Price and stock warning */
+  .text-orange-600.font-bold,
+  .text-orange-500 {
+    color: #f97316 !important;
+  }
+
+  /* All text inside product cards */
+  .text-gray-800,
+  .text-gray-700,
+  .text-gray-600 {
+    color: #d1d5db !important;
+  }
+
+  /* Sale badge (keep red) */
+  .bg-red-500 {
+    background-color: #dc2626 !important;
+  }
+
+  /* Input fields (already covered, but ensure consistency) */
+  input, textarea, select {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e5e5e5 !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #888 !important;
   }
 }
