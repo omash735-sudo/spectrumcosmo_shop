@@ -15,7 +15,7 @@
   --header-height: 80px;
 }
 
-/* Dark mode (if you keep it) */
+/* Manual dark mode class (if you add a toggle) */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
@@ -58,7 +58,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   h3 { font-size: 1.25rem; }
 }
 
-/* Utility classes (kept from your original) */
+/* Utility classes */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -83,12 +83,135 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* Minimal global component styles – buttons now use gray/black */
+/* Minimal global component styles – buttons use gray/black */
 @layer components {
   .btn-primary {
     @apply bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 inline-flex items-center gap-2 shadow-sm;
   }
   .btn-secondary {
     @apply border border-gray-300 hover:border-gray-500 text-gray-700 hover:text-gray-900 px-6 py-3 rounded-full font-semibold text-sm transition-all inline-flex items-center gap-2;
+  }
+}
+
+/* ============================================
+   DARK MODE OVERRIDES (system preference)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  /* Force a dark background on the whole page */
+  body {
+    background-color: #0a0a0a !important;
+    color: #e5e5e5 !important;
+  }
+
+  /* Make all white/gray backgrounds dark */
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-gray-200,
+  .bg-gray-300,
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .bg-gradient-to-t,
+  .bg-gradient-to-l {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+  }
+
+  /* Cards, sections, containers */
+  .bg-white\/90,
+  .bg-white\/80,
+  .bg-white\/70,
+  .bg-white\/60 {
+    background-color: rgba(26, 26, 26, 0.95) !important;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Text colors – make everything light */
+  .text-gray-900,
+  .text-gray-800,
+  .text-gray-700,
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-400 {
+    color: #d1d5db !important;
+  }
+
+  /* Headings – keep dark, but we make them light */
+  h1, h2, h3, h4, h5, h6,
+  .text-gray-900,
+  .font-bold,
+  .font-semibold {
+    color: #f3f4f6 !important;
+  }
+
+  /* Keep brand orange for small accents (price, sale badge) */
+  .text-orange-500,
+  .text-orange-600,
+  .text-orange-700,
+  .bg-orange-500,
+  .bg-orange-600,
+  .border-orange-500 {
+    color: #f97316 !important;
+    background-color: #f97316 !important;
+    border-color: #f97316 !important;
+  }
+
+  /* Borders */
+  .border,
+  .border-gray-100,
+  .border-gray-200,
+  .border-gray-300,
+  .border-gray-400 {
+    border-color: #2a2a2a !important;
+  }
+
+  /* Buttons */
+  .btn-primary,
+  button.bg-gray-900,
+  a.bg-gray-900,
+  .bg-gray-900 {
+    background-color: #2a2a2a !important;
+    color: white !important;
+  }
+  .btn-primary:hover,
+  button.bg-gray-900:hover {
+    background-color: #3a3a3a !important;
+  }
+
+  .btn-secondary,
+  button.border-gray-300,
+  a.border-gray-300 {
+    border-color: #4a4a4a !important;
+    color: #ccc !important;
+  }
+
+  /* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
+  .bg-gray-900 {
+    background-color: #0a0a0a !important;
+  }
+  .text-orange-400 {
+    color: #f97316 !important;
+  }
+
+  /* Product cards */
+  .bg-white.rounded-2xl {
+    background-color: #1e1e1e !important;
+    border-color: #2a2a2a !important;
+  }
+
+  /* Input fields */
+  input, textarea, select {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e5e5e5 !important;
+  }
+  input::placeholder {
+    color: #888 !important;
+  }
+
+  /* Footer */
+  footer {
+    background-color: #0f0f0f !important;
+    border-top-color: #2a2a2a !important;
   }
 }
