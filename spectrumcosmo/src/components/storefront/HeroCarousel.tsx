@@ -19,7 +19,19 @@ interface HeroSlide {
   autoplay_delay: number;
 }
 
+// For backward compatibility with old products page
+interface LegacySlide {
+  id: number;
+  image: string;
+  title: string;
+  subtitle: string;
+}
+
 interface HeroCarouselProps {
+  slides?: LegacySlide[];  // Support old prop format
+  textColor?: string;       // Support old prop format
+  autoplayDelay?: number;   // Support old prop format
+  // New props for full control
   titleColor?: string;
   subtitleColor?: string;
   titleAlignment?: 'left' | 'center' | 'right';
@@ -29,7 +41,10 @@ interface HeroCarouselProps {
   buttonTextColor?: string;
 }
 
-export default function HeroCarousel({
+export default function HeroCarousel({ 
+  slides: propSlides,
+  textColor = '#FFFFFF',
+  autoplayDelay = 5000,
   titleColor = '#FFFFFF',
   subtitleColor = '#FFFFFF',
   titleAlignment = 'center',
@@ -38,18 +53,37 @@ export default function HeroCarousel({
   buttonBgColor = '#F97316',
   buttonTextColor = '#FFFFFF',
 }: HeroCarouselProps) {
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
+  const [slides, setSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // If slides passed as prop (old products page), use them directly
+    if (propSlides && propSlides.length > 0) {
+      console.log('Using slides from prop:', propSlides);
+      // Convert legacy format to component format
+      const formattedSlides = propSlides.map((slide) => ({
+        id: String(slide.id),
+        image_url: slide.image,
+        title: slide.title,
+        description: slide.subtitle || '',
+        button_text: '',
+        button_link: '',
+        autoplay_delay: autoplayDelay,
+      }));
+      setSlides(formattedSlides);
+      setLoading(false);
+      return;
+    }
+
+    // Otherwise fetch from API
     fetch('/api/hero-slides')
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(data => {
-        console.log('Hero slides loaded:', data);
+        console.log('Hero slides loaded from API:', data);
         if (data && data.length > 0) {
           setSlides(data);
         } else {
@@ -62,7 +96,7 @@ export default function HeroCarousel({
         setError(true);
         setLoading(false);
       });
-  }, []);
+  }, [propSlides, autoplayDelay]);
 
   if (loading) {
     return <div className="h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse" />;
@@ -84,13 +118,17 @@ export default function HeroCarousel({
     bottom: 'items-end',
   }[verticalPosition];
 
+  // Determine which colors to use (legacy textColor takes priority if using old format)
+  const finalTitleColor = propSlides ? textColor : titleColor;
+  const finalSubtitleColor = propSlides ? textColor : subtitleColor;
+
   return (
     <div className="relative w-full overflow-hidden">
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         spaceBetween={0}
         slidesPerView={1}
-        autoplay={{ delay: slides[0]?.autoplay_delay || 5000, disableOnInteraction: false }}
+        autoplay={{ delay: slides[0]?.autoplay_delay || autoplayDelay, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         navigation
         loop={slides.length > 1}
@@ -113,7 +151,7 @@ export default function HeroCarousel({
                   {slide.title && (
                     <h2
                       className="text-3xl sm:text-5xl md:text-6xl font-bold drop-shadow-lg mb-4"
-                      style={{ color: titleColor, textAlign: titleAlignment }}
+                      style={{ color: finalTitleColor, textAlign: titleAlignment }}
                     >
                       {slide.title}
                     </h2>
@@ -121,7 +159,7 @@ export default function HeroCarousel({
                   {slide.description && (
                     <p
                       className="text-base sm:text-xl md:text-2xl drop-shadow max-w-2xl mx-auto"
-                      style={{ color: subtitleColor, textAlign: subtitleAlignment }}
+                      style={{ color: finalSubtitleColor, textAlign: subtitleAlignment }}
                     >
                       {slide.description}
                     </p>
