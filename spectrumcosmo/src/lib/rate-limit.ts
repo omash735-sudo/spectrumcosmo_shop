@@ -23,16 +23,16 @@ export async function rateLimit(
   const member = `${key}:${now}`;
   const multi = redis.multi();
 
-  // Use a type assertion to bypass strict type checking for zadd.
-  // The actual runtime signature of Upstash Redis supports (key, score, member).
+  // Type assertion to bypass strict type checking for zadd (runtime works)
   (multi.zadd as any)(key, now, member);
   multi.zremrangebyscore(key, 0, windowStart);
   multi.zcard(key);
   multi.expire(key, windowSeconds);
 
-  const results = await multi.exec();
-  // results is an array of [error, value] for each command. Index 2 corresponds to zcard.
-  const requestCount = (results?.[2]?.[1] as number) || 0;
+  const results = (await multi.exec()) as any[]; // Cast to array for indexing
+
+  // results is an array of [error, value] pairs. Index 2 corresponds to zcard result.
+  const requestCount = (results[2]?.[1] as number) || 0;
 
   const remaining = Math.max(0, maxRequests - requestCount);
   const success = requestCount <= maxRequests;
