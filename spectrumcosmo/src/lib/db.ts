@@ -15,7 +15,6 @@ export interface QueryResult<T = any> {
 
 export interface DatabaseConfig {
   connectionString: string;
-  poolSize?: number;
   connectionTimeoutMs?: number;
   queryTimeoutMs?: number;
   maxRetries?: number;
@@ -27,7 +26,6 @@ export interface DatabaseConfig {
 // Configuration
 const DEFAULT_CONFIG: DatabaseConfig = {
   connectionString: process.env.POSTGRES_URL || '',
-  poolSize: 10,
   connectionTimeoutMs: 10000,
   queryTimeoutMs: 30000,
   maxRetries: 3,
@@ -36,9 +34,9 @@ const DEFAULT_CONFIG: DatabaseConfig = {
   slowQueryThresholdMs: 1000,
 };
 
-// Connection pooling configuration
+// Connection pooling configuration – only valid options
 neonConfig.poolQueryViaFetch = true;
-neonConfig.poolDefaultMaxClients = DEFAULT_CONFIG.poolSize;
+// Removed: neonConfig.poolDefaultMaxClients (does not exist in current version)
 
 let sql: DatabaseClient | null = null;
 let isConnecting = false;
@@ -303,7 +301,7 @@ export async function queryManyWithTx<T = any>(
   return result as T[];
 }
 
-// NEW: queryAsArray - returns a properly typed array (works around Neon's union type)
+// queryAsArray – returns a properly typed array (works around Neon's union type)
 export async function queryAsArray<T = any>(
   strings: TemplateStringsArray,
   ...values: any[]
