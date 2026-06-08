@@ -16,7 +16,7 @@ import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
-import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
+import HeroCarousel from '@/components/storefront/admin/HeroSlideModal'; // ADD THIS
 
 // Types (keep all your existing types)
 interface HeroSection {
