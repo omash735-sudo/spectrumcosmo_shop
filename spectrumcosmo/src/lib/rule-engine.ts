@@ -1,6 +1,7 @@
-import { getDb } from './db';
+// lib/security-rules.ts
+import { getDb, queryMany } from './db';
 
-interface ProtectionRule {
+export interface ProtectionRule {
   id: number;
   rule_key: string;
   rule_name: string;
@@ -12,7 +13,7 @@ interface ProtectionRule {
   updated_at: Date;
 }
 
-interface RateLimitOverride {
+export interface RateLimitOverride {
   id: number;
   rule_type: string;
   identifier: string;
@@ -37,14 +38,17 @@ async function loadRules(): Promise<Map<string, ProtectionRule>> {
   
   try {
     const sql = getDb();
-    const rules = await sql`SELECT * FROM protection_rules`;
+    // Use queryMany to get typed array
+    const rules = await queryMany<ProtectionRule>`SELECT * FROM protection_rules`;
     
     rulesCache.clear();
     for (const rule of rules) {
       rulesCache.set(rule.rule_key, rule);
     }
     
-    const overrides = await sql`SELECT * FROM rate_limit_overrides WHERE expires_at IS NULL OR expires_at > NOW()`;
+    const overrides = await queryMany<RateLimitOverride>`
+      SELECT * FROM rate_limit_overrides WHERE expires_at IS NULL OR expires_at > NOW()
+    `;
     overridesCache.clear();
     for (const override of overrides) {
       const key = `${override.rule_type}:${override.identifier}`;
@@ -99,7 +103,6 @@ export async function toggleRule(ruleKey: string, enabled: boolean): Promise<voi
     SET is_enabled = ${enabled}, updated_at = NOW()
     WHERE rule_key = ${ruleKey}
   `;
-  // Refresh cache
   rulesCache.delete(ruleKey);
   lastCacheRefresh = 0;
 }
@@ -114,7 +117,6 @@ export async function getRulesByCategory(category: string): Promise<ProtectionRu
   return Array.from(rules.values()).filter(r => r.category === category);
 }
 
-// Rate limit override management
 export async function addRateLimitOverride(
   ruleType: string,
   identifier: string,
@@ -135,7 +137,6 @@ export async function addRateLimitOverride(
       reason = ${reason || null},
       expires_at = ${expiresAt || null}
   `;
-  // Refresh cache
   lastCacheRefresh = 0;
 }
 
@@ -144,7 +145,6 @@ export async function removeRateLimitOverride(ruleType: string, identifier: stri
   await sql`
     DELETE FROM rate_limit_overrides WHERE rule_type = ${ruleType} AND identifier = ${identifier}
   `;
-  // Refresh cache
   lastCacheRefresh = 0;
 }
 
@@ -153,7 +153,6 @@ export async function getAllRateLimitOverrides(): Promise<RateLimitOverride[]> {
   return Array.from(overridesCache.values());
 }
 
-// IP whitelist/blacklist helpers
 export async function isIPWhitelisted(ip: string): Promise<boolean> {
   const rule = await getRule('ip_whitelist');
   if (!rule?.is_enabled) return false;
