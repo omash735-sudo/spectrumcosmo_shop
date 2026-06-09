@@ -223,11 +223,12 @@ h4 { font-size: 1.25rem; font-weight: 600; }
     background-color: transparent !important;
   }
 
-  /* Any leftover white/light background from unknown classes */
+  /* TEMPORARILY COMMENTED OUT - STEP 1: Remove global bg- class override
   [class*="bg-"]:not(.bg-orange-500):not(.bg-orange-600) {
     background-color: #1a1a1a !important;
     background-image: none !important;
   }
+  */
 
   /* Kill white box‑shadows that become visible in dark mode */
   * {
@@ -238,6 +239,16 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   * {
     border-color: #2a2a2a !important;
   }
+
+  /* TEMPORARILY COMMENTED OUT - STEP 2: Remove gradient overrides
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .bg-gradient-to-t,
+  .bg-gradient-to-l {
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+  }
+  */
 
   /* Specific fix for the "Wear your excitement with pride" section */
   /* Give it a solid Tailwind Gray‑900 background (no gradient) */
