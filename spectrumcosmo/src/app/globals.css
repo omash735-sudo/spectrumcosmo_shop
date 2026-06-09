@@ -218,13 +218,12 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   /* ============================================
      EXTRA DARK MODE FIXES (kills the squares)
      ============================================ */
-  /* TEMPORARILY COMMENTED OUT - TEST: Remove universal element background override
+  /* Every div/section/article without a specific background becomes transparent */
   div, section, article, aside, main, nav, header, footer {
     background-color: transparent !important;
   }
-  */
 
-  /* TEMPORARILY COMMENTED OUT - STEP 1: Remove global bg- class override
+  /* COMMENTED OUT - This was breaking Hero Carousel images
   [class*="bg-"]:not(.bg-orange-500):not(.bg-orange-600) {
     background-color: #1a1a1a !important;
     background-image: none !important;
@@ -240,16 +239,6 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   * {
     border-color: #2a2a2a !important;
   }
-
-  /* TEMPORARILY COMMENTED OUT - STEP 2: Remove gradient overrides
-  .bg-gradient-to-br,
-  .bg-gradient-to-r,
-  .bg-gradient-to-t,
-  .bg-gradient-to-l {
-    background-color: #1a1a1a !important;
-    background-image: none !important;
-  }
-  */
 
   /* Specific fix for the "Wear your excitement with pride" section */
   /* Give it a solid Tailwind Gray‑900 background (no gradient) */
