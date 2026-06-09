@@ -218,10 +218,11 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   /* ============================================
      EXTRA DARK MODE FIXES (kills the squares)
      ============================================ */
-  /* Every div/section/article without a specific background becomes transparent */
+  /* TEMPORARILY COMMENTED OUT - TEST: Remove universal element background override
   div, section, article, aside, main, nav, header, footer {
     background-color: transparent !important;
   }
+  */
 
   /* TEMPORARILY COMMENTED OUT - STEP 1: Remove global bg- class override
   [class*="bg-"]:not(.bg-orange-500):not(.bg-orange-600) {
