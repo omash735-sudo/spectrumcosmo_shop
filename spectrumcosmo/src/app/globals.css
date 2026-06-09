@@ -3,9 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================
-   BASE THEME VARIABLES (Preserved)
-   ============================================ */
+/* Use only one modern sans‑serif font stack (Etsy‑style) */
 :root {
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --background: #ffffff;
@@ -15,22 +13,16 @@
   --primary: #F97316;
   --primary-dark: #ea6c0f;
   --header-height: 80px;
-  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --card-shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
+/* Manual dark mode class (applied via JS) */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
   --foreground-muted: #9ca3af;
   --border: #1f2937;
-  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
-  --card-shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 }
 
-/* ============================================
-   BASE STYLES (Light Mode Default)
-   ============================================ */
 * {
   box-sizing: border-box;
 }
@@ -48,7 +40,7 @@ body {
   line-height: 1.5;
 }
 
-/* Headings */
+/* Headings use the same font (no serif) */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -82,7 +74,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 .line-clamp-2 { -webkit-line-clamp: 2; }
 .line-clamp-3 { -webkit-line-clamp: 3; }
 
-/* Touch targets (mobile only) */
+/* Touch targets (mobile) */
 @media (max-width: 768px) {
   button, a, [role="button"] {
     min-height: 44px;
@@ -91,209 +83,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* Button Components */
+/* Minimal global component styles – buttons use gray/black */
 @layer components {
   .btn-primary {
-    @apply bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 inline-flex items-center gap-2;
-    box-shadow: var(--card-shadow);
-  }
-  .btn-primary:hover {
-    box-shadow: var(--card-shadow-hover);
-  }
-  .btn-secondary {
-    @apply border border-gray-300 hover:border-gray-500 text-gray-700 hover:text-gray-900 px-6 py-3 rounded-full font-semibold text-sm transition-all inline-flex items-center gap-2;
-    background-color: transparent;
-  }
-}
-
-/* ============================================
-   DARK MODE STYLES (Only when .dark class present)
-   ============================================ */
-.dark body {
-  background-color: #0a0a0a;
-  color: #e5e5e5;
-}
-
-/* Dark mode backgrounds - preserve gradients where they exist */
-.dark .bg-white {
-  background-color: #1a1a1a !important;
-}
-.dark .bg-gray-50,
-.dark .bg-gray-100 {
-  background-color: #111111 !important;
-}
-.dark .bg-gray-200,
-.dark .bg-gray-300 {
-  background-color: #1a1a1a !important;
-}
-
-/* Preserve gradients in dark mode (don't remove them) */
-.dark .bg-gradient-to-br,
-.dark .bg-gradient-to-r,
-.dark .bg-gradient-to-t,
-.dark .bg-gradient-to-l {
-  background-image: var(--tw-gradient-stops) !important;
-  background-color: transparent !important;
-}
-
-/* Dark mode text colors */
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700 {
-  color: #f3f4f6 !important;
-}
-.dark .text-gray-600,
-.dark .text-gray-500 {
-  color: #d1d5db !important;
-}
-.dark .text-gray-400 {
-  color: #9ca3af !important;
-}
-
-/* Dark mode headings */
-.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-  color: #f3f4f6 !important;
-}
-
-/* Product prices in dark mode - WHITE, not orange */
-.dark .price,
-.dark [data-price],
-.dark .product-price {
-  color: #ffffff !important;
-}
-
-/* Orange accents ONLY for icons and badges */
-.dark .text-orange-500,
-.dark .text-orange-600,
-.dark .bg-orange-500,
-.dark .bg-orange-600 {
-  color: #f97316 !important;
-  background-color: #f97316 !important;
-}
-
-/* Dark mode borders - subtle */
-.dark .border,
-.dark .border-gray-200,
-.dark .border-gray-300 {
-  border-color: #2a2a2a !important;
-}
-
-/* Dark mode buttons */
-.dark .btn-primary {
-  background-color: #2a2a2a !important;
-  color: white !important;
-}
-.dark .btn-primary:hover {
-  background-color: #3a3a3a !important;
-}
-.dark .btn-secondary {
-  border-color: #4a4a4a !important;
-  color: #d1d5db !important;
-}
-
-/* Dark mode cards - preserve depth */
-.dark .bg-white.rounded-2xl,
-.dark .bg-white.rounded-xl {
-  background-color: #1e1e1e !important;
-  border: 1px solid #2a2a2a !important;
-  box-shadow: var(--card-shadow);
-}
-.dark .bg-white.rounded-2xl:hover,
-.dark .bg-white.rounded-xl:hover {
-  box-shadow: var(--card-shadow-hover);
-}
-
-/* Dark mode inputs */
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #1a1a1a !important;
-  border-color: #333333 !important;
-  color: #e5e5e5 !important;
-}
-.dark input::placeholder {
-  color: #666666 !important;
-}
-
-/* Dark mode footer */
-.dark footer {
-  background-color: #0a0a0a !important;
-  border-top: 1px solid #1a1a1a !important;
-}
-
-/* ============================================
-   HERO CAROUSEL FIXES (Preserve visibility)
-   ============================================ */
-/* Ensure hero images are visible */
-.hero-carousel .swiper-slide {
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-carousel img {
-  position: relative;
-  z-index: 1;
-}
-
-/* Hero overlay gradients - keep them working */
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Don't hide hero images in dark mode */
-.dark .hero-carousel img {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* ============================================
-   PRODUCT & UI ELEMENTS (Preserve quality)
-   ============================================ */
-/* Product cards - keep shadows */
-.product-card {
-  transition: all 0.3s ease;
-  box-shadow: var(--card-shadow);
-}
-.product-card:hover {
-  box-shadow: var(--card-shadow-hover);
-  transform: translateY(-2px);
-}
-
-/* Reviews section - keep avatars visible */
-.review-avatar {
-  position: relative;
-  z-index: 2;
-}
-.review-avatar img {
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Orange text highlights - keep readable */
-.text-excitement {
-  color: #f97316;
-  font-weight: 600;
-}
-.dark .text-excitement {
-  color: #f97316;
-}
-
-/* ============================================
-   RESPONSIVE & MOBILE FIXES
-   ============================================ */
-@media (max-width: 768px) {
-  /* Ensure proper spacing on mobile */
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
-  /* Keep cards readable on mobile */
-  .product-card {
-    margin-bottom: 1rem;
-  }
-}
+    @apply bg-gray-900 hover:bg-gray-800 text-white px-6 py
