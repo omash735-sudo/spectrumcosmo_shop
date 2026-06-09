@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import { useCart } from '@/components/storefront/CartProvider';
@@ -15,7 +16,6 @@ import {
   Home, AlertTriangle, Send, Eye
 } from 'lucide-react';
 import Image from 'next/image';
-import { getVerifiedUser } from '@/lib/auth-client';
 
 // ============================================
 // TYPES
@@ -87,15 +87,6 @@ const validateEmail = (email: string): boolean => {
 
 const validateMalawiPhone = (phone: string): boolean => {
   return /^(099|088|098)\d{7}$/.test(phone);
-};
-
-const formatPhoneForDisplay = (phone: string): string => {
-  if (!phone) return '';
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 10) {
-    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-  }
-  return phone;
 };
 
 // ============================================
@@ -952,7 +943,7 @@ export default function CheckoutPage() {
                           />
                           <div>
                             <p className="font-medium text-gray-800 text-sm sm:text-base">{method.name}</p>
-                            {serviceability?.estimatedDays && method.type === serviceability.area?.estimated_days_express ? (
+                            {serviceability?.estimatedDays && method.type === 'express' ? (
                               <p className="text-xs text-gray-400">Estimated {serviceability.estimatedDays}</p>
                             ) : serviceability?.estimatedDays && (
                               <p className="text-xs text-gray-400">Estimated {serviceability.estimatedDays}</p>
@@ -1432,6 +1423,6 @@ export default function CheckoutPage() {
       )}
 
       <Footer />
-    </div>
+    </>
   );
 }
