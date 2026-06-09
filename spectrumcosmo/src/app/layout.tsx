@@ -14,7 +14,7 @@ import { WishlistProvider } from '@/components/storefront/WishlistProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
-import { ThemeProvider } from '@/components/ThemeProvider'; // Add this import
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'; // Add this import
 
 export const viewport: Viewport = {
   width: 'device-width',
