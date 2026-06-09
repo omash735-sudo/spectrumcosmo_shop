@@ -95,7 +95,7 @@ const validateMalawiPhone = (phone: string): boolean => {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, subtotalUsd, clearCart, updateQuantity, removeItem } = useCart();
+  const { items, subtotalUsd, clearCart, removeItem, updateQty } = useCart();
   const { currency, rates } = useCurrency();
 
   // Auth State
@@ -184,6 +184,18 @@ export default function CheckoutPage() {
 
   const totalBeforeTax = subtotal + deliveryFee - discountAmount;
   const finalTotal = totalBeforeTax + taxAmount;
+
+  // ============================================
+  // CART ACTIONS - Using correct method names from CartProvider
+  // ============================================
+
+  const handleUpdateQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) {
+      removeItem(productId);
+    } else {
+      updateQty(productId, newQuantity);
+    }
+  };
 
   // ============================================
   // FETCH DATA
@@ -419,18 +431,6 @@ export default function CheckoutPage() {
     setSavedReferral(referralCode.toUpperCase());
     setReferralMessage(`Referral code ${referralCode.toUpperCase()} saved! Your friend will get credit after your purchase.`);
     setReferralCode('');
-  };
-
-  // ============================================
-  // CART ACTIONS
-  // ============================================
-
-  const updateCartQuantity = async (productId: string, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeItem(productId);
-    } else {
-      updateQuantity(productId, newQuantity);
-    }
   };
 
   // ============================================
@@ -943,9 +943,7 @@ export default function CheckoutPage() {
                           />
                           <div>
                             <p className="font-medium text-gray-800 text-sm sm:text-base">{method.name}</p>
-                            {serviceability?.estimatedDays && method.type === 'express' ? (
-                              <p className="text-xs text-gray-400">Estimated {serviceability.estimatedDays}</p>
-                            ) : serviceability?.estimatedDays && (
+                            {serviceability?.estimatedDays && (
                               <p className="text-xs text-gray-400">Estimated {serviceability.estimatedDays}</p>
                             )}
                           </div>
@@ -1236,14 +1234,14 @@ export default function CheckoutPage() {
                             <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <button
-                                onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                                 className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
                               >
                                 -
                               </button>
                               <span className="text-xs text-gray-600">{item.quantity}</span>
                               <button
-                                onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                                 className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
                               >
                                 +
