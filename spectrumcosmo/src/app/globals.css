@@ -10,12 +10,12 @@
   --foreground: #111111;
   --foreground-muted: #4b5563;
   --border: #e5e7eb;
-  --primary: #F97316;        /* kept for tiny accents (price, sale badge) */
+  --primary: #F97316;
   --primary-dark: #ea6c0f;
   --header-height: 80px;
 }
 
-/* Manual dark mode class (if you add a toggle) */
+/* Manual dark mode class */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
@@ -52,6 +52,7 @@ h2 { font-size: 2rem; font-weight: 700; }
 h3 { font-size: 1.5rem; font-weight: 600; }
 h4 { font-size: 1.25rem; font-weight: 600; }
 
+/* Responsive headings - FIXED: Dark mode aware */
 @media (max-width: 768px) {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.5rem; }
@@ -74,13 +75,15 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 .line-clamp-2 { -webkit-line-clamp: 2; }
 .line-clamp-3 { -webkit-line-clamp: 3; }
 
-/* Touch targets (mobile) */
+/* Touch targets (mobile) - FIXED: These apply to all themes, but don't override colors */
 @media (max-width: 768px) {
   button, a, [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
-  input, select, textarea { font-size: 16px !important; }
+  input, select, textarea { 
+    font-size: 16px !important; 
+  }
 }
 
 /* Minimal global component styles – buttons use gray/black */
@@ -94,25 +97,16 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 }
 
 /* ============================================
-   DARK MODE OVERRIDES - NOW HANDLED BY JAVASCRIPT
-   The @media query has been removed because the theme switcher
-   manually applies the .dark class. This allows user preferences
-   to override system preferences.
+   DARK MODE STYLES - Applied via .dark class
    ============================================ */
 
-/* All dark mode styles are now ONLY applied via the .dark class */
-/* The .dark class contains all the dark mode overrides */
-
-/* REMOVED: @media (prefers-color-scheme: dark) block */
-/* The theme switcher now handles adding/removing the .dark class */
-
-/* Keep the .dark class styles - these are applied when JS adds the class */
+/* Base dark mode body */
 .dark body {
   background-color: #0a0a0a !important;
   color: #e5e5e5 !important;
 }
 
-/* Make all white/gray backgrounds dark when .dark is present */
+/* Make all white/gray backgrounds dark */
 .dark .bg-white,
 .dark .bg-gray-50,
 .dark .bg-gray-100,
@@ -145,15 +139,32 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   color: #d1d5db !important;
 }
 
-/* Headings – keep dark, but we make them light */
-.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6,
+/* Headings */
+.dark h1, 
+.dark h2, 
+.dark h3, 
+.dark h4, 
+.dark h5, 
+.dark h6,
 .dark .text-gray-900,
 .dark .font-bold,
 .dark .font-semibold {
   color: #f3f4f6 !important;
 }
 
-/* Keep brand orange for small accents (price, sale badge) */
+/* Mobile heading colors - FIXED: Now only applies in dark mode on mobile */
+@media (max-width: 768px) {
+  .dark h1, 
+  .dark h2, 
+  .dark h3, 
+  .dark h4, 
+  .dark h5, 
+  .dark h6 {
+    color: #f3f4f6 !important;
+  }
+}
+
+/* Keep brand orange for small accents */
 .dark .text-orange-500,
 .dark .text-orange-600,
 .dark .text-orange-700,
@@ -182,6 +193,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   background-color: #2a2a2a !important;
   color: white !important;
 }
+
 .dark .btn-primary:hover,
 .dark button.bg-gray-900:hover {
   background-color: #3a3a3a !important;
@@ -194,10 +206,11 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   color: #ccc !important;
 }
 
-/* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
+/* Trust bar */
 .dark .bg-gray-900 {
   background-color: #0a0a0a !important;
 }
+
 .dark .text-orange-400 {
   color: #f97316 !important;
 }
@@ -216,8 +229,20 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   border-color: #4a4a4a !important;
   color: #e5e5e5 !important;
 }
+
 .dark input::placeholder {
   color: #888 !important;
+}
+
+/* Mobile input fixes - FIXED: Only applies in dark mode */
+@media (max-width: 768px) {
+  .dark input, 
+  .dark textarea, 
+  .dark select {
+    background-color: #2a2a2a !important;
+    border-color: #4a4a4a !important;
+    color: #e5e5e5 !important;
+  }
 }
 
 /* Footer */
@@ -226,9 +251,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   border-top-color: #2a2a2a !important;
 }
 
-/* ============================================
-   EXTRA DARK MODE FIXES (kills the squares)
-   ============================================ */
+/* EXTRA DARK MODE FIXES */
 /* Every div/section/article without a specific background becomes transparent */
 .dark div, 
 .dark section, 
@@ -241,7 +264,7 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   background-color: transparent !important;
 }
 
-/* Kill white box‑shadows that become visible in dark mode */
+/* Kill white box‑shadows */
 .dark * {
   box-shadow: none !important;
 }
@@ -252,11 +275,39 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 }
 
 /* Specific fix for the "Wear your excitement with pride" section */
-/* Give it a solid Tailwind Gray‑900 background (no gradient) */
 .dark .hero-section,
 .dark .wear-excitement-section,
 .dark section:has(h2:contains("Wear your excitement")),
 .dark div:has(> p:contains("Wear your excitement")) {
   background-color: #111827 !important;
   background-image: none !important;
+}
+
+/* Mobile-specific dark mode fixes for any stubborn elements */
+@media (max-width: 768px) {
+  /* Ensure dark mode backgrounds on mobile */
+  .dark .bg-white,
+  .dark .bg-gray-50,
+  .dark .bg-gray-100,
+  .dark section,
+  .dark article,
+  .dark div[class*="bg-"] {
+    background-color: #1a1a1a !important;
+  }
+  
+  /* Ensure text colors are correct on mobile in dark mode */
+  .dark p,
+  .dark span,
+  .dark li,
+  .dark a:not(.btn-primary):not(.btn-secondary) {
+    color: #d1d5db !important;
+  }
+  
+  /* Fix any mobile-specific elements that might retain light mode */
+  .dark .mobile-nav,
+  .dark [class*="mobile"],
+  .dark [class*="Mobile"] {
+    background-color: #1a1a1a !important;
+    color: #e5e5e5 !important;
+  }
 }
