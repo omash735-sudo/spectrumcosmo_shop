@@ -43,6 +43,10 @@ import {
   AlertTriangle,
   Percent,
   Gift,
+  MapPin,
+  Send,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
 
 const navItems = [
@@ -58,6 +62,11 @@ const navItems = [
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
   
+  // DELIVERY SECTION
+  { name: 'Delivery Areas', href: '/admin/delivery-areas', icon: MapPin, section: 'DELIVERY' },
+  { name: 'Delivery Quotes', href: '/admin/delivery-quotes', icon: Send, section: 'DELIVERY' },
+  { name: 'Delivery Methods', href: '/admin/delivery', icon: Truck, section: 'DELIVERY' },
+  
   // SECURITY SECTION
   { name: 'Security Dashboard', href: '/admin/security/dashboard', icon: Activity, section: 'SECURITY' },
   { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'SECURITY' },
@@ -71,7 +80,6 @@ const navItems = [
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
   { name: 'Payment Providers', href: '/admin/payment-providers', icon: Database, section: 'OPERATIONS' },
   { name: 'Order Statuses', href: '/admin/order-statuses', icon: Tag, section: 'OPERATIONS' },
-  { name: 'Delivery', href: '/admin/delivery', icon: Truck, section: 'OPERATIONS' },
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
@@ -151,6 +159,37 @@ function StockAlertBadge() {
   return (
     <span className="ml-auto bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
       {alertCount > 99 ? '99+' : alertCount}
+    </span>
+  );
+}
+
+// Delivery quote badge component
+function DeliveryQuoteBadge() {
+  const [quoteCount, setQuoteCount] = useState(0);
+  
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      try {
+        const res = await fetch('/api/admin/quote-requests?status=pending');
+        if (res.ok) {
+          const data = await res.json();
+          setQuoteCount(data.length || 0);
+        }
+      } catch (err) {
+        console.warn('Could not fetch quote count');
+      }
+    };
+    
+    fetchQuotes();
+    const interval = setInterval(fetchQuotes, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  if (quoteCount === 0) return null;
+  
+  return (
+    <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+      {quoteCount > 99 ? '99+' : quoteCount}
     </span>
   );
 }
@@ -244,7 +283,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="flex-1">
-        {['CORE', 'SECURITY', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => {
+        {['CORE', 'DELIVERY', 'SECURITY', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => {
           const sectionItems = navItems.filter((item) => item.section === section);
           if (sectionItems.length === 0) return null;
           
@@ -257,6 +296,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const Icon = item.icon;
                 const showStockAlert = item.name === 'Inventory';
                 const showSecurityAlert = item.name === 'Security Center';
+                const showQuoteAlert = item.name === 'Delivery Quotes';
                 
                 return (
                   <Link
@@ -272,6 +312,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {item.name}
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
+                    {showQuoteAlert && <DeliveryQuoteBadge />}
                     {isActive(item.href) && (
                       <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
                     )}
