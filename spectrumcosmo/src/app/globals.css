@@ -15,7 +15,7 @@
   --header-height: 80px;
 }
 
-/* Manual dark mode class */
+/* Dark mode class - applied by JavaScript */
 .dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;
@@ -52,7 +52,6 @@ h2 { font-size: 2rem; font-weight: 700; }
 h3 { font-size: 1.5rem; font-weight: 600; }
 h4 { font-size: 1.25rem; font-weight: 600; }
 
-/* Responsive headings - FIXED: Dark mode aware */
 @media (max-width: 768px) {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.5rem; }
@@ -75,15 +74,13 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 .line-clamp-2 { -webkit-line-clamp: 2; }
 .line-clamp-3 { -webkit-line-clamp: 3; }
 
-/* Touch targets (mobile) - FIXED: These apply to all themes, but don't override colors */
+/* Touch targets (mobile) - These apply to all themes */
 @media (max-width: 768px) {
   button, a, [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
-  input, select, textarea { 
-    font-size: 16px !important; 
-  }
+  input, select, textarea { font-size: 16px !important; }
 }
 
 /* Minimal global component styles – buttons use gray/black */
@@ -97,10 +94,11 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 }
 
 /* ============================================
-   DARK MODE STYLES - Applied via .dark class
+   DARK MODE STYLES - ONLY via .dark class
+   NO @media queries - JavaScript handles system detection
    ============================================ */
 
-/* Base dark mode body */
+/* Force dark background when .dark class is present */
 .dark body {
   background-color: #0a0a0a !important;
   color: #e5e5e5 !important;
@@ -150,18 +148,6 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 .dark .font-bold,
 .dark .font-semibold {
   color: #f3f4f6 !important;
-}
-
-/* Mobile heading colors - FIXED: Now only applies in dark mode on mobile */
-@media (max-width: 768px) {
-  .dark h1, 
-  .dark h2, 
-  .dark h3, 
-  .dark h4, 
-  .dark h5, 
-  .dark h6 {
-    color: #f3f4f6 !important;
-  }
 }
 
 /* Keep brand orange for small accents */
@@ -234,24 +220,15 @@ h4 { font-size: 1.25rem; font-weight: 600; }
   color: #888 !important;
 }
 
-/* Mobile input fixes - FIXED: Only applies in dark mode */
-@media (max-width: 768px) {
-  .dark input, 
-  .dark textarea, 
-  .dark select {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e5e5e5 !important;
-  }
-}
-
 /* Footer */
 .dark footer {
   background-color: #0f0f0f !important;
   border-top-color: #2a2a2a !important;
 }
 
-/* EXTRA DARK MODE FIXES */
+/* ============================================
+   EXTRA DARK MODE FIXES
+   ============================================ */
 /* Every div/section/article without a specific background becomes transparent */
 .dark div, 
 .dark section, 
@@ -281,33 +258,4 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 .dark div:has(> p:contains("Wear your excitement")) {
   background-color: #111827 !important;
   background-image: none !important;
-}
-
-/* Mobile-specific dark mode fixes for any stubborn elements */
-@media (max-width: 768px) {
-  /* Ensure dark mode backgrounds on mobile */
-  .dark .bg-white,
-  .dark .bg-gray-50,
-  .dark .bg-gray-100,
-  .dark section,
-  .dark article,
-  .dark div[class*="bg-"] {
-    background-color: #1a1a1a !important;
-  }
-  
-  /* Ensure text colors are correct on mobile in dark mode */
-  .dark p,
-  .dark span,
-  .dark li,
-  .dark a:not(.btn-primary):not(.btn-secondary) {
-    color: #d1d5db !important;
-  }
-  
-  /* Fix any mobile-specific elements that might retain light mode */
-  .dark .mobile-nav,
-  .dark [class*="mobile"],
-  .dark [class*="Mobile"] {
-    background-color: #1a1a1a !important;
-    color: #e5e5e5 !important;
-  }
 }
