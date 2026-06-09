@@ -139,6 +139,7 @@ export default function PaymentSettingsPage() {
       try {
         const res = await fetch('/api/payment-settings');
         const data = await res.json();
+        // Match your API's field names: automatic_enabled, manual_enabled (not payments)
         const newSettings = {
           automaticEnabled: data.automatic_enabled ?? true,
           manualEnabled: data.manual_enabled ?? true,
@@ -176,8 +177,8 @@ export default function PaymentSettingsPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          automatic_enabled: automaticEnabled,
-          manual_enabled: manualEnabled,
+          automatic_enabled: automaticEnabled,  // Match your API field name
+          manual_enabled: manualEnabled,        // Match your API field name
         }),
       });
       
@@ -186,7 +187,8 @@ export default function PaymentSettingsPage() {
         setOriginalSettings({ automaticEnabled, manualEnabled });
         setHasChanges(false);
       } else {
-        throw new Error('Failed to save');
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save');
       }
     } catch (err) {
       toast.error('Failed to save settings');
