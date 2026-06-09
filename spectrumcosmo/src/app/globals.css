@@ -94,159 +94,169 @@ h4 { font-size: 1.25rem; font-weight: 600; }
 }
 
 /* ============================================
-   DARK MODE OVERRIDES (system preference)
+   DARK MODE OVERRIDES - NOW HANDLED BY JAVASCRIPT
+   The @media query has been removed because the theme switcher
+   manually applies the .dark class. This allows user preferences
+   to override system preferences.
    ============================================ */
-@media (prefers-color-scheme: dark) {
-  /* Force a dark background on the whole page */
-  body {
-    background-color: #0a0a0a !important;
-    color: #e5e5e5 !important;
-  }
 
-  /* Make all white/gray backgrounds dark */
-  .bg-white,
-  .bg-gray-50,
-  .bg-gray-100,
-  .bg-gray-200,
-  .bg-gray-300,
-  .bg-gradient-to-br,
-  .bg-gradient-to-r,
-  .bg-gradient-to-t,
-  .bg-gradient-to-l {
-    background-color: #1a1a1a !important;
-    background-image: none !important;
-  }
+/* All dark mode styles are now ONLY applied via the .dark class */
+/* The .dark class contains all the dark mode overrides */
 
-  /* Cards, sections, containers */
-  .bg-white\/90,
-  .bg-white\/80,
-  .bg-white\/70,
-  .bg-white\/60 {
-    background-color: rgba(26, 26, 26, 0.95) !important;
-    backdrop-filter: blur(4px);
-  }
+/* REMOVED: @media (prefers-color-scheme: dark) block */
+/* The theme switcher now handles adding/removing the .dark class */
 
-  /* Text colors – make everything light */
-  .text-gray-900,
-  .text-gray-800,
-  .text-gray-700,
-  .text-gray-600,
-  .text-gray-500,
-  .text-gray-400 {
-    color: #d1d5db !important;
-  }
+/* Keep the .dark class styles - these are applied when JS adds the class */
+.dark body {
+  background-color: #0a0a0a !important;
+  color: #e5e5e5 !important;
+}
 
-  /* Headings – keep dark, but we make them light */
-  h1, h2, h3, h4, h5, h6,
-  .text-gray-900,
-  .font-bold,
-  .font-semibold {
-    color: #f3f4f6 !important;
-  }
+/* Make all white/gray backgrounds dark when .dark is present */
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200,
+.dark .bg-gray-300,
+.dark .bg-gradient-to-br,
+.dark .bg-gradient-to-r,
+.dark .bg-gradient-to-t,
+.dark .bg-gradient-to-l {
+  background-color: #1a1a1a !important;
+  background-image: none !important;
+}
 
-  /* Keep brand orange for small accents (price, sale badge) */
-  .text-orange-500,
-  .text-orange-600,
-  .text-orange-700,
-  .bg-orange-500,
-  .bg-orange-600,
-  .border-orange-500 {
-    color: #f97316 !important;
-    background-color: #f97316 !important;
-    border-color: #f97316 !important;
-  }
+/* Cards, sections, containers */
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-white\/70,
+.dark .bg-white\/60 {
+  background-color: rgba(26, 26, 26, 0.95) !important;
+  backdrop-filter: blur(4px);
+}
 
-  /* Borders */
-  .border,
-  .border-gray-100,
-  .border-gray-200,
-  .border-gray-300,
-  .border-gray-400 {
-    border-color: #2a2a2a !important;
-  }
+/* Text colors – make everything light */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #d1d5db !important;
+}
 
-  /* Buttons */
-  .btn-primary,
-  button.bg-gray-900,
-  a.bg-gray-900,
-  .bg-gray-900 {
-    background-color: #2a2a2a !important;
-    color: white !important;
-  }
-  .btn-primary:hover,
-  button.bg-gray-900:hover {
-    background-color: #3a3a3a !important;
-  }
+/* Headings – keep dark, but we make them light */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6,
+.dark .text-gray-900,
+.dark .font-bold,
+.dark .font-semibold {
+  color: #f3f4f6 !important;
+}
 
-  .btn-secondary,
-  button.border-gray-300,
-  a.border-gray-300 {
-    border-color: #4a4a4a !important;
-    color: #ccc !important;
-  }
+/* Keep brand orange for small accents (price, sale badge) */
+.dark .text-orange-500,
+.dark .text-orange-600,
+.dark .text-orange-700,
+.dark .bg-orange-500,
+.dark .bg-orange-600,
+.dark .border-orange-500 {
+  color: #f97316 !important;
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
+}
 
-  /* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
-  .bg-gray-900 {
-    background-color: #0a0a0a !important;
-  }
-  .text-orange-400 {
-    color: #f97316 !important;
-  }
+/* Borders */
+.dark .border,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-400 {
+  border-color: #2a2a2a !important;
+}
 
-  /* Product cards */
-  .bg-white.rounded-2xl {
-    background-color: #1e1e1e !important;
-    border-color: #2a2a2a !important;
-  }
+/* Buttons */
+.dark .btn-primary,
+.dark button.bg-gray-900,
+.dark a.bg-gray-900,
+.dark .bg-gray-900 {
+  background-color: #2a2a2a !important;
+  color: white !important;
+}
+.dark .btn-primary:hover,
+.dark button.bg-gray-900:hover {
+  background-color: #3a3a3a !important;
+}
 
-  /* Input fields */
-  input, textarea, select {
-    background-color: #2a2a2a !important;
-    border-color: #4a4a4a !important;
-    color: #e5e5e5 !important;
-  }
-  input::placeholder {
-    color: #888 !important;
-  }
+.dark .btn-secondary,
+.dark button.border-gray-300,
+.dark a.border-gray-300 {
+  border-color: #4a4a4a !important;
+  color: #ccc !important;
+}
 
-  /* Footer */
-  footer {
-    background-color: #0f0f0f !important;
-    border-top-color: #2a2a2a !important;
-  }
+/* Trust bar (dark background + orange icons) – keep as is, but adjust background slightly */
+.dark .bg-gray-900 {
+  background-color: #0a0a0a !important;
+}
+.dark .text-orange-400 {
+  color: #f97316 !important;
+}
 
-  /* ============================================
-     EXTRA DARK MODE FIXES (kills the squares)
-     ============================================ */
-  /* Every div/section/article without a specific background becomes transparent */
-  div, section, article, aside, main, nav, header, footer {
-    background-color: transparent !important;
-  }
+/* Product cards */
+.dark .bg-white.rounded-2xl {
+  background-color: #1e1e1e !important;
+  border-color: #2a2a2a !important;
+}
 
-  /* COMMENTED OUT - This was breaking Hero Carousel images
-  [class*="bg-"]:not(.bg-orange-500):not(.bg-orange-600) {
-    background-color: #1a1a1a !important;
-    background-image: none !important;
-  }
-  */
+/* Input fields */
+.dark input, 
+.dark textarea, 
+.dark select {
+  background-color: #2a2a2a !important;
+  border-color: #4a4a4a !important;
+  color: #e5e5e5 !important;
+}
+.dark input::placeholder {
+  color: #888 !important;
+}
 
-  /* Kill white box‑shadows that become visible in dark mode */
-  * {
-    box-shadow: none !important;
-  }
+/* Footer */
+.dark footer {
+  background-color: #0f0f0f !important;
+  border-top-color: #2a2a2a !important;
+}
 
-  /* Force all borders to dark grey */
-  * {
-    border-color: #2a2a2a !important;
-  }
+/* ============================================
+   EXTRA DARK MODE FIXES (kills the squares)
+   ============================================ */
+/* Every div/section/article without a specific background becomes transparent */
+.dark div, 
+.dark section, 
+.dark article, 
+.dark aside, 
+.dark main, 
+.dark nav, 
+.dark header, 
+.dark footer {
+  background-color: transparent !important;
+}
 
-  /* Specific fix for the "Wear your excitement with pride" section */
-  /* Give it a solid Tailwind Gray‑900 background (no gradient) */
-  .hero-section,
-  .wear-excitement-section,
-  section:has(h2:contains("Wear your excitement")),
-  div:has(> p:contains("Wear your excitement")) {
-    background-color: #111827 !important;
-    background-image: none !important;
-  }
+/* Kill white box‑shadows that become visible in dark mode */
+.dark * {
+  box-shadow: none !important;
+}
+
+/* Force all borders to dark grey */
+.dark * {
+  border-color: #2a2a2a !important;
+}
+
+/* Specific fix for the "Wear your excitement with pride" section */
+/* Give it a solid Tailwind Gray‑900 background (no gradient) */
+.dark .hero-section,
+.dark .wear-excitement-section,
+.dark section:has(h2:contains("Wear your excitement")),
+.dark div:has(> p:contains("Wear your excitement")) {
+  background-color: #111827 !important;
+  background-image: none !important;
 }
