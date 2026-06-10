@@ -27,10 +27,9 @@ export async function PUT(
         type = ${type || 'standard'},
         estimated_days = ${estimated_days || null},
         is_active = ${is_active ?? true},
-        sort_order = ${sort_order ?? 0},
-        updated_at = NOW()
+        sort_order = ${sort_order ?? 0}
       WHERE id = ${id}::uuid
-      RETURNING *
+      RETURNING id, name, logo_url, price, type, estimated_days, is_active, sort_order
     `;
 
     if (!updated) {
@@ -38,9 +37,14 @@ export async function PUT(
     }
 
     return NextResponse.json({
-      ...updated,
-      price: Number(updated.price),
       id: Number(updated.id),
+      name: updated.name,
+      logo_url: updated.logo_url,
+      price: Number(updated.price),
+      type: updated.type || 'standard',
+      estimated_days: updated.estimated_days,
+      is_active: updated.is_active,
+      sort_order: updated.sort_order || 0,
     });
   } catch (err: any) {
     console.error('PUT /api/admin/delivery-methods/[id] error:', err);
