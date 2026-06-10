@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2, Edit, X, CheckCircle, XCircle, Truck, Zap, Clock } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, X, CheckCircle, XCircle, Truck, Zap, Clock, ExternalLink, Upload, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -22,6 +22,8 @@ export default function AdminDeliveryPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState<DeliveryMethod | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [form, setForm] = useState({
     name: '',
     logo_url: '',
@@ -36,12 +38,15 @@ export default function AdminDeliveryPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/delivery-methods');
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch');
+      }
       const data = await res.json();
       setMethods(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Fetch error:', err);
-      toast.error('Failed to load delivery methods');
+      toast.error(err.message || 'Failed to load delivery methods');
     } finally {
       setLoading(false);
     }
@@ -80,6 +85,99 @@ export default function AdminDeliveryPage() {
       resetForm();
     }
     setShowModal(true);
+  };
+
+  // Upload logo to Cloudinary
+  const uploadLogo = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Upload service not configured');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!data.secure_url) throw new Error('Upload failed');
+    return data.secure_url;
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPG, PNG, WEBP, and SVG files are allowed');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const url = await uploadLogo(file);
+      setForm(prev => ({ ...prev, logo_url: url }));
+      toast.success('Logo uploaded successfully');
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/svg+xml'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Only JPG, PNG, WEBP, and SVG files are allowed');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      setUploadingLogo(true);
+      try {
+        const url = await uploadLogo(file);
+        setForm(prev => ({ ...prev, logo_url: url }));
+        toast.success('Logo uploaded successfully');
+      } catch (err) {
+        toast.error('Failed to upload logo');
+      } finally {
+        setUploadingLogo(false);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,11 +228,14 @@ export default function AdminDeliveryPage() {
 
     try {
       const res = await fetch(`/api/admin/delivery-methods/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to delete');
+      }
       toast.success('Delivery method deleted');
       fetchMethods();
-    } catch (err) {
-      toast.error('Failed to delete');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete');
     }
   };
 
@@ -145,11 +246,14 @@ export default function AdminDeliveryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !currentStatus }),
       });
-      if (!res.ok) throw new Error('Failed to update status');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update status');
+      }
       toast.success(`Method ${!currentStatus ? 'activated' : 'deactivated'}`);
       fetchMethods();
-    } catch (err) {
-      toast.error('Failed to update status');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status');
     }
   };
 
@@ -189,6 +293,7 @@ export default function AdminDeliveryPage() {
             Delivery Methods
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage shipping options shown at checkout</p>
+          <p className="text-xs text-gray-400 mt-1">These methods appear on the checkout page in sort order</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
@@ -254,13 +359,13 @@ export default function AdminDeliveryPage() {
                   <td className="px-6 py-4">{getTypeBadge(method.type)}</td>
                   <td className="px-6 py-4 font-medium text-orange-600 dark:text-orange-400">
                     MWK {method.price.toLocaleString()}
-                  </td>
+                   </td>
                   <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <Clock size={12} />
                       {method.estimated_days || '-'}
                     </span>
-                  </td>
+                   </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleToggleStatus(method.id, method.is_active)}
@@ -273,7 +378,7 @@ export default function AdminDeliveryPage() {
                       {method.is_active ? <CheckCircle size={12} /> : <XCircle size={12} />}
                       {method.is_active ? 'Active' : 'Inactive'}
                     </button>
-                  </td>
+                   </td>
                   <td className="px-6 py-4 text-gray-500">{method.sort_order}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -292,8 +397,8 @@ export default function AdminDeliveryPage() {
                         <Trash2 size={16} className="text-red-500" />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               ))}
             </tbody>
           </table>
@@ -385,7 +490,7 @@ export default function AdminDeliveryPage() {
         )}
       </div>
 
-      {/* Modal - Add/Edit */}
+      {/* Modal - Add/Edit with Logo Upload */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -409,8 +514,65 @@ export default function AdminDeliveryPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Standard Delivery"
+                  placeholder="e.g., CTS Courier"
                 />
+              </div>
+
+              {/* Logo Upload Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Logo
+                </label>
+                
+                {/* Current Logo Preview */}
+                {form.logo_url && (
+                  <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                      <Image src={form.logo_url} alt="Logo preview" width={48} height={48} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500">Current logo</p>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, logo_url: '' })}
+                        className="text-xs text-red-500 hover:text-red-600 mt-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Area */}
+                <div
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-4 text-center transition cursor-pointer
+                    ${dragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-orange-400 bg-gray-50'}`}
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                >
+                  {uploadingLogo ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="animate-spin text-orange-500" size={20} />
+                      <span className="text-sm text-gray-500">Uploading...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className={`w-8 h-8 mx-auto mb-2 ${dragActive ? 'text-orange-500' : 'text-gray-400'}`} />
+                      <p className="text-sm text-gray-600">Click or drag & drop to upload logo</p>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP, SVG up to 2MB</p>
+                    </>
+                  )}
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -454,19 +616,6 @@ export default function AdminDeliveryPage() {
                   placeholder="2-3 business days"
                 />
                 <p className="text-xs text-gray-400 mt-1">Example: "2-3 business days" or "Same day"</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Logo URL (Optional)
-                </label>
-                <input
-                  type="url"
-                  value={form.logo_url}
-                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800"
-                  placeholder="https://..."
-                />
               </div>
 
               <div>
