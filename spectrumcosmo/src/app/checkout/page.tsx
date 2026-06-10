@@ -186,7 +186,7 @@ export default function CheckoutPage() {
   const finalTotal = totalBeforeTax + taxAmount;
 
   // ============================================
-  // CART ACTIONS - Using correct method names from CartProvider
+  // CART ACTIONS
   // ============================================
 
   const handleUpdateQuantity = (productId: string, newQuantity: number) => {
@@ -297,7 +297,7 @@ export default function CheckoutPage() {
     }
   }, [isLoggedIn, fetchSavedAddresses]);
 
-  // Check serviceability when location changes
+  // Check serviceability when location changes - FIXED
   useEffect(() => {
     const checkServiceability = async () => {
       if (!form.location || form.location.length < 3 || !selectedDeliveryId) return;
@@ -314,7 +314,7 @@ export default function CheckoutPage() {
         });
         const data = await res.json();
         setServiceability(data);
-        setRequiresQuote(!data.isServiceable);
+        setRequiresQuote(data.requiresQuote === true);
       } catch (err) {
         console.error('Serviceability check failed:', err);
       } finally {
@@ -1171,7 +1171,7 @@ export default function CheckoutPage() {
               {!requiresQuote && !quoteRequested && (
                 <button
                   onClick={handleProceedToReview}
-                  disabled={loading || items.length === 0 || !serviceability?.isServiceable}
+                  disabled={loading || items.length === 0 || (serviceability && !serviceability.isServiceable)}
                   className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-200 text-base sm:text-lg"
                 >
                   {loading ? (
