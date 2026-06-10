@@ -297,7 +297,7 @@ export default function CheckoutPage() {
     }
   }, [isLoggedIn, fetchSavedAddresses]);
 
-  // Check serviceability when location changes - FIXED
+  // Check serviceability when location changes
   useEffect(() => {
     const checkServiceability = async () => {
       if (!form.location || form.location.length < 3 || !selectedDeliveryId) return;
@@ -1171,7 +1171,7 @@ export default function CheckoutPage() {
               {!requiresQuote && !quoteRequested && (
                 <button
                   onClick={handleProceedToReview}
-                  disabled={loading || items.length === 0 || (serviceability && !serviceability.isServiceable)}
+                  disabled={loading || items.length === 0 || (serviceability?.isServiceable === false)}
                   className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-200 text-base sm:text-lg"
                 >
                   {loading ? (
