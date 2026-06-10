@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, MapPin, Building, Zap } from 'lucide-react';
+import { Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, MapPin, Building, Zap, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface DeliveryArea {
