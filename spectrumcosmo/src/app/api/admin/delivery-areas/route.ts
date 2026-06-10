@@ -1,102 +1,138 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryOne, queryAsArray } from '@/lib/db';
-import { getVerifiedUser } from '@/lib/auth';
+import { getDb } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-  if (!user?.is_admin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
+  const adminError = requireAdmin(req);
+  if (adminError) return adminError;
 
   try {
     const sql = getDb();
-    const areas = await queryAsArray`
-      SELECT id, area_name, city, delivery_fee, estimated_days, is_active, created_at, updated_at
+    const areas = await sql`
+      SELECT 
+        id, 
+        area_name, 
+        city, 
+        base_fee, 
+        express_multiplier,
+        estimated_days_standard,
+        estimated_days_express,
+        is_active,
+        sort_order,
+        created_at,
+        updated_at
       FROM delivery_areas
-      ORDER BY created_at DESC
+      ORDER BY sort_order ASC, city ASC, area_name ASC
     `;
-    return NextResponse.json(areas);
+
+    const formatted = areas.map((area) => ({
+      ...area,
+      base_fee: Number(area.base_fee),
+      express_multiplier: Number(area.express_multiplier),
+    }));
+
+    return NextResponse.json(formatted);
   } catch (err) {
-    console.error('Failed to fetch delivery areas:', err);
+    console.error('GET /api/admin/delivery-areas error:', err);
     return NextResponse.json({ error: 'Failed to fetch delivery areas' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-  if (!user?.is_admin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
+  const adminError = requireAdmin(req);
+  if (adminError) return adminError;
 
   try {
     const body = await req.json();
-    const { area_name, city, delivery_fee, estimated_days, is_active } = body;
+    const { 
+      area_name, 
+      city, 
+      base_fee, 
+      express_multiplier, 
+      estimated_days_standard, 
+      estimated_days_express, 
+      is_active, 
+      sort_order 
+    } = body;
 
-    if (!area_name || !city || delivery_fee === undefined) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!area_name || !city || base_fee === undefined) {
+      return NextResponse.json({ error: 'Area name, city, and base fee are required' }, { status: 400 });
     }
 
     const sql = getDb();
-    const [area] = await sql`
-      INSERT INTO delivery_areas (area_name, city, delivery_fee, estimated_days, is_active)
-      VALUES (${area_name}, ${city}, ${delivery_fee}, ${estimated_days || null}, ${is_active ?? true})
+    const [newArea] = await sql`
+      INSERT INTO delivery_areas (
+        area_name, city, base_fee, express_multiplier, 
+        estimated_days_standard, estimated_days_express, is_active, sort_order
+      ) VALUES (
+        ${area_name}, ${city}, ${base_fee}, ${express_multiplier || 1.5},
+        ${estimated_days_standard || null}, ${estimated_days_express || null}, 
+        ${is_active ?? true}, ${sort_order || 0}
+      )
       RETURNING *
     `;
 
-    return NextResponse.json(area, { status: 201 });
-  } catch (err) {
-    console.error('Failed to create delivery area:', err);
-    return NextResponse.json({ error: 'Failed to create delivery area' }, { status: 500 });
+    return NextResponse.json({
+      ...newArea,
+      base_fee: Number(newArea.base_fee),
+      express_multiplier: Number(newArea.express_multiplier),
+    }, { status: 201 });
+  } catch (err: any) {
+    console.error('POST /api/admin/delivery-areas error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-  if (!user?.is_admin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
+  const adminError = requireAdmin(req);
+  if (adminError) return adminError;
 
   try {
     const body = await req.json();
-    const { id, area_name, city, delivery_fee, estimated_days, is_active } = body;
+    const { 
+      id, area_name, city, base_fee, express_multiplier, 
+      estimated_days_standard, estimated_days_express, is_active, sort_order 
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
     const sql = getDb();
-    const [area] = await sql`
+    const [updated] = await sql`
       UPDATE delivery_areas
-      SET area_name = ${area_name},
-          city = ${city},
-          delivery_fee = ${delivery_fee},
-          estimated_days = ${estimated_days},
-          is_active = ${is_active},
-          updated_at = NOW()
+      SET 
+        area_name = ${area_name},
+        city = ${city},
+        base_fee = ${base_fee},
+        express_multiplier = ${express_multiplier},
+        estimated_days_standard = ${estimated_days_standard},
+        estimated_days_express = ${estimated_days_express},
+        is_active = ${is_active},
+        sort_order = ${sort_order},
+        updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
 
-    if (!area) {
+    if (!updated) {
       return NextResponse.json({ error: 'Delivery area not found' }, { status: 404 });
     }
 
-    return NextResponse.json(area);
-  } catch (err) {
-    console.error('Failed to update delivery area:', err);
-    return NextResponse.json({ error: 'Failed to update delivery area' }, { status: 500 });
+    return NextResponse.json({
+      ...updated,
+      base_fee: Number(updated.base_fee),
+      express_multiplier: Number(updated.express_multiplier),
+    });
+  } catch (err: any) {
+    console.error('PUT /api/admin/delivery-areas error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-  if (!user?.is_admin) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-  }
+  const adminError = requireAdmin(req);
+  if (adminError) return adminError;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -108,10 +144,9 @@ export async function DELETE(req: NextRequest) {
 
     const sql = getDb();
     await sql`DELETE FROM delivery_areas WHERE id = ${id}`;
-
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Failed to delete delivery area:', err);
-    return NextResponse.json({ error: 'Failed to delete delivery area' }, { status: 500 });
+  } catch (err: any) {
+    console.error('DELETE /api/admin/delivery-areas error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
