@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2, Edit, X, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, X, CheckCircle, XCircle, Truck, Zap, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -10,6 +10,8 @@ type DeliveryMethod = {
   name: string;
   logo_url: string | null;
   price: number;
+  type: 'standard' | 'express';
+  estimated_days: string | null;
   is_active: boolean;
   sort_order: number;
 };
@@ -24,6 +26,8 @@ export default function AdminDeliveryPage() {
     name: '',
     logo_url: '',
     price: 0,
+    type: 'standard' as 'standard' | 'express',
+    estimated_days: '',
     is_active: true,
     sort_order: 0,
   });
@@ -34,9 +38,7 @@ export default function AdminDeliveryPage() {
       const res = await fetch('/api/admin/delivery-methods');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      // Handle both response formats (array directly or { delivery: [...] })
-      const methodsArray = Array.isArray(data) ? data : (data.delivery || data.methods || []);
-      setMethods(methodsArray);
+      setMethods(data);
     } catch (err) {
       console.error('Fetch error:', err);
       toast.error('Failed to load delivery methods');
@@ -55,6 +57,8 @@ export default function AdminDeliveryPage() {
       name: '',
       logo_url: '',
       price: 0,
+      type: 'standard',
+      estimated_days: '',
       is_active: true,
       sort_order: methods.length,
     });
@@ -67,8 +71,10 @@ export default function AdminDeliveryPage() {
         name: method.name,
         logo_url: method.logo_url || '',
         price: method.price,
+        type: method.type,
+        estimated_days: method.estimated_days || '',
         is_active: method.is_active,
-        sort_order: method.sort_order || 0,
+        sort_order: method.sort_order,
       });
     } else {
       resetForm();
@@ -88,8 +94,10 @@ export default function AdminDeliveryPage() {
 
       const payload = {
         name: form.name,
-        price: form.price,
         logo_url: form.logo_url || null,
+        price: form.price,
+        type: form.type,
+        estimated_days: form.estimated_days || null,
         is_active: form.is_active,
         sort_order: form.sort_order,
       };
@@ -145,6 +153,21 @@ export default function AdminDeliveryPage() {
     }
   };
 
+  const getTypeBadge = (type: string) => {
+    if (type === 'express') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+          <Zap size={12} /> Express
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+        <Truck size={12} /> Standard
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -177,7 +200,7 @@ export default function AdminDeliveryPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
           <p className="text-xs text-gray-500">Total Methods</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{methods.length}</p>
@@ -187,8 +210,12 @@ export default function AdminDeliveryPage() {
           <p className="text-2xl font-bold text-green-600">{methods.filter(m => m.is_active).length}</p>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-500">Inactive</p>
-          <p className="text-2xl font-bold text-gray-400">{methods.filter(m => !m.is_active).length}</p>
+          <p className="text-xs text-gray-500">Standard</p>
+          <p className="text-2xl font-bold text-blue-600">{methods.filter(m => m.type === 'standard').length}</p>
+        </div>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <p className="text-xs text-gray-500">Express</p>
+          <p className="text-2xl font-bold text-purple-600">{methods.filter(m => m.type === 'express').length}</p>
         </div>
       </div>
 
@@ -199,11 +226,13 @@ export default function AdminDeliveryPage() {
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr className="text-xs text-gray-500 uppercase tracking-wider">
                 <th className="text-left px-6 py-4">Method</th>
+                <th className="text-left px-6 py-4">Type</th>
                 <th className="text-left px-6 py-4">Price (MWK)</th>
+                <th className="text-left px-6 py-4">Est. Days</th>
                 <th className="text-left px-6 py-4">Status</th>
-                <th className="text-left px-6 py-4">Sort Order</th>
+                <th className="text-left px-6 py-4">Sort</th>
                 <th className="text-right px-6 py-4">Actions</th>
-               </tr>
+              </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {methods.map((method) => (
@@ -221,10 +250,17 @@ export default function AdminDeliveryPage() {
                       )}
                       <span className="font-medium text-gray-900 dark:text-white">{method.name}</span>
                     </div>
-                   </td>
+                  </td>
+                  <td className="px-6 py-4">{getTypeBadge(method.type)}</td>
                   <td className="px-6 py-4 font-medium text-orange-600 dark:text-orange-400">
                     MWK {method.price.toLocaleString()}
-                   </td>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} />
+                      {method.estimated_days || '-'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleToggleStatus(method.id, method.is_active)}
@@ -237,8 +273,8 @@ export default function AdminDeliveryPage() {
                       {method.is_active ? <CheckCircle size={12} /> : <XCircle size={12} />}
                       {method.is_active ? 'Active' : 'Inactive'}
                     </button>
-                   </td>
-                  <td className="px-6 py-4 text-gray-500">{method.sort_order || '-'}</td>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500">{method.sort_order}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
@@ -256,8 +292,8 @@ export default function AdminDeliveryPage() {
                         <Trash2 size={16} className="text-red-500" />
                       </button>
                     </div>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -290,6 +326,9 @@ export default function AdminDeliveryPage() {
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{method.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getTypeBadge(method.type)}
+                  </div>
                 </div>
               </div>
               <button
@@ -308,9 +347,15 @@ export default function AdminDeliveryPage() {
                 <span className="text-gray-500">Price</span>
                 <span className="font-semibold text-orange-600">MWK {method.price.toLocaleString()}</span>
               </div>
+              {method.estimated_days && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Est. Delivery</span>
+                  <span className="text-gray-700">{method.estimated_days}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Sort Order</span>
-                <span className="text-gray-700">{method.sort_order || '-'}</span>
+                <span className="text-gray-700">{method.sort_order}</span>
               </div>
             </div>
             <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
@@ -340,7 +385,7 @@ export default function AdminDeliveryPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal - Add/Edit */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -368,18 +413,47 @@ export default function AdminDeliveryPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Type *
+                  </label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value as 'standard' | 'express' })}
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="express">Express</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Price (MWK) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800"
+                    placeholder="2500"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Price (MWK) *
+                  Estimated Days
                 </label>
                 <input
-                  type="number"
-                  required
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+                  type="text"
+                  value={form.estimated_days}
+                  onChange={(e) => setForm({ ...form, estimated_days: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-800"
-                  placeholder="2500"
+                  placeholder="2-3 business days"
                 />
+                <p className="text-xs text-gray-400 mt-1">Example: "2-3 business days" or "Same day"</p>
               </div>
 
               <div>
