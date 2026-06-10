@@ -44,11 +44,8 @@ export async function POST(req: NextRequest) {
       SELECT name, type FROM delivery_methods WHERE id = ${deliveryMethodId}
     `;
 
-    const isServiceable = !!matchedArea;
-    const defaultOutOfAreaFee = 10000; // Will fetch from settings
-
-    if (isServiceable) {
-      // Serviceable - return area details
+    if (matchedArea) {
+      // Serviceable - return area details with isServiceable = true
       return NextResponse.json({
         isServiceable: true,
         area: matchedArea,
@@ -57,15 +54,17 @@ export async function POST(req: NextRequest) {
           ? matchedArea.estimated_days_express 
           : matchedArea.estimated_days_standard,
         message: null,
+        requiresQuote: false,
       });
     } else {
       // Not serviceable - needs quote
+      // Checkout expects isServiceable = false to trigger quote flow
       return NextResponse.json({
         isServiceable: false,
         area: null,
         baseFee: null,
         estimatedDays: null,
-        defaultFee: defaultOutOfAreaFee,
+        defaultFee: 10000,
         message: 'Your location is outside our standard delivery zones. You will only pay for products now. Our team will contact you with a delivery fee quote.',
         requiresQuote: true,
       });
