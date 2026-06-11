@@ -1,71 +1,42 @@
-// components/ThemeSwitcher.tsx
 'use client';
 
+import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Sun, Moon, Monitor, X } from 'lucide-react';
 
-type Theme = 'light' | 'dark' | 'system';
-
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState<Theme>('system');
-  const [showModal, setShowModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, systemTheme } = useTheme();
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-      applyTheme('system');
-    }
   }, []);
 
-  const applyTheme = (newTheme: Theme) => {
-    const root = document.documentElement;
-    
-    if (newTheme === 'system') {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (systemDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    } else if (newTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  };
+  if (!mounted) {
+    return (
+      <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        <div className="w-5 h-5" />
+      </button>
+    );
+  }
 
-  const handleThemeChange = (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
-    setShowModal(false);
-  };
-
-  if (!mounted) return null;
+  const displayTheme = theme === 'system' ? systemTheme : theme;
 
   return (
     <>
-      {/* Theme Toggle Button */}
       <button
         onClick={() => setShowModal(true)}
         className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
         aria-label="Change theme"
       >
-        {theme === 'dark' ? (
+        {displayTheme === 'dark' ? (
           <Moon size={20} className="text-gray-700 dark:text-gray-300" />
-        ) : theme === 'light' ? (
-          <Sun size={20} className="text-gray-700 dark:text-gray-300" />
         ) : (
-          <Monitor size={20} className="text-gray-700 dark:text-gray-300" />
+          <Sun size={20} className="text-gray-700 dark:text-gray-300" />
         )}
       </button>
 
-      {/* Theme Modal */}
       {showModal && (
         <div 
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
@@ -96,7 +67,10 @@ export default function ThemeSwitcher() {
 
             <div className="p-6 space-y-3">
               <button
-                onClick={() => handleThemeChange('light')}
+                onClick={() => {
+                  setTheme('light');
+                  setShowModal(false);
+                }}
                 className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
                   theme === 'light'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -110,13 +84,14 @@ export default function ThemeSwitcher() {
                   <h4 className="font-semibold text-gray-900 dark:text-white">Light Mode</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Bright and clean interface</p>
                 </div>
-                {theme === 'light' && (
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                )}
+                {theme === 'light' && <div className="w-2 h-2 rounded-full bg-orange-500" />}
               </button>
 
               <button
-                onClick={() => handleThemeChange('dark')}
+                onClick={() => {
+                  setTheme('dark');
+                  setShowModal(false);
+                }}
                 className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
                   theme === 'dark'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -130,13 +105,14 @@ export default function ThemeSwitcher() {
                   <h4 className="font-semibold text-gray-900 dark:text-white">Dark Mode</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Easy on the eyes at night</p>
                 </div>
-                {theme === 'dark' && (
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                )}
+                {theme === 'dark' && <div className="w-2 h-2 rounded-full bg-orange-500" />}
               </button>
 
               <button
-                onClick={() => handleThemeChange('system')}
+                onClick={() => {
+                  setTheme('system');
+                  setShowModal(false);
+                }}
                 className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
                   theme === 'system'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -150,9 +126,7 @@ export default function ThemeSwitcher() {
                   <h4 className="font-semibold text-gray-900 dark:text-white">System Default</h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Follow your device settings</p>
                 </div>
-                {theme === 'system' && (
-                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                )}
+                {theme === 'system' && <div className="w-2 h-2 rounded-full bg-orange-500" />}
               </button>
             </div>
 
