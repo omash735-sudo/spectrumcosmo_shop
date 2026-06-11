@@ -1,3 +1,4 @@
+// app/api/admin/notifications/[id]/resend/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { queryMany } from '@/lib/db';
@@ -9,18 +10,20 @@ import {
 import { sendAdminNotificationEmail } from '@/lib/notification-email';
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const authError = await requireAdmin(req);
+  const authError = await requireAdmin(request);
   if (authError) return authError;
   
-  const original = await getNotificationById(params.id);
+  const { id } = await params;
+  
+  const original = await getNotificationById(id);
   if (!original) {
     return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
   }
   
-  const unreadCustomerIds = await getUnreadCustomerIds(params.id);
+  const unreadCustomerIds = await getUnreadCustomerIds(id);
   
   if (unreadCustomerIds.length === 0) {
     return NextResponse.json({ 
