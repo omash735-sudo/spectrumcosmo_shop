@@ -17,7 +17,7 @@ type Category = {
 export default function CategoriesScroll({ categories }: { categories: Category[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
-  const [showRightButton, setShowRightButton] useState(false);
+  const [showRightButton, setShowRightButton] = useState(false);
 
   const checkScrollButtons = () => {
     const container = scrollContainerRef.current;
