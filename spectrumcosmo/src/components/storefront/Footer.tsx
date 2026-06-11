@@ -21,6 +21,7 @@ import {
   Smartphone
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 
 type SocialLinks = {
   instagram: string
@@ -32,6 +33,8 @@ type SocialLinks = {
 }
 
 export default function Footer() {
+  const { theme, systemTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [links, setLinks] = useState<SocialLinks>({
     instagram: '',
     twitter: '',
@@ -46,9 +49,16 @@ export default function Footer() {
   const [submitting, setSubmitting] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
 
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  // Back to top button visibility
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light'
+  
+  const logoSrc = currentTheme === 'dark'
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 500)
@@ -61,7 +71,6 @@ export default function Footer() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Fetch social links
   useEffect(() => {
     fetch('/api/admin/social-links')
       .then((r) => (r.ok ? r.json() : null))
@@ -122,7 +131,7 @@ export default function Footer() {
       })
 
       if (res.ok) {
-        setSubStatus({ type: 'success', msg: '🎉 Subscribed! Check your inbox.' })
+        setSubStatus({ type: 'success', msg: 'Subscribed! Check your inbox.' })
         setEmailSub('')
       } else {
         const err = await res.json()
@@ -138,9 +147,9 @@ export default function Footer() {
   const quickLinks = [
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Products' },
-    { href: '/reviews', label: 'Customer Reviews' },
-    { href: '/account', label: 'My Account' },
-    { href: '/contact', label: 'Contact Us' },
+    { href: '/reviews', label: 'Reviews' },
+    { href: '/account', label: 'Account' },
+    { href: '/contact', label: 'Contact' },
     { href: '/faq', label: 'FAQ' },
   ]
 
@@ -153,27 +162,34 @@ export default function Footer() {
   ]
 
   const paymentIcons = [
-    { icon: CreditCard, name: 'Credit Card' },
+    { icon: CreditCard, name: 'Card' },
     { icon: Smartphone, name: 'Mobile Money' },
     { icon: Apple, name: 'Apple Pay' },
   ]
 
+  const trustFeatures = [
+    { icon: Heart, text: 'Authentic Products' },
+    { icon: Truck, text: 'Fast Delivery' },
+    { icon: Shield, text: 'Secure Payments' },
+  ]
+
   return (
     <>
-      <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
-        {/* Newsletter Banner */}
-        <div className="border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <footer className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 text-white mt-20">
+        {/* Newsletter Section */}
+        <div className="border-b border-white/10 dark:border-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="text-center md:text-left">
                 <div className="inline-flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full mb-3">
                   <Sparkles size={14} className="text-orange-400" />
-                  <span className="text-xs font-medium text-orange-400">Stay Updated</span>
+                  <span className="text-xs font-medium text-orange-400">Get 10% off</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">Get 10% off your first order</h3>
-                <p className="text-gray-400 text-sm mt-1">Subscribe to get exclusive offers and anime news</p>
+                <h3 className="text-xl font-bold text-white">Subscribe for exclusive offers</h3>
+                <p className="text-gray-400 text-sm mt-1">Anime news, drops & 10% off your first order</p>
               </div>
-              <form onSubmit={handleSubscribe} className="w-full md:w-auto min-w-[300px]">
+              
+              <form onSubmit={handleSubscribe} className="w-full md:w-80">
                 <div className="flex">
                   <input
                     type="email"
@@ -181,14 +197,14 @@ export default function Footer() {
                     onChange={(e) => setEmailSub(e.target.value)}
                     onBlur={() => checkSubscriptionStatus(emailSub)}
                     placeholder="Your email address"
-                    className="flex-1 px-4 py-3 rounded-l-xl bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-gray-400"
+                    className="flex-1 px-4 py-3 rounded-l-xl bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
                     required
                     disabled={submitting}
                   />
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 rounded-r-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50"
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 rounded-r-xl hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   </button>
@@ -206,25 +222,24 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        {/* Main Footer */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8">
             
-            {/* Brand Column */}
-            <div className="md:col-span-4">
-              <div className="mb-4">
-                <Image
-                  src={logoSrc}
-                  alt="SpectrumCosmo"
-                  width={140}
-                  height={48}
-                  className="object-contain brightness-0 invert"
-                  priority
-                />
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-4">
-                Wear your excitement with pride. Custom apparel and anime merchandise crafted for those who live boldly.
+            {/* Brand - 4 columns */}
+            <div className="lg:col-span-4 space-y-4">
+              <Image
+                src={logoSrc}
+                alt="SpectrumCosmo"
+                width={140}
+                height={48}
+                className="object-contain"
+                priority
+              />
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Wear your excitement with pride. Premium custom apparel and anime merchandise for those who live boldly.
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-2">
                 {socialLinks.map((social) => {
                   const url = links[social.key as keyof SocialLinks]
                   if (!url) return null
@@ -235,7 +250,8 @@ export default function Footer() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-9 h-9 bg-white/10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${social.color}`}
+                      className={`w-9 h-9 bg-white/10 dark:bg-gray-800 rounded-full flex items-center justify-center transition-all hover:scale-110 ${social.color}`}
+                      aria-label={social.key}
                     >
                       <Icon size={16} />
                     </a>
@@ -243,24 +259,21 @@ export default function Footer() {
                 })}
                 <a
                   href={`mailto:${links.email}`}
-                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-orange-500"
+                  className="w-9 h-9 bg-white/10 dark:bg-gray-800 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:bg-orange-500"
+                  aria-label="Email"
                 >
                   <Mail size={16} />
                 </a>
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div className="md:col-span-2">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Quick Links</h3>
+            {/* Quick Links - 2 columns */}
+            <div className="lg:col-span-2">
+              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Shop</h3>
               <ul className="space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-400 hover:text-orange-400 transition-colors duration-200 flex items-center gap-1 group"
-                    >
-                      <span className="w-0 group-hover:w-2 h-0.5 bg-orange-500 transition-all duration-200"></span>
+                    <Link href={link.href} className="text-sm text-gray-400 hover:text-orange-400 transition">
                       {link.label}
                     </Link>
                   </li>
@@ -268,73 +281,75 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Support */}
-            <div className="md:col-span-3">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">Support</h3>
-              <ul className="space-y-3">
+            {/* Support - 3 columns */}
+            <div className="lg:col-span-3">
+              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Support</h3>
+              <ul className="space-y-2">
                 <li>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Heart size={14} className="text-orange-500" />
-                    <span>100% Authentic Products</span>
-                  </div>
+                  <Link href="/shipping" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    Shipping Info
+                  </Link>
                 </li>
                 <li>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Truck size={14} className="text-orange-500" />
-                    <span>Free Shipping Over 50,000 MWK</span>
-                  </div>
+                  <Link href="/returns" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    Returns & Exchanges
+                  </Link>
                 </li>
                 <li>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Shield size={14} className="text-orange-500" />
-                    <span>Secure Payments</span>
-                  </div>
+                  <Link href="/size-guide" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    Size Guide
+                  </Link>
                 </li>
-                <li className="pt-2">
-                  <a
-                    href={`mailto:${links.email}`}
-                    className="inline-flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300 transition"
-                  >
-                    <Mail size={14} />
-                    {links.email}
-                  </a>
+                <li>
+                  <Link href="/terms" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    Privacy Policy
+                  </Link>
                 </li>
               </ul>
             </div>
 
-            {/* Payment Methods */}
-            <div className="md:col-span-3">
-              <h3 className="font-semibold text-sm tracking-wider uppercase text-gray-400 mb-5">We Accept</h3>
-              <div className="flex flex-wrap gap-3">
+            {/* Trust & Payment - 3 columns */}
+            <div className="lg:col-span-3">
+              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Why Shop With Us</h3>
+              <ul className="space-y-2 mb-4">
+                {trustFeatures.map((feature, idx) => {
+                  const Icon = feature.icon
+                  return (
+                    <li key={idx} className="flex items-center gap-2 text-sm text-gray-400">
+                      <Icon size={14} className="text-orange-500" />
+                      {feature.text}
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="flex flex-wrap gap-2 pt-2">
                 {paymentIcons.map((payment, idx) => {
                   const Icon = payment.icon
                   return (
-                    <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg">
-                      <Icon size={18} className="text-gray-300" />
+                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 dark:bg-gray-800 rounded-lg">
+                      <Icon size={14} className="text-gray-300 dark:text-gray-400" />
                       <span className="text-xs text-gray-400">{payment.name}</span>
                     </div>
                   )
                 })}
               </div>
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <Sparkles size={14} className="text-orange-500" />
-                  <span>Anime Merchandise Since 2024</span>
-                </div>
-              </div>
             </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-white/10 dark:border-gray-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-gray-500">
               © {new Date().getFullYear()} SpectrumCosmo. All rights reserved.
             </p>
-            <div className="flex gap-6 text-xs text-gray-500">
-              <Link href="/terms" className="hover:text-orange-400 transition">Terms</Link>
-              <Link href="/privacy" className="hover:text-orange-400 transition">Privacy</Link>
-              <Link href="/shipping" className="hover:text-orange-400 transition">Shipping</Link>
-              <Link href="/returns" className="hover:text-orange-400 transition">Returns</Link>
+            <div className="flex gap-5 text-xs">
+              <Link href="/terms" className="text-gray-500 hover:text-orange-400 transition">Terms</Link>
+              <Link href="/privacy" className="text-gray-500 hover:text-orange-400 transition">Privacy</Link>
+              <Link href="/shipping" className="text-gray-500 hover:text-orange-400 transition">Shipping</Link>
             </div>
             <p className="text-xs text-gray-500 italic">
               "Wear your excitement with pride"
@@ -347,10 +362,10 @@ export default function Footer() {
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all duration-300 hover:scale-110 group"
+          className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all hover:scale-110"
           aria-label="Back to top"
         >
-          <ArrowUp size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+          <ArrowUp size={20} />
         </button>
       )}
     </>
