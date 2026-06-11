@@ -43,15 +43,15 @@ export async function POST(
     sent_by: 'spectrumcosmo team',
   });
   
-  // Insert recipients in batches
+  // Insert recipients - FIXED: use notification_id
   const batchSize = 100;
   for (let i = 0; i < unreadCustomerIds.length; i += batchSize) {
     const batch = unreadCustomerIds.slice(i, i + batchSize);
     for (const customerId of batch) {
       await queryMany`
-        INSERT INTO notification_recipients (admin_notification_id, customer_id)
-        VALUES (${reminderId}, ${customerId})
-        ON CONFLICT (admin_notification_id, customer_id, created_at) DO NOTHING
+        INSERT INTO notification_recipients (notification_id, customer_id)
+        VALUES (${reminderId}::uuid, ${customerId}::uuid)
+        ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
       `;
     }
   }
@@ -66,10 +66,10 @@ export async function POST(
     customers.map(async (customer: any) => {
       const settings = await queryMany`
         SELECT email_enabled FROM customer_notification_settings
-        WHERE customer_id = ${customer.id}
+        WHERE customer_id = ${customer.id}::uuid
       `;
       
-      const emailEnabled = settings.length === 0 ? true : settings[0].email_enabled;
+      const emailEnabled = settings.length === 0 ? true : settings[0]?.email_enabled;
       
       if (emailEnabled && customer.email) {
         await sendAdminNotificationEmail({
@@ -85,7 +85,7 @@ export async function POST(
   await queryMany`
     UPDATE admin_notifications 
     SET sent_at = NOW()
-    WHERE id = ${reminderId}
+    WHERE id = ${reminderId}::uuid
   `;
   
   return NextResponse.json({ 
