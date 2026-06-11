@@ -47,7 +47,7 @@ export default function ConfirmDeliveryPage() {
     try {
       const res = await fetch(`/api/account/orders/${orderId}/confirm`, {
         method: 'POST',
-        headers: { 'Content-Type':application/json' },
+        headers: { 'Content-Type': 'application/json' }, // Fixed: added missing space after colon
         body: JSON.stringify({ response: selectedOption }),
       });
       
