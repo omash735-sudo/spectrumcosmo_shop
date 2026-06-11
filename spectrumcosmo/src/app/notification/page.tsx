@@ -46,7 +46,6 @@ export default function NotificationSettingsPage() {
       emailNotifications: localSettings.emailNotifications,
       smsAlerts: localSettings.smsAlerts
     })
-    // Simulate saving to backend for additional settings
     await fetch('/api/user/notification-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,8 +62,8 @@ export default function NotificationSettingsPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin" size={32} />
+        <main className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+          <Loader2 className="animate-spin text-[#F97316]" size={32} />
         </main>
         <Footer />
       </>
@@ -74,92 +73,109 @@ export default function NotificationSettingsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 md:py-10">
         <div className="max-w-2xl mx-auto px-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border dark:border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Bell className="text-[#F97316]" size={28} />
-              <h1 className="text-2xl font-bold dark:text-white">Notification Preferences</h1>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border dark:border-gray-700 p-4 sm:p-6">
+            <div className="flex items-center gap-2 sm:gap-3 mb-5 sm:mb-6">
+              <Bell className="text-[#F97316]" size={24} />
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notification Preferences</h1>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b dark:border-gray-700">
+            <div className="space-y-3 sm:space-y-4">
+              {/* Email Notifications */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Mail className="text-gray-500" size={20} />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Mail className="text-gray-500 dark:text-gray-400" size={18} />
+                  </div>
                   <div>
-                    <p className="font-medium dark:text-white">Email Notifications</p>
-                    <p className="text-sm text-gray-500">Receive updates via email</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">Email Notifications</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Receive updates via email</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
                   <input
                     type="checkbox"
                     checked={localSettings.emailNotifications}
                     onChange={(e) => setLocalSettings({...localSettings, emailNotifications: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b dark:border-gray-700">
+              {/* SMS Alerts */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Smartphone className="text-gray-500" size={20} />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Smartphone className="text-gray-500 dark:text-gray-400" size={18} />
+                  </div>
                   <div>
-                    <p className="font-medium dark:text-white">SMS Alerts</p>
-                    <p className="text-sm text-gray-500">Text message updates for orders</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">SMS Alerts</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Text message updates for orders</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
                   <input
                     type="checkbox"
                     checked={localSettings.smsAlerts}
                     onChange={(e) => setLocalSettings({...localSettings, smsAlerts: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b dark:border-gray-700">
+              {/* Order Updates */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Bell className="text-gray-500" size={20} />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Bell className="text-gray-500 dark:text-gray-400" size={18} />
+                  </div>
                   <div>
-                    <p className="font-medium dark:text-white">Order Updates</p>
-                    <p className="text-sm text-gray-500">Shipping, delivery, and returns</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">Order Updates</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Shipping, delivery, and returns</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
                   <input
                     type="checkbox"
                     checked={localSettings.orderUpdates}
                     onChange={(e) => setLocalSettings({...localSettings, orderUpdates: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b dark:border-gray-700">
+              {/* Promotions & Offers */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <Mail className="text-gray-500" size={20} />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Mail className="text-gray-500 dark:text-gray-400" size={18} />
+                  </div>
                   <div>
-                    <p className="font-medium dark:text-white">Promotions & Offers</p>
-                    <p className="text-sm text-gray-500">Discounts, sales, and exclusive deals</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">Promotions & Offers</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Discounts, sales, and exclusive deals</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
                   <input
                     type="checkbox"
                     checked={localSettings.promotions}
                     onChange={(e) => setLocalSettings({...localSettings, promotions: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#F97316]"></div>
                 </label>
               </div>
 
-              <button onClick={saveSettings} disabled={saving} className="btn-primary w-full mt-6 flex items-center justify-center gap-2">
+              {/* Save Button */}
+              <button 
+                onClick={saveSettings} 
+                disabled={saving} 
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 sm:py-3.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 sm:mt-6 shadow-md hover:shadow-lg"
+              >
                 {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                 Save Preferences
               </button>
