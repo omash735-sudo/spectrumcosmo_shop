@@ -22,7 +22,6 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-// Define types for stat and team members
 interface StatItem {
   value: string;
   label: string;
@@ -79,30 +78,30 @@ export default async function AboutPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-white overflow-hidden">
+      <main className="bg-white dark:bg-gray-900 overflow-hidden">
         
-        {/* Hero Section - Premium */}
-        <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 overflow-hidden">
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-orange-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800/30 dark:to-gray-900 overflow-hidden">
           <div className="absolute inset-0">
-            <div className="absolute top-20 left-10 w-64 h-64 bg-orange-200/30 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-10 w-80 h-80 bg-orange-300/20 rounded-full blur-3xl"></div>
+            <div className="absolute top-20 left-10 w-64 h-64 bg-orange-200/30 dark:bg-orange-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-10 w-80 h-80 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl"></div>
           </div>
           
           <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1">
-                <div className="inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full mb-6">
-                  <Sparkles size={14} className="text-orange-600" />
-                  <span className="text-xs font-medium text-orange-600">Our Story</span>
+                <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-6">
+                  <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
+                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Our Story</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                   Wear Your{' '}
                   <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
                     Excitement
                   </span>{' '}
                   With Pride
                 </h1>
-                <div className="prose prose-lg text-gray-600 leading-relaxed whitespace-pre-line">
+                <div className="prose prose-lg text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
                   {history}
                 </div>
               </div>
@@ -114,23 +113,23 @@ export default async function AboutPage() {
         </section>
 
         {/* Core Values Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
-              <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">What Drives Us</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Our Core Values</h2>
-              <p className="text-gray-500 mt-3 max-w-2xl mx-auto">The principles that guide everything we do</p>
+              <span className="text-orange-500 dark:text-orange-400 text-sm font-semibold uppercase tracking-wider">What Drives Us</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">Our Core Values</h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">The principles that guide everything we do</p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {coreValues.map((value, idx) => {
                 const Icon = value.icon;
                 return (
-                  <div key={idx} className="group bg-white rounded-2xl p-6 text-center border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                    <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                      <Icon size={28} className="text-orange-600" />
+                  <div key={idx} className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Icon size={28} className="text-orange-600 dark:text-orange-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{value.title}</h3>
-                    <p className="text-gray-500 text-sm">{value.description}</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{value.title}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{value.description}</p>
                   </div>
                 );
               })}
@@ -138,46 +137,46 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Vision & Mission - Premium Cards */}
-        <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
+        {/* Vision & Mission Section */}
+        <section className="py-20 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Eye size={24} className="text-orange-600" />
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Eye size={24} className="text-orange-600 dark:text-orange-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Our Vision</h2>
-                <p className="text-gray-600 leading-relaxed">{vision}</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Our Vision</h2>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{vision}</p>
               </div>
-              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Target size={24} className="text-orange-600" />
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Target size={24} className="text-orange-600 dark:text-orange-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Our Mission</h2>
-                <p className="text-gray-600 leading-relaxed">{mission}</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Our Mission</h2>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{mission}</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Stats Section - Animated Style */}
-        <section className="py-20 bg-white">
+        {/* Stats Section */}
+        <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
-              <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Our Impact</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">By the Numbers</h2>
-              <p className="text-gray-500 mt-3 max-w-2xl mx-auto">The milestones we're proud to have achieved</p>
+              <span className="text-orange-500 dark:text-orange-400 text-sm font-semibold uppercase tracking-wider">Our Impact</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">By the Numbers</h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">The milestones we're proud to have achieved</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {stats.map((stat: StatItem, idx: number) => {
                 const Icon = stat.icon || (idx === 0 ? Calendar : idx === 1 ? ShoppingBag : idx === 2 ? Users : Globe);
                 return (
-                  <div key={idx} className="text-center bg-gradient-to-br from-orange-50 to-white p-6 rounded-2xl border border-orange-100 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                      <Icon size={22} className="text-orange-600" />
+                  <div key={idx} className="text-center bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 p-6 rounded-2xl border border-orange-100 dark:border-gray-700 group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <Icon size={22} className="text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1">{stat.value}</div>
-                    <div className="text-gray-600 text-sm">{stat.label}</div>
+                    <div className="text-3xl md:text-4xl font-bold text-orange-600 dark:text-orange-500 mb-1">{stat.value}</div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">{stat.label}</div>
                   </div>
                 );
               })}
@@ -185,18 +184,18 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section - Premium */}
+        {/* Team Section */}
         {team.length > 0 && (
-          <section className="py-20 bg-gray-50">
+          <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
             <div className="max-w-7xl mx-auto px-4">
               <div className="text-center mb-12">
-                <span className="text-orange-500 text-sm font-semibold uppercase tracking-wider">Meet the Team</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Behind the Magic</h2>
-                <p className="text-gray-500 mt-3 max-w-2xl mx-auto">The passionate people making it all happen</p>
+                <span className="text-orange-500 dark:text-orange-400 text-sm font-semibold uppercase tracking-wider">Meet the Team</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">Behind the Magic</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">The passionate people making it all happen</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {team.map((member: TeamMember, idx: number) => (
-                  <div key={idx} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                  <div key={idx} className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                     <div className="relative h-64 overflow-hidden">
                       {member.image ? (
                         <img 
@@ -205,15 +204,15 @@ export default async function AboutPage() {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                          <Users size={48} className="text-orange-300" />
+                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center">
+                          <Users size={48} className="text-orange-300 dark:text-orange-600" />
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <div className="p-6 text-center">
-                      <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
-                      <p className="text-orange-600 text-sm font-medium mt-1">{member.role}</p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
+                      <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">{member.role}</p>
                     </div>
                   </div>
                 ))}
@@ -223,21 +222,21 @@ export default async function AboutPage() {
         )}
 
         {/* Future Plans Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-4xl mx-auto text-center px-4">
-            <div className="inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full mb-6">
-              <Sparkles size={14} className="text-orange-600" />
-              <span className="text-xs font-medium text-orange-600">What's Next</span>
+            <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-6">
+              <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">What's Next</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Roadmap</h2>
-            <div className="bg-gradient-to-br from-orange-50 to-white rounded-2xl p-8 border border-orange-100">
-              <p className="text-gray-600 leading-relaxed whitespace-pre-line text-lg">{futurePlans}</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">Our Roadmap</h2>
+            <div className="bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 rounded-2xl p-8 border border-orange-100 dark:border-gray-700">
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line text-lg">{futurePlans}</p>
             </div>
           </div>
         </section>
 
-        {/* CTA Section - Premium */}
-        <section className="relative bg-gradient-to-br from-gray-900 to-gray-800 py-20 overflow-hidden">
+        {/* CTA Section */}
+        <section className="relative bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 py-20 overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl"></div>
