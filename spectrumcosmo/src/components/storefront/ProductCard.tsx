@@ -27,7 +27,6 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  // Early return if product is invalid
   if (!product || !product.id) {
     return null;
   }
@@ -48,7 +47,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const isComingSoon = product.status === 'coming_soon';
   const hasDiscount = product.compare_price && product.compare_price > product.price;
 
-  // Safe discount percent calculation
   let discountPercent = 0;
   if (hasDiscount && product.compare_price) {
     discountPercent = Math.round(((product.compare_price - product.price) / product.compare_price) * 100);
@@ -58,7 +56,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const productImage = product.image_url || 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600';
   const categoryName = product.category_name || product.category || 'Uncategorized';
 
-  // Fetch rating
   useEffect(() => {
     const fetchRating = async () => {
       try {
@@ -89,7 +86,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    // Check login first
     const userRes = await fetch('/api/auth/me');
     if (!userRes.ok) {
       toast.error('Please login to add items to wishlist');
@@ -143,15 +139,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div 
-      className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+      className="group relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
       onMouseEnter={() => setShowQuickView(true)}
       onMouseLeave={() => setShowQuickView(false)}
     >
       {/* Image Container */}
-      <div className="relative h-56 sm:h-64 md:h-72 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          {/* Loading skeleton */}
-          <div className={`absolute inset-0 bg-gray-100 transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
+          <div className={`absolute inset-0 bg-gray-100 dark:bg-gray-700 transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
           <Image
@@ -160,32 +155,32 @@ export default function ProductCard({ product }: ProductCardProps) {
             fill
             className={`object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoadingComplete={() => setImageLoaded(true)}
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
           />
         </Link>
 
         {/* Sale Badge */}
         {hasDiscount && !isOutOfStock && !isComingSoon && (
-          <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10 shadow-md">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 shadow-md">
             -{discountPercent}%
           </div>
         )}
 
-        {/* Status Badge (Out of Stock / Coming Soon) – FIXED: check StatusIcon exists */}
+        {/* Status Badge */}
         {statusBadge && StatusIcon && (
-          <div className="absolute top-3 left-3 z-10">
-            <span className={`${statusBadge.color} text-xs font-semibold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1`}>
-              <StatusIcon size={12} />
-              {statusBadge.text}
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
+            <span className={`${statusBadge.color} text-xs font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-1`}>
+              <StatusIcon size={10} className="sm:w-3 sm:h-3" />
+              <span className="text-[10px] sm:text-xs">{statusBadge.text}</span>
             </span>
           </div>
         )}
 
-        {/* Quick View Overlay */}
+        {/* Quick View Overlay - Hide on mobile */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            <button className="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium hover:bg-orange-500 hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-              <Eye size={16} />
+          <div className="hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+            <button className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-orange-500 hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+              <Eye size={14} className="sm:w-4 sm:h-4" />
               Quick View
             </button>
           </div>
@@ -195,53 +190,53 @@ export default function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
-          className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-white dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
-            size={18}
-            className={isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+            size={14}
+            className={`sm:w-[18px] sm:h-[18px] ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-400'}`}
           />
         </button>
 
         {/* Category Tag */}
-        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full z-10">
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
           {categoryName}
         </div>
       </div>
 
       {/* Product Info */}
-      <div className="p-4">
+      <div className="p-2.5 sm:p-4">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          <h3 className="font-semibold text-gray-900 text-base line-clamp-1 hover:text-orange-500 transition">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1 hover:text-orange-500 transition">
             {productName}
           </h3>
         </Link>
         
         {/* Rating */}
         {reviewCount > 0 ? (
-          <div className="flex items-center gap-2 mt-1">
-            <StarRating rating={avgRating} size={14} />
-            <span className="text-xs text-gray-400">({reviewCount})</span>
+          <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
+            <StarRating rating={avgRating} size={12} />
+            <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">({reviewCount})</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 mt-1">
-            <Star size={12} className="text-gray-300" />
-            <Star size={12} className="text-gray-300" />
-            <Star size={12} className="text-gray-300" />
-            <Star size={12} className="text-gray-300" />
-            <Star size={12} className="text-gray-300" />
-            <span className="text-xs text-gray-400 ml-1">No reviews</span>
+          <div className="flex items-center gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
+            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
+            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
+            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
+            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
+            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
+            <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 ml-0.5 sm:ml-1">No reviews</span>
           </div>
         )}
         
         {/* Price */}
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-xl font-bold text-orange-600">
+        <div className="mt-1 sm:mt-2 flex items-baseline gap-1 sm:gap-2 flex-wrap">
+          <span className="text-base sm:text-xl font-bold text-orange-600 dark:text-orange-500">
             <CurrencyPrice amountUsd={priceMwk} />
           </span>
           {hasDiscount && product.compare_price && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
               <CurrencyPrice amountUsd={Number(product.compare_price)} />
             </span>
           )}
@@ -249,37 +244,39 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Stock Warning */}
         {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
-          <p className="text-xs text-orange-500 mt-1">Only {product.stock_quantity} left in stock</p>
+          <p className="text-[10px] sm:text-xs text-orange-500 dark:text-orange-400 mt-0.5 sm:mt-1">
+            Only {product.stock_quantity} left
+          </p>
         )}
 
         {/* Action Buttons */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-2 sm:mt-4 flex gap-1.5 sm:gap-2">
           {!isOutOfStock && !isComingSoon ? (
             <>
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2"
               >
-                <ShoppingCart size={16} />
-                Add to Cart
+                <ShoppingCart size={12} className="sm:w-4 sm:h-4" />
+                <span>Add</span>
               </button>
               <Link
                 href={`/products/${product.id}`}
                 onClick={handleProductClick}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:border-orange-300 hover:text-orange-500 transition flex items-center justify-center"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 transition flex items-center justify-center"
               >
-                <Eye size={16} />
+                <Eye size={12} className="sm:w-4 sm:h-4" />
               </Link>
             </>
           ) : isComingSoon ? (
-            <button className="w-full bg-gray-100 text-gray-500 py-2.5 rounded-xl text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2">
-              <Clock size={16} />
-              Coming Soon
+            <button className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+              <Clock size={12} className="sm:w-4 sm:h-4" />
+              <span>Coming Soon</span>
             </button>
           ) : (
-            <button className="w-full bg-gray-100 text-gray-500 py-2.5 rounded-xl text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2">
-              <Ban size={16} />
-              Out of Stock
+            <button className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+              <Ban size={12} className="sm:w-4 sm:h-4" />
+              <span>Out of Stock</span>
             </button>
           )}
         </div>
