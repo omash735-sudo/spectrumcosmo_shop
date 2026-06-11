@@ -25,12 +25,12 @@ import {
 } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  pending: { label: 'Pending', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-  processing: { label: 'Processing', icon: PackageSearch, color: 'text-blue-700', bg: 'bg-blue-50' },
-  shipped: { label: 'Shipped', icon: Truck, color: 'text-purple-700', bg: 'bg-purple-50' },
-  delivered: { label: 'Delivered', icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
-  cancelled: { label: 'Cancelled', icon: Clock, color: 'text-red-700', bg: 'bg-red-50' },
-  declined: { label: 'Declined', icon: Clock, color: 'text-red-700', bg: 'bg-red-50' },
+  pending: { label: 'Pending', icon: Clock, color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30' },
+  processing: { label: 'Processing', icon: PackageSearch, color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+  shipped: { label: 'Shipped', icon: Truck, color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/30' },
+  delivered: { label: 'Delivered', icon: CheckCircle, color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/30' },
+  cancelled: { label: 'Cancelled', icon: Clock, color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30' },
+  declined: { label: 'Declined', icon: Clock, color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30' },
 }
 
 function formatOrderNumber(order: any): string {
@@ -97,103 +97,101 @@ export default function AccountOverview() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading your account...</p>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your account...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner - Premium */}
-      <div className="relative bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl overflow-hidden shadow-lg">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-        <div className="relative p-6 md:p-8">
+    <div className="space-y-5 sm:space-y-6 md:space-y-8">
+      {/* Welcome Banner - Solid Colors */}
+      <div className="bg-orange-500 dark:bg-orange-600 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
+        <div className="p-5 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full mb-3">
-                <Sparkles size={14} className="text-white" />
-                <span className="text-xs font-medium text-white">Welcome Back</span>
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
+                <Sparkles size={12} className="text-white sm:w-3.5 sm:h-3.5" />
+                <span className="text-[10px] sm:text-xs font-medium text-white">Welcome Back</span>
               </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                 Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
               </h1>
-              <p className="text-orange-100 text-sm mt-1">Track your orders and manage your account</p>
+              <p className="text-orange-100 text-xs sm:text-sm mt-1">Track your orders and manage your account</p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center">
-                <p className="text-2xl font-bold text-white">{totalSpent.toLocaleString()} MWK</p>
-                <p className="text-xs text-orange-100">Lifetime Spent</p>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-center">
+                <p className="text-lg sm:text-2xl font-bold text-white">{totalSpent.toLocaleString()} MWK</p>
+                <p className="text-[10px] sm:text-xs text-orange-100">Lifetime Spent</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards - Premium Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href="/account/orders" className="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
-            <ShoppingBag size={22} className="text-orange-600" />
+      {/* Stats Cards - Solid Colors */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Link href="/account/orders" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <ShoppingBag size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-          <p className="text-sm text-gray-500">Total Orders</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Total Orders</p>
         </Link>
         
-        <Link href="/account/wishlist" className="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
-            <Heart size={22} className="text-orange-600" />
+        <Link href="/account/wishlist" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <Heart size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{wishlistCount}</p>
-          <p className="text-sm text-gray-500">Wishlist Items</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{wishlistCount}</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Wishlist Items</p>
         </Link>
         
-        <Link href="/account/addresses" className="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
-            <MapPin size={22} className="text-orange-600" />
+        <Link href="/account/addresses" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <MapPin size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{addressesCount}</p>
-          <p className="text-sm text-gray-500">Saved Addresses</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{addressesCount}</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Saved Addresses</p>
         </Link>
         
-        <Link href="/account/orders" className="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
-            <PackageSearch size={22} className="text-orange-600" />
+        <Link href="/account/orders" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <PackageSearch size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{activeOrdersCount}</p>
-          <p className="text-sm text-gray-500">Active Orders</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{activeOrdersCount}</p>
+          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Active Orders</p>
         </Link>
       </div>
 
-      {/* Recent Orders Section - Premium */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+      {/* Recent Orders Section - Solid Colors */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-orange-500" />
-              <h3 className="font-semibold text-gray-800">Recent Orders</h3>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <TrendingUp size={16} className="text-orange-500 sm:w-[18px] sm:h-[18px]" />
+              <h3 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Recent Orders</h3>
             </div>
-            <Link href="/account/orders" className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 group">
+            <Link href="/account/orders" className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 font-medium flex items-center gap-1 group">
               View all
-              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
+              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition" />
             </Link>
           </div>
         </div>
 
         {recentOrders.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag size={32} className="text-gray-400" />
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <ShoppingBag size={24} className="text-gray-400 dark:text-gray-500 sm:w-8 sm:h-8" />
             </div>
-            <p className="text-gray-500">No orders yet.</p>
-            <Link href="/products" className="inline-block mt-3 text-orange-500 hover:text-orange-600 font-medium text-sm">
-              Start Shopping <ArrowRight size={14} className="inline ml-1" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm">No orders yet.</p>
+            <Link href="/products" className="inline-block mt-2 sm:mt-3 text-orange-500 hover:text-orange-600 font-medium text-xs sm:text-sm">
+              Start Shopping <ArrowRight size={12} className="inline ml-1" />
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {recentOrders.map((order) => {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
@@ -204,36 +202,36 @@ export default function AccountOverview() {
                 <Link 
                   key={order.id} 
                   href={`/account/orders/${order.id}`}
-                  className="block p-5 hover:bg-gray-50 transition group"
+                  className="block p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-mono text-sm font-medium text-gray-900">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <p className="font-mono text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                           {orderDisplayNumber}
                         </p>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
-                          <StatusIcon size={10} />
+                        <span className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                          <StatusIcon size={9} className="sm:w-2.5 sm:h-2.5" />
                           {statusConfig.label}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-2">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} />
+                      <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <Calendar size={10} className="sm:w-3 sm:h-3" />
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign size={12} />
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <DollarSign size={10} className="sm:w-3 sm:h-3" />
                           MWK {totalAmount.toLocaleString()}
                         </span>
                       </div>
                       {order.items && order.items.length > 0 && (
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+                        <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
                           {order.items.map((i: any) => i.product_name).join(', ')}
                         </p>
                       )}
                     </div>
-                    <ChevronRight size={18} className="text-gray-400 group-hover:text-orange-500 transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight size={14} className="text-gray-400 group-hover:text-orange-500 transition-transform group-hover:translate-x-0.5 sm:w-4 sm:h-4" />
                   </div>
                 </Link>
               )
@@ -242,38 +240,38 @@ export default function AccountOverview() {
         )}
       </div>
 
-      {/* Quick Links - Premium Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/account/profile" className="group bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all duration-200 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-100 transition">
-            <User size={22} className="text-gray-500 group-hover:text-orange-600 transition" />
+      {/* Quick Links - Solid Colors */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <Link href="/account/profile" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 transition">
+            <User size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition sm:w-5 sm:h-5" />
           </div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition">Profile</h3>
-          <p className="text-xs text-gray-400 mt-1">Manage your info</p>
+          <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition text-sm sm:text-base">Profile</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Manage your info</p>
         </Link>
-        <Link href="/account/settings" className="group bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all duration-200 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-100 transition">
-            <Settings size={22} className="text-gray-500 group-hover:text-orange-600 transition" />
+        <Link href="/account/settings" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 transition">
+            <Settings size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition sm:w-5 sm:h-5" />
           </div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition">Settings</h3>
-          <p className="text-xs text-gray-400 mt-1">Preferences & security</p>
+          <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition text-sm sm:text-base">Settings</h3>
+          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Preferences & security</p>
         </Link>
       </div>
 
-      {/* Benefits Banner */}
-      <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-5 border border-gray-100">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <Gift size={18} className="text-orange-600" />
+      {/* Benefits Banner - Solid Colors */}
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
+              <Gift size={14} className="text-orange-600 dark:text-orange-400 sm:w-[18px] sm:h-[18px]" />
             </div>
             <div>
-              <p className="font-semibold text-gray-800">Earn rewards with every purchase</p>
-              <p className="text-xs text-gray-500">Join our loyalty program for exclusive benefits</p>
+              <p className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Earn rewards with every purchase</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Join our loyalty program for exclusive benefits</p>
             </div>
           </div>
-          <Link href="/rewards" className="text-orange-600 hover:text-orange-700 text-sm font-medium flex items-center gap-1">
-            Learn more <ArrowRight size={14} />
+          <Link href="/rewards" className="text-orange-600 dark:text-orange-400 hover:text-orange-700 text-xs sm:text-sm font-medium flex items-center gap-0.5 sm:gap-1">
+            Learn more <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5" />
           </Link>
         </div>
       </div>
