@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import {
   User, MapPin, DollarSign, Globe, Bell, Mail, Star, Shield, FileText, Trash2,
   Loader2, X, Star as StarIcon, FileCheck, Lock, KeyRound, Sparkles,
@@ -16,7 +17,6 @@ import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import CurrencySelector from '@/components/storefront/CurrencySelector';
 import toast from 'react-hot-toast';
 
-// Types
 type User = {
   id: string;
   name: string;
@@ -24,8 +24,6 @@ type User = {
   phone?: string;
   profileImage?: string;
 };
-
-type Theme = 'light' | 'dark' | 'system';
 
 type SettingsItem = {
   icon: any;
@@ -43,21 +41,18 @@ type SettingsSection = {
   items: SettingsItem[];
 };
 
-// Constants
 const DELETE_CONFIRM_TEXT = 'DELETE';
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function SettingsPage() {
   const router = useRouter();
   const { currency } = useCurrency();
+  const { theme, setTheme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
-
-  // Theme state
-  const [theme, setTheme] = useState<Theme>('system');
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -77,33 +72,10 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
-  // Theme functions
-  const applyTheme = useCallback((newTheme: Theme) => {
-    const root = document.documentElement;
-    
-    if (newTheme === 'system') {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (systemDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    } else if (newTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
-  const handleThemeChange = (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
-    setShowThemeModal(false);
-    toast.success(`${newTheme === 'system' ? 'System preference' : newTheme + ' mode'} activated`);
-  };
-
-  // Load user
   const loadUser = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/me');
@@ -127,37 +99,9 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Load theme on mount
-  useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-      setTheme(savedTheme);
-      applyTheme(savedTheme);
-    } else {
-      applyTheme('system');
-    }
-  }, [applyTheme]);
-
   useEffect(() => {
     loadUser();
   }, [loadUser]);
-
-  // Listen for system theme changes
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const currentTheme = localStorage.getItem('theme') as Theme;
-      if (currentTheme === 'system' || !currentTheme) {
-        applyTheme('system');
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [mounted, applyTheme]);
 
   const handleRatingSubmit = async () => {
     if (rating === 0) {
@@ -270,9 +214,16 @@ export default function SettingsPage() {
   };
 
   const getThemeIcon = () => {
+    if (!mounted) return Monitor;
     if (theme === 'dark') return Moon;
     if (theme === 'light') return Sun;
     return Monitor;
+  };
+
+  const getThemeDescription = () => {
+    if (!mounted) return 'Loading...';
+    if (theme === 'system') return 'Follows your device';
+    return theme + ' mode';
   };
 
   const settingsSections: SettingsSection[] = [
@@ -293,7 +244,7 @@ export default function SettingsPage() {
           icon: getThemeIcon(), 
           label: 'Theme', 
           action: 'theme', 
-          description: `Current: ${theme === 'system' ? 'Follows your device' : theme + ' mode'}` 
+          description: `Current: ${getThemeDescription()}` 
         },
         { icon: DollarSign, label: 'Currency', action: 'currency', description: `Current: ${currency}` },
         { icon: Globe, label: 'Language', value: 'English', description: 'Select your preferred language' },
@@ -321,7 +272,6 @@ export default function SettingsPage() {
     },
   ];
 
-  // Loading state
   if (loading) {
     return (
       <>
@@ -337,7 +287,6 @@ export default function SettingsPage() {
     );
   }
 
-  // Auth error state
   if (authError || !user) {
     return (
       <>
@@ -368,7 +317,6 @@ export default function SettingsPage() {
       <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3 sm:gap-4 mb-2">
               <Link href="/account" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
@@ -383,7 +331,6 @@ export default function SettingsPage() {
             <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm ml-10 sm:ml-14">Manage your account preferences and security</p>
           </div>
 
-          {/* User Info Card */}
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg">
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -403,7 +350,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Settings Sections */}
           <div className="space-y-6 sm:space-y-8">
             {settingsSections.map((section, sectionIdx) => (
               <div key={sectionIdx}>
@@ -449,7 +395,6 @@ export default function SettingsPage() {
             ))}
           </div>
 
-          {/* Hidden Currency Selector Trigger */}
           <div className="hidden">
             <CurrencySelector />
             <button id="currency-selector-trigger" onClick={() => {}} aria-hidden="true" />
@@ -457,8 +402,7 @@ export default function SettingsPage() {
         </div>
       </main>
 
-      {/* Theme Modal */}
-      {showThemeModal && (
+      {showThemeModal && mounted && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowThemeModal(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 sm:p-6 border-b dark:border-gray-800">
@@ -477,7 +421,10 @@ export default function SettingsPage() {
 
             <div className="p-4 sm:p-6 space-y-2 sm:space-y-3">
               <button
-                onClick={() => handleThemeChange('light')}
+                onClick={() => {
+                  setTheme('light');
+                  setShowThemeModal(false);
+                }}
                 className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 ${
                   theme === 'light'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -495,7 +442,10 @@ export default function SettingsPage() {
               </button>
 
               <button
-                onClick={() => handleThemeChange('dark')}
+                onClick={() => {
+                  setTheme('dark');
+                  setShowThemeModal(false);
+                }}
                 className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 ${
                   theme === 'dark'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -513,7 +463,10 @@ export default function SettingsPage() {
               </button>
 
               <button
-                onClick={() => handleThemeChange('system')}
+                onClick={() => {
+                  setTheme('system');
+                  setShowThemeModal(false);
+                }}
                 className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 ${
                   theme === 'system'
                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
@@ -540,7 +493,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Rating Modal */}
       {showRatingModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowRatingModal(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl mx-4" onClick={(e) => e.stopPropagation()}>
@@ -586,7 +538,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowDeleteModal(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl mx-4" onClick={(e) => e.stopPropagation()}>
@@ -626,7 +577,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPasswordModal(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl mx-4" onClick={(e) => e.stopPropagation()}>
