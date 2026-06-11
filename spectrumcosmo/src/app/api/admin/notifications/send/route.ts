@@ -6,38 +6,31 @@ import { sendAdminNotificationEmail } from '@/lib/notification-email';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('=== SEND NOTIFICATION START ===');
-    
+    console.log('=== SEND START ===');
     const authError = await requireAdmin(req);
-    if (authError) {
-      console.log('Auth error:', authError);
-      return authError;
-    }
-    
+    if (authError) return authError;
+
     const body = await req.json();
-    console.log('Request body:', JSON.stringify(body, null, 2));
-    
+    console.log('Body:', body);
+
     const { title, body: messageBody, audience_type, specific_customer_ids } = body;
-    
+
     if (!title || !messageBody) {
-      return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Title and message required' }, { status: 400 });
     }
-    
+
     let customerIds: string[] = [];
     if (audience_type === 'all') {
-      console.log('Fetching all customer IDs...');
       customerIds = await getAllCustomerIds();
-      console.log(`Found ${customerIds.length} customers`);
     } else {
       customerIds = specific_customer_ids || [];
-      console.log(`Specific customers: ${customerIds.length} IDs`);
     }
-    
+
     if (customerIds.length === 0) {
-      return NextResponse.json({ success: true, recipients: 0, message: 'No customers to send to' });
+      return NextResponse.json({ success: true, recipients: 0 });
     }
-    
-    console.log('Creating notification record...');
+
+    // Create notification
     const notificationId = await createNotification({
       title,
       body: messageBody,
@@ -46,73 +39,52 @@ export async function POST(req: NextRequest) {
       status: 'sent',
       sent_by: 'spectrumcosmo team',
     });
-    console.log(`Notification created: ${notificationId}`);
-    
-    console.log('Inserting recipients...');
-    const batchSize = 100;
-    for (let i = 0; i < customerIds.length; i += batchSize) {
-      const batch = customerIds.slice(i, i + batchSize);
-      for (const customerId of batch) {
-        try {
-          await queryMany`
-            INSERT INTO notification_recipients (notification_id, customer_id)
-            VALUES (${notificationId}::uuid, ${customerId}::uuid)
-            ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
-          `;
-        } catch (insertErr) {
-          console.error(`Failed to insert recipient ${customerId}:`, insertErr);
-          throw insertErr;
-        }
-      }
-      console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}`);
+    console.log('Notification created:', notificationId);
+
+    // Insert recipients
+    for (const customerId of customerIds) {
+      await queryMany`
+        INSERT INTO notification_recipients (notification_id, customer_id)
+        VALUES (${notificationId}::uuid, ${customerId}::uuid)
+        ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
+      `;
     }
-    
-    console.log('Fetching customer emails...');
+    console.log('Recipients inserted');
+
+    // Update sent_at
+    await queryMany`
+      UPDATE admin_notifications SET sent_at = NOW()
+      WHERE id = ${notificationId}::uuid
+    `;
+
+    // Send emails in background (don't await)
     const customers = await queryMany`
       SELECT id, name, email FROM users WHERE id = ANY(${customerIds})
     `;
-    console.log(`Found ${customers.length} customers with email`);
-    
-    // Send emails asynchronously (don't await)
-    console.log('Sending emails...');
-    Promise.all(
-      customers.map(async (customer: any) => {
-        try {
-          const settings = await queryMany`
-            SELECT email_enabled FROM customer_notification_settings
-            WHERE customer_id = ${customer.id}::uuid
-          `;
-          const emailEnabled = settings.length === 0 ? true : settings[0]?.email_enabled;
-          if (emailEnabled && customer.email) {
-            await sendAdminNotificationEmail({
-              to: customer.email,
-              name: customer.name || 'Customer',
-              title,
-              message: messageBody,
-            });
-            console.log(`Email sent to ${customer.email}`);
-          }
-        } catch (emailErr) {
-          console.error(`Email failed for ${customer.email}:`, emailErr);
+    Promise.all(customers.map(async (c: any) => {
+      try {
+        const settings = await queryMany`
+          SELECT email_enabled FROM customer_notification_settings
+          WHERE customer_id = ${c.id}::uuid
+        `;
+        const emailEnabled = settings.length === 0 ? true : settings[0]?.email_enabled;
+        if (emailEnabled && c.email) {
+          await sendAdminNotificationEmail({
+            to: c.email,
+            name: c.name || 'Customer',
+            title,
+            message: messageBody,
+          });
         }
-      })
-    ).catch(console.error);
-    
-    console.log('Updating sent_at...');
-    await queryMany`
-      UPDATE admin_notifications 
-      SET sent_at = NOW()
-      WHERE id = ${notificationId}::uuid
-    `;
-    
+      } catch (e) { console.error('Email error:', e); }
+    })).catch(console.error);
+
     console.log('=== SEND SUCCESS ===');
     return NextResponse.json({ success: true, notificationId, recipients: customerIds.length });
-    
-  } catch (err) {
-    console.error('=== SEND FAILED ===');
-    console.error('Error details:', err);
+  } catch (err: any) {
+    console.error('=== SEND ERROR ===', err);
     return NextResponse.json(
-      { error: 'Failed to send notification', details: String(err) },
+      { error: 'Internal server error', details: err.message, stack: err.stack },
       { status: 500 }
     );
   }
