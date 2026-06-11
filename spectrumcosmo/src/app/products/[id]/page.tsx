@@ -20,10 +20,10 @@ import {
   Truck, 
   RotateCcw, 
   CheckCircle,
-  ChevronRight
+  ChevronLeft
 } from 'lucide-react';
 
-// Types for database results (Date type for created_at)
+// Types for database results
 interface Product {
   id: string;
   name: string;
@@ -61,13 +61,12 @@ interface DbReview {
   created_at: Date;
 }
 
-// Type that matches ProductReviews component expectation
 interface ComponentReview {
   id: number;
   customer_name: string;
   rating: number;
   review_text: string;
-  created_at: string; // string, not Date
+  created_at: string;
 }
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -104,7 +103,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   if (!product) notFound();
 
-  // Convert reviews to the format expected by ProductReviews component
   const reviewsForComponent: ComponentReview[] = dbReviews.map((review) => ({
     id: review.id,
     customer_name: review.customer_name,
@@ -113,7 +111,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     created_at: review.created_at.toISOString(),
   }));
 
-  // Extract unique sizes and colors from variants
   const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
   const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
   
@@ -126,7 +123,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     : (product.stock_quantity || 0);
   const isInStock = totalStock > 0;
 
-  // Rating breakdown using dbReviews (or reviewsForComponent)
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
   dbReviews.forEach((r) => {
     const star = Math.floor(r.rating);
@@ -156,23 +152,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     <>
       <Navbar />
       <ProductViewTracker product={productForTracking} />
-      <main className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+      <main className="min-h-screen bg-white dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
           
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-            <Link href="/" className="hover:text-orange-500">Home</Link>
-            <ChevronRight size={14} />
-            <Link href="/products" className="hover:text-orange-500">Products</Link>
-            <ChevronRight size={14} />
-            <span className="text-gray-600 line-clamp-1">{product.name}</span>
+          {/* Simplified Back Button - Mobile Friendly */}
+          <div className="mb-4 sm:mb-6">
+            <Link 
+              href="/products" 
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+            >
+              <ChevronLeft size={16} />
+              <span>Back to Products</span>
+            </Link>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16">
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-10 lg:gap-16">
             {/* Left - Image Gallery */}
             <div className="relative">
               <div className="sticky top-24">
-                <div className="relative h-[400px] sm:h-[500px] lg:h-[550px] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="relative h-[300px] sm:h-[400px] lg:h-[550px] rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
                   <Image
                     src={product.image_url || '/placeholder-image.jpg'}
                     alt={product.name}
@@ -183,16 +181,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   />
                   {!isInStock && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="bg-white text-gray-900 px-6 py-3 rounded-full font-bold text-base">Out of Stock</span>
+                      <span className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base">Out of Stock</span>
                     </div>
                   )}
                   {baseComparePrice && baseComparePrice > basePrice && (
-                    <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-bold">
                       SALE
                     </div>
                   )}
                   {product.is_featured && (
-                    <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-orange-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-bold">
                       Featured
                     </div>
                   )}
@@ -202,28 +200,28 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
             {/* Right - Product Info */}
             <div className="flex flex-col">
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
                 {product.name}
               </h1>
 
               {/* Rating */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <StarRating rating={avgRating} />
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   {avgRating.toFixed(1)} ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
                 </span>
                 {isInStock && (
-                  <span className="text-sm text-green-600 font-medium ml-2">● In Stock</span>
+                  <span className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">● In Stock</span>
                 )}
               </div>
 
               {/* Price */}
-              <div className="flex items-baseline gap-3 mb-6">
-                <span className="text-3xl sm:text-4xl font-bold text-orange-600" id="product-price">
+              <div className="flex items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-orange-600 dark:text-orange-500" id="product-price">
                   <CurrencyPrice amountUsd={basePrice} />
                 </span>
                 {baseComparePrice && baseComparePrice > basePrice && (
-                  <span className="text-lg text-gray-400 line-through" id="compare-price">
+                  <span className="text-base sm:text-lg text-gray-400 dark:text-gray-500 line-through" id="compare-price">
                     <CurrencyPrice amountUsd={baseComparePrice} />
                   </span>
                 )}
@@ -231,21 +229,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
               {/* Description */}
               {product.description && (
-                <div className="prose prose-sm text-gray-600 mb-6">
+                <div className="prose prose-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
                   <p>{product.description}</p>
                 </div>
               )}
 
-              {/* Size Options - from variants */}
+              {/* Size Options */}
               {sizes.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-sm font-medium text-gray-900 mb-3">Size</p>
+                <div className="mb-4 sm:mb-5">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">Size</p>
                   <div className="flex flex-wrap gap-2" id="size-options">
                     {sizes.map((size) => (
                       <button
                         key={size}
                         data-size={size}
-                        className="size-option px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium hover:border-orange-500 hover:text-orange-500 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="size-option px-3 sm:px-5 py-1.5 sm:py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:border-orange-500 hover:text-orange-500 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
                       >
                         {size}
                       </button>
@@ -254,16 +252,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
               )}
 
-              {/* Color Options - from variants */}
+              {/* Color Options */}
               {colors.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-sm font-medium text-gray-900 mb-3">Color</p>
-                  <div className="flex flex-wrap gap-3" id="color-options">
+                <div className="mb-4 sm:mb-5">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">Color</p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3" id="color-options">
                     {colors.map((color) => (
                       <button
                         key={color}
                         data-color={color}
-                        className="color-option px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium hover:border-orange-500 hover:text-orange-500 transition"
+                        className="color-option px-3 sm:px-5 py-1.5 sm:py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:border-orange-500 hover:text-orange-500 transition"
                       >
                         {color}
                       </button>
@@ -273,29 +271,29 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               )}
 
               {/* Stock Status Message */}
-              <div id="stock-status" className="mb-4">
+              <div id="stock-status" className="mb-3 sm:mb-4">
                 {isInStock ? (
-                  <p className="text-sm text-green-600">✓ In Stock</p>
+                  <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">✓ In Stock</p>
                 ) : (
-                  <p className="text-sm text-red-600">✗ Out of Stock</p>
+                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">✗ Out of Stock</p>
                 )}
               </div>
 
               {/* Quantity */}
-              <div className="mb-6">
-                <p className="text-sm font-medium text-gray-900 mb-3">Quantity</p>
+              <div className="mb-5 sm:mb-6">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">Quantity</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center border border-gray-200 rounded-lg">
-                    <button id="decrement-qty" className="p-2 px-3 hover:bg-gray-50 transition">-</button>
-                    <span id="product-qty" className="w-12 text-center text-sm font-medium">1</span>
-                    <button id="increment-qty" className="p-2 px-3 hover:bg-gray-50 transition">+</button>
+                  <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <button id="decrement-qty" className="p-1.5 sm:p-2 px-2 sm:px-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">-</button>
+                    <span id="product-qty" className="w-10 sm:w-12 text-center text-sm font-medium text-gray-900 dark:text-white">1</span>
+                    <button id="increment-qty" className="p-1.5 sm:p-2 px-2 sm:px-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">+</button>
                   </div>
-                  <p id="available-stock" className="text-xs text-gray-400">{totalStock} available</p>
+                  <p id="available-stock" className="text-xs text-gray-400 dark:text-gray-500">{totalStock} available</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <AddToCartButton
                   productId={String(product.id)}
                   productName={product.name}
@@ -303,32 +301,32 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   priceUsd={basePrice}
                   disabled={!isInStock}
                 />
-                <button className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-xl font-medium text-gray-700 hover:border-orange-500 hover:text-orange-500 transition">
+                <button className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-200 dark:border-gray-700 rounded-xl font-medium text-gray-700 dark:text-gray-300 hover:border-orange-500 hover:text-orange-500 transition">
                   <Heart size={18} />
                   Wishlist
                 </button>
               </div>
 
               {/* Trust Badges */}
-              <div className="grid grid-cols-2 gap-3 mb-6 p-4 bg-gray-50 rounded-xl">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                 {trustBadges.map((badge, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <badge.icon size={16} className="text-orange-500" />
-                    <span className="text-xs text-gray-600">{badge.text}</span>
+                  <div key={idx} className="flex items-center gap-1.5 sm:gap-2">
+                    <badge.icon size={14} className="text-orange-500 flex-shrink-0" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">{badge.text}</span>
                   </div>
                 ))}
               </div>
 
-              {/* SKU & Tags */}
-              <div className="border-t border-gray-100 pt-5">
-                <p className="text-sm text-gray-500" id="product-sku">
-                  <span className="font-medium text-gray-700">SKU:</span> {product.sku || `SKU-${product.id.slice(0, 8)}`}
+              {/* SKU */}
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-5">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400" id="product-sku">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">SKU:</span> {product.sku || `SKU-${product.id.slice(0, 8)}`}
                 </p>
               </div>
 
               {/* Share */}
-              <div className="border-t border-gray-100 pt-5 mt-5">
-                <p className="text-sm text-gray-600 mb-3">Share this product:</p>
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-5 mt-4 sm:mt-5">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">Share this product:</p>
                 <div className="flex gap-2">
                   <ShareButton platform="twitter" url={productUrl} title={product.name} />
                   <ShareButton platform="facebook" url={productUrl} />
@@ -340,13 +338,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {/* Reviews Section */}
-          <div className="mt-16 pt-8 border-t border-gray-100">
-            <div className="grid md:grid-cols-3 gap-8">
+          <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-gray-100 dark:border-gray-800">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
               <div className="md:col-span-1">
-                <div className="bg-gray-50 rounded-2xl p-6 sticky top-24">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Customer Reviews</h3>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-3xl font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 sticky top-24">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">Customer Reviews</h3>
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{avgRating.toFixed(1)}</span>
                     <StarRating rating={avgRating} />
                   </div>
                   <div className="space-y-2">
@@ -354,21 +352,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       const count = ratingCounts[star as keyof typeof ratingCounts];
                       const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                       return (
-                        <div key={star} className="flex items-center gap-2 text-sm">
-                          <span className="w-8 text-gray-600">{star} ★</span>
-                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div key={star} className="flex items-center gap-2 text-xs sm:text-sm">
+                          <span className="w-7 sm:w-8 text-gray-600 dark:text-gray-400">{star} ★</span>
+                          <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="w-10 text-right text-gray-500">{count}</span>
+                          <span className="w-8 sm:w-10 text-right text-gray-500 dark:text-gray-400">{count}</span>
                         </div>
                       );
                     })}
                   </div>
-                  <p className="text-sm text-gray-500 mt-4">{totalReviews} total reviews</p>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-3 sm:mt-4">{totalReviews} total reviews</p>
                 </div>
               </div>
               <div className="md:col-span-2">
-                {/* Pass the converted reviews array (strings for dates) */}
                 <ProductReviews productId={id} initialReviews={reviewsForComponent} />
               </div>
             </div>
@@ -376,13 +373,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
           {/* You May Also Like */}
           {relatedProducts.length > 0 && (
-            <div className="mt-16">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">You May Also Like</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="mt-12 sm:mt-16">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">You May Also Like</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {relatedProducts.map((rel) => (
                   <Link key={rel.id} href={`/products/${rel.id}`} className="group">
-                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300">
-                      <div className="relative h-48 bg-gray-100">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300">
+                      <div className="relative h-40 sm:h-48 bg-gray-100 dark:bg-gray-700">
                         <Image
                           src={rel.image_url || '/placeholder-image.jpg'}
                           alt={rel.name}
@@ -390,11 +387,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                           className="object-cover group-hover:scale-105 transition duration-500"
                         />
                       </div>
-                      <div className="p-3">
-                        <h3 className="font-semibold text-gray-800 text-sm line-clamp-1 group-hover:text-orange-500 transition">
+                      <div className="p-2 sm:p-3">
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm line-clamp-1 group-hover:text-orange-500 transition">
                           {rel.name}
                         </h3>
-                        <div className="mt-1 text-orange-600 font-bold text-sm">
+                        <div className="mt-1 text-orange-600 dark:text-orange-500 font-bold text-xs sm:text-sm">
                           <CurrencyPrice amountUsd={Number(rel.price ?? 0)} />
                         </div>
                       </div>
