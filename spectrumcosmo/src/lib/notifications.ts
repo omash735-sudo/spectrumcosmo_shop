@@ -1,13 +1,51 @@
 // app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
-import { 
-  getUserNotifications, 
-  getUnreadNotificationCount, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead 
-} from '@/lib/notifications';
 import { queryMany } from '@/lib/db';
+
+// Helper functions for notifications
+async function getUserNotifications(userId: string, limit: number, offset: number) {
+  return await queryMany`
+    SELECT 
+      id,
+      title,
+      message,
+      type,
+      created_at,
+      is_read,
+      action_url,
+      action_label
+    FROM user_notifications
+    WHERE user_id = ${userId}::uuid
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+}
+
+async function getUnreadNotificationCount(userId: string) {
+  const result = await queryMany`
+    SELECT COUNT(*) as count
+    FROM user_notifications
+    WHERE user_id = ${userId}::uuid AND is_read = FALSE
+  `;
+  return Number(result[0]?.count) || 0;
+}
+
+async function markNotificationAsRead(notificationId: number, userId: string) {
+  await queryMany`
+    UPDATE user_notifications
+    SET is_read = TRUE
+    WHERE id = ${notificationId} AND user_id = ${userId}::uuid
+  `;
+}
+
+async function markAllNotificationsAsRead(userId: string) {
+  await queryMany`
+    UPDATE user_notifications
+    SET is_read = TRUE
+    WHERE user_id = ${userId}::uuid AND is_read = FALSE
+  `;
+}
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -54,7 +92,7 @@ export async function GET(req: NextRequest) {
 
   // 4. Transform existing notifications to match the format
   const formattedExisting = existingNotifications.map((n: any) => ({
-    id: `user_${n.id}`,  // Prefix to distinguish from admin notifications
+    id: `user_${n.id}`,
     title: n.title,
     message: n.message,
     type: n.type,
@@ -66,7 +104,7 @@ export async function GET(req: NextRequest) {
 
   // 5. Format admin notifications
   const formattedAdmin = adminNotifications.map((n: any) => ({
-    id: `admin_${n.id}`,  // Prefix to distinguish
+    id: `admin_${n.id}`,
     title: n.title,
     message: n.message,
     type: n.type,
