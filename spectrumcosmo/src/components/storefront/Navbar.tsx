@@ -42,8 +42,8 @@ import { useSettings } from '@/components/storefront/SettingsProvider';
 import SearchBar from '@/components/storefront/SearchBar';
 import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
+import { useTheme } from 'next-themes';
 
-// Category dropdown data with proper Lucide icons
 const categories = [
   { name: 'T-Shirts', href: '/products?category=T-Shirts', icon: Shirt },
   { name: 'Hoodies', href: '/products?category=Hoodies', icon: PackageIcon },
@@ -77,10 +77,15 @@ export default function Navbar() {
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
   const { resolvedTheme } = useSettings();
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  // Scroll effect
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
@@ -89,7 +94,6 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Dropdown hover handlers
   const handleMouseEnter = (label: string) => {
     if (dropdownTimeout.current) clearTimeout(dropdownTimeout.current);
     setOpenDropdown(label);
@@ -103,8 +107,9 @@ export default function Navbar() {
 
   const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path));
 
-  // Logo based on resolved theme (dark/light)
-  const logoSrc = resolvedTheme === 'dark'
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  
+  const logoSrc = currentTheme === 'dark'
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
@@ -159,8 +164,8 @@ export default function Navbar() {
       <header className={clsx(
         'sticky top-0 z-50 transition-all duration-300',
         scrolled 
-          ? 'bg-white shadow-lg backdrop-blur-md bg-white/95' 
-          : 'bg-white/90 backdrop-blur-md border-b border-gray-100'
+          ? 'bg-white/95 dark:bg-gray-950/95 shadow-lg backdrop-blur-md' 
+          : 'bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800'
       )}>
         {/* Top Bar - Announcement */}
         <div className="hidden md:block bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center py-2 text-sm">
@@ -179,7 +184,7 @@ export default function Navbar() {
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-9 w-auto transition-transform group-hover:scale-105" />
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
                   Spectrum<span className="text-[#F97316]">Cosmo</span>
                 </span>
               </Link>
@@ -199,7 +204,7 @@ export default function Navbar() {
                         'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1',
                         pathname === link.href
                           ? 'bg-[#F97316] text-white shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-[#F97316]'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
                       )}
                     >
                       {link.label}
@@ -208,8 +213,8 @@ export default function Navbar() {
                     
                     {/* Dropdown Menu */}
                     {link.hasDropdown && openDropdown === link.label && (
-                      <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 dropdown-content">
-                        <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-2 z-50 dropdown-content">
+                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shop by Category</p>
                         </div>
                         {categories.map((cat) => {
@@ -218,7 +223,7 @@ export default function Navbar() {
                             <Link
                               key={cat.name}
                               href={cat.href}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition group"
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 transition group"
                               onClick={() => setOpenDropdown(null)}
                             >
                               <Icon size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
@@ -226,8 +231,8 @@ export default function Navbar() {
                             </Link>
                           );
                         })}
-                        <div className="border-t border-gray-100 mt-2 pt-2">
-                          <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition group">
+                        <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2">
+                          <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition group">
                             View All Products 
                             <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
                           </Link>
@@ -250,10 +255,10 @@ export default function Navbar() {
                 <div className="relative group">
                   <button 
                     onClick={openCart} 
-                    className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     aria-label="Cart"
                   >
-                    <ShoppingCart size={20} />
+                    <ShoppingCart size={20} className="text-gray-700 dark:text-gray-300" />
                     {totalItems > 0 && (
                       <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[18px] h-4 px-1 rounded-full flex items-center justify-center shadow-sm">
                         {totalItems > 99 ? '99+' : totalItems}
@@ -273,15 +278,15 @@ export default function Navbar() {
           <div className="flex items-center justify-between">
             <button 
               onClick={() => setMobileMenuOpen(true)} 
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Menu"
             >
-              <Menu size={22} />
+              <Menu size={22} className="text-gray-700 dark:text-gray-300" />
             </button>
 
             <Link href="/" className="flex items-center gap-2">
               <img src={logoSrc} alt="SpectrumCosmo" className="h-7 w-auto" />
-              <span className="text-base font-bold text-gray-800">
+              <span className="text-base font-bold text-gray-800 dark:text-white">
                 Spectrum<span className="text-[#F97316]">Cosmo</span>
               </span>
             </Link>
@@ -291,10 +296,10 @@ export default function Navbar() {
               <UserMenu />
               <button 
                 onClick={openCart} 
-                className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Cart"
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} className="text-gray-700 dark:text-gray-300" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
                     {totalItems > 99 ? '99+' : totalItems}
@@ -309,29 +314,29 @@ export default function Navbar() {
       {/* MOBILE SIDEBAR */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
-          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <img src={logoSrc} alt="Logo" className="h-7 w-auto" />
-                <span className="font-bold text-gray-800">Menu</span>
+                <span className="font-bold text-gray-800 dark:text-white">Menu</span>
               </div>
-              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-gray-100 transition">
-                <X size={20} />
+              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <X size={20} className="text-gray-700 dark:text-gray-300" />
               </button>
             </div>
 
-            <div className="p-5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+            <div className="p-5 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {profileImage ? (
                     <Image src={profileImage} alt={displayName} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
                       <User size={18} className="text-orange-500" />
                     </div>
                   )}
                   <div>
-                    <p className="font-semibold text-gray-800">{displayName}</p>
+                    <p className="font-semibold text-gray-800 dark:text-white">{displayName}</p>
                     <p className="text-xs text-gray-400">{isLoggedIn ? 'Logged in' : 'Guest'}</p>
                   </div>
                 </div>
@@ -347,7 +352,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            <div className="px-5 py-3 border-b border-gray-100">
+            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
               <CurrencySelector />
             </div>
 
@@ -368,49 +373,49 @@ export default function Navbar() {
             </button>
 
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Home size={18} className="text-gray-500" /> Home
               </Link>
-              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Package size={18} className="text-gray-500" /> Products
               </Link>
-              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Star size={18} className="text-gray-500" /> Reviews
               </Link>
-              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Info size={18} className="text-gray-500" /> About
               </Link>
-              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <HelpCircle size={18} className="text-gray-500" /> Contact
               </Link>
-              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <HelpCircle size={18} className="text-gray-500" /> FAQ
               </Link>
               
-              <button onClick={openCart} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition text-left">
+              <button onClick={openCart} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left text-gray-700 dark:text-gray-300">
                 <ShoppingCart size={18} className="text-gray-500" /> Cart
                 {totalItems > 0 && (
-                  <span className="ml-auto bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">{totalItems}</span>
+                  <span className="ml-auto bg-orange-100 dark:bg-orange-950/30 text-orange-600 text-xs px-2 py-0.5 rounded-full">{totalItems}</span>
                 )}
               </button>
               
               {isLoggedIn && (
                 <>
-                  <div className="border-t my-3 mx-3"></div>
-                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+                  <div className="border-t my-3 mx-3 border-gray-100 dark:border-gray-800"></div>
+                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                     <Clock size={18} className="text-gray-500" /> Orders
                   </Link>
-                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                     <Heart size={18} className="text-gray-500" /> Wishlist
                   </Link>
-                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition">
+                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                     <Settings size={18} className="text-gray-500" /> Settings
                   </Link>
                 </>
               )}
             </div>
 
-            <div className="p-5 border-t border-gray-100">
+            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
               {isLoggedIn ? (
                 <button 
                   onClick={async () => {
@@ -418,7 +423,7 @@ export default function Navbar() {
                     router.push('/');
                     closeMobileMenu();
                   }} 
-                  className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 rounded-xl transition"
+                  className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition"
                 >
                   <LogOut size={18} /> Log out
                 </button>
@@ -435,7 +440,7 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* WhatsApp Float Button – raised position */}
+      {/* WhatsApp Float Button */}
       {showWhatsApp && (
         <a 
           href={WHATSAPP_URL} 
