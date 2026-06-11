@@ -7,11 +7,11 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
-import HeroCarousel from '@/components/storefront/HeroCarousel'; // ADD THIS
+import HeroCarousel from '@/components/storefront/HeroCarousel';
 import { getDb, queryMany } from '@/lib/db';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
-// Types (keep all your existing types)
+// Types
 interface Category {
   name: string;
   slug: string;
@@ -61,7 +61,6 @@ function toProductCardProps(product: Product): ProductCardProps {
   };
 }
 
-// Hero carousel settings (customize as needed)
 const heroSettings = {
   titleColor: '#FFFFFF',
   subtitleColor: '#FFFFFF',
@@ -80,7 +79,6 @@ export default async function ProductsPage({
   const params = await searchParams;
   const sql = getDb();
 
-  // Fetch categories
   let categories: Category[] = [];
   try {
     categories = await queryMany<Category>`
@@ -91,7 +89,6 @@ export default async function ProductsPage({
   }
   const categoryNames = ['All', ...categories.map((c) => c.name)];
 
-  // Fetch products based on filters
   let products: Product[] = [];
   try {
     let query;
@@ -150,8 +147,7 @@ export default async function ProductsPage({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white">
-        {/* REPLACED: Static banner image with HeroCarousel */}
+      <main className="min-h-screen bg-white dark:bg-gray-900">
         <HeroCarousel
           titleColor={heroSettings.titleColor}
           subtitleColor={heroSettings.subtitleColor}
@@ -164,22 +160,19 @@ export default async function ProductsPage({
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           
-          {/* Featured Products */}
           <FeaturedProducts />
 
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100 dark:border-gray-800">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                 {params.q ? `Search results for "${params.q}"` : params.category && params.category !== 'All' ? params.category : 'All Products'}
               </h1>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                 {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
               </p>
             </div>
           </div>
 
-          {/* Search */}
           <div className="mb-8">
             <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
               <div className="relative">
@@ -188,7 +181,7 @@ export default async function ProductsPage({
                   name="q"
                   defaultValue={params.q || ''}
                   placeholder="Search for anime merch, apparel, accessories..."
-                  className="w-full border border-gray-200 rounded-2xl py-4 pl-6 pr-14 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm"
+                  className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl py-4 pl-6 pr-14 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm"
                 />
                 <button
                   type="submit"
@@ -208,13 +201,12 @@ export default async function ProductsPage({
             </form>
           </div>
 
-          {/* Filters */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal size={16} className="text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filters:</span>
+              <SlidersHorizontal size={16} className="text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
               {params.category && params.category !== 'All' && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 rounded-full text-xs">
                   Category: {params.category}
                   <Link href={clearFilters()} className="hover:text-red-500">
                     <X size={12} />
@@ -229,7 +221,6 @@ export default async function ProductsPage({
             )}
           </div>
 
-          {/* Categories Tabs */}
           <div className="mb-10">
             <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
               <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
@@ -251,8 +242,8 @@ export default async function ProductsPage({
                       href={href}
                       className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                         isActive
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200 dark:shadow-none'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
                       {cat}
@@ -263,14 +254,13 @@ export default async function ProductsPage({
             </div>
           </div>
 
-          {/* Products Grid */}
           {productCardProps.length === 0 ? (
-            <div className="text-center py-20 bg-gray-50 rounded-2xl">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search size={32} className="text-gray-400" />
+            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search size={32} className="text-gray-400 dark:text-gray-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-500">Try adjusting your search or browse our categories.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No products found</h3>
+              <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or browse our categories.</p>
               <Link href="/products" className="inline-block mt-4 text-orange-500 hover:text-orange-600 font-medium">
                 View all products →
               </Link>
