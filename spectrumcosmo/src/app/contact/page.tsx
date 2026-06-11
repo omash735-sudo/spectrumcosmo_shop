@@ -58,7 +58,7 @@ export default async function ContactPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-white dark:bg-gray-900">
         
         {/* Hero Section */}
         <div className="relative h-[400px] md:h-[500px] overflow-hidden">
@@ -91,66 +91,66 @@ export default async function ContactPage() {
             
             {/* Contact Info Cards */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-gradient-to-br from-orange-50 to-white rounded-2xl p-6 border border-orange-100">
+              <div className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-800 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <Mail size={20} className="text-orange-600" />
+                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                    <Mail size={20} className="text-orange-600 dark:text-orange-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">Email Us</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-white">Email Us</h3>
                 </div>
-                <a href={`mailto:${contactDetails.email}`} className="text-gray-600 hover:text-orange-600 transition block">
+                <a href={`mailto:${contactDetails.email}`} className="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition block">
                   {contactDetails.email}
                 </a>
-                <p className="text-xs text-gray-400 mt-2">We'll respond within 24 hours</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">We'll respond within 24 hours</p>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-100">
+              <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-800 rounded-2xl p-6 border border-blue-100 dark:border-blue-900/30">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Phone size={20} className="text-blue-600" />
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                    <Phone size={20} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">Call Us</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-white">Call Us</h3>
                 </div>
-                <a href={`tel:${contactDetails.phone}`} className="text-gray-600 hover:text-blue-600 transition block">
+                <a href={`tel:${contactDetails.phone}`} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition block">
                   {contactDetails.phone}
                 </a>
-                <p className="text-xs text-gray-400 mt-2">Mon-Fri, 9am - 6pm</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Mon-Fri, 9am - 6pm</p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 border border-green-100">
+              <div className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-gray-800 rounded-2xl p-6 border border-green-100 dark:border-green-900/30">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <MapPin size={20} className="text-green-600" />
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                    <MapPin size={20} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">Visit Us</h3>
+                  <h3 className="font-semibold text-gray-800 dark:text-white">Visit Us</h3>
                 </div>
-                <p className="text-gray-600">{contactDetails.address}</p>
-                <p className="text-xs text-gray-400 mt-2">By appointment only</p>
+                <p className="text-gray-600 dark:text-gray-300">{contactDetails.address}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">By appointment only</p>
               </div>
 
               {/* Social Links */}
               {(socialLinks.facebook || socialLinks.instagram || socialLinks.twitter || socialLinks.youtube) && (
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                  <h3 className="font-semibold text-gray-800 mb-4">Follow Us</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Follow Us</h3>
                   <div className="flex gap-3">
                     {socialLinks.facebook && (
-                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition group">
-                        <Facebook size={18} className="text-gray-600 group-hover:text-white" />
+                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition group">
+                        <Facebook size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.instagram && (
-                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-500 transition group">
-                        <Instagram size={18} className="text-gray-600 group-hover:text-white" />
+                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-500 transition group">
+                        <Instagram size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.twitter && (
-                      <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-sky-500 transition group">
-                        <Twitter size={18} className="text-gray-600 group-hover:text-white" />
+                      <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sky-500 transition group">
+                        <Twitter size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.youtube && (
-                      <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-red-600 transition group">
-                        <Youtube size={18} className="text-gray-600 group-hover:text-white" />
+                      <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-red-600 transition group">
+                        <Youtube size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
                       </a>
                     )}
                   </div>
@@ -160,62 +160,62 @@ export default async function ContactPage() {
 
             {/* Contact Form */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-5 border-b">
-                  <h2 className="text-xl font-bold text-gray-900">{formTitle}</h2>
-                  <p className="text-sm text-gray-500 mt-1">{formSubtitle}</p>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 px-6 py-5 border-b dark:border-gray-700">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formTitle}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{formSubtitle}</p>
                 </div>
                 <div className="p-6">
                   <form action="/api/contact" method="POST" className="space-y-5">
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name *</label>
                         <input 
                           name="fullName" 
                           type="text" 
                           required
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
                           placeholder="John Doe"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address *</label>
                         <input 
                           name="email" 
                           type="email" 
                           required
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
                           placeholder="john@example.com"
                         />
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number</label>
                         <input 
                           name="contactNumber" 
                           type="tel" 
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                           placeholder="+265 123 456 789"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Subject</label>
                         <input 
                           name="subject" 
                           type="text" 
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                           placeholder="How can we help?"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Message *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Message *</label>
                       <textarea 
                         name="message" 
                         rows={5} 
                         required
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
                         placeholder="Tell us how we can help..."
                       />
                     </div>
@@ -226,7 +226,7 @@ export default async function ContactPage() {
                       <Send size={18} className="group-hover:translate-x-0.5 transition" />
                       Send Message
                     </button>
-                    <p className="text-xs text-gray-400 text-center">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
                       We'll get back to you within 24-48 hours
                     </p>
                   </form>
@@ -239,12 +239,12 @@ export default async function ContactPage() {
           {featureGrid.length > 0 && (
             <div className="mb-16">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full mb-3">
-                  <Sparkles size={14} className="text-orange-600" />
-                  <span className="text-xs font-medium text-orange-600">Why Choose Us</span>
+                <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-3">
+                  <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
+                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Why Choose Us</span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Connect With Us</h2>
-                <p className="text-gray-500 mt-2">Explore partnership opportunities</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Connect With Us</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">Explore partnership opportunities</p>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {featureGrid.map((item: any, idx: number) => {
@@ -253,15 +253,15 @@ export default async function ContactPage() {
                     <Link
                       key={idx}
                       href={item.link || '#'}
-                      className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 text-center"
+                      className="group bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 text-center"
                     >
-                      <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-500 transition-colors">
-                        <Icon size={24} className="text-orange-600 group-hover:text-white transition-colors" />
+                      <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-500 transition-colors">
+                        <Icon size={24} className="text-orange-600 dark:text-orange-400 group-hover:text-white transition-colors" />
                       </div>
-                      <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition mb-2">
+                      <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 transition mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{item.description}</p>
                       <div className="mt-3 opacity-0 group-hover:opacity-100 transition">
                         <ArrowRight size={16} className="text-orange-500 mx-auto" />
                       </div>
@@ -274,7 +274,7 @@ export default async function ContactPage() {
 
           {/* Community CTA */}
           {communityLink && (
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-8 text-center">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 rounded-2xl p-8 text-center">
               <div className="inline-flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full mb-4">
                 <Users size={14} className="text-orange-400" />
                 <span className="text-xs font-medium text-orange-400">Join the Movement</span>
@@ -298,9 +298,9 @@ export default async function ContactPage() {
 
           {/* FAQ Link */}
           <div className="text-center mt-12">
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
               Have questions? Check our{' '}
-              <Link href="/faq" className="text-orange-600 hover:text-orange-700 font-medium">
+              <Link href="/faq" className="text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-medium">
                 Frequently Asked Questions
               </Link>
             </p>
