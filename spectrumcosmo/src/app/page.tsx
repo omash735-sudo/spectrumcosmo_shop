@@ -275,7 +275,7 @@ export default async function HomePage() {
         </div>
 
         {reviews && reviews.length > 0 && (
-          <div className="bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-900 py-8 md:py-16">
+          <div className="bg-orange-50 dark:bg-gray-800 py-8 md:py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Testimonials</span>
@@ -320,7 +320,7 @@ export default async function HomePage() {
           <RecentlyViewed />
         </div>
 
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 py-16 lg:py-20">
+        <div className="bg-gray-900 dark:bg-gray-950 py-16 lg:py-20">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <div className="inline-flex items-center gap-2 bg-gray-800 dark:bg-gray-800 px-4 py-2 rounded-full mb-6">
               <Zap size={16} className="text-gray-400" />
@@ -330,7 +330,7 @@ export default async function HomePage() {
             <p className="text-gray-300 mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
             <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input type="email" name="email" placeholder="Your email address" className="flex-1 px-5 py-3 rounded-full bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
-              <button type="submit" className="bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
+              <button type="submit" className="bg-gray-800 dark:bg-gray-800 hover:bg-gray-700 dark:hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
                 Subscribe <Send size={16} />
               </button>
             </form>
