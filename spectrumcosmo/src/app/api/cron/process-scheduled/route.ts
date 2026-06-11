@@ -1,10 +1,10 @@
+// app/api/cron/process-scheduled/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { queryMany } from '@/lib/db';
 import { getAllCustomerIds } from '@/lib/notifications-admin';
 import { sendAdminNotificationEmail } from '@/lib/notification-email';
 
 export async function POST(req: NextRequest) {
-  // Verify cron secret for security
   const authHeader = req.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
-  // Get all scheduled notifications that should be sent
   const scheduled = await queryMany`
     SELECT * FROM admin_notifications
     WHERE status = 'scheduled' 
@@ -37,20 +36,20 @@ export async function POST(req: NextRequest) {
       await queryMany`
         UPDATE admin_notifications 
         SET status = 'sent', sent_at = NOW()
-        WHERE id = ${notification.id}
+        WHERE id = ${notification.id}::uuid
       `;
       continue;
     }
     
-    // Insert recipients in batches
+    // Insert recipients - FIXED: use notification_id
     const batchSize = 100;
     for (let i = 0; i < customerIds.length; i += batchSize) {
       const batch = customerIds.slice(i, i + batchSize);
       for (const customerId of batch) {
         await queryMany`
-          INSERT INTO notification_recipients (admin_notification_id, customer_id)
-          VALUES (${notification.id}, ${customerId})
-          ON CONFLICT (admin_notification_id, customer_id, created_at) DO NOTHING
+          INSERT INTO notification_recipients (notification_id, customer_id)
+          VALUES (${notification.id}::uuid, ${customerId}::uuid)
+          ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
         `;
       }
     }
@@ -65,10 +64,10 @@ export async function POST(req: NextRequest) {
       if (customer.email) {
         const settings = await queryMany`
           SELECT email_enabled FROM customer_notification_settings
-          WHERE customer_id = ${customer.id}
+          WHERE customer_id = ${customer.id}::uuid
         `;
         
-        const emailEnabled = settings.length === 0 ? true : settings[0].email_enabled;
+        const emailEnabled = settings.length === 0 ? true : settings[0]?.email_enabled;
         
         if (emailEnabled) {
           await sendAdminNotificationEmail({
@@ -84,7 +83,7 @@ export async function POST(req: NextRequest) {
     await queryMany`
       UPDATE admin_notifications 
       SET status = 'sent', sent_at = NOW()
-      WHERE id = ${notification.id}
+      WHERE id = ${notification.id}::uuid
     `;
     
     processed++;
