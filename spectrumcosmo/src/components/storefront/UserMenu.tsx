@@ -40,8 +40,11 @@ export default function UserMenu() {
 
   if (!user) {
     return (
-      <Link href="/login" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors">
-        <User size={18} className="text-gray-600" />
+      <Link 
+        href="/login" 
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+      >
+        <User size={18} className="text-gray-600 dark:text-gray-400" />
       </Link>
     );
   }
@@ -53,67 +56,67 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-50 transition-colors overflow-hidden"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors overflow-hidden"
         aria-label="User menu"
       >
         {profileImage ? (
           <Image src={profileImage} alt={displayName} width={32} height={32} className="w-full h-full object-cover" />
         ) : (
-          <User size={18} className="text-gray-600" />
+          <User size={18} className="text-gray-600 dark:text-gray-400" />
         )}
       </button>
 
       {menuOpen && (
         <div
-          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-[9999]"
+          className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-[9999]"
           style={{ top: '100%', right: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-4 py-2 border-b border-gray-100 mb-2">
-            <p className="text-sm font-medium text-gray-900">{displayName}</p>
-            <p className="text-xs text-gray-500">{user.email}</p>
+          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 mb-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{displayName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
           </div>
 
           <Link
             href="/account/profile"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
           >
             <User size={16} /> My Profile
           </Link>
           <Link
             href="/account/orders"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
           >
             <Package size={16} /> My Orders
           </Link>
           <Link
             href="/account/wishlist"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
           >
             <Heart size={16} /> Wishlist
           </Link>
           <Link
             href="/account/addresses"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
           >
             <MapPin size={16} /> Addresses
           </Link>
           <Link
             href="/account/settings"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
           >
             <Settings size={16} /> Settings
           </Link>
 
-          <div className="border-t border-gray-100 my-1"></div>
+          <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
           <button
             onClick={() => { logout(); closeMenu(); }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left"
           >
             <LogOut size={16} /> Logout
           </button>
