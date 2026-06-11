@@ -32,7 +32,6 @@ export default function FeaturedProducts() {
           }
         }
       } catch (error) {
-        // Silent fail - featured products not critical for page to work
         console.warn('Featured products unavailable');
       } finally {
         setLoading(false);
@@ -63,7 +62,6 @@ export default function FeaturedProducts() {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  // Don't show anything while loading or if no products
   if (loading || products.length === 0) {
     return null;
   }
@@ -72,23 +70,23 @@ export default function FeaturedProducts() {
   const showControls = products.length > itemsPerView;
 
   return (
-    <div className="mb-16">
+    <div className="mb-12 sm:mb-16">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-1 h-6 sm:h-8 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Featured Products</h2>
-            <p className="text-gray-500 text-sm mt-0.5">Handpicked just for you</p>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Featured Products</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Handpicked just for you</p>
           </div>
-          <Sparkles size={20} className="text-orange-400" />
+          <Sparkles size={16} className="text-orange-400 sm:w-5 sm:h-5 md:w-[20px] md:h-[20px]" />
         </div>
         <Link
           href="/products"
-          className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 group"
+          className="text-xs sm:text-sm text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-medium flex items-center gap-1 group"
         >
           View all
-          <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          <ChevronRight size={14} className="sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
 
@@ -100,24 +98,23 @@ export default function FeaturedProducts() {
             <button
               onClick={prevSlide}
               disabled={currentIndex === 0}
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-700"
+              className="absolute -left-3 sm:-left-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 rounded-full p-1.5 sm:p-2.5 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 disabled:hover:text-gray-700"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={14} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
               onClick={nextSlide}
               disabled={currentIndex >= products.length - itemsPerView}
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 rounded-full p-1.5 sm:p-2.5 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={14} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </>
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {visibleProducts.map((product) => {
-            // Safe discount calculation
             let discountPercent = 0;
             const hasDiscount = !!product.compare_price && product.compare_price > product.price;
             if (hasDiscount && product.compare_price) {
@@ -130,32 +127,32 @@ export default function FeaturedProducts() {
               <Link
                 key={product.id}
                 href={`/products/${product.id}`}
-                className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="relative h-40 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="relative h-40 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
                   <Image
                     src={product.image_url || '/placeholder-product.jpg'}
                     alt={product.name}
                     fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   {hasDiscount && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full shadow-md">
                       -{discountPercent}%
                     </div>
                   )}
                 </div>
-                <div className="p-3">
-                  <h3 className="font-semibold text-gray-800 text-sm line-clamp-1 group-hover:text-orange-500 transition">
+                <div className="p-2.5 sm:p-3">
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm line-clamp-1 group-hover:text-orange-500 transition">
                     {product.name}
                   </h3>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-orange-600 font-bold text-base">
+                  <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+                    <span className="text-orange-600 dark:text-orange-500 font-bold text-sm sm:text-base">
                       <CurrencyPrice amountUsd={Number(product.price)} />
                     </span>
                     {hasDiscount && product.compare_price && (
-                      <span className="text-xs text-gray-400 line-through">
+                      <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 line-through">
                         <CurrencyPrice amountUsd={Number(product.compare_price)} />
                       </span>
                     )}
@@ -169,15 +166,15 @@ export default function FeaturedProducts() {
 
       {/* Dot Indicators */}
       {showControls && (
-        <div className="flex justify-center gap-2 mt-6">
+        <div className="flex justify-center gap-1.5 sm:gap-2 mt-4 sm:mt-6">
           {Array.from({ length: Math.ceil(products.length / itemsPerView) }).map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx * itemsPerView)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                 Math.floor(currentIndex / itemsPerView) === idx
-                  ? 'bg-orange-500 w-6'
-                  : 'bg-gray-300 w-3 hover:bg-gray-400'
+                  ? 'bg-orange-500 w-4 sm:w-6'
+                  : 'bg-gray-300 dark:bg-gray-600 w-1.5 sm:w-3 hover:bg-gray-400 dark:hover:bg-gray-500'
               }`}
             />
           ))}
