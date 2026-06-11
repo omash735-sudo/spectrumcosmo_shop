@@ -1,3 +1,4 @@
+// app/api/admin/notifications/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { queryMany } from '@/lib/db';
@@ -41,13 +42,17 @@ export async function POST(req: NextRequest) {
     sent_by: 'spectrumcosmo team',
   });
   
-  // Insert recipients
-  for (const customerId of customerIds) {
-    await queryMany`
-      INSERT INTO notification_recipients (admin_notification_id, customer_id)
-      VALUES (${notificationId}, ${customerId})
-      ON CONFLICT (admin_notification_id, customer_id, created_at) DO NOTHING
-    `;
+  // Insert recipients in batches
+  const batchSize = 100;
+  for (let i = 0; i < customerIds.length; i += batchSize) {
+    const batch = customerIds.slice(i, i + batchSize);
+    for (const customerId of batch) {
+      await queryMany`
+        INSERT INTO notification_recipients (admin_notification_id, customer_id)
+        VALUES (${notificationId}, ${customerId})
+        ON CONFLICT (admin_notification_id, customer_id, created_at) DO NOTHING
+      `;
+    }
   }
   
   // Get customer details for email
@@ -58,12 +63,15 @@ export async function POST(req: NextRequest) {
   // Send emails (async, don't block response)
   Promise.all(
     customers.map(async (customer: any) => {
+      // Check if customer has email enabled (default to true if no settings)
       const settings = await queryMany`
         SELECT email_enabled FROM customer_notification_settings
         WHERE customer_id = ${customer.id}
       `;
       
-      if ((settings[0]?.email_enabled !== false) && customer.email) {
+      const emailEnabled = settings.length === 0 ? true : settings[0].email_enabled;
+      
+      if (emailEnabled && customer.email) {
         await sendAdminNotificationEmail({
           to: customer.email,
           name: customer.name || 'Customer',
