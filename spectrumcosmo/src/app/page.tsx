@@ -91,7 +91,7 @@ function TrustBar() {
   ];
   const doubledItems = [...trustItems, ...trustItems];
   return (
-    <div className="bg-gray-900 text-white overflow-hidden py-3">
+    <div className="bg-gray-900 dark:bg-gray-950 text-white overflow-hidden py-3">
       <div className="relative w-full">
         <div 
           className="flex whitespace-nowrap animate-marquee hover:animation-pause"
@@ -154,11 +154,11 @@ export default async function HomePage() {
       <style>{marqueeStyles}</style>
       <Navbar />
       <main>
-        {/* Hero Section */}
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-white via-orange-50/10 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        {/* Hero Section with solid colors */}
+        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-white dark:bg-gray-900">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-300/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-300/15 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
           </div>
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
@@ -230,8 +230,8 @@ export default async function HomePage() {
                   <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
                     <Image src={h.cat_image1_url} alt={h.cat_image1_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-sm font-medium text-gray-800">Shop T-Shirts →</span>
+                    <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Shop T-Shirts →</span>
                     </div>
                   </div>
                   <div className="relative h-44 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -244,21 +244,18 @@ export default async function HomePage() {
                   </div>
                   <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
                     <Image src={h.cat_image2_url} alt={h.cat_image2_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-sm font-medium text-gray-800">Shop Hoodies →</span>
+                    <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Shop Hoodies →</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Mobile - No more HeroCarousel, just the same content as desktop */}
           </div>
         </section>
 
         <TrustBar />
 
-        {/* Rest of the page - unchanged */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
           <div className="text-center mb-12">
             <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Shop by Category</span>
@@ -323,17 +320,17 @@ export default async function HomePage() {
           <RecentlyViewed />
         </div>
 
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 py-16 lg:py-20">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 py-16 lg:py-20">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="inline-flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 bg-gray-800 dark:bg-gray-800 px-4 py-2 rounded-full mb-6">
               <Zap size={16} className="text-gray-400" />
               <span className="text-gray-300 text-sm font-medium">Stay Updated</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Join Our Newsletter</h2>
             <p className="text-gray-300 mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
             <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input type="email" name="email" placeholder="Your email address" className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
-              <button type="submit" className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
+              <input type="email" name="email" placeholder="Your email address" className="flex-1 px-5 py-3 rounded-full bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
+              <button type="submit" className="bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
                 Subscribe <Send size={16} />
               </button>
             </form>
