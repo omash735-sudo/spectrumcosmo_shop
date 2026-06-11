@@ -355,7 +355,7 @@ export default function AccountPaymentsPage() {
                                 onClick={() => copyToClipboard(selectedOption.account_number!, order.id)}
                                 className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition flex-shrink-0"
                               >
-                                {copied === order.id ? <Check size={12} className="text-green-600 sm:w-3.5 sm:h-3.5" /> : <Copy size={12} className="text-amber-600 sm:w-3.5 sm:h-3.5" />}
+                                {copied === order.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-amber-600" />}
                               </button>
                             </div>
                           </div>
@@ -430,7 +430,7 @@ export default function AccountPaymentsPage() {
 
                       {messages[order.id] && (
                         <div className={`mt-2 p-2.5 sm:p-3 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 ${messages[order.id].type === 'success' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'}`}>
-                          {messages[order.id].type === 'success' ? <CheckCircle size={14} className="sm:w-4 sm:h-4" /> : <AlertCircle size={14} className="sm:w-4 sm:h-4" />}
+                          {messages[order.id].type === 'success' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                           {messages[order.id].text}
                         </div>
                       )}
@@ -440,7 +440,7 @@ export default function AccountPaymentsPage() {
                         disabled={uploading === order.id || !proofFiles[order.id]}
                         className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 sm:py-3 rounded-xl font-medium text-sm hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
                       >
-                        {uploading === order.id ? <Loader2 className="animate-spin" size={14} sm:w-4 sm:h-4 /> : <Upload size={14} sm:w-4 sm:h-4 />}
+                        {uploading === order.id ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
                         {uploading === order.id ? 'Submitting...' : 'Submit Payment Proof'}
                       </button>
                     </div>
@@ -450,14 +450,14 @@ export default function AccountPaymentsPage() {
                   {hasProof && (
                     <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-3.5 sm:p-4 border border-green-200 dark:border-green-800">
                       <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                        <CheckCircle size={14} className="text-green-600 dark:text-green-400 sm:w-4 sm:h-4" />
+                        <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
                         <p className="font-medium text-green-800 dark:text-green-400 text-sm sm:text-base">Payment Proof Submitted</p>
                       </div>
                       <button
                         onClick={() => window.open(order.proof_of_payment_url, '_blank')}
                         className="text-orange-600 dark:text-orange-400 hover:text-orange-700 text-xs sm:text-sm underline flex items-center gap-1"
                       >
-                        <Eye size={12} className="sm:w-3.5 sm:h-3.5" /> View uploaded proof
+                        <Eye size={12} /> View uploaded proof
                       </button>
                       {order.payment_note && <p className="text-[10px] sm:text-xs text-green-600 dark:text-green-500 mt-2">Note: {order.payment_note}</p>}
                     </div>
@@ -498,7 +498,7 @@ export default function AccountPaymentsPage() {
                   {/* Payment Method Footer */}
                   {order.payment_method && (
                     <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t dark:border-gray-700 pt-3 flex items-center gap-1">
-                      <CreditCard size={10} className="sm:w-3 sm:h-3" /> Payment: {order.payment_method}
+                      <CreditCard size={10} /> Payment: {order.payment_method}
                     </p>
                   )}
                 </div>
