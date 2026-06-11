@@ -1,3 +1,4 @@
+// app/api/admin/notifications/[id]/readers/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getRecipientsByNotification } from '@/lib/notifications-admin';
