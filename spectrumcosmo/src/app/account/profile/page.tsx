@@ -63,7 +63,6 @@ export default function ProfilePage() {
   }
 
   const uploadImage = async (file: File) => {
-    // Validate file
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file')
       return
@@ -76,7 +75,6 @@ export default function ProfilePage() {
 
     setUploading(true)
     
-    // Use fallback values like the old working version
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv'
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload'
     
@@ -85,7 +83,6 @@ export default function ProfilePage() {
     formData.append('upload_preset', uploadPreset)
 
     try {
-      // Upload to Cloudinary
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: formData,
@@ -101,7 +98,6 @@ export default function ProfilePage() {
         throw new Error('No secure_url in response')
       }
 
-      // Save to your API
       const profileRes = await fetch('/api/auth/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -127,39 +123,39 @@ export default function ProfilePage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading your profile...</p>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your profile...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4">
-          <Link href="/account" className="p-2 hover:bg-gray-100 rounded-full transition">
-            <ArrowLeft size={20} />
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/account" className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
+            <ArrowLeft size={16} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Profile</h1>
-              <Sparkles size={18} className="text-orange-400" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="w-1 h-5 sm:h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+              <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <p className="text-gray-500 text-sm mt-1">Manage your personal information</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">Manage your personal information</p>
           </div>
         </div>
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Avatar Section */}
-        <div className="relative bg-gradient-to-r from-orange-50 to-white px-6 py-8 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
+        <div className="relative bg-gradient-to-r from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 px-4 sm:px-6 py-5 sm:py-6 md:py-8 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="relative group">
-              <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 ring-4 ring-white shadow-md">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 ring-4 ring-white dark:ring-gray-800 shadow-md">
                 {user?.profileImage ? (
                   <Image 
                     src={user.profileImage} 
@@ -169,13 +165,13 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
-                    <User size={48} className="text-orange-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50">
+                    <User size={40} className="text-orange-400 dark:text-orange-500 sm:w-12 sm:h-12" />
                   </div>
                 )}
               </div>
-              <label className="absolute bottom-1 right-1 bg-orange-500 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-all duration-200 hover:scale-105">
-                <Camera size={14} />
+              <label className="absolute bottom-0 right-0 bg-orange-500 text-white p-1.5 sm:p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-all duration-200 hover:scale-105">
+                <Camera size={12} className="sm:w-3.5 sm:h-3.5" />
                 <input 
                   type="file" 
                   className="hidden" 
@@ -188,19 +184,19 @@ export default function ProfilePage() {
               </label>
               {uploading && (
                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                  <Loader2 className="animate-spin text-white w-6 h-6" />
+                  <Loader2 className="animate-spin text-white w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
               )}
             </div>
             <div className="text-center sm:text-left">
-              <h2 className="text-xl font-bold text-gray-900">{user?.name || 'User'}</h2>
-              <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 text-sm mt-1">
-                <Mail size={14} />
-                <span>{user?.email}</span>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{user?.name || 'User'}</h2>
+              <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
+                <Mail size={12} className="sm:w-3.5 sm:h-3.5" />
+                <span className="break-all">{user?.email}</span>
               </div>
               {user?.phone && (
-                <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 text-sm mt-0.5">
-                  <Phone size={14} />
+                <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
+                  <Phone size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span>{user.phone}</span>
                 </div>
               )}
@@ -209,15 +205,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Form Section */}
-        <form onSubmit={updateProfile} className="p-6 space-y-6">
-          <div className="grid sm:grid-cols-2 gap-5">
+        <form onSubmit={updateProfile} className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input
                   type="text"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all outline-none"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
@@ -225,12 +221,12 @@ export default function ProfilePage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">Phone Number</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input
                   type="tel"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all outline-none"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   placeholder="Add your phone number"
@@ -239,13 +235,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+              className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 shadow-sm text-sm sm:text-base"
             >
-              {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={18} />}
+              {saving ? <Loader2 className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Save size={16} className="sm:w-[18px] sm:h-[18px]" />}
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
