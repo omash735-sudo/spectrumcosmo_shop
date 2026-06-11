@@ -99,7 +99,6 @@ const navItems = [
   { name: 'Privacy', href: '/admin/privacy', icon: Shield, section: 'SYSTEM' },
 ];
 
-// Security alert badge component
 function SecurityAlertBadge() {
   const [alertCount, setAlertCount] = useState(0);
   
@@ -130,7 +129,6 @@ function SecurityAlertBadge() {
   );
 }
 
-// Stock alert badge component for inventory
 function StockAlertBadge() {
   const [alertCount, setAlertCount] = useState(0);
   
@@ -163,7 +161,6 @@ function StockAlertBadge() {
   );
 }
 
-// Delivery quote badge component
 function DeliveryQuoteBadge() {
   const [quoteCount, setQuoteCount] = useState(0);
   
@@ -243,16 +240,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-pulse text-gray-400 dark:text-gray-500">Loading...</div>
       </div>
     );
   }
 
   const NavContent = () => (
     <>
-      <div className="flex items-center gap-3 mb-8 px-2">
-        <div className="relative w-10 h-10">
+      <div className="flex items-center gap-3 mb-6 sm:mb-8 px-2">
+        <div className="relative w-8 h-8 sm:w-10 sm:h-10">
           <img
             src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
             alt="SpectrumCosmo"
@@ -260,21 +257,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           />
         </div>
         <div>
-          <h1 className="font-bold text-gray-800 text-lg">SpectrumCosmo</h1>
-          <p className="text-xs text-gray-400">Admin Panel</p>
+          <h1 className="font-bold text-gray-800 dark:text-white text-base sm:text-lg">SpectrumCosmo</h1>
+          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">Admin Panel</p>
         </div>
       </div>
 
-      <div className="mb-6 p-3 bg-gray-50 rounded-xl">
+      <div className="mb-5 sm:mb-6 p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#F97316]/10 flex items-center justify-center">
-            <Users size={14} className="text-[#F97316]" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-orange-500/10 flex items-center justify-center">
+            <Users size={12} className="text-orange-500 sm:w-3.5 sm:h-3.5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{adminName || 'Admin User'}</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">{adminName || 'Admin User'}</p>
             <div className="flex items-center gap-1">
-              <Lock size={10} className={twoFactorEnabled ? 'text-green-500' : 'text-gray-400'} />
-              <span className={`text-xs ${twoFactorEnabled ? 'text-green-600' : 'text-gray-400'}`}>
+              <Lock size={8} className={twoFactorEnabled ? 'text-green-500' : 'text-gray-400'} />
+              <span className={`text-[9px] sm:text-xs ${twoFactorEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
                 2FA {twoFactorEnabled ? 'Enabled' : 'Disabled'}
               </span>
             </div>
@@ -289,7 +286,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           
           return (
             <div key={section}>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2 px-2">
+              <p className="text-[9px] sm:text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-3 sm:mt-4 mb-1.5 sm:mb-2 px-2">
                 {section}
               </p>
               {sectionItems.map((item) => {
@@ -302,19 +299,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 mb-1 ${
+                    className={`flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 mb-0.5 sm:mb-1 ${
                       isActive(item.href)
-                        ? 'bg-[#F97316] text-white shadow-md shadow-orange-100'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-100 dark:shadow-orange-900/30'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
-                    <Icon size={18} />
+                    <Icon size={14} className="sm:w-[18px] sm:h-[18px]" />
                     {item.name}
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
                     {showQuoteAlert && <DeliveryQuoteBadge />}
                     {isActive(item.href) && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"></span>
+                      <span className="ml-auto w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/70"></span>
                     )}
                   </Link>
                 );
@@ -324,15 +321,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         })}
       </nav>
 
-      <div className="pt-4 mt-4 border-t border-gray-100">
+      <div className="pt-3 sm:pt-4 mt-3 sm:mt-4 border-t border-gray-100 dark:border-gray-800">
         <button
           onClick={async () => {
             await fetch('/api/admin/logout', { method: 'POST' });
             window.location.href = '/admin/login';
           }}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition w-full"
+          className="flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition w-full"
         >
-          <LogOut size={18} />
+          <LogOut size={14} className="sm:w-[18px] sm:h-[18px]" />
           Logout
         </button>
       </div>
@@ -340,27 +337,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 z-50 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <img
             src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
             alt="Logo"
-            className="w-8 h-8 object-contain"
+            className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
           />
-          <span className="font-semibold text-gray-800">Admin</span>
+          <span className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Admin</span>
           {!twoFactorEnabled && (
-            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full ml-1">
+            <span className="text-[8px] sm:text-[10px] bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-1 sm:px-1.5 py-0.5 rounded-full ml-0.5 sm:ml-1">
               No 2FA
             </span>
           )}
         </div>
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="p-2 rounded-lg hover:bg-gray-100"
+          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
         >
-          <Menu size={22} />
+          <Menu size={18} className="text-gray-600 dark:text-gray-300 sm:w-5 sm:h-5" />
         </button>
       </div>
 
@@ -371,16 +368,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85%] bg-white shadow-2xl flex flex-col">
-            <div className="flex justify-end p-4">
+          <div className="absolute left-0 top-0 bottom-0 w-[260px] sm:w-[280px] max-w-[85%] bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
+            <div className="flex justify-end p-2.5 sm:p-3">
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
               >
-                <X size={20} />
+                <X size={16} className="text-gray-600 dark:text-gray-300 sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-6">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-5 sm:pb-6">
               <NavContent />
             </div>
           </div>
@@ -389,18 +386,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Desktop Layout */}
       <div className="hidden md:flex">
-        <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-100 min-h-screen sticky top-0 flex flex-col p-5 shadow-sm">
+        <aside className="w-64 lg:w-72 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 min-h-screen sticky top-0 flex flex-col p-4 lg:p-5 shadow-sm">
           <NavContent />
         </aside>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
 
       {/* Mobile Main Content */}
-      <div className="md:hidden pt-16">
-        <main className="p-4">
+      <div className="md:hidden pt-14 sm:pt-16">
+        <main className="p-3 sm:p-4">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
