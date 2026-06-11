@@ -64,7 +64,6 @@ export default function AddressesPage() {
     loadAddresses();
   }, []);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (showModal) {
       document.body.style.overflow = 'hidden';
@@ -187,82 +186,82 @@ export default function AddressesPage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading your addresses...</p>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your addresses...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-2">
-          <Link href="/account" className="p-2 hover:bg-gray-100 rounded-full transition">
-            <ArrowLeft size={20} />
+      <div className="mb-5 sm:mb-6 md:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2">
+          <Link href="/account" className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
+            <ArrowLeft size={18} className="text-gray-700 dark:text-gray-300 sm:w-5 sm:h-5" />
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Addresses</h1>
-            <Sparkles size={18} className="text-orange-400" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-1 h-5 sm:h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">My Addresses</h1>
+            <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
           </div>
         </div>
-        <p className="text-gray-500 text-sm ml-14">Manage your shipping addresses</p>
+        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm ml-8 sm:ml-10 md:ml-14">Manage your shipping addresses</p>
       </div>
 
       {/* Add Button */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-medium hover:from-orange-600 hover:to-orange-700 transition shadow-sm"
+          className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-sm sm:text-base hover:from-orange-600 hover:to-orange-700 transition shadow-sm"
         >
-          <Plus size={18} />
+          <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
           Add New Address
         </button>
       </div>
 
       {/* Addresses Grid */}
       {addresses.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <MapPin size={48} className="text-gray-300" />
+        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 md:p-12 text-center shadow-sm">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-5">
+            <MapPin size={32} className="text-gray-300 dark:text-gray-500 sm:w-10 sm:h-10 md:w-12 md:h-12" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">No addresses yet</h2>
-          <p className="text-gray-500 mb-6">Add your first shipping address</p>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white mb-1 sm:mb-2">No addresses yet</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mb-4 sm:mb-5 md:mb-6">Add your first shipping address</p>
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition"
+            className="inline-flex items-center gap-2 bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:bg-orange-600 transition"
           >
-            <Plus size={18} />
+            <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
             Add Address
           </button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
           {addresses.map((address) => (
             <div
               key={address.id}
-              className={`relative bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-200 ${
-                address.is_default ? 'border-orange-300 bg-orange-50/30' : 'border-gray-100'
+              className={`relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border p-3.5 sm:p-4 md:p-5 shadow-sm hover:shadow-md transition-all duration-200 ${
+                address.is_default ? 'border-orange-300 dark:border-orange-700 bg-orange-50/30 dark:bg-orange-950/20' : 'border-gray-100 dark:border-gray-700'
               }`}
             >
               {/* Default Badge */}
               {address.is_default && (
-                <div className="absolute top-4 right-4">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                    <Star size={12} fill="currentColor" />
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4">
+                  <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400">
+                    <Star size={10} className="fill-current sm:w-3 sm:h-3" />
                     Default
                   </span>
                 </div>
               )}
 
               {/* Address Content */}
-              <div className="space-y-2">
-                <h3 className="font-bold text-gray-900 text-lg">{address.full_name}</h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex items-start gap-2">
-                    <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base md:text-lg pr-14 sm:pr-16 md:pr-20">{address.full_name}</h3>
+                <div className="space-y-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-start gap-1.5 sm:gap-2">
+                    <MapPin size={12} className="text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0 sm:w-3.5 sm:h-3.5" />
                     <div>
                       <p>{address.address_line1}</p>
                       {address.address_line2 && <p>{address.address_line2}</p>}
@@ -270,44 +269,44 @@ export default function AddressesPage() {
                       <p>{address.country}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone size={14} className="text-gray-400" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Phone size={12} className="text-gray-400 dark:text-gray-500 sm:w-3.5 sm:h-3.5" />
                     <span>{address.phone_number}</span>
                   </div>
                   {address.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail size={14} className="text-gray-400" />
-                      <span>{address.email}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <Mail size={12} className="text-gray-400 dark:text-gray-500 sm:w-3.5 sm:h-3.5" />
+                      <span className="break-all">{address.email}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100 dark:border-gray-700">
                 {!address.is_default && (
                   <button
                     onClick={() => setDefaultAddress(address.id)}
-                    className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                    className="text-[10px] sm:text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 font-medium flex items-center gap-0.5 sm:gap-1"
                   >
-                    <Star size={12} /> Set as default
+                    <Star size={10} className="sm:w-3 sm:h-3" /> Set as default
                   </button>
                 )}
                 <button
                   onClick={() => openEditModal(address)}
-                  className="text-xs text-gray-500 hover:text-blue-600 font-medium flex items-center gap-1"
+                  className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium flex items-center gap-0.5 sm:gap-1"
                 >
-                  <Edit2 size={12} /> Edit
+                  <Edit2 size={10} className="sm:w-3 sm:h-3" /> Edit
                 </button>
                 <button
                   onClick={() => handleDelete(address.id)}
                   disabled={deletingId === address.id}
-                  className="text-xs text-gray-500 hover:text-red-600 font-medium flex items-center gap-1 disabled:opacity-50"
+                  className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 font-medium flex items-center gap-0.5 sm:gap-1 disabled:opacity-50"
                 >
                   {deletingId === address.id ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={10} className="animate-spin sm:w-3 sm:h-3" />
                   ) : (
-                    <Trash2 size={12} />
+                    <Trash2 size={10} className="sm:w-3 sm:h-3" />
                   )}
                   Delete
                 </button>
@@ -317,115 +316,115 @@ export default function AddressesPage() {
         </div>
       )}
 
-      {/* Address Modal - Fixed Scrolling */}
+      {/* Address Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl" onClick={(e) => e.stopPropagation()}>
             {/* Fixed Header */}
-            <div className="flex justify-between items-center p-5 border-b flex-shrink-0">
-              <h2 className="text-xl font-bold text-gray-900">
+            <div className="flex justify-between items-center p-3.5 sm:p-4 md:p-5 border-b dark:border-gray-700 flex-shrink-0">
+              <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                 {editingAddress ? 'Edit Address' : 'Add New Address'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
-                <X size={20} />
+              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <X size={18} className="text-gray-500 dark:text-gray-400 sm:w-5 sm:h-5" />
               </button>
             </div>
             
             {/* Scrollable Body */}
-            <div className="overflow-y-auto p-5 flex-1">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
+            <div className="overflow-y-auto p-3.5 sm:p-4 md:p-5 flex-1">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
                     <input
                       type="text"
                       value={form.full_name}
                       onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
                     <input
                       type="tel"
                       value={form.phone_number}
                       onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (Optional)</label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1 *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 1 *</label>
                   <input
                     type="text"
                     value={form.address_line1}
                     onChange={(e) => setForm({ ...form, address_line1: e.target.value })}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                    className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 2 (Optional)</label>
                   <input
                     type="text"
                     value={form.address_line2}
                     onChange={(e) => setForm({ ...form, address_line2: e.target.value })}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl"
+                    className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl"
                   />
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City *</label>
                     <input
                       type="text"
                       value={form.city}
                       onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State/Province</label>
                     <input
                       type="text"
                       value={form.state}
                       onChange={(e) => setForm({ ...form, state: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl"
                     />
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Postal Code</label>
                     <input
                       type="text"
                       value={form.postal_code}
                       onChange={(e) => setForm({ ...form, postal_code: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
                     <select
                       value={form.country}
                       onChange={(e) => setForm({ ...form, country: e.target.value })}
-                      className="w-full p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
+                      className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="Malawi">Malawi</option>
                       <option value="Zambia">Zambia</option>
@@ -436,31 +435,31 @@ export default function AddressesPage() {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.is_default}
                     onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
-                    className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 rounded focus:ring-orange-500"
                   />
-                  <span className="text-sm text-gray-700">Set as default address</span>
+                  <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Set as default address</span>
                 </label>
 
-                {/* Fixed Footer Buttons - Inside scrollable area but at bottom */}
-                <div className="flex gap-3 pt-4 sticky bottom-0 bg-white">
+                {/* Fixed Footer Buttons */}
+                <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 sticky bottom-0 bg-white dark:bg-gray-800">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl py-2.5 font-medium hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl py-2 sm:py-2.5 text-sm font-medium hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
                   >
-                    {submitting ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
+                    {submitting ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle size={14} />}
                     {submitting ? 'Saving...' : editingAddress ? 'Update Address' : 'Save Address'}
                   </button>
                 </div>
