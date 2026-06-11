@@ -1,39 +1,21 @@
-// app/api/admin/notifications/[id]/resend/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { queryMany } from '@/lib/db';
-import { 
-  getNotificationById, 
-  getUnreadCustomerIds, 
-  createNotification 
-} from '@/lib/notifications-admin';
-import { sendAdminNotificationEmail } from '@/lib/notification-email';
+import { getNotificationById, getUnreadCustomerIds, createNotification } from '@/lib/notifications-admin';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdmin(request);
   if (authError) return authError;
-  
   const { id } = await params;
-  
+
   const original = await getNotificationById(id);
-  if (!original) {
-    return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
-  }
-  
+  if (!original) return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
+
   const unreadCustomerIds = await getUnreadCustomerIds(id);
-  
   if (unreadCustomerIds.length === 0) {
-    return NextResponse.json({ 
-      success: true, 
-      recipients: 0,
-      message: 'No unread customers to resend to'
-    });
+    return NextResponse.json({ success: true, recipients: 0, message: 'No unread customers' });
   }
-  
-  // Create a new reminder notification
+
   const reminderId = await createNotification({
     title: `[REMINDER] ${original.title}`,
     body: original.body,
@@ -42,55 +24,19 @@ export async function POST(
     status: 'sent',
     sent_by: 'spectrumcosmo team',
   });
-  
-  // Insert recipients - FIXED: use notification_id
-  const batchSize = 100;
-  for (let i = 0; i < unreadCustomerIds.length; i += batchSize) {
-    const batch = unreadCustomerIds.slice(i, i + batchSize);
-    for (const customerId of batch) {
-      await queryMany`
-        INSERT INTO notification_recipients (notification_id, customer_id)
-        VALUES (${reminderId}::uuid, ${customerId}::uuid)
-        ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
-      `;
-    }
+
+  for (const customerId of unreadCustomerIds) {
+    await queryMany`
+      INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
+      VALUES (${reminderId}::uuid, ${customerId}::uuid, NOW(), NOW())
+      ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
+    `;
   }
-  
-  // Get customer details for email
-  const customers = await queryMany`
-    SELECT id, name, email FROM users WHERE id = ANY(${unreadCustomerIds})
-  `;
-  
-  // Send emails
-  Promise.all(
-    customers.map(async (customer: any) => {
-      const settings = await queryMany`
-        SELECT email_enabled FROM customer_notification_settings
-        WHERE customer_id = ${customer.id}::uuid
-      `;
-      
-      const emailEnabled = settings.length === 0 ? true : settings[0]?.email_enabled;
-      
-      if (emailEnabled && customer.email) {
-        await sendAdminNotificationEmail({
-          to: customer.email,
-          name: customer.name || 'Customer',
-          title: `[REMINDER] ${original.title}`,
-          message: original.body,
-        });
-      }
-    })
-  ).catch(console.error);
-  
+
   await queryMany`
-    UPDATE admin_notifications 
-    SET sent_at = NOW()
+    UPDATE admin_notifications SET sent_at = NOW()
     WHERE id = ${reminderId}::uuid
   `;
-  
-  return NextResponse.json({ 
-    success: true, 
-    reminderId,
-    recipients: unreadCustomerIds.length
-  });
+
+  return NextResponse.json({ success: true, reminderId, recipients: unreadCustomerIds.length });
 }
