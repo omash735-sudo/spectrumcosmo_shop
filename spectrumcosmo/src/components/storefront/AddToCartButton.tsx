@@ -41,7 +41,6 @@ export default function AddToCartButton({
         name: productName,
         image_url: imageUrl,
         priceUsd,
-        // variant_id is not supported by the current cart provider type – removed
       });
 
       setSuccess(true);
@@ -61,7 +60,7 @@ export default function AddToCartButton({
     return (
       <button
         disabled
-        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gray-100 text-gray-400 cursor-not-allowed ${className}`}
+        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed ${className}`}
       >
         Out of Stock
       </button>
@@ -72,10 +71,10 @@ export default function AddToCartButton({
     return (
       <button
         disabled
-        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold bg-green-500 text-white ${className}`}
+        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm bg-green-500 text-white ${className}`}
       >
-        <CheckCircle size={18} />
-        Added to Cart
+        <CheckCircle size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" />
+        <span>Added to Cart</span>
       </button>
     );
   }
@@ -84,16 +83,22 @@ export default function AddToCartButton({
     <button
       onClick={handleAddToCart}
       disabled={loading}
-      className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       {loading ? (
-        <Loader2 size={18} className="animate-spin" />
+        <Loader2 size={14} className="animate-spin sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" />
       ) : showIcon ? (
-        <ShoppingCart size={18} />
+        <ShoppingCart size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" />
       ) : (
-        <Plus size={18} />
+        <Plus size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px]" />
       )}
-      {loading ? 'Adding...' : showIcon ? 'Add to Cart' : 'Add'}
+      {loading ? (
+        <span>Adding...</span>
+      ) : showIcon ? (
+        <span>Add to Cart</span>
+      ) : (
+        <span>Add</span>
+      )}
     </button>
   );
 }
