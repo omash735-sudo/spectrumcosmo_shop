@@ -1,11 +1,12 @@
 // app/layout.tsx
-import '@/lib/db-init'; // 🔹 Initialize database on server start
+import '@/lib/db-init';
 
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
+import { ThemeProvider } from './providers';
 import { SettingsProvider } from '@/components/storefront/SettingsProvider';
 import { CurrencyProvider } from '@/components/storefront/CurrencyProvider';
 import { CartProvider } from '@/components/storefront/CartProvider';
@@ -14,7 +15,6 @@ import { WishlistProvider } from '@/components/storefront/WishlistProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
-import ThemeSwitcher from '@/components/ThemeSwitcher'; // ✅ Use default import (no curly braces)
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -71,33 +71,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased font-body">
-        <ErrorBoundary>
-          <UserProvider>
-            <SettingsProvider>
-              <CurrencyProvider>
-                <CartProvider>
-                  <WishlistProvider>
-                    <NotificationProvider>
-                      <Suspense fallback={<LoadingSpinner />}>
-                        {children}
-                      </Suspense>
-                      <Toaster
-                        position="top-right"
-                        toastOptions={{
-                          duration: 4000,
-                          style: { background: '#363636', color: '#fff', borderRadius: '12px' },
-                          success: { duration: 3000, iconTheme: { primary: '#22C55E', secondary: '#fff' } },
-                          error: { duration: 4000, iconTheme: { primary: '#EF4444', secondary: '#fff' } },
-                          loading: { duration: 3000, iconTheme: { primary: '#F97316', secondary: '#fff' } },
-                        }}
-                      />
-                    </NotificationProvider>
-                  </WishlistProvider>
-                </CartProvider>
-              </CurrencyProvider>
-            </SettingsProvider>
-          </UserProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <UserProvider>
+              <SettingsProvider>
+                <CurrencyProvider>
+                  <CartProvider>
+                    <WishlistProvider>
+                      <NotificationProvider>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          {children}
+                        </Suspense>
+                        <Toaster
+                          position="top-right"
+                          toastOptions={{
+                            duration: 4000,
+                            style: { background: '#363636', color: '#fff', borderRadius: '12px' },
+                            success: { duration: 3000, iconTheme: { primary: '#22C55E', secondary: '#fff' } },
+                            error: { duration: 4000, iconTheme: { primary: '#EF4444', secondary: '#fff' } },
+                            loading: { duration: 3000, iconTheme: { primary: '#F97316', secondary: '#fff' } },
+                          }}
+                        />
+                      </NotificationProvider>
+                    </WishlistProvider>
+                  </CartProvider>
+                </CurrencyProvider>
+              </SettingsProvider>
+            </UserProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
