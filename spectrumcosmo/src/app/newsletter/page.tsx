@@ -171,10 +171,10 @@ export default function NewsletterPage() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading...</p>
+            <div className="w-12 h-12 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
           </div>
         </div>
         <Footer />
@@ -185,7 +185,7 @@ export default function NewsletterPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900">
         
         {/* Hero Section */}
         <div className="relative bg-gradient-to-r from-orange-600 to-orange-500 overflow-hidden">
@@ -214,12 +214,12 @@ export default function NewsletterPage() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="Your email address"
-                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition"
+                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition dark:bg-gray-800/50 dark:border-gray-700"
                 />
                 <button
                   onClick={handleSubscribe}
                   disabled={saving}
-                  className="bg-white text-orange-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                  className="bg-white text-orange-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   Subscribe
@@ -233,48 +233,48 @@ export default function NewsletterPage() {
         {/* Benefits Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full mb-4">
-              <Crown size={14} className="text-orange-600" />
-              <span className="text-xs font-medium text-orange-600">Why Subscribe</span>
+            <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-4">
+              <Crown size={14} className="text-orange-600 dark:text-orange-400" />
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Why Subscribe</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">What You'll Get</h2>
-            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">What You'll Get</h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="group bg-white rounded-2xl p-6 text-center border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Zap size={28} className="text-orange-600" />
+            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <Zap size={28} className="text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Early Access</h3>
-              <p className="text-gray-500 text-sm">Be the first to know about new drops and restocks before everyone else.</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Early Access</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Be the first to know about new drops and restocks before everyone else.</p>
             </div>
-            <div className="group bg-white rounded-2xl p-6 text-center border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Gift size={28} className="text-orange-600" />
+            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <Gift size={28} className="text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Exclusive Discounts</h3>
-              <p className="text-gray-500 text-sm">Get subscriber-only promo codes and special offers.</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Exclusive Discounts</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Get subscriber-only promo codes and special offers.</p>
             </div>
-            <div className="group bg-white rounded-2xl p-6 text-center border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <BookOpen size={28} className="text-orange-600" />
+            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <BookOpen size={28} className="text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">VIP News</h3>
-              <p className="text-gray-500 text-sm">Weekly anime updates, merch news, and community highlights.</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">VIP News</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Weekly anime updates, merch news, and community highlights.</p>
             </div>
           </div>
         </div>
 
         {/* Community Wishlist Section */}
-        <div className="bg-gradient-to-br from-orange-50/30 to-white py-20">
+        <div className="bg-gradient-to-br from-orange-50/30 to-white dark:from-gray-800/50 dark:to-gray-900 py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-orange-500/10 px-4 py-2 rounded-full mb-4">
-                <Heart size={18} className="text-orange-600" />
-                <span className="text-sm font-medium text-orange-600">Community Driven</span>
+                <Heart size={18} className="text-orange-600 dark:text-orange-400" />
+                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Community Driven</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Community Wishlist</h2>
-              <p className="text-gray-500 max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">Community Wishlist</h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
                 Request products you want to see. Submit your ideas with images and descriptions. 
                 Trending requests with high demand become reality.
               </p>
@@ -287,9 +287,9 @@ export default function NewsletterPage() {
 
             {/* Submit Request Form */}
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Request</h3>
-                <p className="text-gray-500 text-sm mb-5">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 shadow-sm hover:shadow-md transition">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Submit Your Request</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">
                   Have a product in mind? Tell us what you want – upload reference images and describe your idea.
                   Our team will review it and if there's enough interest, we'll make it.
                 </p>
@@ -350,7 +350,7 @@ export default function NewsletterPage() {
                     className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 ${
                       subscribed
                         ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-white text-orange-600 hover:bg-gray-100'
+                        : 'bg-white text-orange-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700'
                     } disabled:opacity-50 shadow-md`}
                   >
                     {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
@@ -380,21 +380,21 @@ export default function NewsletterPage() {
       {/* Feedback Modal */}
       {showFeedback && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b dark:border-gray-700">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-900">We're sad to see you go</h3>
-                <button onClick={() => setShowFeedback(false)} className="p-1 hover:bg-gray-100 rounded-lg">
-                  <X size={20} />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">We're sad to see you go</h3>
+                <button onClick={() => setShowFeedback(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <X size={20} className="text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">Help us improve by sharing your reason</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Help us improve by sharing your reason</p>
             </div>
             <div className="p-6">
               <select
                 value={feedbackReason}
                 onChange={(e) => setFeedbackReason(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
               >
                 <option value="">Select a reason...</option>
                 <option>Too many emails</option>
@@ -407,12 +407,12 @@ export default function NewsletterPage() {
                 onChange={(e) => setFeedbackDetails(e.target.value)}
                 placeholder="Any additional feedback (optional)"
                 rows={3}
-                className="w-full p-3 border border-gray-200 rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
+                className="w-full p-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowFeedback(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   Cancel
                 </button>
