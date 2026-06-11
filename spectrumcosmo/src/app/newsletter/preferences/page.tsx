@@ -82,7 +82,7 @@ export default function PreferencesPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen flex items-center justify-center">
+        <main className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
           <Loader2 className="animate-spin text-[#F97316]" size={32} />
         </main>
         <Footer />
@@ -93,32 +93,32 @@ export default function PreferencesPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-16">
+      <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white dark:from-gray-900 dark:to-gray-900 py-16">
         <div className="max-w-2xl mx-auto px-4">
-          <div className="bg-white rounded-3xl shadow-xl border p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border dark:border-gray-700 p-8">
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-[#F97316]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bell className="text-[#F97316]" size={28} />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Newsletter Preferences</h1>
-              <p className="text-gray-500 mt-1">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Newsletter Preferences</h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
                 Customize what you receive and how often
               </p>
             </div>
 
             <div className="space-y-6">
               {/* Email Display */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <p className="text-gray-900 font-medium">{email || 'Not set'}</p>
-                <p className="text-xs text-gray-400 mt-1">
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                <p className="text-gray-900 dark:text-white font-medium">{email || 'Not set'}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   {user ? 'Logged in as ' + user.name : 'Changes apply to this email'}
                 </p>
               </div>
 
               {/* Frequency */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {(['daily', 'weekly', 'biweekly', 'monthly'] as const).map((freq) => (
                     <button
@@ -127,7 +127,7 @@ export default function PreferencesPage() {
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition capitalize ${
                         prefs.frequency === freq
                           ? 'bg-[#F97316] text-white shadow-md'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       {freq}
@@ -138,7 +138,7 @@ export default function PreferencesPage() {
 
               {/* Topics */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Topics You Like</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Topics You Like</label>
                 <div className="space-y-2">
                   {topicOptions.map((topic) => {
                     const Icon = topic.icon;
@@ -147,7 +147,9 @@ export default function PreferencesPage() {
                       <label
                         key={topic.id}
                         className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
-                          isSelected ? 'border-[#F97316] bg-orange-50' : 'border-gray-200 hover:border-orange-200'
+                          isSelected 
+                            ? 'border-[#F97316] bg-orange-50 dark:bg-orange-950/30' 
+                            : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
                         }`}
                       >
                         <input
@@ -163,7 +165,7 @@ export default function PreferencesPage() {
                           className="w-4 h-4 text-[#F97316] rounded focus:ring-[#F97316]"
                         />
                         <Icon size={18} className="text-[#F97316]" />
-                        <span className="text-sm text-gray-700">{topic.label}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{topic.label}</span>
                       </label>
                     );
                   })}
@@ -172,13 +174,13 @@ export default function PreferencesPage() {
 
               {/* Toggle Options */}
               <div className="space-y-3">
-                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                  <span className="text-sm font-medium text-gray-700">Promotions & Offers</span>
+                <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Promotions & Offers</span>
                   <button
                     type="button"
                     onClick={() => setPrefs({ ...prefs, promotions: !prefs.promotions })}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                      prefs.promotions ? 'bg-[#F97316]' : 'bg-gray-300'
+                      prefs.promotions ? 'bg-[#F97316]' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <span
@@ -189,13 +191,13 @@ export default function PreferencesPage() {
                   </button>
                 </label>
 
-                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                  <span className="text-sm font-medium text-gray-700">Product Alerts</span>
+                <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Product Alerts</span>
                   <button
                     type="button"
                     onClick={() => setPrefs({ ...prefs, product_alerts: !prefs.product_alerts })}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                      prefs.product_alerts ? 'bg-[#F97316]' : 'bg-gray-300'
+                      prefs.product_alerts ? 'bg-[#F97316]' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <span
@@ -206,13 +208,13 @@ export default function PreferencesPage() {
                   </button>
                 </label>
 
-                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer">
-                  <span className="text-sm font-medium text-gray-700">Anime News & Updates</span>
+                <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Anime News & Updates</span>
                   <button
                     type="button"
                     onClick={() => setPrefs({ ...prefs, anime_news: !prefs.anime_news })}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                      prefs.anime_news ? 'bg-[#F97316]' : 'bg-gray-300'
+                      prefs.anime_news ? 'bg-[#F97316]' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <span
@@ -245,7 +247,7 @@ export default function PreferencesPage() {
                 )}
               </button>
 
-              <p className="text-center text-xs text-gray-400">
+              <p className="text-center text-xs text-gray-400 dark:text-gray-500">
                 You can change these preferences anytime. Unsubscribe link in every email.
               </p>
             </div>
