@@ -1,14 +1,15 @@
-// app/api/admin/notifications/unread-count/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth';
+import { getAdminFromRequest } from '@/lib/auth';
 import { queryMany } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  const authError = await requireAdmin(req);
-  if (authError) return authError;
-  
-  const adminId = (req as any).adminId;
-  
+  const admin = getAdminFromRequest(req);
+  if (!admin || admin.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const adminId = admin.id;
+
   const result = await queryMany`
     SELECT COUNT(*) as count
     FROM notification_recipients r
@@ -17,8 +18,7 @@ export async function GET(req: NextRequest) {
       AND r.is_read = FALSE
       AND n.status = 'sent'
   `;
-  
+
   const count = Number(result[0]?.count) || 0;
-  
   return NextResponse.json({ count });
 }
