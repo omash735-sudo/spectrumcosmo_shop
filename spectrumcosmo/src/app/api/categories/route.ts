@@ -1,6 +1,6 @@
-// app/api/categories/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryAsArray, queryOne } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth';
 
 interface Category {
   id: string;
@@ -12,6 +12,7 @@ interface Category {
   updated_at: Date;
 }
 
+// GET is public (no auth required)
 export async function GET() {
   try {
     const categories = await queryAsArray<Category>`
@@ -21,14 +22,15 @@ export async function GET() {
     return NextResponse.json(categories);
   } catch (err) {
     console.error('Failed to fetch categories:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
+// POST requires admin
 export async function POST(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { name } = await req.json();
     if (!name?.trim()) {
@@ -48,14 +50,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
     console.error('Failed to create category:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
+// PATCH requires admin
 export async function PATCH(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { id, name, image_url } = await req.json();
     if (!id) {
@@ -63,13 +66,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const db = getDb();
-    if (name !== undefined && name.trim()) {
-      await db`
-        UPDATE categories 
-        SET name = ${name.trim()}, updated_at = NOW()
-        WHERE id = ${id}
-      `;
-    }
+
     if (image_url !== undefined) {
       await db`
         UPDATE categories 
@@ -78,22 +75,30 @@ export async function PATCH(req: NextRequest) {
       `;
     }
 
-    // Optionally fetch updated category
+    if (name !== undefined && name.trim()) {
+      await db`
+        UPDATE categories 
+        SET name = ${name.trim()}, updated_at = NOW()
+        WHERE id = ${id}
+      `;
+    }
+
     const updated = await queryOne<Category>`
       SELECT * FROM categories WHERE id = ${id}
     `;
 
     return NextResponse.json({ success: true, category: updated });
   } catch (err) {
-    console.error('Failed to update category:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error('PATCH error:', err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal server error' }, { status: 500 });
   }
 }
 
+// DELETE requires admin
 export async function DELETE(req: NextRequest) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -114,9 +119,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Failed to delete category:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
