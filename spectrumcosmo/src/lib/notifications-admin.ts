@@ -1,4 +1,3 @@
-// lib/notifications-admin.ts
 import { queryMany, queryOne } from '@/lib/db';
 
 export type NotificationStatus = 'draft' | 'scheduled' | 'sent' | 'cancelled';
@@ -26,9 +25,7 @@ export interface NotificationWithStats extends AdminNotification {
   unread_count: number;
 }
 
-// ============================================
-// CREATE NOTIFICATION (for admin sending to customers)
-// ============================================
+// Create notification (admin to customers)
 export async function createNotification(data: {
   title: string;
   body: string;
@@ -39,7 +36,7 @@ export async function createNotification(data: {
   sent_by?: string;
 }): Promise<string> {
   const id = crypto.randomUUID();
-  
+
   await queryMany`
     INSERT INTO admin_notifications (
       id, title, body, audience_type, specific_customer_ids,
@@ -50,13 +47,10 @@ export async function createNotification(data: {
       ${data.status}, ${data.scheduled_for || null}, ${data.sent_by || 'spectrumcosmo team'}
     )
   `;
-  
   return id;
 }
 
-// ============================================
-// CREATE ADMIN NOTIFICATION (for system alerts to admins)
-// ============================================
+// Create admin notification (system to admins)
 export async function createAdminNotification(data: {
   title: string;
   body: string;
@@ -66,7 +60,7 @@ export async function createAdminNotification(data: {
   metadata?: Record<string, any>;
 }): Promise<string> {
   const id = crypto.randomUUID();
-  
+
   await queryMany`
     INSERT INTO admin_notifications (
       id, title, body, audience_type, specific_customer_ids,
@@ -77,27 +71,19 @@ export async function createAdminNotification(data: {
       'sent', ${data.sent_by || 'system'}, NOW(), ${data.metadata ? JSON.stringify(data.metadata) : null}
     )
   `;
-  
-  // Create recipient entries for each admin
-  if (data.audience_type === 'specific' && data.specific_customer_ids && data.specific_customer_ids.length > 0) {
+
+  if (data.audience_type === 'specific' && data.specific_customer_ids?.length) {
     for (const adminId of data.specific_customer_ids) {
       await queryMany`
-        INSERT INTO notification_recipients (notification_id, customer_id)
-        VALUES (${id}::uuid, ${adminId}::uuid)
+        INSERT INTO notification_recipients (notification_id, customer_id, created_at)
+        VALUES (${id}::uuid, ${adminId}::uuid, NOW())
         ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
       `;
     }
   }
-  
-  // If audience_type is 'all', we don't create recipients here because they will be added when sending
-  // (for admin-to-customer broadcasts). For admin alerts, usually 'specific' is used.
-  
   return id;
 }
 
-// ============================================
-// UPDATE NOTIFICATION
-// ============================================
 export async function updateNotification(id: string, data: Partial<{
   title: string;
   body: string;
@@ -110,7 +96,7 @@ export async function updateNotification(id: string, data: Partial<{
   const updates: string[] = [];
   const values: any[] = [];
   let paramIndex = 1;
-  
+
   if (data.title !== undefined) {
     updates.push(`title = $${paramIndex++}`);
     values.push(data.title);
@@ -135,34 +121,24 @@ export async function updateNotification(id: string, data: Partial<{
     updates.push(`scheduled_for = $${paramIndex++}`);
     values.push(data.scheduled_for);
   }
-  
+
   if (updates.length === 0) return;
-  
   values.push(id);
   await sql(`UPDATE admin_notifications SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
 }
 
-// ============================================
-// DELETE NOTIFICATION (soft delete)
-// ============================================
 export async function deleteNotification(id: string) {
   await queryMany`
-    UPDATE admin_notifications 
-    SET is_deleted = TRUE 
-    WHERE id = ${id}
+    UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}
   `;
 }
 
-// ============================================
-// GET NOTIFICATIONS BY STATUS
-// ============================================
 export async function getNotificationsByStatus(
   status: NotificationStatus | 'all',
   limit: number = 50,
   offset: number = 0
 ): Promise<NotificationWithStats[]> {
   const sql = require('@neondatabase/serverless').neon(process.env.POSTGRES_URL!);
-  
   let query = `
     SELECT 
       n.*,
@@ -172,11 +148,9 @@ export async function getNotificationsByStatus(
     LEFT JOIN notification_recipients r ON r.notification_id = n.id
     WHERE n.is_deleted = FALSE
   `;
-  
   if (status !== 'all') {
     query += ` AND n.status = '${status}'`;
   }
-  
   query += `
     GROUP BY n.id
     ORDER BY 
@@ -186,7 +160,6 @@ export async function getNotificationsByStatus(
       END DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
-  
   const results = await sql(query);
   return results.map((row: any) => ({
     ...row,
@@ -198,17 +171,11 @@ export async function getNotificationsByStatus(
   }));
 }
 
-// ============================================
-// GET SINGLE NOTIFICATION BY ID
-// ============================================
 export async function getNotificationById(id: string): Promise<AdminNotification | null> {
   const results = await queryMany`
-    SELECT * FROM admin_notifications 
-    WHERE id = ${id} AND is_deleted = FALSE
+    SELECT * FROM admin_notifications WHERE id = ${id} AND is_deleted = FALSE
   `;
-  
   if (results.length === 0) return null;
-  
   const row = results[0];
   return {
     ...row,
@@ -217,9 +184,6 @@ export async function getNotificationById(id: string): Promise<AdminNotification
   };
 }
 
-// ============================================
-// GET ALL CUSTOMER IDs (for 'all' audience)
-// ============================================
 export async function getAllCustomerIds(): Promise<string[]> {
   const results = await queryMany`
     SELECT id FROM users WHERE deleted_at IS NULL
@@ -227,36 +191,22 @@ export async function getAllCustomerIds(): Promise<string[]> {
   return results.map((r: any) => r.id);
 }
 
-// ============================================
-// GET RECIPIENTS (read/unread) FOR A NOTIFICATION
-// ============================================
-export async function getRecipientsByNotification(
-  notificationId: string
-): Promise<{ read: any[]; unread: any[] }> {
+export async function getRecipientsByNotification(notificationId: string): Promise<{ read: any[]; unread: any[] }> {
   const recipients = await queryMany`
     SELECT 
-      u.id,
-      u.name,
-      u.email,
-      u.phone,
-      r.is_read,
-      r.read_at,
-      r.delivered_at
+      u.id, u.name, u.email, u.phone,
+      r.is_read, r.read_at, r.delivered_at
     FROM notification_recipients r
     JOIN users u ON u.id = r.customer_id
     WHERE r.notification_id = ${notificationId}::uuid
     ORDER BY r.is_read ASC, r.read_at DESC
   `;
-  
   return {
     read: recipients.filter((r: any) => r.is_read),
     unread: recipients.filter((r: any) => !r.is_read),
   };
 }
 
-// ============================================
-// GET UNREAD CUSTOMER IDs FOR A NOTIFICATION
-// ============================================
 export async function getUnreadCustomerIds(notificationId: string): Promise<string[]> {
   const results = await queryMany`
     SELECT customer_id FROM notification_recipients
@@ -265,9 +215,6 @@ export async function getUnreadCustomerIds(notificationId: string): Promise<stri
   return results.map((r: any) => r.customer_id);
 }
 
-// ============================================
-// MARK A SINGLE NOTIFICATION AS READ (for admin or customer)
-// ============================================
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
   await queryMany`
     UPDATE notification_recipients
@@ -276,9 +223,6 @@ export async function markNotificationAsRead(notificationId: string, userId: str
   `;
 }
 
-// ============================================
-// GET UNREAD COUNT FOR A USER (admin or customer)
-// ============================================
 export async function getUnreadCountForUser(userId: string): Promise<number> {
   const result = await queryOne`
     SELECT COUNT(*) as count
@@ -291,24 +235,12 @@ export async function getUnreadCountForUser(userId: string): Promise<number> {
   return Number(result?.count) || 0;
 }
 
-// ============================================
-// GET ALL NOTIFICATIONS FOR A SPECIFIC USER (admin or customer)
-// ============================================
-export async function getNotificationsForUser(
-  userId: string,
-  limit: number = 20,
-  offset: number = 0
-): Promise<any[]> {
+export async function getNotificationsForUser(userId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
   const results = await queryMany`
     SELECT 
-      n.id,
-      n.title,
-      n.body as message,
-      'admin' as type,
-      n.sent_at as created_at,
-      r.is_read,
-      '/account/notifications' as action_url,
-      'View Details' as action_label,
+      n.id, n.title, n.body as message, 'admin' as type,
+      n.sent_at as created_at, r.is_read,
+      '/account/notifications' as action_url, 'View Details' as action_label,
       n.metadata
     FROM admin_notifications n
     JOIN notification_recipients r ON r.notification_id = n.id
@@ -318,7 +250,6 @@ export async function getNotificationsForUser(
     ORDER BY n.sent_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
-  
   return results.map((row: any) => ({
     ...row,
     metadata: row.metadata ? JSON.parse(row.metadata) : null,
