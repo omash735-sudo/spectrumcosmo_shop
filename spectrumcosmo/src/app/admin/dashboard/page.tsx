@@ -11,54 +11,39 @@ import {
   DollarSign,
   Activity,
   Server,
-  Database,
   RefreshCw,
   X,
-  Smartphone,
-  Laptop,
-  Globe,
-  MapPin,
-  Clock as ClockIcon,
-  Wifi,
-  WifiOff,
   TrendingUp,
   TrendingDown,
   Eye,
-  ShoppingCart,
-  CreditCard,
-  Zap,
   ArrowUpRight,
   Calendar,
-  BarChart3,
-  PieChart,
-  MoreHorizontal,
   Monitor,
+  MapPin,
+  LogIn,
+  Shield,
+  Smartphone,
+  Laptop,
 } from 'lucide-react';
 import {
   AreaChart,
   Area,
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import { useRealtimeActiveUsers } from '@/hooks/useRealtimeActiveUsers';
 import TestAccountKillSwitch from '@/components/admin/TestAccountKillSwitch';
 
 // Types
 interface DashboardStats {
-  active_users_today: number;
-  orders_today: number;
   revenue_today: number;
+  orders_today: number;
+  active_users_today: number;
   abandoned_carts: number;
   active_carts: number;
   failed_payments: number;
@@ -82,7 +67,8 @@ interface ProductView {
   id: number;
   product_name: string;
   view_count: number;
-  revenue?: number;
+  revenue: number;
+  total_quantity: number;
 }
 
 interface ErrorLog {
@@ -94,51 +80,34 @@ interface ErrorLog {
   resolved: boolean;
 }
 
-interface RealtimeUser {
-  session_id: string;
-  user_name?: string;
-  user_email?: string;
-  page_url: string;
+interface LoginActivity {
+  id: number;
+  endpoint: string;
+  method: string;
+  status: number;
+  timestamp: string;
   ip_address: string;
-  seconds_ago: number;
+  user_agent: string;
 }
 
-interface RealtimeUsersData {
-  count: number;
-  users: RealtimeUser[];
+interface LoginSummary {
+  total_attempts: number;
+  failed_attempts: number;
+  successful_attempts: number;
+  unique_ips: number;
 }
 
-const COLORS = ['#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-MW', { 
+    style: 'currency', 
+    currency: 'MWK', 
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
-// Generate dynamic chart data based on selected period
-const getChartData = (period: 'today' | 'week' | 'month') => {
-  if (period === 'today') {
-    return [
-      { hour: '00:00', views: 120, orders: 5, revenue: 125000 },
-      { hour: '04:00', views: 80, orders: 2, revenue: 45000 },
-      { hour: '08:00', views: 250, orders: 12, revenue: 280000 },
-      { hour: '12:00', views: 450, orders: 25, revenue: 620000 },
-      { hour: '16:00', views: 380, orders: 18, revenue: 445000 },
-      { hour: '20:00', views: 300, orders: 15, revenue: 375000 },
-    ];
-  } else if (period === 'week') {
-    return [
-      { day: 'Mon', views: 1250, orders: 45, revenue: 1125000 },
-      { day: 'Tue', views: 1380, orders: 52, revenue: 1350000 },
-      { day: 'Wed', views: 1420, orders: 58, revenue: 1480000 },
-      { day: 'Thu', views: 1650, orders: 68, revenue: 1720000 },
-      { day: 'Fri', views: 1890, orders: 82, revenue: 2150000 },
-      { day: 'Sat', views: 2100, orders: 95, revenue: 2450000 },
-      { day: 'Sun', views: 1950, orders: 88, revenue: 2280000 },
-    ];
-  } else {
-    return [
-      { week: 'Week 1', views: 8900, orders: 320, revenue: 8250000 },
-      { week: 'Week 2', views: 9500, orders: 385, revenue: 9650000 },
-      { week: 'Week 3', views: 10200, orders: 420, revenue: 10800000 },
-      { week: 'Week 4', views: 11800, orders: 485, revenue: 12450000 },
-    ];
-  }
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat('en-MW').format(num);
 };
 
 export default function AdminDashboard() {
@@ -146,21 +115,33 @@ export default function AdminDashboard() {
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const [topProducts, setTopProducts] = useState<ProductView[]>([]);
   const [recentErrors, setRecentErrors] = useState<ErrorLog[]>([]);
+  const [loginActivities, setLoginActivities] = useState<LoginActivity[]>([]);
+  const [loginSummary, setLoginSummary] = useState<LoginSummary | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeUsersModalOpen, setActiveUsersModalOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
-  const { data: realtimeUsers, isConnected, error: wsError, refresh: refreshUsers } = useRealtimeActiveUsers();
+  const { data: realtimeUsers, isConnected } = useRealtimeActiveUsers();
 
   const fetchDashboardData = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [statsRes, apiLogsRes, productsRes, errorsRes] = await Promise.all([
+      const [
+        statsRes,
+        apiLogsRes,
+        productsRes,
+        errorsRes,
+        revenueRes,
+        loginRes,
+      ] = await Promise.all([
         fetch('/api/admin/dashboard/stats'),
         fetch('/api/admin/dashboard/api-logs?limit=10'),
         fetch('/api/admin/dashboard/top-products?limit=5'),
         fetch('/api/admin/dashboard/recent-errors?limit=10'),
+        fetch(`/api/admin/dashboard/revenue-graph?period=${selectedPeriod}`),
+        fetch('/api/admin/dashboard/login-activity?limit=20'),
       ]);
 
       if (statsRes.ok) {
@@ -179,14 +160,22 @@ export default function AdminDashboard() {
         const errorsData = await errorsRes.json();
         setRecentErrors(errorsData);
       }
+      if (revenueRes.ok) {
+        const revenueData = await revenueRes.json();
+        setChartData(revenueData);
+      }
+      if (loginRes.ok) {
+        const loginData = await loginRes.json();
+        setLoginActivities(loginData.activities || []);
+        setLoginSummary(loginData.summary);
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Failed to fetch dashboard data:', errorMessage);
+      console.error('Failed to fetch dashboard data:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedPeriod]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -194,51 +183,43 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-MW', { 
-      style: 'currency', 
-      currency: 'MWK', 
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const getChartXAxisKey = () => {
+    if (selectedPeriod === 'today') return 'hour';
+    if (selectedPeriod === 'week') return 'day';
+    return 'week_label';
   };
-
-  const chartData = getChartData(selectedPeriod);
-  const isWeekOrMonth = selectedPeriod !== 'today';
-  const xAxisKey = isWeekOrMonth ? (selectedPeriod === 'week' ? 'day' : 'week') : 'hour';
 
   const statCards = [
     {
       title: 'Total Revenue',
       value: formatCurrency(stats?.revenue_today || 0),
       icon: DollarSign,
-      trend: stats?.revenue_growth || 12.5,
-      trendUp: true,
+      trend: stats?.revenue_growth || 0,
+      trendUp: (stats?.revenue_growth || 0) >= 0,
       bgGradient: 'from-emerald-50 to-teal-50',
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
     },
     {
       title: 'Total Orders',
-      value: stats?.orders_today || 0,
+      value: formatNumber(stats?.orders_today || 0),
       icon: ShoppingBag,
-      trend: stats?.orders_growth || 8.2,
-      trendUp: true,
+      trend: stats?.orders_growth || 0,
+      trendUp: (stats?.orders_growth || 0) >= 0,
       bgGradient: 'from-blue-50 to-indigo-50',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
     },
     {
       title: 'Active Users',
-      value: realtimeUsers?.count || 0,
+      value: formatNumber(realtimeUsers?.count || 0),
       icon: Users,
       trend: isConnected ? 100 : 0,
       trendUp: true,
       bgGradient: 'from-orange-50 to-red-50',
       iconBg: 'bg-orange-100',
       iconColor: 'text-orange-600',
-      onClick: () => setActiveUsersModalOpen(true),
-      clickable: true,
+      clickable: false,
     },
     {
       title: 'Conversion Rate',
@@ -246,7 +227,7 @@ export default function AdminDashboard() {
         ? `${((stats.orders_today / stats.active_users_today) * 100).toFixed(1)}%`
         : '0%',
       icon: TrendingUp,
-      trend: 0.5,
+      trend: 0,
       trendUp: true,
       bgGradient: 'from-purple-50 to-pink-50',
       iconBg: 'bg-purple-100',
@@ -260,28 +241,22 @@ export default function AdminDashboard() {
       value: stats?.orders_today && stats?.revenue_today 
         ? formatCurrency(stats.revenue_today / stats.orders_today) 
         : formatCurrency(0), 
-      change: '+5.2%', 
-      changeUp: true 
     },
     { 
       label: 'Cart Abandonment', 
-      value: stats?.abandoned_carts && stats?.active_carts 
-        ? `${((stats.abandoned_carts / (stats.active_carts + stats.abandoned_carts)) * 100).toFixed(1)}%`
+      value: stats?.abandoned_carts !== undefined 
+        ? `${stats.abandoned_carts}%` 
         : '0%', 
-      change: '-2.1%', 
-      changeUp: false 
     },
     { 
-      label: 'Response Time', 
+      label: 'API Response Time', 
       value: `${stats?.avg_api_response_ms || 0}ms`, 
-      change: '-12%', 
-      changeUp: true 
     },
     { 
-      label: 'Failed Logins', 
-      value: stats?.failed_logins_last_hour || 0, 
-      change: '-8%', 
-      changeUp: true 
+      label: 'Failed Logins (1h)', 
+      value: formatNumber(stats?.failed_logins_last_hour || 0), 
+      clickable: true,
+      onClick: () => setShowLoginModal(true),
     },
   ];
 
@@ -298,7 +273,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -349,19 +324,20 @@ export default function AdminDashboard() {
               return (
                 <div
                   key={index}
-                  onClick={stat.onClick}
-                  className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition group ${
-                    stat.clickable ? 'cursor-pointer hover:border-orange-200 dark:hover:border-orange-800' : ''
+                  className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition ${
+                    stat.clickable ? 'cursor-pointer hover:border-orange-200' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
                       <Icon size={20} className={stat.iconColor} />
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-medium ${stat.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full`}>
-                      {stat.trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                      {Math.abs(stat.trend)}%
-                    </div>
+                    {stat.trend !== 0 && (
+                      <div className={`flex items-center gap-1 text-xs font-medium ${stat.trendUp ? 'text-emerald-600' : 'text-red-600'} bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full`}>
+                        {stat.trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        {Math.abs(stat.trend)}%
+                      </div>
+                    )}
                   </div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.title}</p>
@@ -373,31 +349,27 @@ export default function AdminDashboard() {
           {/* Secondary Stats Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {secondaryStats.map((stat, index) => (
-              <div key={index} className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 shadow-sm">
+              <div 
+                key={index} 
+                onClick={stat.onClick}
+                className={`bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 shadow-sm ${stat.clickable ? 'cursor-pointer hover:border-orange-200' : ''}`}
+              >
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{stat.label}</p>
-                <div className="flex items-baseline justify-between">
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{stat.value}</p>
-                  <span className={`text-xs font-medium ${stat.changeUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {stat.change}
-                  </span>
-                </div>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">{stat.value}</p>
               </div>
             ))}
           </div>
 
           {/* Charts Section */}
-          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid lg:grid-cols-2 gap-6 mb-8">
             {/* Revenue Chart */}
-            <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-base font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     {selectedPeriod === 'today' ? 'Hourly' : selectedPeriod === 'week' ? 'Daily' : 'Weekly'} revenue
                   </p>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                  <span className="w-2 h-2 rounded-full bg-orange-500"></span> Revenue
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
@@ -409,7 +381,7 @@ export default function AdminDashboard() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" strokeOpacity={0.5} />
-                  <XAxis dataKey={xAxisKey} tick={{ fontSize: 11, fill: '#6B7280' }} />
+                  <XAxis dataKey={getChartXAxisKey()} tick={{ fontSize: 11, fill: '#6B7280' }} />
                   <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(v) => `${v/1000}k`} />
                   <Tooltip 
                     formatter={(v: number) => [formatCurrency(v), 'Revenue']}
@@ -420,29 +392,31 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </div>
 
-            {/* Orders vs Views Chart */}
+            {/* Orders vs Revenue Chart */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900 dark:text-white">Traffic vs Orders</h2>
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white">Orders vs Revenue</h2>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     {selectedPeriod === 'today' ? 'Last 24 hours' : selectedPeriod === 'week' ? 'Last 7 days' : 'Last 4 weeks'}
                   </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Views</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Orders</span>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" strokeOpacity={0.5} />
-                  <XAxis dataKey={xAxisKey} tick={{ fontSize: 11, fill: '#6B7280' }} />
+                  <XAxis dataKey={getChartXAxisKey()} tick={{ fontSize: 11, fill: '#6B7280' }} />
                   <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#6B7280' }} />
-                  <Tooltip contentStyle={{ backgroundColor: 'var(--tw-bg-white)', borderColor: '#E5E7EB', borderRadius: '0.5rem' }} />
-                  <Line yAxisId="left" type="monotone" dataKey="views" stroke="#F97316" strokeWidth={2} dot={false} />
-                  <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#10B981" strokeWidth={2} dot={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(v) => `${v/1000}k`} />
+                  <Tooltip 
+                    formatter={(v: number, name: string) => {
+                      if (name === 'orders') return [v, 'Orders'];
+                      return [formatCurrency(v), 'Revenue'];
+                    }}
+                    contentStyle={{ backgroundColor: 'var(--tw-bg-white)', borderColor: '#E5E7EB', borderRadius: '0.5rem' }}
+                  />
+                  <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#F97316" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -455,87 +429,84 @@ export default function AdminDashboard() {
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-gray-900 dark:text-white">Top Performing Products</h2>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Most viewed products this week</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Most revenue generated</p>
                 </div>
-                <button className="text-xs text-orange-500 hover:text-orange-600 flex items-center gap-1">
-                  View all <ArrowUpRight size={12} />
-                </button>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {topProducts.slice(0, 5).map((product, idx) => (
-                  <div key={product.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-400">
-                        #{idx + 1}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{product.product_name}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{product.view_count} views</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(product.revenue || product.view_count * 8500)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {topProducts.length === 0 && (
+                {topProducts.length === 0 ? (
                   <div className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">
                     No product data available
                   </div>
+                ) : (
+                  topProducts.map((product, idx) => (
+                    <div key={product.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-400">
+                          #{idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{product.product_name}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{product.total_quantity || 0} sold</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(product.revenue || 0)}</p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
 
-            {/* Recent Activity / API Logs */}
+            {/* Recent API Activity */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white">Recent API Activity</h2>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Latest requests to your store</p>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-[320px] overflow-y-auto">
-                {apiLogs.slice(0, 8).map((log) => (
-                  <div key={log.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                        log.method === 'GET' 
-                          ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' 
-                          : log.method === 'POST' 
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' 
-                            : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                      }`}>
-                        {log.method}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{log.endpoint}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(log.started_at).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block ${
-                        log.status >= 200 && log.status < 300 
-                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' 
-                          : log.status >= 400 
-                            ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' 
-                            : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                      }`}>
-                        {log.status}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{log.response_time_ms}ms</p>
-                    </div>
-                  </div>
-                ))}
-                {apiLogs.length === 0 && (
+                {apiLogs.length === 0 ? (
                   <div className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">
                     No API activity yet
                   </div>
+                ) : (
+                  apiLogs.map((log) => (
+                    <div key={log.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                          log.method === 'GET' 
+                            ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-600' 
+                            : log.method === 'POST' 
+                              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600' 
+                              : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600'
+                        }`}>
+                          {log.method}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{log.endpoint}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(log.started_at).toLocaleTimeString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block ${
+                          log.status >= 200 && log.status < 300 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600' 
+                            : log.status >= 400 
+                              ? 'bg-red-50 dark:bg-red-950/30 text-red-600' 
+                              : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600'
+                        }`}>
+                          {log.status}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{log.response_time_ms}ms</p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
           </div>
 
-          {/* System Status & Test Account Control */}
+          {/* System Status */}
           <div className="grid lg:grid-cols-3 gap-6">
             {/* System Health */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
@@ -560,7 +531,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Real-time Stream</span>
-                  <span className={`flex items-center gap-1 text-xs ${isConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <span className={`flex items-center gap-1 text-xs ${isConnected ? 'text-emerald-600' : 'text-red-600'}`}>
                     <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
                     {isConnected ? 'Active' : 'Disconnected'}
                   </span>
@@ -582,14 +553,14 @@ export default function AdminDashboard() {
                 </div>
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white">Recent Errors</h2>
                 {recentErrors.length > 0 && (
-                  <span className="text-xs bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+                  <span className="text-xs bg-red-100 dark:bg-red-950/50 text-red-600 px-1.5 py-0.5 rounded-full">
                     {recentErrors.length}
                   </span>
                 )}
               </div>
               {recentErrors.length === 0 ? (
                 <div className="text-center py-6">
-                  <CheckCircle size={32} className="mx-auto mb-2 text-emerald-500 dark:text-emerald-400" />
+                  <CheckCircle size={32} className="mx-auto mb-2 text-emerald-500" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">No errors in the last 24 hours</p>
                 </div>
               ) : (
@@ -597,10 +568,10 @@ export default function AdminDashboard() {
                   {recentErrors.slice(0, 3).map((error) => (
                     <div key={error.id} className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-red-600 dark:text-red-400">{error.error_type}</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(error.occurred_at).toLocaleTimeString()}</span>
+                        <span className="text-xs font-medium text-red-600">{error.error_type}</span>
+                        <span className="text-xs text-gray-400">{new Date(error.occurred_at).toLocaleTimeString()}</span>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{error.error_message}</p>
+                      <p className="text-xs text-gray-600 line-clamp-2">{error.error_message}</p>
                     </div>
                   ))}
                 </div>
@@ -615,53 +586,63 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Active Users Modal */}
-      {activeUsersModalOpen && (
+      {/* Login Activity Modal */}
+      {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
               <div className="flex items-center gap-2">
-                <Users size={20} className="text-orange-500" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active Users (Last 15 Minutes)</h2>
-                <span className="bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 text-xs px-2 py-0.5 rounded-full">
-                  {realtimeUsers?.count || 0} active
-                </span>
+                <LogIn size={20} className="text-orange-500" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Login Activity</h2>
+                {loginSummary && (
+                  <div className="flex gap-2 ml-3">
+                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
+                      Success: {loginSummary.successful_attempts}
+                    </span>
+                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                      Failed: {loginSummary.failed_attempts}
+                    </span>
+                  </div>
+                )}
               </div>
               <button 
-                onClick={() => setActiveUsersModalOpen(false)} 
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"
-                aria-label="Close modal"
+                onClick={() => setShowLoginModal(false)} 
+                className="p-1 hover:bg-gray-100 rounded-full transition"
               >
-                <X size={20} className="text-gray-500 dark:text-gray-400" />
+                <X size={20} className="text-gray-500" />
               </button>
             </div>
             <div className="overflow-y-auto max-h-[calc(85vh-70px)] p-5">
-              {!realtimeUsers?.users || realtimeUsers.users.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <Users size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>No active users at the moment</p>
+              {loginActivities.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Shield size={48} className="mx-auto mb-3 opacity-50" />
+                  <p>No login activity recorded</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {(realtimeUsers.users as RealtimeUser[]).map((user) => (
-                    <div key={user.session_id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                  {loginActivities.map((activity) => (
+                    <div key={activity.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className={`w-2 h-2 rounded-full ${activity.status < 400 ? 'bg-green-500' : 'bg-red-500'}`}></div>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {user.user_name || user.user_email || 'Guest'}
+                            {activity.status < 400 ? 'Successful login' : 'Failed login attempt'}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {Math.floor(user.seconds_ago / 60)} min ago
+                        <span className="text-xs text-gray-400">
+                          {new Date(activity.timestamp).toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
-                          <Monitor size={10} /> {user.page_url?.split('/').pop() || '/'}
+                          <Monitor size={10} /> IP: {activity.ip_address}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin size={10} /> {user.ip_address}
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                          activity.status < 300 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          Status: {activity.status}
                         </span>
                       </div>
                     </div>
