@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const result = await queryMany`
     SELECT COUNT(*) as count
-    FROM notification_recipient r
+    FROM notification_recipients r
     JOIN admin_notifications n ON n.id = r.notification_id
     WHERE r.customer_id = ${admin.id}::uuid
       AND r.is_read = FALSE
