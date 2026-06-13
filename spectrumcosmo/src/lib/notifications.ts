@@ -11,11 +11,11 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // 1. Get user notifications (existing system)
-  const existingNotifications = await getUserNotifications(user.id, limit, offset);
-  const existingUnreadCount = await getUnreadNotificationCount(user.id);
+  // 1. User notifications (order updates, delivery confirmations, etc.)
+  const userNotifications = await getUserNotifications(user.id, limit, offset);
+  const userUnreadCount = await getUnreadNotificationCount(user.id);
 
-  // 2. Get admin notifications for this customer
+  // 2. Admin notifications (messages sent by admin to this customer)
   const adminNotifications = await queryMany`
     SELECT 
       n.id,
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  // 3. Count unread admin notifications
+  // 3. Unread count for admin notifications
   const adminUnreadResult = await queryMany`
     SELECT COUNT(*) as count
     FROM notification_recipients r
@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
   `;
   const adminUnreadCount = Number(adminUnreadResult[0]?.count) || 0;
 
-  // 4. Format existing notifications to match the structure expected by frontend
-  const formattedExisting = existingNotifications.map((n: any) => ({
+  // 4. Format user notifications (already have numeric id)
+  const formattedUser = userNotifications.map((n: any) => ({
     id: n.id,
     title: n.title,
     message: n.message,
@@ -58,9 +58,9 @@ export async function GET(req: NextRequest) {
     action_label: n.action_label,
   }));
 
-  // 5. Format admin notifications (note: id is string UUID, but frontend expects number? We'll keep as string – it's fine)
+  // 5. Format admin notifications (prefix id to avoid collision with numeric ids)
   const formattedAdmin = adminNotifications.map((n: any) => ({
-    id: `admin_${n.id}`,  // prefix to avoid collision with user notification ids
+    id: `admin_${n.id}`,
     title: n.title,
     message: n.message,
     type: n.type,
@@ -70,13 +70,13 @@ export async function GET(req: NextRequest) {
     action_label: n.action_label,
   }));
 
-  // 6. Merge and sort by created_at (newest first)
-  const allNotifications = [...formattedExisting, ...formattedAdmin];
+  // 6. Merge and sort newest first
+  const allNotifications = [...formattedUser, ...formattedAdmin];
   allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  // 7. Apply pagination (slice after merge)
+  // 7. Apply pagination (since we already limited both queries, we still need to slice after merge)
   const paginated = allNotifications.slice(offset, offset + limit);
-  const totalUnread = existingUnreadCount + adminUnreadCount;
+  const totalUnread = userUnreadCount + adminUnreadCount;
 
   return NextResponse.json({
     notifications: paginated,
@@ -104,19 +104,21 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (notificationId) {
-    // Check if it's a user notification (numeric id)
+    // User notification (numeric id)
     if (typeof notificationId === 'number' || !isNaN(Number(notificationId))) {
       await markNotificationAsRead(Number(notificationId), user.id);
-    } else if (typeof notificationId === 'string' && notificationId.startsWith('admin_')) {
-      // Admin notification – remove prefix to get real UUID
+    }
+    // Admin notification (starts with 'admin_')
+    else if (typeof notificationId === 'string' && notificationId.startsWith('admin_')) {
       const uuid = notificationId.replace('admin_', '');
       await queryMany`
         UPDATE notification_recipients
         SET is_read = TRUE, read_at = NOW()
         WHERE notification_id = ${uuid}::uuid AND customer_id = ${user.id}::uuid
       `;
-    } else {
-      // Assume it's a direct UUID (if frontend sends without prefix)
+    }
+    // Fallback: treat as direct UUID
+    else {
       await queryMany`
         UPDATE notification_recipients
         SET is_read = TRUE, read_at = NOW()
