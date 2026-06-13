@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   for (const customerId of unreadCustomerIds) {
     await queryMany`
-      INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
+      INSERT INTO notification_recipient (notification_id, customer_id, created_at, delivered_at)
       VALUES (${reminderId}::uuid, ${customerId}::uuid, NOW(), NOW())
       ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
     `;
