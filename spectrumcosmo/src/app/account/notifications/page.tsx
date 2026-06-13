@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Package, Truck, CreditCard, ArrowLeft, X } from 'lucide-react';
+import { Bell, BellOff, Package, Truck, CreditCard, ArrowLeft, X, Trash2, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -61,6 +61,18 @@ export default function NotificationsPage() {
     }
   };
 
+  const clearAllNotifications = async () => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      setNotifications([]);
+    } catch (err) {
+      console.error('Failed to clear notifications:', err);
+    }
+  };
+
   const handleViewDetails = (notif: Notification) => {
     markAsRead(notif.id);
     if (notif.type === 'admin') {
@@ -72,6 +84,44 @@ export default function NotificationsPage() {
     }
   };
 
+  const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  const getDateGroup = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    if (date > weekAgo) return 'This Week';
+    return 'Earlier';
+  };
+
+  // Group notifications
+  const groupedNotifications = notifications.reduce((groups, notif) => {
+    const group = getDateGroup(notif.created_at);
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(notif);
+    return groups;
+  }, {} as Record<string, Notification[]>);
+
+  const groupOrder = ['Today', 'Yesterday', 'This Week', 'Earlier'];
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -81,77 +131,123 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-0">
-      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-        <Link 
-          href="/account" 
-          className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"
-          aria-label="Back to account"
-        >
-          <ArrowLeft size={18} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
-        </Link>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Stay updated on your orders</p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/account" 
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
+            aria-label="Back to account"
+          >
+            <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+          </Link>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notification Centre</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Stay updated on your orders</p>
+          </div>
         </div>
+        {notifications.length > 0 && (
+          <button
+            onClick={clearAllNotifications}
+            className="p-2 rounded-xl text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
+            title="Clear all notifications"
+          >
+            <Trash2 size={18} />
+          </button>
+        )}
       </div>
 
       {notifications.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 p-8 sm:p-12 text-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <BellOff size={28} className="text-gray-300 dark:text-gray-500 sm:w-8 sm:h-8" />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BellOff size={28} className="text-gray-300 dark:text-gray-500" />
           </div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">No notifications yet</p>
-          <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1">We'll notify you when something arrives</p>
+          <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">We'll notify you when something arrives</p>
         </div>
       ) : (
-        <div className="space-y-2 sm:space-y-3">
-          {notifications.map((notif) => {
-            const Icon = iconMap[notif.type] || Bell;
+        <div className="space-y-6">
+          {groupOrder.map(groupName => {
+            const groupNotifs = groupedNotifications[groupName];
+            if (!groupNotifs || groupNotifs.length === 0) return null;
+
             return (
-              <div
-                key={notif.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border p-3.5 sm:p-4 hover:shadow-md transition ${
-                  !notif.is_read 
-                    ? 'border-l-4 border-l-orange-500 bg-orange-50/10 dark:bg-orange-950/20' 
-                    : 'border-gray-100 dark:border-gray-700'
-                }`}
-              >
-                <div className="flex gap-2.5 sm:gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
-                      <Icon size={16} className="text-orange-500 sm:w-5 sm:h-5" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <p className={`font-medium text-sm sm:text-base ${
-                        !notif.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
-                      }`}>
-                        {notif.title}
-                      </p>
-                      {!notif.is_read && (
-                        <button
-                          onClick={() => markAsRead(notif.id)}
-                          className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 whitespace-nowrap"
-                        >
-                          Mark read
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">
-                      {notif.message}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1.5 sm:mt-2">
-                      {new Date(notif.created_at).toLocaleDateString()} at {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <button
-                      onClick={() => handleViewDetails(notif)}
-                      className="inline-block mt-2 sm:mt-3 text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium"
-                    >
-                      {notif.action_label || 'View Details'} →
-                    </button>
-                  </div>
+              <div key={groupName}>
+                {/* Group Header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={14} className="text-gray-400" />
+                  <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {groupName}
+                  </h2>
+                </div>
+
+                {/* Group Notifications */}
+                <div className="space-y-2">
+                  {groupNotifs.map((notif) => {
+                    const Icon = iconMap[notif.type] || Bell;
+                    const timeAgo = getTimeAgo(notif.created_at);
+
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`bg-white dark:bg-gray-800 rounded-2xl border p-4 hover:shadow-md transition-all duration-200 ${
+                          !notif.is_read 
+                            ? 'border-l-4 border-l-orange-500 bg-orange-50/5 dark:bg-orange-950/10' 
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                              !notif.is_read 
+                                ? 'bg-orange-100 dark:bg-orange-900/30' 
+                                : 'bg-gray-100 dark:bg-gray-700'
+                            }`}>
+                              <Icon size={18} className={`${
+                                !notif.is_read 
+                                  ? 'text-orange-600 dark:text-orange-400' 
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`} />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <p className={`font-medium text-sm ${
+                                !notif.is_read 
+                                  ? 'text-gray-900 dark:text-white' 
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {notif.title}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  {timeAgo}
+                                </span>
+                                {!notif.is_read && (
+                                  <button
+                                    onClick={() => markAsRead(notif.id)}
+                                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    ✓
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                              {notif.message}
+                            </p>
+                            <button
+                              onClick={() => handleViewDetails(notif)}
+                              className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+                            >
+                              {notif.action_label || 'View Details'} →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -162,14 +258,19 @@ export default function NotificationsPage() {
       {/* Modal for admin notifications */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">{modalTitle}</h3>
-              <button onClick={() => setModalOpen(false)} className="p-1 hover:bg-gray-100 rounded">
-                <X size={18} />
+              <button 
+                onClick={() => setModalOpen(false)} 
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
+                <X size={18} className="text-gray-500" />
               </button>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{modalMessage}</p>
+            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+              {modalMessage}
+            </p>
           </div>
         </div>
       )}
