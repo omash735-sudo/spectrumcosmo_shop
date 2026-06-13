@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Bell, BellOff, Package, Truck, CreditCard, Clock } from 'lucide-react';
+import { Bell, BellOff, Sparkles, BarChart3, Wrench, ChevronRight, Trash2 } from 'lucide-react';
 
 interface Notification {
   id: number;
@@ -16,9 +16,9 @@ interface Notification {
 }
 
 const iconMap: Record<string, any> = {
-  delivery_confirmation: Package,
-  order_update: Truck,
-  payment_reminder: CreditCard,
+  delivery_confirmation: Sparkles,
+  order_update: BarChart3,
+  payment_reminder: Wrench,
   promotion: Bell,
 };
 
@@ -29,7 +29,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/notifications?limit=10');
+      const res = await fetch('/api/notifications?limit=20');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setNotifications(data.notifications);
@@ -61,18 +61,32 @@ export default function NotificationBell() {
     }
   };
 
-  const markAllAsRead = async () => {
+  const clearAllNotifications = async () => {
     try {
       await fetch('/api/notifications', {
-        method: 'PATCH',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAll: true }),
       });
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
-      console.error('Failed to mark all as read:', err);
+      console.error('Failed to clear notifications:', err);
     }
+  };
+
+  // Group notifications by date
+  const getDateGroup = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    if (date > weekAgo) return 'This Week';
+    return 'Earlier';
   };
 
   const getTimeAgo = (dateString: string) => {
@@ -88,6 +102,16 @@ export default function NotificationBell() {
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
   };
+
+  // Group notifications
+  const groupedNotifications = notifications.reduce((groups, notif) => {
+    const group = getDateGroup(notif.created_at);
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(notif);
+    return groups;
+  }, {} as Record<string, Notification[]>);
+
+  const groupOrder = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
   return (
     <div className="relative">
@@ -110,28 +134,24 @@ export default function NotificationBell() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-[280px] sm:w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 mt-3 w-[320px] sm:w-[420px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
             
-            {/* Header */}
-            <div className="flex justify-between items-center px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-orange-50 to-transparent dark:from-orange-950/20">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">Notifications</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
-                </p>
-              </div>
-              {unreadCount > 0 && (
+            {/* Header with Trash Icon */}
+            <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notification Centre</h3>
+              {notifications.length > 0 && (
                 <button
-                  onClick={markAllAsRead}
-                  className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                  onClick={clearAllNotifications}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
+                  title="Clear all notifications"
                 >
-                  Mark all read
+                  <Trash2 size={16} />
                 </button>
               )}
             </div>
 
-            {/* Notifications List */}
-            <div className="overflow-y-auto max-h-[480px] divide-y divide-gray-100 dark:divide-gray-800">
+            {/* Notifications List with Groups */}
+            <div className="overflow-y-auto max-h-[550px]">
               {notifications.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
@@ -141,95 +161,82 @@ export default function NotificationBell() {
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">We'll notify you when something arrives</p>
                 </div>
               ) : (
-                notifications.map((notif) => {
-                  const Icon = iconMap[notif.type] || Bell;
-                  const timeAgo = getTimeAgo(notif.created_at);
+                groupOrder.map(groupName => {
+                  const groupNotifs = groupedNotifications[groupName];
+                  if (!groupNotifs || groupNotifs.length === 0) return null;
 
                   return (
-                    <div
-                      key={notif.id}
-                      className={`group relative transition-all duration-200 ${
-                        !notif.is_read 
-                          ? 'bg-orange-50/40 dark:bg-orange-950/10' 
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                      }`}
-                    >
-                      <div className="px-4 py-3 sm:px-5 sm:py-4">
-                        <div className="flex gap-3">
-                          {/* Icon with circle indicator for unread */}
-                          <div className="relative flex-shrink-0">
-                            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-colors ${
-                              !notif.is_read 
-                                ? 'bg-orange-100 dark:bg-orange-900/30' 
-                                : 'bg-gray-100 dark:bg-gray-800'
-                            }`}>
-                              <Icon size={14} className={`sm:text-base ${
-                                !notif.is_read 
-                                  ? 'text-orange-600 dark:text-orange-400' 
-                                  : 'text-gray-500 dark:text-gray-400'
-                              }`} />
-                            </div>
-                            {!notif.is_read && (
-                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white dark:ring-gray-900" />
-                            )}
-                          </div>
+                    <div key={groupName}>
+                      {/* Group Header */}
+                      <div className="px-5 pt-4 pb-2 bg-gray-50/50 dark:bg-gray-800/30">
+                        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {groupName}
+                        </h4>
+                      </div>
 
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                                {notif.title}
-                              </p>
-                              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 flex items-center gap-0.5 sm:gap-1">
-                                  <Clock size={10} />
-                                  {timeAgo}
-                                </span>
-                                {!notif.is_read && (
-                                  <button
+                      {/* Group Notifications */}
+                      {groupNotifs.map((notif) => {
+                        const Icon = iconMap[notif.type] || Sparkles;
+                        const timeAgo = getTimeAgo(notif.created_at);
+
+                        return (
+                          <div
+                            key={notif.id}
+                            className={`group px-5 py-4 transition-all duration-200 border-b border-gray-50 dark:border-gray-800 ${
+                              !notif.is_read 
+                                ? 'bg-orange-50/20 dark:bg-orange-950/5' 
+                                : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              {/* Icon */}
+                              <div className="flex-shrink-0">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                  !notif.is_read 
+                                    ? 'bg-orange-100 dark:bg-orange-900/30' 
+                                    : 'bg-gray-100 dark:bg-gray-800'
+                                }`}>
+                                  <Icon size={18} className={`${
+                                    !notif.is_read 
+                                      ? 'text-orange-600 dark:text-orange-400' 
+                                      : 'text-gray-500 dark:text-gray-400'
+                                  }`} />
+                                </div>
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                    {notif.title}
+                                  </p>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                    {timeAgo}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                                  {notif.message}
+                                </p>
+                                {notif.action_url && (
+                                  <Link
+                                    href={notif.action_url}
                                     onClick={() => markAsRead(notif.id)}
-                                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                    className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
                                   >
-                                    ✓
-                                  </button>
+                                    {notif.action_label || 'Learn More'}
+                                    <ChevronRight size={12} />
+                                  </Link>
                                 )}
                               </div>
                             </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                              {notif.message}
-                            </p>
-                            {notif.action_url && (
-                              <Link
-                                href={notif.action_url}
-                                onClick={() => markAsRead(notif.id)}
-                                className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors group/link"
-                              >
-                                {notif.action_label || 'View Details'}
-                                <span className="group-hover/link:translate-x-0.5 transition-transform">→</span>
-                              </Link>
-                            )}
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
                   );
                 })
               )}
             </div>
-
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="px-4 py-2 sm:px-5 sm:py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                  }}
-                  className="w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                  View all notifications
-                </button>
-              </div>
-            )}
           </div>
         </>
       )}
