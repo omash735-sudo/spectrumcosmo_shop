@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import createNotification from '@/lib/notifications';
+import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/notifications-admin';
 
 export async function POST(
@@ -31,7 +31,7 @@ export async function POST(
   }
 
   if (order.status !== 'delivered') {
-    return NextResponse.json({ error: 'Order not marked as delivered' }, { status: 400 });
+    return NextResponse.json({ error: 'Order has not been marked as delivered yet' }, { status: 400 });
   }
 
   const [existing] = await sql`
@@ -65,7 +65,7 @@ export async function POST(
     await createNotification({
       userId: user.id,
       title: 'We Are Investigating',
-      message: `We received your report about order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Our team will investigate and contact you within 24 hours.`,
+      message: `We have received your report about order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Our team will investigate and contact you within 24 hours.`,
       type: 'order_update',
       actionUrl: `/account/orders/${orderId}`,
       actionLabel: 'Track Status',
