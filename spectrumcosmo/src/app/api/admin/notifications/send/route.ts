@@ -48,36 +48,18 @@ export async function POST(req: NextRequest) {
     });
     console.log(`[Send] Notification created: ${notificationId}`);
 
-    // Insert recipients in batches (500 at a time) to avoid timeout
-    const batchSize = 500;
+    // Insert recipients one by one (simpler and avoids partition key issues)
     let insertedCount = 0;
-    for (let i = 0; i < customerIds.length; i += batchSize) {
-      const batch = customerIds.slice(i, i + batchSize);
-      const values = batch.map((_, idx) => `($1::uuid, $${idx + 2}::uuid, NOW(), NOW())`).join(',');
-      const params = [notificationId, ...batch];
-      const sql = require('@neondatabase/serverless').neon(process.env.POSTGRES_URL!);
+    for (const customerId of customerIds) {
       try {
-        await sql(
-          `INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
-           VALUES ${values}
-           ON CONFLICT (notification_id, customer_id) DO NOTHING`,
-          params
-        );
-        insertedCount += batch.length;
-      } catch (batchErr) {
-        console.error(`[Send] Batch insert failed for batch starting at ${i}:`, batchErr);
-        for (const cid of batch) {
-          try {
-            await queryMany`
-              INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
-              VALUES (${notificationId}::uuid, ${cid}::uuid, NOW(), NOW())
-              ON CONFLICT (notification_id, customer_id) DO NOTHING
-            `;
-            insertedCount++;
-          } catch (singleErr) {
-            console.error(`[Send] Failed to insert customer ${cid}:`, singleErr);
-          }
-        }
+        await queryMany`
+          INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at, is_read)
+          VALUES (${notificationId}::uuid, ${customerId}::uuid, NOW(), NOW(), FALSE)
+          ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
+        `;
+        insertedCount++;
+      } catch (err) {
+        console.error(`[Send] Failed to insert customer ${customerId}:`, err);
       }
     }
     console.log(`[Send] Inserted ${insertedCount} recipients`);
