@@ -25,6 +25,7 @@ export interface NotificationWithStats extends AdminNotification {
   unread_count: number;
 }
 
+// CREATE NOTIFICATION (admin to customers)
 export async function createNotification(data: {
   title: string;
   body: string;
@@ -48,6 +49,7 @@ export async function createNotification(data: {
   return id;
 }
 
+// CREATE ADMIN NOTIFICATION (system alerts to admins)
 export async function createAdminNotification(data: {
   title: string;
   body: string;
@@ -67,6 +69,7 @@ export async function createAdminNotification(data: {
       'sent', ${data.sent_by || 'system'}, NOW(), ${data.metadata ? JSON.stringify(data.metadata) : null}
     )
   `;
+
   if (data.audience_type === 'specific' && data.specific_customer_ids?.length) {
     for (const adminId of data.specific_customer_ids) {
       await queryMany`
@@ -91,6 +94,7 @@ export async function updateNotification(id: string, data: Partial<{
   const updates: string[] = [];
   const values: any[] = [];
   let paramIndex = 1;
+
   if (data.title !== undefined) {
     updates.push(`title = $${paramIndex++}`);
     values.push(data.title);
@@ -115,6 +119,7 @@ export async function updateNotification(id: string, data: Partial<{
     updates.push(`scheduled_for = $${paramIndex++}`);
     values.push(data.scheduled_for);
   }
+
   if (updates.length === 0) return;
   values.push(id);
   await sql(`UPDATE admin_notifications SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
@@ -124,7 +129,7 @@ export async function deleteNotification(id: string) {
   await queryMany`UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}`;
 }
 
-// FIXED: getNotificationsByStatus - explicit columns, safe parsing
+// FIXED: getNotificationsByStatus - excludes JSON fields that cause parse errors
 export async function getNotificationsByStatus(
   status: NotificationStatus | 'all',
   limit: number = 50,
@@ -137,7 +142,6 @@ export async function getNotificationsByStatus(
       n.title,
       n.body,
       n.audience_type,
-      n.specific_customer_ids,
       n.status,
       n.sent_by,
       n.sent_at,
@@ -145,7 +149,6 @@ export async function getNotificationsByStatus(
       n.created_at,
       n.expires_at,
       n.is_deleted,
-      n.metadata,
       COUNT(r.id) as total_recipients,
       COUNT(CASE WHEN r.is_read = TRUE THEN 1 END) as read_count
     FROM admin_notifications n
@@ -170,7 +173,7 @@ export async function getNotificationsByStatus(
     title: row.title,
     body: row.body,
     audience_type: row.audience_type,
-    specific_customer_ids: row.specific_customer_ids ? JSON.parse(row.specific_customer_ids) : null,
+    specific_customer_ids: null,
     status: row.status,
     sent_by: row.sent_by,
     sent_at: row.sent_at,
@@ -178,7 +181,7 @@ export async function getNotificationsByStatus(
     created_at: row.created_at,
     expires_at: row.expires_at,
     is_deleted: row.is_deleted,
-    metadata: row.metadata ? JSON.parse(row.metadata) : null,
+    metadata: null,
     total_recipients: Number(row.total_recipients) || 0,
     read_count: Number(row.read_count) || 0,
     unread_count: (Number(row.total_recipients) || 0) - (Number(row.read_count) || 0),
@@ -192,18 +195,8 @@ export async function getNotificationById(id: string): Promise<AdminNotification
   if (!results.length) return null;
   const row = results[0];
   return {
-    id: row.id,
-    title: row.title,
-    body: row.body,
-    audience_type: row.audience_type,
+    ...row,
     specific_customer_ids: row.specific_customer_ids ? JSON.parse(row.specific_customer_ids) : null,
-    status: row.status,
-    sent_by: row.sent_by,
-    sent_at: row.sent_at,
-    scheduled_for: row.scheduled_for,
-    created_at: row.created_at,
-    expires_at: row.expires_at,
-    is_deleted: row.is_deleted,
     metadata: row.metadata ? JSON.parse(row.metadata) : null,
   };
 }
