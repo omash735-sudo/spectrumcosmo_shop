@@ -129,6 +129,7 @@ export async function deleteNotification(id: string) {
   await queryMany`UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}`;
 }
 
+// FIXED: getNotificationsByStatus with correct singular table name and JOIN
 export async function getNotificationsByStatus(
   status: NotificationStatus | 'all',
   limit: number = 50,
