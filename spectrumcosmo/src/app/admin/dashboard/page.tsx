@@ -16,6 +16,8 @@ import {
   Monitor,
   LogIn,
   Shield,
+  Smartphone,
+  Laptop,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -75,6 +77,26 @@ interface LoginActivity {
   ip_address: string;
 }
 
+interface StatCard {
+  title: string;
+  value: string;
+  icon: any;
+  trend: number;
+  trendUp: boolean;
+  bgGradient: string;
+  iconBg: string;
+  iconColor: string;
+  onClick?: () => void;
+  clickable?: boolean;
+}
+
+interface SecondaryStat {
+  label: string;
+  value: string;
+  onClick?: () => void;
+  clickable?: boolean;
+}
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-MW', { 
     style: 'currency', 
@@ -128,7 +150,6 @@ export default function AdminDashboard() {
         setStats(statsData);
       } else {
         console.error('Stats API failed:', statsRes.status);
-        // Fallback data for testing
         setStats({
           revenue_today: 0,
           orders_today: 0,
@@ -182,7 +203,7 @@ export default function AdminDashboard() {
     return 'week_label';
   };
 
-  const statCards = [
+  const statCards: StatCard[] = [
     {
       title: 'Total Revenue',
       value: formatCurrency(stats?.revenue_today || 0),
@@ -192,7 +213,6 @@ export default function AdminDashboard() {
       bgGradient: 'from-emerald-50 to-teal-50',
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
-      onClick: null,
     },
     {
       title: 'Total Orders',
@@ -203,7 +223,6 @@ export default function AdminDashboard() {
       bgGradient: 'from-blue-50 to-indigo-50',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
-      onClick: null,
     },
     {
       title: 'Active Users',
@@ -228,11 +247,10 @@ export default function AdminDashboard() {
       bgGradient: 'from-purple-50 to-pink-50',
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600',
-      onClick: null,
     },
   ];
 
-  const secondaryStats = [
+  const secondaryStats: SecondaryStat[] = [
     { 
       label: 'Avg Order Value', 
       value: stats?.orders_today && stats?.revenue_today && stats.orders_today > 0
@@ -318,7 +336,7 @@ export default function AdminDashboard() {
               return (
                 <div
                   key={index}
-                  onClick={stat.onClick}
+                  onClick={stat.onClick || undefined}
                   className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition ${
                     stat.clickable ? 'cursor-pointer hover:border-orange-200 dark:hover:border-orange-800' : ''
                   }`}
@@ -346,7 +364,7 @@ export default function AdminDashboard() {
             {secondaryStats.map((stat, index) => (
               <div 
                 key={index} 
-                onClick={stat.onClick}
+                onClick={stat.onClick || undefined}
                 className={`bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 px-4 py-3 shadow-sm ${stat.clickable ? 'cursor-pointer hover:border-orange-200' : ''}`}
               >
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{stat.label}</p>
