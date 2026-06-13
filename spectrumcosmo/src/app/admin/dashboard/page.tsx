@@ -7,23 +7,15 @@ import {
   Users,
   AlertTriangle,
   CheckCircle,
-  Clock,
   DollarSign,
-  Activity,
   Server,
   RefreshCw,
   X,
   TrendingUp,
   TrendingDown,
-  Eye,
-  ArrowUpRight,
-  Calendar,
   Monitor,
-  MapPin,
   LogIn,
   Shield,
-  Smartphone,
-  Laptop,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -46,7 +38,6 @@ interface DashboardStats {
   active_users_today: number;
   abandoned_carts: number;
   active_carts: number;
-  failed_payments: number;
   avg_api_response_ms: number;
   failed_logins_last_hour: number;
   revenue_growth: number;
@@ -66,7 +57,6 @@ interface ApiLog {
 interface ProductView {
   id: number;
   product_name: string;
-  view_count: number;
   revenue: number;
   total_quantity: number;
 }
@@ -75,26 +65,14 @@ interface ErrorLog {
   id: number;
   error_type: string;
   error_message: string;
-  severity: string;
   occurred_at: string;
-  resolved: boolean;
 }
 
 interface LoginActivity {
   id: number;
-  endpoint: string;
-  method: string;
   status: number;
   timestamp: string;
   ip_address: string;
-  user_agent: string;
-}
-
-interface LoginSummary {
-  total_attempts: number;
-  failed_attempts: number;
-  successful_attempts: number;
-  unique_ips: number;
 }
 
 const formatCurrency = (amount: number) => {
@@ -116,12 +94,13 @@ export default function AdminDashboard() {
   const [topProducts, setTopProducts] = useState<ProductView[]>([]);
   const [recentErrors, setRecentErrors] = useState<ErrorLog[]>([]);
   const [loginActivities, setLoginActivities] = useState<LoginActivity[]>([]);
-  const [loginSummary, setLoginSummary] = useState<LoginSummary | null>(null);
+  const [loginSummary, setLoginSummary] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
   
   const { data: realtimeUsers, isConnected } = useRealtimeActiveUsers();
 
@@ -147,6 +126,20 @@ export default function AdminDashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+      } else {
+        console.error('Stats API failed:', statsRes.status);
+        // Fallback data for testing
+        setStats({
+          revenue_today: 0,
+          orders_today: 0,
+          active_users_today: 0,
+          abandoned_carts: 0,
+          active_carts: 0,
+          avg_api_response_ms: 0,
+          failed_logins_last_hour: 0,
+          revenue_growth: 0,
+          orders_growth: 0,
+        });
       }
       if (apiLogsRes.ok) {
         const logsData = await apiLogsRes.json();
@@ -199,6 +192,7 @@ export default function AdminDashboard() {
       bgGradient: 'from-emerald-50 to-teal-50',
       iconBg: 'bg-emerald-100',
       iconColor: 'text-emerald-600',
+      onClick: null,
     },
     {
       title: 'Total Orders',
@@ -209,6 +203,7 @@ export default function AdminDashboard() {
       bgGradient: 'from-blue-50 to-indigo-50',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
+      onClick: null,
     },
     {
       title: 'Active Users',
@@ -219,11 +214,12 @@ export default function AdminDashboard() {
       bgGradient: 'from-orange-50 to-red-50',
       iconBg: 'bg-orange-100',
       iconColor: 'text-orange-600',
-      clickable: false,
+      onClick: () => setShowActiveUsersModal(true),
+      clickable: true,
     },
     {
       title: 'Conversion Rate',
-      value: stats?.orders_today && stats?.active_users_today 
+      value: stats?.orders_today && stats?.active_users_today && stats.active_users_today > 0
         ? `${((stats.orders_today / stats.active_users_today) * 100).toFixed(1)}%`
         : '0%',
       icon: TrendingUp,
@@ -232,13 +228,14 @@ export default function AdminDashboard() {
       bgGradient: 'from-purple-50 to-pink-50',
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600',
+      onClick: null,
     },
   ];
 
   const secondaryStats = [
     { 
       label: 'Avg Order Value', 
-      value: stats?.orders_today && stats?.revenue_today 
+      value: stats?.orders_today && stats?.revenue_today && stats.orders_today > 0
         ? formatCurrency(stats.revenue_today / stats.orders_today) 
         : formatCurrency(0), 
     },
@@ -253,10 +250,10 @@ export default function AdminDashboard() {
       value: `${stats?.avg_api_response_ms || 0}ms`, 
     },
     { 
-      label: 'Failed Logins (1h)', 
+      label: 'Failed Logins', 
       value: formatNumber(stats?.failed_logins_last_hour || 0), 
-      clickable: true,
       onClick: () => setShowLoginModal(true),
+      clickable: true,
     },
   ];
 
@@ -284,7 +281,6 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Period Selector */}
               <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 {(['today', 'week', 'month'] as const).map((period) => (
                   <button
@@ -300,8 +296,6 @@ export default function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              
-              {/* Refresh Button */}
               <button 
                 onClick={fetchDashboardData} 
                 disabled={refreshing} 
@@ -324,8 +318,9 @@ export default function AdminDashboard() {
               return (
                 <div
                   key={index}
+                  onClick={stat.onClick}
                   className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition ${
-                    stat.clickable ? 'cursor-pointer hover:border-orange-200' : ''
+                    stat.clickable ? 'cursor-pointer hover:border-orange-200 dark:hover:border-orange-800' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -362,7 +357,6 @@ export default function AdminDashboard() {
 
           {/* Charts Section */}
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
-            {/* Revenue Chart */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -385,14 +379,13 @@ export default function AdminDashboard() {
                   <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(v) => `${v/1000}k`} />
                   <Tooltip 
                     formatter={(v: number) => [formatCurrency(v), 'Revenue']}
-                    contentStyle={{ backgroundColor: 'var(--tw-bg-white)', borderColor: '#E5E7EB', borderRadius: '0.5rem' }}
+                    contentStyle={{ backgroundColor: '#fff', borderColor: '#E5E7EB', borderRadius: '0.5rem' }}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#F97316" strokeWidth={2} fill="url(#revenueGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Orders vs Revenue Chart */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -413,7 +406,7 @@ export default function AdminDashboard() {
                       if (name === 'orders') return [v, 'Orders'];
                       return [formatCurrency(v), 'Revenue'];
                     }}
-                    contentStyle={{ backgroundColor: 'var(--tw-bg-white)', borderColor: '#E5E7EB', borderRadius: '0.5rem' }}
+                    contentStyle={{ backgroundColor: '#fff', borderColor: '#E5E7EB', borderRadius: '0.5rem' }}
                   />
                   <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} dot={false} />
                   <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#F97316" strokeWidth={2} dot={false} />
@@ -508,7 +501,6 @@ export default function AdminDashboard() {
 
           {/* System Status */}
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* System Health */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center">
@@ -519,14 +511,8 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
-                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  <span className="flex items-center gap-1 text-xs text-emerald-600">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Connected
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">API Gateway</span>
-                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Operational
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -536,37 +522,25 @@ export default function AdminDashboard() {
                     {isConnected ? 'Active' : 'Disconnected'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Cache Layer</span>
-                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Ready
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* Recent Errors */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center">
-                  <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle size={16} className="text-amber-600" />
                 </div>
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white">Recent Errors</h2>
-                {recentErrors.length > 0 && (
-                  <span className="text-xs bg-red-100 dark:bg-red-950/50 text-red-600 px-1.5 py-0.5 rounded-full">
-                    {recentErrors.length}
-                  </span>
-                )}
               </div>
               {recentErrors.length === 0 ? (
                 <div className="text-center py-6">
                   <CheckCircle size={32} className="mx-auto mb-2 text-emerald-500" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No errors in the last 24 hours</p>
+                  <p className="text-sm text-gray-500">No errors in the last 24 hours</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[200px] overflow-y-auto">
                   {recentErrors.slice(0, 3).map((error) => (
-                    <div key={error.id} className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg">
+                    <div key={error.id} className="p-2 bg-red-50 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-medium text-red-600">{error.error_type}</span>
                         <span className="text-xs text-gray-400">{new Date(error.occurred_at).toLocaleTimeString()}</span>
@@ -578,13 +552,67 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {/* Test Account Control */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
               <TestAccountKillSwitch />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Active Users Modal */}
+      {showActiveUsersModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
+            <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
+              <div className="flex items-center gap-2">
+                <Users size={20} className="text-orange-500" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active Users</h2>
+                <span className="bg-orange-100 dark:bg-orange-950/50 text-orange-600 text-xs px-2 py-0.5 rounded-full">
+                  {realtimeUsers?.count || 0} active
+                </span>
+              </div>
+              <button onClick={() => setShowActiveUsersModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(85vh-70px)] p-5">
+              {!realtimeUsers?.users || realtimeUsers.users.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Users size={48} className="mx-auto mb-3 opacity-50" />
+                  <p>No active users at the moment</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {realtimeUsers.users.map((user: any) => (
+                    <div key={user.session_id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {user.user_name || user.user_email || 'Guest'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {Math.floor(user.seconds_ago / 60)} min ago
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Monitor size={10} /> {user.page_url?.split('/').pop() || '/'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          {user.device_type === 'Mobile' ? <Smartphone size={10} /> : <Laptop size={10} />}
+                          {user.device_type}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Login Activity Modal */}
       {showLoginModal && (
@@ -605,10 +633,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-              <button 
-                onClick={() => setShowLoginModal(false)} 
-                className="p-1 hover:bg-gray-100 rounded-full transition"
-              >
+              <button onClick={() => setShowLoginModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
@@ -621,7 +646,7 @@ export default function AdminDashboard() {
               ) : (
                 <div className="space-y-2">
                   {loginActivities.map((activity) => (
-                    <div key={activity.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                    <div key={activity.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${activity.status < 400 ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -629,21 +654,10 @@ export default function AdminDashboard() {
                             {activity.status < 400 ? 'Successful login' : 'Failed login attempt'}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400">
-                          {new Date(activity.timestamp).toLocaleString()}
-                        </span>
+                        <span className="text-xs text-gray-400">{new Date(activity.timestamp).toLocaleString()}</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Monitor size={10} /> IP: {activity.ip_address}
-                        </span>
-                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                          activity.status < 300 
-                            ? 'bg-green-100 text-green-600' 
-                            : 'bg-red-100 text-red-600'
-                        }`}>
-                          Status: {activity.status}
-                        </span>
+                      <div className="mt-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">IP: {activity.ip_address}</span>
                       </div>
                     </div>
                   ))}
