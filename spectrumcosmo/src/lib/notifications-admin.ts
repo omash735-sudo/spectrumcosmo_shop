@@ -7,6 +7,7 @@ export interface AdminNotification {
   id: string;
   title: string;
   body: string;
+  icon_name: string;
   audience_type: AudienceType;
   specific_customer_ids: string[] | null;
   status: NotificationStatus;
@@ -29,6 +30,7 @@ export interface NotificationWithStats extends AdminNotification {
 export async function createNotification(data: {
   title: string;
   body: string;
+  icon_name?: string;
   audience_type: AudienceType;
   specific_customer_ids?: string[];
   status: NotificationStatus;
@@ -38,10 +40,10 @@ export async function createNotification(data: {
   const id = crypto.randomUUID();
   await queryMany`
     INSERT INTO admin_notifications (
-      id, title, body, audience_type, specific_customer_ids,
+      id, title, body, icon_name, audience_type, specific_customer_ids,
       status, scheduled_for, sent_by
     ) VALUES (
-      ${id}, ${data.title}, ${data.body}, ${data.audience_type},
+      ${id}, ${data.title}, ${data.body}, ${data.icon_name || 'bell'}, ${data.audience_type},
       ${data.specific_customer_ids ? JSON.stringify(data.specific_customer_ids) : null},
       ${data.status}, ${data.scheduled_for || null}, ${data.sent_by || 'spectrumcosmo team'}
     )
@@ -53,6 +55,7 @@ export async function createNotification(data: {
 export async function createAdminNotification(data: {
   title: string;
   body: string;
+  icon_name?: string;
   audience_type: AudienceType;
   specific_customer_ids?: string[];
   sent_by?: string;
@@ -61,10 +64,10 @@ export async function createAdminNotification(data: {
   const id = crypto.randomUUID();
   await queryMany`
     INSERT INTO admin_notifications (
-      id, title, body, audience_type, specific_customer_ids,
+      id, title, body, icon_name, audience_type, specific_customer_ids,
       status, sent_by, sent_at, metadata
     ) VALUES (
-      ${id}, ${data.title}, ${data.body}, ${data.audience_type},
+      ${id}, ${data.title}, ${data.body}, ${data.icon_name || 'bell'}, ${data.audience_type},
       ${data.specific_customer_ids ? JSON.stringify(data.specific_customer_ids) : null},
       'sent', ${data.sent_by || 'system'}, NOW(), ${data.metadata ? JSON.stringify(data.metadata) : null}
     )
@@ -85,6 +88,7 @@ export async function createAdminNotification(data: {
 export async function updateNotification(id: string, data: Partial<{
   title: string;
   body: string;
+  icon_name: string;
   audience_type: AudienceType;
   specific_customer_ids: string[];
   status: NotificationStatus;
@@ -102,6 +106,10 @@ export async function updateNotification(id: string, data: Partial<{
   if (data.body !== undefined) {
     updates.push(`body = $${paramIndex++}`);
     values.push(data.body);
+  }
+  if (data.icon_name !== undefined) {
+    updates.push(`icon_name = $${paramIndex++}`);
+    values.push(data.icon_name);
   }
   if (data.audience_type !== undefined) {
     updates.push(`audience_type = $${paramIndex++}`);
@@ -129,7 +137,7 @@ export async function deleteNotification(id: string) {
   await queryMany`UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}`;
 }
 
-// FIXED: getNotificationsByStatus - excludes JSON fields that cause parse errors
+// FIXED: getNotificationsByStatus - includes icon_name
 export async function getNotificationsByStatus(
   status: NotificationStatus | 'all',
   limit: number = 50,
@@ -141,6 +149,7 @@ export async function getNotificationsByStatus(
       n.id,
       n.title,
       n.body,
+      n.icon_name,
       n.audience_type,
       n.status,
       n.sent_by,
@@ -172,6 +181,7 @@ export async function getNotificationsByStatus(
     id: row.id,
     title: row.title,
     body: row.body,
+    icon_name: row.icon_name || 'bell',
     audience_type: row.audience_type,
     specific_customer_ids: null,
     status: row.status,
@@ -195,8 +205,19 @@ export async function getNotificationById(id: string): Promise<AdminNotification
   if (!results.length) return null;
   const row = results[0];
   return {
-    ...row,
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    icon_name: row.icon_name || 'bell',
+    audience_type: row.audience_type,
     specific_customer_ids: row.specific_customer_ids ? JSON.parse(row.specific_customer_ids) : null,
+    status: row.status,
+    sent_by: row.sent_by,
+    sent_at: row.sent_at,
+    scheduled_for: row.scheduled_for,
+    created_at: row.created_at,
+    expires_at: row.expires_at,
+    is_deleted: row.is_deleted,
     metadata: row.metadata ? JSON.parse(row.metadata) : null,
   };
 }
@@ -253,7 +274,7 @@ export async function getUnreadCountForUser(userId: string): Promise<number> {
 export async function getNotificationsForUser(userId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
   const results = await queryMany`
     SELECT 
-      n.id, n.title, n.body as message, 'admin' as type,
+      n.id, n.title, n.body as message, n.icon_name, 'admin' as type,
       n.sent_at as created_at, r.is_read,
       '/account/notifications' as action_url, 'View Details' as action_label,
       n.metadata
@@ -267,6 +288,7 @@ export async function getNotificationsForUser(userId: string, limit: number = 20
   `;
   return results.map((row: any) => ({
     ...row,
+    icon_name: row.icon_name || 'bell',
     metadata: row.metadata ? JSON.parse(row.metadata) : null,
   }));
 }
