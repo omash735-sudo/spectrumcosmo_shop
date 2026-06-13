@@ -16,11 +16,9 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // 1. User notifications
   const userNotifications = await getUserNotifications(user.id, limit, offset);
   const userUnreadCount = await getUnreadNotificationCount(user.id);
 
-  // 2. Admin notifications – relaxed conditions
   const adminNotifications = await queryMany`
     SELECT 
       n.id,
@@ -39,7 +37,6 @@ export async function GET(req: NextRequest) {
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  // 3. Unread count for admin notifications
   const adminUnreadResult = await queryMany`
     SELECT COUNT(*) as count
     FROM notification_recipients r
@@ -50,7 +47,6 @@ export async function GET(req: NextRequest) {
   `;
   const adminUnreadCount = Number(adminUnreadResult[0]?.count) || 0;
 
-  // 4. Format user notifications
   const formattedUser = userNotifications.map((n: any) => ({
     id: n.id,
     title: n.title,
@@ -62,23 +58,20 @@ export async function GET(req: NextRequest) {
     action_label: n.action_label,
   }));
 
-  // 5. Format admin notifications
   const formattedAdmin = adminNotifications.map((n: any) => ({
     id: `admin_${n.id}`,
     title: n.title,
     message: n.message,
     type: n.type,
     created_at: n.created_at,
-    is_read: n.is_read,
+    is_read: Boolean(n.is_read),
     action_url: n.action_url,
     action_label: n.action_label,
   }));
 
-  // 6. Merge and sort
   const allNotifications = [...formattedUser, ...formattedAdmin];
   allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  // 7. Paginate
   const paginated = allNotifications.slice(offset, offset + limit);
   const totalUnread = userUnreadCount + adminUnreadCount;
 
@@ -126,4 +119,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const { user, error } = await getVerifiedUser(req);
+  if (error) return error;
+
+  await queryMany`DELETE FROM user_notifications WHERE user_id = ${user.id}::uuid`;
+  await queryMany`DELETE FROM notification_recipients WHERE customer_id = ${user.id}::uuid`;
+
+  return NextResponse.json({ success: true });
 }
