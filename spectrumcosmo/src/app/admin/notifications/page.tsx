@@ -3,7 +3,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { 
   Bell, Send, Calendar, Save, Trash2, Eye, Users, 
-  Loader2, Plus, Repeat, Search, RefreshCw, X, Clock, Edit
+  Loader2, Plus, Repeat, Search, RefreshCw, X, Clock, Edit,
+  // Icons for selector
+  Wrench, ShoppingBag, Shirt, Package, Truck, CreditCard, Tag, Megaphone,
+  Sparkles, AlertTriangle, Gift, Store, Users as UsersIcon, Shield, 
+  CheckCircle, XCircle, HelpCircle, Star, Heart, Box, Bike, Plane,
+  MapPin, Watch, Gem, Camera, Smartphone, Laptop, Coffee, Home, Dumbbell,
+  Wallet, Banknote, Coins, Receipt, Percent, Rocket, Trophy, Settings,
+  Database, Server, Cloud, Lock, Headphones, MessageCircle, Phone, Mail,
+  BellRing, Info, Calendar as CalendarIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -21,6 +29,7 @@ interface Notification {
   total_recipients: number;
   read_count: number;
   unread_count: number;
+  icon_name?: string;
 }
 
 interface Customer {
@@ -29,6 +38,95 @@ interface Customer {
   email: string;
   phone: string;
 }
+
+// Icon categories with pure Lucide icons (no emojis)
+const iconCategories = [
+  {
+    name: 'Orders & Shipping',
+    icons: [
+      { value: 'package', label: 'Package', icon: Package },
+      { value: 'box', label: 'Box', icon: Box },
+      { value: 'truck', label: 'Truck', icon: Truck },
+      { value: 'bike', label: 'Bike', icon: Bike },
+      { value: 'plane', label: 'Plane', icon: Plane },
+      { value: 'map-pin', label: 'Location', icon: MapPin },
+      { value: 'clock', label: 'Clock', icon: Clock },
+    ]
+  },
+  {
+    name: 'Products & Inventory',
+    icons: [
+      { value: 'shopping-bag', label: 'Shopping Bag', icon: ShoppingBag },
+      { value: 'shirt', label: 'Clothing', icon: Shirt },
+      { value: 'watch', label: 'Watch', icon: Watch },
+      { value: 'gem', label: 'Jewelry', icon: Gem },
+      { value: 'camera', label: 'Camera', icon: Camera },
+      { value: 'smartphone', label: 'Phone', icon: Smartphone },
+      { value: 'laptop', label: 'Laptop', icon: Laptop },
+      { value: 'coffee', label: 'Coffee', icon: Coffee },
+      { value: 'home', label: 'Home', icon: Home },
+      { value: 'dumbbell', label: 'Fitness', icon: Dumbbell },
+    ]
+  },
+  {
+    name: 'Payments & Finance',
+    icons: [
+      { value: 'credit-card', label: 'Credit Card', icon: CreditCard },
+      { value: 'wallet', label: 'Wallet', icon: Wallet },
+      { value: 'banknote', label: 'Cash', icon: Banknote },
+      { value: 'coins', label: 'Coins', icon: Coins },
+      { value: 'receipt', label: 'Receipt', icon: Receipt },
+      { value: 'percent', label: 'Discount', icon: Percent },
+    ]
+  },
+  {
+    name: 'Promotions & Marketing',
+    icons: [
+      { value: 'sparkles', label: 'New', icon: Sparkles },
+      { value: 'gift', label: 'Gift', icon: Gift },
+      { value: 'tag', label: 'Tag', icon: Tag },
+      { value: 'megaphone', label: 'Announcement', icon: Megaphone },
+      { value: 'rocket', label: 'Launch', icon: Rocket },
+      { value: 'trophy', label: 'Achievement', icon: Trophy },
+      { value: 'star', label: 'Star', icon: Star },
+      { value: 'heart', label: 'Heart', icon: Heart },
+    ]
+  },
+  {
+    name: 'System & Maintenance',
+    icons: [
+      { value: 'wrench', label: 'Maintenance', icon: Wrench },
+      { value: 'settings', label: 'Settings', icon: Settings },
+      { value: 'database', label: 'Database', icon: Database },
+      { value: 'server', label: 'Server', icon: Server },
+      { value: 'cloud', label: 'Cloud', icon: Cloud },
+      { value: 'shield', label: 'Security', icon: Shield },
+      { value: 'lock', label: 'Lock', icon: Lock },
+    ]
+  },
+  {
+    name: 'Customer Support',
+    icons: [
+      { value: 'headphones', label: 'Support', icon: Headphones },
+      { value: 'help-circle', label: 'Help', icon: HelpCircle },
+      { value: 'message-circle', label: 'Message', icon: MessageCircle },
+      { value: 'phone', label: 'Phone', icon: Phone },
+      { value: 'mail', label: 'Mail', icon: Mail },
+    ]
+  },
+  {
+    name: 'Alerts & Updates',
+    icons: [
+      { value: 'bell', label: 'Bell', icon: Bell },
+      { value: 'bell-ring', label: 'Alert', icon: BellRing },
+      { value: 'info', label: 'Info', icon: Info },
+      { value: 'alert-triangle', label: 'Warning', icon: AlertTriangle },
+      { value: 'check-circle', label: 'Success', icon: CheckCircle },
+      { value: 'x-circle', label: 'Error', icon: XCircle },
+      { value: 'calendar', label: 'Calendar', icon: CalendarIcon },
+    ]
+  },
+];
 
 export default function AdminNotificationsPage() {
   const [activeTab, setActiveTab] = useState<'compose' | 'drafts' | 'scheduled' | 'sent'>('compose');
@@ -39,6 +137,7 @@ export default function AdminNotificationsPage() {
   // Form state
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState('bell');
   const [audienceType, setAudienceType] = useState<'all' | 'specific'>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [sendType, setSendType] = useState<'now' | 'schedule' | 'draft'>('now');
@@ -105,6 +204,7 @@ export default function AdminNotificationsPage() {
   const resetForm = () => {
     setTitle('');
     setMessage('');
+    setSelectedIcon('bell');
     setAudienceType('all');
     setSelectedCustomers([]);
     setSearchTerm('');
@@ -116,6 +216,7 @@ export default function AdminNotificationsPage() {
   const editDraft = (draft: Notification) => {
     setTitle(draft.title);
     setMessage(draft.body);
+    setSelectedIcon(draft.icon_name || 'bell');
     setAudienceType(draft.audience_type);
     setSelectedCustomers(draft.specific_customer_ids || []);
     setSendType('now');
@@ -144,6 +245,7 @@ export default function AdminNotificationsPage() {
           body: JSON.stringify({
             title,
             body: message,
+            icon_name: selectedIcon,
             audience_type: audienceType,
             specific_customer_ids: selectedCustomers,
           }),
@@ -168,6 +270,7 @@ export default function AdminNotificationsPage() {
           body: JSON.stringify({
             title,
             body: message,
+            icon_name: selectedIcon,
             audience_type: audienceType,
             specific_customer_ids: selectedCustomers,
             scheduled_for: scheduledDate,
@@ -182,7 +285,6 @@ export default function AdminNotificationsPage() {
           throw new Error();
         }
       } else { // send now
-        // If editing an existing draft, delete it after successful send
         if (editingDraft) {
           await fetch(`/api/admin/notifications/drafts?id=${editingDraft.id}`, { method: 'DELETE' });
           setEditingDraft(null);
@@ -194,6 +296,7 @@ export default function AdminNotificationsPage() {
           body: JSON.stringify({
             title,
             body: message,
+            icon_name: selectedIcon,
             audience_type: audienceType,
             specific_customer_ids: selectedCustomers,
           }),
@@ -312,6 +415,17 @@ export default function AdminNotificationsPage() {
     }
   };
   
+  // Helper to get icon component
+  const getIconComponent = (iconName: string) => {
+    for (const category of iconCategories) {
+      const found = category.icons.find(i => i.value === iconName);
+      if (found) return found.icon;
+    }
+    return Bell;
+  };
+  
+  const SelectedIconPreview = getIconComponent(selectedIcon);
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -345,7 +459,7 @@ export default function AdminNotificationsPage() {
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Total Customers</p>
                 <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{stats.customers}</p>
               </div>
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-orange-500 opacity-70" />
+              <UsersIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-orange-500 opacity-70" />
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
@@ -406,6 +520,56 @@ export default function AdminNotificationsPage() {
             </h2>
             
             <div className="space-y-3 sm:space-y-4">
+              {/* Icon Selection */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Message Icon
+                </label>
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <SelectedIconPreview size={20} className="text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Selected Icon Preview</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">This icon will appear next to the notification</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                    {iconCategories.map((category) => (
+                      <div key={category.name}>
+                        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                          {category.name}
+                        </h4>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                          {category.icons.map((icon) => {
+                            const IconComponent = icon.icon;
+                            const isSelected = selectedIcon === icon.value;
+                            return (
+                              <button
+                                key={icon.value}
+                                type="button"
+                                onClick={() => setSelectedIcon(icon.value)}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
+                                  isSelected
+                                    ? 'bg-orange-100 dark:bg-orange-900/30 ring-2 ring-orange-500'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                }`}
+                                title={icon.label}
+                              >
+                                <IconComponent size={18} className={isSelected ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'} />
+                                <span className="text-[9px] text-gray-500 dark:text-gray-400">{icon.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                 <input
@@ -562,37 +726,45 @@ export default function AdminNotificationsPage() {
             ) : drafts.length === 0 ? (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400 text-sm">No drafts saved</div>
             ) : (
-              drafts.map(draft => (
-                <div key={draft.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                        {getStatusBadge(draft.status)}
+              drafts.map(draft => {
+                const DraftIcon = getIconComponent(draft.icon_name || 'bell');
+                return (
+                  <div key={draft.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                          {getStatusBadge(draft.status)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <DraftIcon size={12} className="text-orange-600 dark:text-orange-400" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{draft.title}</h3>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{draft.body}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500 mt-1.5 sm:mt-2">
+                          Audience: {draft.audience_type === 'all' ? 'All Customers' : `${draft.specific_customer_ids?.length || 0} specific customers`}
+                        </p>
                       </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{draft.title}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{draft.body}</p>
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500 mt-1.5 sm:mt-2">
-                        Audience: {draft.audience_type === 'all' ? 'All Customers' : `${draft.specific_customer_ids?.length || 0} specific customers`}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 sm:gap-2 ml-2">
-                      <button
-                        onClick={() => editDraft(draft)}
-                        className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
-                        title="Edit and send"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDraft(draft.id)}
-                        className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex gap-1 sm:gap-2 ml-2">
+                        <button
+                          onClick={() => editDraft(draft)}
+                          className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit and send"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDraft(draft.id)}
+                          className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -605,31 +777,39 @@ export default function AdminNotificationsPage() {
             ) : scheduled.length === 0 ? (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400 text-sm">No scheduled messages</div>
             ) : (
-              scheduled.map(item => (
-                <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                        {getStatusBadge(item.status)}
-                        <Clock size={12} className="text-gray-400" />
-                        <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">
-                          Scheduled: {item.scheduled_for ? new Date(item.scheduled_for).toLocaleString() : 'N/A'}
-                        </span>
+              scheduled.map(item => {
+                const ScheduledIcon = getIconComponent(item.icon_name || 'bell');
+                return (
+                  <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                          {getStatusBadge(item.status)}
+                          <Clock size={12} className="text-gray-400" />
+                          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">
+                            Scheduled: {item.scheduled_for ? new Date(item.scheduled_for).toLocaleString() : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <ScheduledIcon size={12} className="text-orange-600 dark:text-orange-400" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{item.title}</h3>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.body}</p>
                       </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{item.title}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.body}</p>
-                    </div>
-                    <div className="flex gap-1 sm:gap-2 ml-2">
-                      <button
-                        onClick={() => handleCancelScheduled(item.id)}
-                        className="px-2 sm:px-3 py-1 text-[10px] sm:text-xs bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition"
-                      >
-                        Cancel
-                      </button>
+                      <div className="flex gap-1 sm:gap-2 ml-2">
+                        <button
+                          onClick={() => handleCancelScheduled(item.id)}
+                          className="px-2 sm:px-3 py-1 text-[10px] sm:text-xs bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -642,44 +822,52 @@ export default function AdminNotificationsPage() {
             ) : sent.length === 0 ? (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400 text-sm">No sent messages</div>
             ) : (
-              sent.map(item => (
-                <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                        {getStatusBadge(item.status)}
-                        <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">
-                          Sent: {item.sent_at ? new Date(item.sent_at).toLocaleString() : 'N/A'}
-                        </span>
+              sent.map(item => {
+                const SentIcon = getIconComponent(item.icon_name || 'bell');
+                return (
+                  <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                          {getStatusBadge(item.status)}
+                          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">
+                            Sent: {item.sent_at ? new Date(item.sent_at).toLocaleString() : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <SentIcon size={12} className="text-orange-600 dark:text-orange-400" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{item.title}</h3>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.body}</p>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1.5 sm:mt-2">
+                          <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">Read: {item.read_count}/{item.total_recipients}</span>
+                          <span className="text-[10px] sm:text-xs text-yellow-600 dark:text-yellow-400">Unread: {item.unread_count}</span>
+                        </div>
                       </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">{item.title}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.body}</p>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1.5 sm:mt-2">
-                        <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">Read: {item.read_count}/{item.total_recipients}</span>
-                        <span className="text-[10px] sm:text-xs text-yellow-600 dark:text-yellow-400">Unread: {item.unread_count}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 sm:gap-2 ml-2">
-                      <button
-                        onClick={() => handleViewReaders(item)}
-                        className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition"
-                        title="View readers"
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {item.unread_count > 0 && (
+                      <div className="flex gap-1 sm:gap-2 ml-2">
                         <button
-                          onClick={() => handleResendToUnread(item)}
-                          className="p-1.5 sm:p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg transition"
-                          title="Resend to unread"
+                          onClick={() => handleViewReaders(item)}
+                          className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition"
+                          title="View readers"
                         >
-                          <Repeat size={14} />
+                          <Eye size={14} />
                         </button>
-                      )}
+                        {item.unread_count > 0 && (
+                          <button
+                            onClick={() => handleResendToUnread(item)}
+                            className="p-1.5 sm:p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg transition"
+                            title="Resend to unread"
+                          >
+                            <Repeat size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
