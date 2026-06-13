@@ -18,6 +18,11 @@ import {
   Shield,
   Smartphone,
   Laptop,
+  Tablet,
+  Clock,
+  MapPin,
+  Eye,
+  Activity,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -110,6 +115,12 @@ const formatNumber = (num: number) => {
   return new Intl.NumberFormat('en-MW').format(num);
 };
 
+const getDeviceIcon = (deviceType: string) => {
+  if (deviceType === 'Mobile') return <Smartphone size={12} />;
+  if (deviceType === 'Tablet') return <Tablet size={12} />;
+  return <Laptop size={12} />;
+};
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
@@ -123,8 +134,9 @@ export default function AdminDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
+  const [activeUsersTimeFilter, setActiveUsersTimeFilter] = useState<'15min' | '30min' | '1hour' | '24hour'>('15min');
   
-  const { data: realtimeUsers, isConnected } = useRealtimeActiveUsers();
+  const { data: realtimeUsers, isConnected, refresh: refreshUsers } = useRealtimeActiveUsers();
 
   const fetchDashboardData = useCallback(async () => {
     setRefreshing(true);
@@ -148,19 +160,6 @@ export default function AdminDashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
-      } else {
-        console.error('Stats API failed:', statsRes.status);
-        setStats({
-          revenue_today: 0,
-          orders_today: 0,
-          active_users_today: 0,
-          abandoned_carts: 0,
-          active_carts: 0,
-          avg_api_response_ms: 0,
-          failed_logins_last_hour: 0,
-          revenue_growth: 0,
-          orders_growth: 0,
-        });
       }
       if (apiLogsRes.ok) {
         const logsData = await apiLogsRes.json();
@@ -201,6 +200,20 @@ export default function AdminDashboard() {
     if (selectedPeriod === 'today') return 'hour';
     if (selectedPeriod === 'week') return 'day';
     return 'week_label';
+  };
+
+  // Filter active users by time
+  const getFilteredActiveUsers = () => {
+    if (!realtimeUsers?.users) return [];
+    const now = Date.now();
+    return realtimeUsers.users.filter((user: any) => {
+      const userTime = new Date(user.last_seen || user.timestamp || Date.now()).getTime();
+      const diffMinutes = (now - userTime) / (1000 * 60);
+      if (activeUsersTimeFilter === '15min') return diffMinutes <= 15;
+      if (activeUsersTimeFilter === '30min') return diffMinutes <= 30;
+      if (activeUsersTimeFilter === '1hour') return diffMinutes <= 60;
+      return true; // 24 hours
+    });
   };
 
   const statCards: StatCard[] = [
@@ -259,9 +272,7 @@ export default function AdminDashboard() {
     },
     { 
       label: 'Cart Abandonment', 
-      value: stats?.abandoned_carts !== undefined 
-        ? `${stats.abandoned_carts}%` 
-        : '0%', 
+      value: stats?.abandoned_carts !== undefined ? `${stats.abandoned_carts}%` : '0%', 
     },
     { 
       label: 'API Response Time', 
@@ -285,6 +296,9 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const filteredUsers = getFilteredActiveUsers();
+  const filteredCount = filteredUsers.length;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -577,54 +591,151 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Active Users Modal */}
+      {/* Active Users Modal - Enhanced with Time Filters */}
       {showActiveUsersModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
+          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-5xl w-full max-h-[85vh] overflow-hidden shadow-xl">
             <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
               <div className="flex items-center gap-2">
                 <Users size={20} className="text-orange-500" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active Users</h2>
                 <span className="bg-orange-100 dark:bg-orange-950/50 text-orange-600 text-xs px-2 py-0.5 rounded-full">
-                  {realtimeUsers?.count || 0} active
+                  {filteredCount} active
                 </span>
               </div>
-              <button onClick={() => setShowActiveUsersModal(false)} className="p-1 hover:bg-gray-100 rounded-full transition">
-                <X size={20} className="text-gray-500" />
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Time filter buttons */}
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setActiveUsersTimeFilter('15min')}
+                    className={`px-2.5 py-1 text-xs rounded-md transition ${
+                      activeUsersTimeFilter === '15min' 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    15 min
+                  </button>
+                  <button
+                    onClick={() => setActiveUsersTimeFilter('30min')}
+                    className={`px-2.5 py-1 text-xs rounded-md transition ${
+                      activeUsersTimeFilter === '30min' 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    30 min
+                  </button>
+                  <button
+                    onClick={() => setActiveUsersTimeFilter('1hour')}
+                    className={`px-2.5 py-1 text-xs rounded-md transition ${
+                      activeUsersTimeFilter === '1hour' 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    1 hour
+                  </button>
+                  <button
+                    onClick={() => setActiveUsersTimeFilter('24hour')}
+                    className={`px-2.5 py-1 text-xs rounded-md transition ${
+                      activeUsersTimeFilter === '24hour' 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    24 hours
+                  </button>
+                </div>
+                <button 
+                  onClick={() => {
+                    refreshUsers();
+                    setActiveUsersTimeFilter('15min');
+                  }} 
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition"
+                  title="Refresh"
+                >
+                  <RefreshCw size={16} className="text-gray-500" />
+                </button>
+                <button 
+                  onClick={() => setShowActiveUsersModal(false)} 
+                  className="p-1 hover:bg-gray-100 rounded-full transition"
+                >
+                  <X size={20} className="text-gray-500" />
+                </button>
+              </div>
             </div>
+            
             <div className="overflow-y-auto max-h-[calc(85vh-70px)] p-5">
-              {!realtimeUsers?.users || realtimeUsers.users.length === 0 ? (
+              {filteredCount === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Users size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>No active users at the moment</p>
+                  <p>No active users in the last {activeUsersTimeFilter === '15min' ? '15 minutes' : activeUsersTimeFilter === '30min' ? '30 minutes' : activeUsersTimeFilter === '1hour' ? 'hour' : '24 hours'}</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {realtimeUsers.users.map((user: any) => (
-                    <div key={user.session_id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                      <div className="flex items-center justify-between">
+                <div className="space-y-3">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-12 gap-3 px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                    <div className="col-span-4">User</div>
+                    <div className="col-span-3">Current Page</div>
+                    <div className="col-span-2">Device / Browser</div>
+                    <div className="col-span-2">IP Address</div>
+                    <div className="col-span-1">Last Active</div>
+                  </div>
+                  
+                  {/* User Rows */}
+                  {filteredUsers.map((user: any) => (
+                    <div 
+                      key={user.session_id} 
+                      className="grid grid-cols-12 gap-3 px-3 py-3 border border-gray-100 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    >
+                      <div className="col-span-4">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {user.user_name || user.user_email || 'Guest'}
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                              {user.user_name || user.user_email || 'Guest'}
+                            </p>
+                            {user.user_email && (
+                              <p className="text-xs text-gray-400 truncate">{user.user_email}</p>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-400">
-                          {Math.floor(user.seconds_ago / 60)} min ago
-                        </span>
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Monitor size={10} /> {user.page_url?.split('/').pop() || '/'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          {user.device_type === 'Mobile' ? <Smartphone size={10} /> : <Laptop size={10} />}
-                          {user.device_type}
+                      <div className="col-span-3">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate" title={user.page_url}>
+                          {user.page_url?.split('/').pop() || '/'}
+                        </p>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {getDeviceIcon(user.device_type)}
+                          <span className="text-xs text-gray-500">{user.device_type || 'Unknown'}</span>
+                          {user.browser && (
+                            <span className="text-xs text-gray-400 ml-1">({user.browser})</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <code className="text-xs text-gray-500">{user.ip_address || 'N/A'}</code>
+                      </div>
+                      <div className="col-span-1">
+                        <span className="text-xs text-gray-400">
+                          {user.seconds_ago < 60 
+                            ? `${user.seconds_ago}s ago` 
+                            : `${Math.floor(user.seconds_ago / 60)}m ago`}
                         </span>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Refresh Hint */}
+                  <div className="text-center pt-4">
+                    <p className="text-xs text-gray-400">
+                      <Activity size={10} className="inline mr-1" />
+                      Auto-refreshes every 10 seconds
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -663,19 +774,36 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
+                  <div className="grid grid-cols-12 gap-3 px-3 py-2 text-xs font-semibold text-gray-500 border-b">
+                    <div className="col-span-5">Event</div>
+                    <div className="col-span-3">IP Address</div>
+                    <div className="col-span-2">Status</div>
+                    <div className="col-span-2">Time</div>
+                  </div>
                   {loginActivities.map((activity) => (
-                    <div key={activity.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
+                    <div key={activity.id} className="grid grid-cols-12 gap-3 px-3 py-3 border border-gray-100 rounded-lg">
+                      <div className="col-span-5">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${activity.status < 400 ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                          <span className="font-medium text-gray-900 dark:text-white">
+                          <span className="text-sm text-gray-900">
                             {activity.status < 400 ? 'Successful login' : 'Failed login attempt'}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400">{new Date(activity.timestamp).toLocaleString()}</span>
                       </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">IP: {activity.ip_address}</span>
+                      <div className="col-span-3">
+                        <code className="text-xs text-gray-500">{activity.ip_address}</code>
+                      </div>
+                      <div className="col-span-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          activity.status < 400 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          {activity.status}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-xs text-gray-400">{new Date(activity.timestamp).toLocaleTimeString()}</span>
                       </div>
                     </div>
                   ))}
