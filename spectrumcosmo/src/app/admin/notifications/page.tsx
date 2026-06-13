@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { 
   Bell, Send, Calendar, Save, Trash2, Eye, Users, 
-  Loader2, Plus, Repeat, Search, RefreshCw, X, Clock
+  Loader2, Plus, Repeat, Search, RefreshCw, X, Clock, Edit
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -43,6 +43,7 @@ export default function AdminNotificationsPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [sendType, setSendType] = useState<'now' | 'schedule' | 'draft'>('now');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [editingDraft, setEditingDraft] = useState<Notification | null>(null);
   
   // Lists
   const [drafts, setDrafts] = useState<Notification[]>([]);
@@ -109,6 +110,17 @@ export default function AdminNotificationsPage() {
     setSearchTerm('');
     setSendType('now');
     setScheduledDate('');
+    setEditingDraft(null);
+  };
+  
+  const editDraft = (draft: Notification) => {
+    setTitle(draft.title);
+    setMessage(draft.body);
+    setAudienceType(draft.audience_type);
+    setSelectedCustomers(draft.specific_customer_ids || []);
+    setSendType('now');
+    setActiveTab('compose');
+    setEditingDraft(draft);
   };
   
   const handleSend = async () => {
@@ -169,7 +181,13 @@ export default function AdminNotificationsPage() {
         } else {
           throw new Error();
         }
-      } else {
+      } else { // send now
+        // If editing an existing draft, delete it after successful send
+        if (editingDraft) {
+          await fetch(`/api/admin/notifications/drafts?id=${editingDraft.id}`, { method: 'DELETE' });
+          setEditingDraft(null);
+        }
+        
         const res = await fetch('/api/admin/notifications/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -187,7 +205,7 @@ export default function AdminNotificationsPage() {
           resetForm();
           if (activeTab === 'sent') fetchNotifications();
         } else {
-          throw new Error();
+          throw new Error(data.error || 'Send failed');
         }
       }
     } catch (err) {
@@ -383,7 +401,9 @@ export default function AdminNotificationsPage() {
         {/* Compose Tab */}
         {activeTab === 'compose' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">Compose New Message</h2>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+              {editingDraft ? `Edit Draft: ${editingDraft.title}` : 'Compose New Message'}
+            </h2>
             
             <div className="space-y-3 sm:space-y-4">
               <div>
@@ -527,7 +547,7 @@ export default function AdminNotificationsPage() {
                   className="px-4 sm:px-6 py-1.5 sm:py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
                 >
                   {loading ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
-                  {sendType === 'draft' ? 'Save Draft' : sendType === 'schedule' ? 'Schedule' : 'Send Now'}
+                  {editingDraft ? 'Send Edited Draft' : (sendType === 'draft' ? 'Save Draft' : sendType === 'schedule' ? 'Schedule' : 'Send Now')}
                 </button>
               </div>
             </div>
@@ -556,6 +576,13 @@ export default function AdminNotificationsPage() {
                       </p>
                     </div>
                     <div className="flex gap-1 sm:gap-2 ml-2">
+                      <button
+                        onClick={() => editDraft(draft)}
+                        className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+                        title="Edit and send"
+                      >
+                        <Edit size={14} />
+                      </button>
                       <button
                         onClick={() => handleDeleteDraft(draft.id)}
                         className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
