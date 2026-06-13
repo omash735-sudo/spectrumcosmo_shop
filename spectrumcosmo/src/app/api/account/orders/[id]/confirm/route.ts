@@ -1,8 +1,7 @@
-// app/api/account/orders/[id]/confirm/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { createNotification } from '@/lib/notifications';
+import * as notificationsLib from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/notifications-admin';
 
 export async function POST(
@@ -21,7 +20,6 @@ export async function POST(
 
   const sql = getDb();
 
-  // Verify order belongs to user
   const [order] = await sql`
     SELECT id, status, customer_name, order_number 
     FROM orders 
@@ -33,10 +31,9 @@ export async function POST(
   }
 
   if (order.status !== 'delivered') {
-    return NextResponse.json({ error: 'Order has not been marked as delivered yet' }, { status: 400 });
+    return NextResponse.json({ error: 'Order not marked as delivered' }, { status: 400 });
   }
 
-  // Update or create delivery confirmation
   const [existing] = await sql`
     SELECT * FROM delivery_confirmations WHERE order_id = ${orderId}
   `;
@@ -44,8 +41,7 @@ export async function POST(
   if (existing) {
     await sql`
       UPDATE delivery_confirmations 
-      SET response = ${response}, 
-          responded_at = NOW(),
+      SET response = ${response}, responded_at = NOW(),
           order_archived = ${response === 'received'},
           archived_at = ${response === 'received' ? new Date() : null}
       WHERE order_id = ${orderId}
@@ -57,25 +53,25 @@ export async function POST(
     `;
   }
 
-  // CUSTOMER NOTIFICATIONS
+  // Customer notifications (using namespace import)
   if (response === 'received') {
-    await createNotification({
+    await notificationsLib.createNotification({
       userId: user.id,
       title: 'Delivery Confirmed',
       message: `You confirmed receipt of order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Thank you!`,
       type: 'order_update',
     });
   } else if (response === 'not_received') {
-    await createNotification({
+    await notificationsLib.createNotification({
       userId: user.id,
       title: 'We Are Investigating',
-      message: `We have received your report about order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Our team will investigate and contact you within 24 hours.`,
+      message: `We received your report about order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Our team will investigate and contact you within 24 hours.`,
       type: 'order_update',
       actionUrl: `/account/orders/${orderId}`,
       actionLabel: 'Track Status',
     });
   } else if (response === 'disputed') {
-    await createNotification({
+    await notificationsLib.createNotification({
       userId: user.id,
       title: 'Dispute Registered',
       message: `Your dispute for order #${order.order_number?.slice(-8) || orderId.slice(-8)} has been registered. We will review and contact you within 48 hours.`,
@@ -85,7 +81,7 @@ export async function POST(
     });
   }
 
-  // ADMIN NOTIFICATIONS
+  // Admin notifications
   const admins = await sql`
     SELECT id FROM users WHERE is_admin = true
   `;
