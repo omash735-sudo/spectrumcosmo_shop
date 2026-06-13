@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Package, Truck, CreditCard, ArrowLeft } from 'lucide-react';
+import { Bell, BellOff, Package, Truck, CreditCard, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
-  id: number;
+  id: number | string;
   title: string;
   message: string;
   type: string;
@@ -20,11 +20,15 @@ const iconMap: Record<string, any> = {
   order_update: Truck,
   payment_reminder: CreditCard,
   promotion: Bell,
+  admin: Bell,
 };
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -42,7 +46,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const markAsRead = async (id: number) => {
+  const markAsRead = async (id: number | string) => {
     try {
       await fetch('/api/notifications', {
         method: 'PATCH',
@@ -57,6 +61,17 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleViewDetails = (notif: Notification) => {
+    markAsRead(notif.id);
+    if (notif.type === 'admin') {
+      setModalTitle(notif.title);
+      setModalMessage(notif.message);
+      setModalOpen(true);
+    } else if (notif.action_url) {
+      window.location.href = notif.action_url;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -67,7 +82,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-3 sm:px-0">
-      {/* Header with Back Button */}
       <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
         <Link 
           href="/account" 
@@ -104,14 +118,11 @@ export default function NotificationsPage() {
                 }`}
               >
                 <div className="flex gap-2.5 sm:gap-3">
-                  {/* Icon */}
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
                       <Icon size={16} className="text-orange-500 sm:w-5 sm:h-5" />
                     </div>
                   </div>
-                  
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className={`font-medium text-sm sm:text-base ${
@@ -134,15 +145,12 @@ export default function NotificationsPage() {
                     <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1.5 sm:mt-2">
                       {new Date(notif.created_at).toLocaleDateString()} at {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    {notif.action_url && (
-                      <Link
-                        href={notif.action_url}
-                        onClick={() => markAsRead(notif.id)}
-                        className="inline-block mt-2 sm:mt-3 text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium"
-                      >
-                        {notif.action_label || 'View Details'} →
-                      </Link>
-                    )}
+                    <button
+                      onClick={() => handleViewDetails(notif)}
+                      className="inline-block mt-2 sm:mt-3 text-xs sm:text-sm text-orange-500 hover:text-orange-600 font-medium"
+                    >
+                      {notif.action_label || 'View Details'} →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -151,12 +159,18 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Unread count indicator */}
-      {notifications.filter(n => !n.is_read).length > 0 && (
-        <div className="mt-4 sm:mt-6 text-center">
-          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
-            You have {notifications.filter(n => !n.is_read).length} unread {notifications.filter(n => !n.is_read).length === 1 ? 'notification' : 'notifications'}
-          </p>
+      {/* Modal for admin notifications */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{modalTitle}</h3>
+              <button onClick={() => setModalOpen(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{modalMessage}</p>
+          </div>
         </div>
       )}
     </div>
