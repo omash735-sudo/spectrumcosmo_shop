@@ -8,17 +8,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const adminId = admin.id;
-
   const result = await queryMany`
     SELECT COUNT(*) as count
-    FROM notification_recipients r
+    FROM notification_recipient r
     JOIN admin_notifications n ON n.id = r.notification_id
-    WHERE r.customer_id = ${adminId}::uuid
+    WHERE r.customer_id = ${admin.id}::uuid
       AND r.is_read = FALSE
       AND n.status = 'sent'
   `;
-
-  const count = Number(result[0]?.count) || 0;
-  return NextResponse.json({ count });
+  return NextResponse.json({ count: Number(result[0]?.count) || 0 });
 }
