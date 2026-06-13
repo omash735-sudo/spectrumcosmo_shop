@@ -2,7 +2,17 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Bell, BellOff, Sparkles, BarChart3, Wrench, ChevronRight, Trash2 } from 'lucide-react';
+import { 
+  Bell, BellOff, Sparkles, BarChart3, Wrench, ChevronRight, Trash2,
+  // Import all icons for dynamic loading
+  Package, Box, Truck, Bike, Plane, MapPin, Clock,
+  ShoppingBag, Shirt, Watch, Gem, Camera, Smartphone, Laptop, Coffee, Home, Dumbbell,
+  CreditCard, Wallet, Banknote, Coins, Receipt, Percent,
+  Gift, Tag, Megaphone, Rocket, Trophy, Star, Heart,
+  Settings, Database, Server, Cloud, Shield, Lock,
+  Headphones, HelpCircle, MessageCircle, Phone, Mail,
+  BellRing, Info, AlertTriangle, CheckCircle, XCircle, Calendar
+} from 'lucide-react';
 
 interface Notification {
   id: number;
@@ -13,13 +23,74 @@ interface Notification {
   action_label: string;
   is_read: boolean;
   created_at: string;
+  icon_name?: string; // Add icon_name field
 }
 
-const iconMap: Record<string, any> = {
-  delivery_confirmation: Sparkles,
-  order_update: BarChart3,
-  payment_reminder: Wrench,
-  promotion: Bell,
+// Dynamic icon mapper - matches admin panel icons
+const getIconComponent = (iconName?: string) => {
+  if (!iconName) return Sparkles;
+  
+  const iconMap: Record<string, any> = {
+    // Orders & Shipping
+    'package': Package,
+    'box': Box,
+    'truck': Truck,
+    'bike': Bike,
+    'plane': Plane,
+    'map-pin': MapPin,
+    'clock': Clock,
+    // Products & Inventory
+    'shopping-bag': ShoppingBag,
+    'shirt': Shirt,
+    'watch': Watch,
+    'gem': Gem,
+    'camera': Camera,
+    'smartphone': Smartphone,
+    'laptop': Laptop,
+    'coffee': Coffee,
+    'home': Home,
+    'dumbbell': Dumbbell,
+    // Payments & Finance
+    'credit-card': CreditCard,
+    'wallet': Wallet,
+    'banknote': Banknote,
+    'coins': Coins,
+    'receipt': Receipt,
+    'percent': Percent,
+    // Promotions & Marketing
+    'sparkles': Sparkles,
+    'gift': Gift,
+    'tag': Tag,
+    'megaphone': Megaphone,
+    'rocket': Rocket,
+    'trophy': Trophy,
+    'star': Star,
+    'heart': Heart,
+    // System & Maintenance
+    'wrench': Wrench,
+    'settings': Settings,
+    'database': Database,
+    'server': Server,
+    'cloud': Cloud,
+    'shield': Shield,
+    'lock': Lock,
+    // Customer Support
+    'headphones': Headphones,
+    'help-circle': HelpCircle,
+    'message-circle': MessageCircle,
+    'phone': Phone,
+    'mail': Mail,
+    // Alerts & Updates
+    'bell': Bell,
+    'bell-ring': BellRing,
+    'info': Info,
+    'alert-triangle': AlertTriangle,
+    'check-circle': CheckCircle,
+    'x-circle': XCircle,
+    'calendar': Calendar,
+  };
+  
+  return iconMap[iconName] || Sparkles;
 };
 
 export default function NotificationBell() {
@@ -176,7 +247,8 @@ export default function NotificationBell() {
 
                       {/* Group Notifications */}
                       {groupNotifs.map((notif) => {
-                        const Icon = iconMap[notif.type] || Sparkles;
+                        // Use dynamic icon from admin, fallback to Sparkles
+                        const Icon = getIconComponent(notif.icon_name);
                         const timeAgo = getTimeAgo(notif.created_at);
 
                         return (
