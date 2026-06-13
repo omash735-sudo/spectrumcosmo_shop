@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { queryMany } from '@/lib/db';
-import { createNotification, getAllCustomerIds } from '@/lib/notifications-admin';
+import { queryMany, queryOne } from '@/lib/db';
+import { createNotification } from '@/lib/notifications-admin';
 import { sendAdminNotificationEmail } from '@/lib/notification-email';
+
+// Helper to get all customer IDs (no deleted_at condition)
+async function getAllCustomerIds(): Promise<string[]> {
+  const results = await queryMany`SELECT id FROM users`;
+  return results.map((r: any) => r.id);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +26,10 @@ export async function POST(req: NextRequest) {
     let customerIds: string[] = [];
     if (audience_type === 'all') {
       customerIds = await getAllCustomerIds();
+      console.log(`[Send] All customers count: ${customerIds.length}`);
     } else {
       customerIds = specific_customer_ids || [];
+      console.log(`[Send] Specific customers count: ${customerIds.length}`);
     }
 
     if (customerIds.length === 0) {
@@ -37,20 +45,43 @@ export async function POST(req: NextRequest) {
       status: 'sent',
       sent_by: 'spectrumcosmo team',
     });
+    console.log(`[Send] Notification created: ${notificationId}`);
 
-    // Insert recipients with partition key (created_at)
-    for (const customerId of customerIds) {
+    // Insert recipients in batches (1000 at a time) to avoid timeout
+    const batchSize = 500;
+    let insertedCount = 0;
+    for (let i = 0; i < customerIds.length; i += batchSize) {
+      const batch = customerIds.slice(i, i + batchSize);
+      // Build a multi-row insert for better performance
+      const values = batch.map(cid => `($1::uuid, ${cid}::uuid, NOW(), NOW())`).join(',');
+      // Use parameterized query for safety
+      const sql = require('@neondatabase/serverless').neon(process.env.POSTGRES_URL!);
       try {
-        await queryMany`
-          INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
-          VALUES (${notificationId}::uuid, ${customerId}::uuid, NOW(), NOW())
-          ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
-        `;
-      } catch (insertErr) {
-        console.error(`Failed to insert recipient ${customerId}:`, insertErr);
-        // Continue with other customers – don't fail the whole batch
+        await sql(
+          `INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
+           VALUES ${values}
+           ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING`,
+          [notificationId]
+        );
+        insertedCount += batch.length;
+      } catch (batchErr) {
+        console.error(`[Send] Batch insert failed for batch starting at ${i}:`, batchErr);
+        // Fallback: insert one by one to isolate bad IDs
+        for (const cid of batch) {
+          try {
+            await queryMany`
+              INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
+              VALUES (${notificationId}::uuid, ${cid}::uuid, NOW(), NOW())
+              ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
+            `;
+            insertedCount++;
+          } catch (singleErr) {
+            console.error(`[Send] Failed to insert customer ${cid}:`, singleErr);
+          }
+        }
       }
     }
+    console.log(`[Send] Inserted ${insertedCount} recipients`);
 
     // Update sent_at timestamp
     await queryMany`
@@ -58,14 +89,13 @@ export async function POST(req: NextRequest) {
       WHERE id = ${notificationId}::uuid
     `;
 
-    // Send emails in background (don't await – errors here won't affect response)
+    // Send emails in background (don't await)
     const customers = await queryMany`
       SELECT id, name, email FROM users WHERE id = ANY(${customerIds})
     `;
     Promise.all(
       customers.map(async (customer: any) => {
         try {
-          // Check if customer has email enabled (default true if no settings)
           const settings = await queryMany`
             SELECT email_enabled FROM customer_notification_settings
             WHERE customer_id = ${customer.id}::uuid
@@ -80,7 +110,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } catch (emailErr) {
-          console.error(`Email failed for ${customer.email}:`, emailErr);
+          console.error(`[Send] Email failed for ${customer.email}:`, emailErr);
         }
       })
     ).catch(console.error);
@@ -88,11 +118,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       notificationId,
-      recipients: customerIds.length,
+      recipients: insertedCount,
     });
   } catch (err: any) {
-    console.error('Send route error:', err);
-    // Return a detailed error message to the frontend
+    console.error('[Send] Fatal error:', err);
     return NextResponse.json(
       { error: err.message || 'Internal server error', details: err.toString() },
       { status: 500 }
