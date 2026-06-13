@@ -17,9 +17,13 @@ export async function POST(req: NextRequest) {
   }
 
   const notificationId = await createNotification({
-    title, body: messageBody, audience_type,
+    title,
+    body: messageBody,
+    audience_type,
     specific_customer_ids: audience_type === 'specific' ? specific_customer_ids : undefined,
-    status: 'scheduled', scheduled_for: scheduledDate, sent_by: 'spectrumcosmo team',
+    status: 'scheduled',
+    scheduled_for: scheduledDate,
+    sent_by: 'spectrumcosmo team',
   });
 
   return NextResponse.json({ success: true, notificationId, scheduled_for: scheduledDate });
