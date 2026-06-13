@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Mail, Smartphone, Save, Loader2, Trash2, CheckCircle, Clock } from 'lucide-react'
+import { Bell, Mail, Smartphone, Save, Loader2, Clock } from 'lucide-react'
+import toast from 'react-hot-toast'
 import Navbar from '@/components/storefront/Navbar'
 import Footer from '@/components/storefront/Footer'
 import { useSettings } from '@/components/storefront/SettingsProvider'
@@ -42,21 +43,25 @@ export default function NotificationSettingsPage() {
 
   const saveSettings = async () => {
     setSaving(true)
-    await update({
-      emailNotifications: localSettings.emailNotifications,
-      smsAlerts: localSettings.smsAlerts
-    })
-    await fetch('/api/user/notification-settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderUpdates: localSettings.orderUpdates,
-        promotions: localSettings.promotions
+    try {
+      await update({
+        emailNotifications: localSettings.emailNotifications,
+        smsAlerts: localSettings.smsAlerts
       })
-    })
-    setSaving(false)
-    // Use toast instead of alert for better UX
-    alert('Notification settings saved!')
+      await fetch('/api/user/notification-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderUpdates: localSettings.orderUpdates,
+          promotions: localSettings.promotions
+        })
+      })
+      toast.success('Notification settings saved!')
+    } catch (error) {
+      toast.error('Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
