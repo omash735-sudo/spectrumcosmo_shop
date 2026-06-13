@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
-import { getUserNotifications, getUnreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/notifications';
+import { queryMany } from '@/lib/db';
+import {
+  getUserNotifications,
+  getUnreadNotificationCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from '@/lib/notifications';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -10,15 +16,70 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  const [notifications, unreadCount] = await Promise.all([
-    getUserNotifications(user.id, limit, offset),
-    getUnreadNotificationCount(user.id),
-  ]);
+  const userNotifications = await getUserNotifications(user.id, limit, offset);
+  const userUnreadCount = await getUnreadNotificationCount(user.id);
+
+  const adminNotifications = await queryMany`
+    SELECT 
+      n.id,
+      n.title,
+      n.body as message,
+      'admin' as type,
+      COALESCE(n.sent_at, n.created_at) as created_at,
+      r.is_read,
+      '/account/notifications' as action_url,
+      'View Details' as action_label
+    FROM admin_notifications n
+    JOIN notification_recipients r ON r.notification_id = n.id
+    WHERE r.customer_id = ${user.id}::uuid
+      AND n.status = 'sent'
+      AND (n.sent_at IS NOT NULL OR n.created_at IS NOT NULL)
+    ORDER BY COALESCE(n.sent_at, n.created_at) DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  const adminUnreadResult = await queryMany`
+    SELECT COUNT(*) as count
+    FROM notification_recipients r
+    JOIN admin_notifications n ON n.id = r.notification_id
+    WHERE r.customer_id = ${user.id}::uuid
+      AND r.is_read = FALSE
+      AND n.status = 'sent'
+  `;
+  const adminUnreadCount = Number(adminUnreadResult[0]?.count) || 0;
+
+  const formattedUser = userNotifications.map((n: any) => ({
+    id: n.id,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    created_at: n.created_at,
+    is_read: n.is_read,
+    action_url: n.action_url,
+    action_label: n.action_label,
+  }));
+
+  const formattedAdmin = adminNotifications.map((n: any) => ({
+    id: `admin_${n.id}`,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    created_at: n.created_at,
+    is_read: n.is_read,
+    action_url: n.action_url,
+    action_label: n.action_label,
+  }));
+
+  const allNotifications = [...formattedUser, ...formattedAdmin];
+  allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const paginated = allNotifications.slice(offset, offset + limit);
+  const totalUnread = userUnreadCount + adminUnreadCount;
 
   return NextResponse.json({
-    notifications,
-    unreadCount,
-    hasMore: notifications.length === limit,
+    notifications: paginated,
+    unreadCount: totalUnread,
+    hasMore: paginated.length === limit,
   });
 }
 
@@ -30,11 +91,31 @@ export async function PATCH(req: NextRequest) {
 
   if (markAll) {
     await markAllNotificationsAsRead(user.id);
+    await queryMany`
+      UPDATE notification_recipients
+      SET is_read = TRUE, read_at = NOW()
+      WHERE customer_id = ${user.id}::uuid AND is_read = FALSE
+    `;
     return NextResponse.json({ success: true, markAll: true });
   }
 
   if (notificationId) {
-    await markNotificationAsRead(notificationId, user.id);
+    if (typeof notificationId === 'number' || !isNaN(Number(notificationId))) {
+      await markNotificationAsRead(Number(notificationId), user.id);
+    } else if (typeof notificationId === 'string' && notificationId.startsWith('admin_')) {
+      const uuid = notificationId.replace('admin_', '');
+      await queryMany`
+        UPDATE notification_recipients
+        SET is_read = TRUE, read_at = NOW()
+        WHERE notification_id = ${uuid}::uuid AND customer_id = ${user.id}::uuid
+      `;
+    } else {
+      await queryMany`
+        UPDATE notification_recipients
+        SET is_read = TRUE, read_at = NOW()
+        WHERE notification_id = ${notificationId}::uuid AND customer_id = ${user.id}::uuid
+      `;
+    }
     return NextResponse.json({ success: true });
   }
 
