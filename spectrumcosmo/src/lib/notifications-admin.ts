@@ -129,7 +129,7 @@ export async function deleteNotification(id: string) {
   await queryMany`UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}`;
 }
 
-// FIXED: getNotificationsByStatus with correct singular table name and JOIN
+// The critical fix: getNotificationsByStatus must use singular table name and correct JOIN
 export async function getNotificationsByStatus(
   status: NotificationStatus | 'all',
   limit: number = 50,
@@ -138,7 +138,19 @@ export async function getNotificationsByStatus(
   const sql = require('@neondatabase/serverless').neon(process.env.POSTGRES_URL!);
   let query = `
     SELECT 
-      n.*,
+      n.id,
+      n.title,
+      n.body,
+      n.audience_type,
+      n.specific_customer_ids,
+      n.status,
+      n.sent_by,
+      n.sent_at,
+      n.scheduled_for,
+      n.created_at,
+      n.expires_at,
+      n.is_deleted,
+      n.metadata,
       COUNT(r.id) as total_recipients,
       COUNT(CASE WHEN r.is_read = TRUE THEN 1 END) as read_count
     FROM admin_notifications n
