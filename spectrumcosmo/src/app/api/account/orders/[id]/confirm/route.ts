@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import * as notificationsLib from '@/lib/notifications';
+import createNotification from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/notifications-admin';
 
 export async function POST(
@@ -53,16 +53,16 @@ export async function POST(
     `;
   }
 
-  // Customer notifications (using namespace import)
+  // Customer notifications
   if (response === 'received') {
-    await notificationsLib.createNotification({
+    await createNotification({
       userId: user.id,
       title: 'Delivery Confirmed',
       message: `You confirmed receipt of order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Thank you!`,
       type: 'order_update',
     });
   } else if (response === 'not_received') {
-    await notificationsLib.createNotification({
+    await createNotification({
       userId: user.id,
       title: 'We Are Investigating',
       message: `We received your report about order #${order.order_number?.slice(-8) || orderId.slice(-8)}. Our team will investigate and contact you within 24 hours.`,
@@ -71,7 +71,7 @@ export async function POST(
       actionLabel: 'Track Status',
     });
   } else if (response === 'disputed') {
-    await notificationsLib.createNotification({
+    await createNotification({
       userId: user.id,
       title: 'Dispute Registered',
       message: `Your dispute for order #${order.order_number?.slice(-8) || orderId.slice(-8)} has been registered. We will review and contact you within 48 hours.`,
