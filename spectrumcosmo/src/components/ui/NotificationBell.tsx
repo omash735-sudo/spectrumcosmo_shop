@@ -80,30 +80,30 @@ export default function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         {unreadCount > 0 ? (
           <>
-            <Bell size={20} className="text-orange-500" />
+            <Bell size={20} className="text-orange-500 dark:text-orange-400" />
             <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           </>
         ) : (
-          <Bell size={20} className="text-gray-500" />
+          <Bell size={20} className="text-gray-500 dark:text-gray-400" />
         )}
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-xl border z-50 max-h-[500px] overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-              <h3 className="font-semibold text-gray-900">Notifications</h3>
+          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-[500px] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs text-orange-500 hover:underline"
+                  className="text-xs text-orange-500 dark:text-orange-400 hover:underline"
                 >
                   Mark all as read
                 </button>
@@ -112,8 +112,8 @@ export default function NotificationBell() {
 
             <div className="overflow-y-auto max-h-[400px]">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <BellOff size={32} className="mx-auto mb-2 text-gray-300" />
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <BellOff size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                   <p className="text-sm">No notifications yet</p>
                 </div>
               ) : (
@@ -124,18 +124,18 @@ export default function NotificationBell() {
                   return (
                     <div
                       key={notif.id}
-                      className={`p-4 border-b hover:bg-gray-50 transition ${
-                        !notif.is_read ? 'bg-orange-50/30' : ''
+                      className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition ${
+                        !notif.is_read ? 'bg-orange-50/30 dark:bg-orange-950/20' : ''
                       }`}
                     >
                       <div className="flex gap-3">
                         <div className="flex-shrink-0">
-                          <Icon size={18} className="text-orange-500" />
+                          <Icon size={18} className="text-orange-500 dark:text-orange-400" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900 text-sm">{notif.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{notif.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{notif.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{notif.message}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                             {new Date(notif.created_at).toLocaleDateString()}
                           </p>
 
@@ -143,7 +143,7 @@ export default function NotificationBell() {
                             <Link
                               href={notif.action_url}
                               onClick={() => markAsRead(notif.id)}
-                              className="inline-block mt-2 text-xs text-orange-500 hover:underline"
+                              className="inline-block mt-2 text-xs text-orange-500 dark:text-orange-400 hover:underline"
                             >
                               {notif.action_label || 'View Details'} →
                             </Link>
@@ -152,7 +152,7 @@ export default function NotificationBell() {
                         {!notif.is_read && (
                           <button
                             onClick={() => markAsRead(notif.id)}
-                            className="text-xs text-gray-400 hover:text-gray-600"
+                            className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                           >
                             Mark read
                           </button>
