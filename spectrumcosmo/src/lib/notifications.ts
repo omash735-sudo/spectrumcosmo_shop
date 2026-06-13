@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
 import { queryMany } from '@/lib/db';
-import { getUserNotifications, getUnreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/notifications';
+import {
+  getUserNotifications,
+  getUnreadNotificationCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from '@/lib/notifications';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -22,7 +27,7 @@ export async function GET(req: NextRequest) {
       n.title,
       n.body as message,
       'admin' as type,
-      n.sent_at as created_at,
+      COALESCE(n.sent_at, n.created_at) as created_at,
       r.is_read,
       '/account/notifications' as action_url,
       'View Details' as action_label
@@ -30,8 +35,8 @@ export async function GET(req: NextRequest) {
     JOIN notification_recipients r ON r.notification_id = n.id
     WHERE r.customer_id = ${user.id}::uuid
       AND n.status = 'sent'
-      AND n.sent_at IS NOT NULL
-    ORDER BY n.sent_at DESC
+      AND (n.sent_at IS NOT NULL OR n.created_at IS NOT NULL)
+    ORDER BY COALESCE(n.sent_at, n.created_at) DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
 
@@ -46,7 +51,7 @@ export async function GET(req: NextRequest) {
   `;
   const adminUnreadCount = Number(adminUnreadResult[0]?.count) || 0;
 
-  // 4. Format user notifications (already have numeric id)
+  // 4. Format user notifications (numeric id)
   const formattedUser = userNotifications.map((n: any) => ({
     id: n.id,
     title: n.title,
@@ -58,7 +63,7 @@ export async function GET(req: NextRequest) {
     action_label: n.action_label,
   }));
 
-  // 5. Format admin notifications (prefix id to avoid collision with numeric ids)
+  // 5. Format admin notifications (prefix id to avoid collision)
   const formattedAdmin = adminNotifications.map((n: any) => ({
     id: `admin_${n.id}`,
     title: n.title,
@@ -74,7 +79,7 @@ export async function GET(req: NextRequest) {
   const allNotifications = [...formattedUser, ...formattedAdmin];
   allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  // 7. Apply pagination (since we already limited both queries, we still need to slice after merge)
+  // 7. Apply pagination
   const paginated = allNotifications.slice(offset, offset + limit);
   const totalUnread = userUnreadCount + adminUnreadCount;
 
