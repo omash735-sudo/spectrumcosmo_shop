@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (authError) return authError;
 
     const body = await req.json();
-    const { title, body: messageBody, audience_type, specific_customer_ids } = body;
+    const { title, body: messageBody, icon_name, audience_type, specific_customer_ids } = body;
 
     if (!title || !messageBody) {
       return NextResponse.json({ error: 'Title and message required' }, { status: 400 });
@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, recipients: 0, message: 'No customers to send to' });
     }
 
-    // Create notification record
+    // Create notification record with icon_name
     const notificationId = await createNotification({
       title,
       body: messageBody,
+      icon_name: icon_name || 'bell',
       audience_type,
       specific_customer_ids: audience_type === 'specific' ? specific_customer_ids : undefined,
       status: 'sent',
@@ -47,32 +48,30 @@ export async function POST(req: NextRequest) {
     });
     console.log(`[Send] Notification created: ${notificationId}`);
 
-    // Insert recipients in batches (1000 at a time) to avoid timeout
+    // Insert recipients in batches (500 at a time) to avoid timeout
     const batchSize = 500;
     let insertedCount = 0;
     for (let i = 0; i < customerIds.length; i += batchSize) {
       const batch = customerIds.slice(i, i + batchSize);
-      // Build a multi-row insert for better performance
-      const values = batch.map(cid => `($1::uuid, ${cid}::uuid, NOW(), NOW())`).join(',');
-      // Use parameterized query for safety
+      const values = batch.map((_, idx) => `($1::uuid, $${idx + 2}::uuid, NOW(), NOW())`).join(',');
+      const params = [notificationId, ...batch];
       const sql = require('@neondatabase/serverless').neon(process.env.POSTGRES_URL!);
       try {
         await sql(
           `INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
            VALUES ${values}
-           ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING`,
-          [notificationId]
+           ON CONFLICT (notification_id, customer_id) DO NOTHING`,
+          params
         );
         insertedCount += batch.length;
       } catch (batchErr) {
         console.error(`[Send] Batch insert failed for batch starting at ${i}:`, batchErr);
-        // Fallback: insert one by one to isolate bad IDs
         for (const cid of batch) {
           try {
             await queryMany`
               INSERT INTO notification_recipients (notification_id, customer_id, created_at, delivered_at)
               VALUES (${notificationId}::uuid, ${cid}::uuid, NOW(), NOW())
-              ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
+              ON CONFLICT (notification_id, customer_id) DO NOTHING
             `;
             insertedCount++;
           } catch (singleErr) {
