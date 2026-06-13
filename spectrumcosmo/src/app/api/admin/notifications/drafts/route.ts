@@ -12,14 +12,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authError = await requireAdmin(req);
   if (authError) return authError;
-  const { title, body: messageBody, audience_type, specific_customer_ids } = await req.json();
+  const { title, body: messageBody, icon_name, audience_type, specific_customer_ids } = await req.json();
   if (!title || !messageBody) {
     return NextResponse.json({ error: 'Title and message required' }, { status: 400 });
   }
   const notificationId = await createNotification({
-    title, body: messageBody, audience_type,
+    title,
+    body: messageBody,
+    icon_name: icon_name || 'bell',
+    audience_type,
     specific_customer_ids: audience_type === 'specific' ? specific_customer_ids : undefined,
-    status: 'draft', sent_by: 'spectrumcosmo team',
+    status: 'draft',
+    sent_by: 'spectrumcosmo team',
   });
   return NextResponse.json({ success: true, notificationId });
 }
@@ -27,9 +31,15 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const authError = await requireAdmin(req);
   if (authError) return authError;
-  const { id, title, body: messageBody, audience_type, specific_customer_ids } = await req.json();
+  const { id, title, body: messageBody, icon_name, audience_type, specific_customer_ids } = await req.json();
   if (!id) return NextResponse.json({ error: 'Notification ID required' }, { status: 400 });
-  await updateNotification(id, { title, body: messageBody, audience_type, specific_customer_ids });
+  await updateNotification(id, { 
+    title, 
+    body: messageBody, 
+    icon_name: icon_name || 'bell',
+    audience_type, 
+    specific_customer_ids 
+  });
   return NextResponse.json({ success: true });
 }
 
