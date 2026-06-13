@@ -25,7 +25,7 @@ export interface NotificationWithStats extends AdminNotification {
   unread_count: number;
 }
 
-// Create notification (admin to customers)
+// CREATE NOTIFICATION (admin to customers)
 export async function createNotification(data: {
   title: string;
   body: string;
@@ -36,7 +36,6 @@ export async function createNotification(data: {
   sent_by?: string;
 }): Promise<string> {
   const id = crypto.randomUUID();
-
   await queryMany`
     INSERT INTO admin_notifications (
       id, title, body, audience_type, specific_customer_ids,
@@ -50,7 +49,7 @@ export async function createNotification(data: {
   return id;
 }
 
-// Create admin notification (system to admins)
+// CREATE ADMIN NOTIFICATION (system alerts to admins)
 export async function createAdminNotification(data: {
   title: string;
   body: string;
@@ -60,7 +59,6 @@ export async function createAdminNotification(data: {
   metadata?: Record<string, any>;
 }): Promise<string> {
   const id = crypto.randomUUID();
-
   await queryMany`
     INSERT INTO admin_notifications (
       id, title, body, audience_type, specific_customer_ids,
@@ -75,7 +73,7 @@ export async function createAdminNotification(data: {
   if (data.audience_type === 'specific' && data.specific_customer_ids?.length) {
     for (const adminId of data.specific_customer_ids) {
       await queryMany`
-        INSERT INTO notification_recipients (notification_id, customer_id, created_at)
+        INSERT INTO notification_recipient (notification_id, customer_id, created_at)
         VALUES (${id}::uuid, ${adminId}::uuid, NOW())
         ON CONFLICT (notification_id, customer_id, created_at) DO NOTHING
       `;
@@ -128,9 +126,7 @@ export async function updateNotification(id: string, data: Partial<{
 }
 
 export async function deleteNotification(id: string) {
-  await queryMany`
-    UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}
-  `;
+  await queryMany`UPDATE admin_notifications SET is_deleted = TRUE WHERE id = ${id}`;
 }
 
 export async function getNotificationsByStatus(
@@ -145,7 +141,7 @@ export async function getNotificationsByStatus(
       COUNT(r.id) as total_recipients,
       COUNT(CASE WHEN r.is_read = TRUE THEN 1 END) as read_count
     FROM admin_notifications n
-    LEFT JOIN notification_recipients r ON r.notification_id = n.id
+    LEFT JOIN notification_recipient r ON r.notification_id = n.id
     WHERE n.is_deleted = FALSE
   `;
   if (status !== 'all') {
@@ -175,7 +171,7 @@ export async function getNotificationById(id: string): Promise<AdminNotification
   const results = await queryMany`
     SELECT * FROM admin_notifications WHERE id = ${id} AND is_deleted = FALSE
   `;
-  if (results.length === 0) return null;
+  if (!results.length) return null;
   const row = results[0];
   return {
     ...row,
@@ -185,9 +181,7 @@ export async function getNotificationById(id: string): Promise<AdminNotification
 }
 
 export async function getAllCustomerIds(): Promise<string[]> {
-  const results = await queryMany`
-    SELECT id FROM users WHERE deleted_at IS NULL
-  `;
+  const results = await queryMany`SELECT id FROM users WHERE deleted_at IS NULL`;
   return results.map((r: any) => r.id);
 }
 
@@ -196,7 +190,7 @@ export async function getRecipientsByNotification(notificationId: string): Promi
     SELECT 
       u.id, u.name, u.email, u.phone,
       r.is_read, r.read_at, r.delivered_at
-    FROM notification_recipients r
+    FROM notification_recipient r
     JOIN users u ON u.id = r.customer_id
     WHERE r.notification_id = ${notificationId}::uuid
     ORDER BY r.is_read ASC, r.read_at DESC
@@ -209,7 +203,7 @@ export async function getRecipientsByNotification(notificationId: string): Promi
 
 export async function getUnreadCustomerIds(notificationId: string): Promise<string[]> {
   const results = await queryMany`
-    SELECT customer_id FROM notification_recipients
+    SELECT customer_id FROM notification_recipient
     WHERE notification_id = ${notificationId}::uuid AND is_read = FALSE
   `;
   return results.map((r: any) => r.customer_id);
@@ -217,7 +211,7 @@ export async function getUnreadCustomerIds(notificationId: string): Promise<stri
 
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
   await queryMany`
-    UPDATE notification_recipients
+    UPDATE notification_recipient
     SET is_read = TRUE, read_at = NOW()
     WHERE notification_id = ${notificationId}::uuid AND customer_id = ${userId}::uuid
   `;
@@ -226,7 +220,7 @@ export async function markNotificationAsRead(notificationId: string, userId: str
 export async function getUnreadCountForUser(userId: string): Promise<number> {
   const result = await queryOne`
     SELECT COUNT(*) as count
-    FROM notification_recipients r
+    FROM notification_recipient r
     JOIN admin_notifications n ON n.id = r.notification_id
     WHERE r.customer_id = ${userId}::uuid
       AND r.is_read = FALSE
@@ -243,7 +237,7 @@ export async function getNotificationsForUser(userId: string, limit: number = 20
       '/account/notifications' as action_url, 'View Details' as action_label,
       n.metadata
     FROM admin_notifications n
-    JOIN notification_recipients r ON r.notification_id = n.id
+    JOIN notification_recipient r ON r.notification_id = n.id
     WHERE r.customer_id = ${userId}::uuid
       AND n.status = 'sent'
       AND n.sent_at IS NOT NULL
