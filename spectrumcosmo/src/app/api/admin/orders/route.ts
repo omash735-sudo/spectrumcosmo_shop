@@ -1,5 +1,4 @@
 // app/api/admin/orders/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -37,6 +36,68 @@ interface UpdatedOrder {
   invoice_number?: string;
 }
 
+// ========== GET – Fetch all orders ==========
+export async function GET(req: NextRequest) {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
+  try {
+    const sql = getDb();
+    const orders = await sql`
+      SELECT 
+        o.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'product_name', oi.product_name,
+              'quantity', oi.quantity,
+              'unit_price', oi.unit_price
+            ) ORDER BY oi.created_at
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id::uuid
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `;
+
+    // Ensure items is always an array
+    const processedOrders = orders.map((order: any) => ({
+      ...order,
+      items: Array.isArray(order.items) ? order.items : [],
+    }));
+
+    return NextResponse.json({ orders: processedOrders });
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
+  }
+}
+
+// ========== DELETE – Delete an order ==========
+export async function DELETE(req: NextRequest) {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
+    }
+
+    const sql = getDb();
+    await sql`DELETE FROM orders WHERE id = ${id}`;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete order:', error);
+    return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
+  }
+}
+
+// ========== PUT – Update order (your existing code, unchanged) ==========
 export async function PUT(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -165,10 +226,9 @@ export async function PUT(req: NextRequest) {
         const invoiceElement = InvoicePDF({ data: pdfData });
         const pdfStream = await renderToStream(invoiceElement);
         
-        // FIX: Convert all chunks to Buffer without instanceof check
+        // Convert all chunks to Buffer
         const chunks: Buffer[] = [];
         for await (const chunk of pdfStream) {
-          // Convert any chunk type to Buffer
           chunks.push(Buffer.from(chunk as any));
         }
         const pdfBuffer = Buffer.concat(chunks);
