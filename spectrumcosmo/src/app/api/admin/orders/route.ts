@@ -16,7 +16,7 @@ interface OrderUpdateBody {
 interface OrderItem {
   id: string;
   quantity: number;
-  unit_price: number;
+  unit_price: number;   // we'll alias price -> unit_price
   product_name?: string;
 }
 
@@ -44,23 +44,21 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
 
-    // 1. Get all orders
     const orders = await sql`SELECT * FROM orders ORDER BY created_at DESC`;
 
     if (orders.length === 0) {
       return NextResponse.json({ orders: [] });
     }
 
-    // 2. Get all order items for these orders
     const orderIds = orders.map((o: any) => o.id);
+    // Use "price" as the actual column, alias as unit_price
     const items = await sql`
-      SELECT order_id, product_name, quantity, unit_price
+      SELECT order_id, product_name, quantity, price as unit_price
       FROM order_items
       WHERE order_id = ANY(${orderIds})
       ORDER BY created_at
     `;
 
-    // 3. Group items by order_id
     const itemsByOrder = new Map<string, any[]>();
     for (const item of items) {
       if (!itemsByOrder.has(item.order_id)) {
@@ -73,7 +71,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 4. Attach items to orders
     const ordersWithItems = orders.map((order: any) => ({
       ...order,
       items: itemsByOrder.get(order.id) || [],
@@ -109,7 +106,7 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// ========== PUT – Update order (status, tracking, etc.) ==========
+// ========== PUT – Update order ==========
 export async function PUT(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -125,7 +122,6 @@ export async function PUT(req: NextRequest) {
     const sql = getDb();
     const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
 
-    // Get current order status
     const [currentOrder] = await sql`
       SELECT status, paid_at FROM orders WHERE id = ${id}
     `;
@@ -171,14 +167,13 @@ export async function PUT(req: NextRequest) {
       RETURNING *
     `) as UpdatedOrder[];
 
-    // Log status change
+    // Log status change & send email (your existing code, unchanged)
     if (currentOrder.status !== status) {
       await sql`
         INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, ip_address, notes, changed_at)
         VALUES (${id}, ${currentOrder.status}, ${status}, 'admin', ${ipAddress}, ${adminNotes || null}, NOW())
       `;
 
-      // Send email notification for status change
       const statusInfo = await getStatusDisplayInfo(status);
       if (statusInfo?.send_email) {
         try {
@@ -199,7 +194,7 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Invoice Email on Delivery
+    // Invoice Email on Delivery – fix the items query to alias price as unit_price
     if (status === 'delivered' && updatedOrder.payment_status === 'paid') {
       try {
         const { renderToStream } = await import('@react-pdf/renderer');
@@ -207,9 +202,11 @@ export async function PUT(req: NextRequest) {
         const QRCode = await import('qrcode');
         const nodemailer = await import('nodemailer');
 
-        // Fetch order items
+        // FIX: Use price as unit_price
         const items = (await sql`
-          SELECT * FROM order_items WHERE order_id = ${id}
+          SELECT id, product_name, quantity, price as unit_price
+          FROM order_items
+          WHERE order_id = ${id}
         `) as OrderItem[];
 
         const subtotal = items.reduce(
