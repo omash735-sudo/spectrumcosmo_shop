@@ -3,7 +3,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Loader2, ShoppingCart, Trash2, ChevronDown, Eye, X, Truck, Package, Clock, CheckCircle2, AlertCircle, Upload, Tag, Gift } from 'lucide-react';
+import { 
+  Loader2, ShoppingCart, Trash2, ChevronDown, Eye, X, Truck, 
+  Package, Clock, CheckCircle2, AlertCircle, Upload, Tag, Gift,
+  FileSpreadsheet, FileText, Printer, Download, Filter, Calendar,
+  Search, RefreshCw
+} from 'lucide-react';
 import Image from 'next/image';
 
 interface Status {
@@ -33,7 +38,7 @@ interface Order {
   promo_discount: number | null;
   referral_code_used: string | null;
   referral_status: string | null;
-  items: Array<{ product_name: string }>;
+  items: Array<{ product_name: string; quantity: number; unit_price: number }>;
 }
 
 export default function AdminOrdersPage() {
@@ -48,6 +53,10 @@ export default function AdminOrdersPage() {
   const [trackingNotes, setTrackingNotes] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [exporting, setExporting] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -128,25 +137,145 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const getStatusStyle = (statusSlug: string) => {
-    const status = statuses.find(s => s.slug === statusSlug);
-    if (!status) return 'bg-gray-100 text-gray-700';
-    
-    const colorMap: Record<string, string> = {
-      yellow: 'bg-yellow-100 text-yellow-700',
-      blue: 'bg-blue-100 text-blue-700',
-      purple: 'bg-purple-100 text-purple-700',
-      orange: 'bg-orange-100 text-orange-700',
-      green: 'bg-green-100 text-green-700',
-      red: 'bg-red-100 text-red-700',
-      gray: 'bg-gray-100 text-gray-700',
-    };
-    return colorMap[status.color] || 'bg-gray-100 text-gray-700';
+  // ========== EXPORT FUNCTIONS ==========
+  
+  const exportToCSV = () => {
+    setExporting(true);
+    try {
+      const dataToExport = filteredOrders;
+      const headers = [
+        'Order ID', 'Customer Name', 'Customer Email', 'Phone Number',
+        'Total Amount (MWK)', 'Status', 'Payment Status', 'Order Date',
+        'Items', 'Tracking Number', 'Promo Code', 'Referral Code'
+      ];
+
+      const rows = dataToExport.map(order => [
+        order.id,
+        order.customer_name,
+        order.customer_email,
+        order.phone_number,
+        order.total_amount,
+        order.status,
+        order.payment_status,
+        new Date(order.created_at).toLocaleString(),
+        order.items?.map(i => i.product_name).join('; ') || '',
+        order.tracking_number || '',
+        order.promo_code_applied || '',
+        order.referral_code_used || ''
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute('download', `orders_export_${new Date().toISOString().slice(0, 19)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export CSV');
+    } finally {
+      setExporting(false);
+    }
   };
 
-  const getStatusName = (statusSlug: string) => {
+  const exportSingleOrderPDF = async (order: Order) => {
+    setExporting(true);
+    try {
+      const response = await fetch('/api/admin/orders/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order }),
+      });
+
+      if (!response.ok) throw new Error('PDF generation failed');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice_${order.id.slice(-8)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('Failed to generate PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportBulkPDF = async () => {
+    if (selectedOrders.length === 0) {
+      alert('Please select at least one order to export');
+      return;
+    }
+    
+    setExporting(true);
+    try {
+      const ordersToExport = orders.filter(o => selectedOrders.includes(o.id));
+      const response = await fetch('/api/admin/orders/export-bulk-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders: ordersToExport }),
+      });
+
+      if (!response.ok) throw new Error('PDF generation failed');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bulk_invoices_${new Date().toISOString().slice(0, 19)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('Failed to generate PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const toggleSelectOrder = (orderId: string) => {
+    setSelectedOrders(prev => 
+      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.length === filteredOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filteredOrders.map(o => o.id));
+    }
+  };
+
+  const getStatusStyle = (statusSlug: string) => {
     const status = statuses.find(s => s.slug === statusSlug);
-    return status?.name || statusSlug;
+    if (!status) return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+    
+    const colorMap: Record<string, string> = {
+      yellow: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400',
+      blue: 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400',
+      purple: 'bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400',
+      orange: 'bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400',
+      green: 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400',
+      red: 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400',
+      gray: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+    };
+    return colorMap[status.color] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
   };
 
   const openTrackingModal = (order: Order) => {
@@ -157,190 +286,218 @@ export default function AdminOrdersPage() {
     setTrackingModalOpen(true);
   };
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
-    : orders.filter(o => o.status === filter || o.payment_status === filter || (filter === 'promo' && o.promo_code_applied) || (filter === 'referral' && o.referral_code_used));
+  // Filter logic
+  const filteredOrders = orders.filter(order => {
+    if (filter !== 'all' && order.status !== filter) return false;
+    if (searchTerm && !order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+        !order.id.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (dateRange.from && new Date(order.created_at) < new Date(dateRange.from)) return false;
+    if (dateRange.to && new Date(order.created_at) > new Date(dateRange.to)) return false;
+    return true;
+  });
 
   const stats = {
     total: orders.length,
     pending: orders.filter(o => o.status === 'pending').length,
     processing: orders.filter(o => o.status === 'processing').length,
-    completed: orders.filter(o => o.status === 'completed').length,
+    completed: orders.filter(o => o.status === 'delivered' || o.status === 'completed').length,
     promo: orders.filter(o => o.promo_code_applied).length,
     referral: orders.filter(o => o.referral_code_used).length,
   };
 
   return (
     <div className="pt-16 lg:pt-0">
-      {/* Header with Stats */}
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage customer orders, track shipments, and process payments</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Management</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage customer orders, track shipments, and process payments</p>
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={exportToCSV}
+              disabled={exporting || filteredOrders.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+            >
+              {exporting ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+              Export CSV
+            </button>
+            {selectedOrders.length > 0 && (
+              <button
+                onClick={exportBulkPDF}
+                disabled={exporting}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {exporting ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+                Export Selected ({selectedOrders.length})
+              </button>
+            )}
+          </div>
+        </div>
         
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4">
-          <div className="bg-white rounded-xl border p-3 text-center">
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total Orders</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 text-center">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Total Orders</p>
           </div>
-          <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-3 text-center">
-            <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
-            <p className="text-xs text-yellow-600">Pending</p>
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-xl border border-yellow-100 dark:border-yellow-800 p-3 text-center">
+            <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.pending}</p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-500">Pending</p>
           </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-3 text-center">
-            <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
-            <p className="text-xs text-blue-600">Processing</p>
+          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800 p-3 text-center">
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.processing}</p>
+            <p className="text-xs text-blue-600 dark:text-blue-500">Processing</p>
           </div>
-          <div className="bg-green-50 rounded-xl border border-green-100 p-3 text-center">
-            <p className="text-2xl font-bold text-green-700">{stats.completed}</p>
-            <p className="text-xs text-green-600">Completed</p>
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-100 dark:border-green-800 p-3 text-center">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.completed}</p>
+            <p className="text-xs text-green-600 dark:text-green-500">Completed</p>
           </div>
-          <div className="bg-purple-50 rounded-xl border border-purple-100 p-3 text-center">
-            <p className="text-2xl font-bold text-purple-700">{stats.promo}</p>
-            <p className="text-xs text-purple-600">Promo Used</p>
+          <div className="bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-800 p-3 text-center">
+            <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.promo}</p>
+            <p className="text-xs text-purple-600 dark:text-purple-500">Promo Used</p>
           </div>
-          <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-3 text-center">
-            <p className="text-2xl font-bold text-indigo-700">{stats.referral}</p>
-            <p className="text-xs text-indigo-600">Referral Used</p>
+          <div className="bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-100 dark:border-indigo-800 p-3 text-center">
+            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{stats.referral}</p>
+            <p className="text-xs text-indigo-600 dark:text-indigo-500">Referral Used</p>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-2 mt-4 border-b pb-2">
-          <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-full transition ${filter === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>All Orders</button>
-          <button onClick={() => setFilter('pending')} className={`px-3 py-1 text-sm rounded-full transition ${filter === 'pending' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Pending</button>
-          <button onClick={() => setFilter('processing')} className={`px-3 py-1 text-sm rounded-full transition ${filter === 'processing' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Processing</button>
-          <button onClick={() => setFilter('completed')} className={`px-3 py-1 text-sm rounded-full transition ${filter === 'completed' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Completed</button>
-          <button onClick={() => setFilter('promo')} className={`px-3 py-1 text-sm rounded-full transition flex items-center gap-1 ${filter === 'promo' ? 'bg-purple-500 text-white' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}><Tag size={12} /> Promo Orders</button>
-          <button onClick={() => setFilter('referral')} className={`px-3 py-1 text-sm rounded-full transition flex items-center gap-1 ${filter === 'referral' ? 'bg-indigo-500 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}><Gift size={12} /> Referral Orders</button>
+        {/* Filters Bar */}
+        <div className="flex flex-wrap gap-3 mt-4">
+          <div className="flex flex-wrap gap-2 flex-1">
+            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg transition ${filter === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>All</button>
+            <button onClick={() => setFilter('pending')} className={`px-3 py-1.5 text-sm rounded-lg transition ${filter === 'pending' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>Pending</button>
+            <button onClick={() => setFilter('processing')} className={`px-3 py-1.5 text-sm rounded-lg transition ${filter === 'processing' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>Processing</button>
+            <button onClick={() => setFilter('shipped')} className={`px-3 py-1.5 text-sm rounded-lg transition ${filter === 'shipped' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>Shipped</button>
+            <button onClick={() => setFilter('delivered')} className={`px-3 py-1.5 text-sm rounded-lg transition ${filter === 'delivered' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>Delivered</button>
+          </div>
+          
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800"
+            />
+          </div>
+          
+          <button onClick={() => fetchOrders()} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+            <RefreshCw size={18} className="text-gray-500" />
+          </button>
         </div>
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="animate-spin text-orange-500" size={32} />
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-20">
-            <ShoppingCart size={40} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400">No orders found.</p>
+            <ShoppingCart size={40} className="text-gray-200 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400 dark:text-gray-500">No orders found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-xs text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-6 py-3">Order / Customer</th>
-                  <th className="text-left px-6 py-3">Items</th>
-                  <th className="text-left px-6 py-3">Total</th>
-                  <th className="text-left px-6 py-3">Promo / Referral</th>
-                  <th className="text-left px-6 py-3">Payment Proof</th>
-                  <th className="text-left px-6 py-3">Status</th>
-                  <th className="text-left px-6 py-3">Tracking</th>
-                  <th className="text-left px-6 py-3">Date</th>
-                  <th className="text-right px-6 py-3">Actions</th>
+                <tr className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+                  <th className="w-10 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-gray-300"
+                    />
+                  </th>
+                  <th className="text-left px-4 py-3">Order / Customer</th>
+                  <th className="text-left px-4 py-3">Items</th>
+                  <th className="text-left px-4 py-3">Total</th>
+                  <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3">Payment</th>
+                  <th className="text-left px-4 py-3">Date</th>
+                  <th className="text-center px-4 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-sm text-gray-900">{order.customer_name}</p>
-                      <p className="text-xs text-gray-400">{order.phone_number}</p>
-                      <p className="text-xs text-gray-400 truncate max-w-[150px]">{order.customer_email}</p>
+                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.includes(order.id)}
+                        onChange={() => toggleSelectOrder(order.id)}
+                        className="rounded border-gray-300"
+                      />
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 max-w-[200px] truncate">
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-sm text-gray-900 dark:text-white">{order.customer_name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{order.phone_number}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[150px]">{order.customer_email}</p>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-[200px] truncate">
                       {order.items?.map((i: any) => i.product_name).join(', ') || '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    <td className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-white">
                       MWK {Number(order.total_amount).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4">
-                      {order.promo_code_applied && (
-                        <div className="flex items-center gap-1 text-xs text-purple-700 bg-purple-50 px-2 py-1 rounded-full inline-flex mb-1">
-                          <Tag size={10} /> {order.promo_code_applied}
-                          <span className="text-purple-500">(-{order.promo_discount?.toLocaleString()})</span>
-                        </div>
-                      )}
-                      {order.referral_code_used && (
-                        <div className="flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded-full inline-flex">
-                          <Gift size={10} /> {order.referral_code_used}
-                          <span className={`ml-1 text-${order.referral_status === 'completed' ? 'green' : 'yellow'}-500`}>
-                            ({order.referral_status || 'pending'})
-                          </span>
-                        </div>
-                      )}
-                      {!order.promo_code_applied && !order.referral_code_used && (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
+                    <td className="px-4 py-4">
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateStatus(order.id, e.target.value)}
+                        disabled={updatingId === order.id}
+                        className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${getStatusStyle(order.status)}`}
+                      >
+                        {statuses.map((s) => (
+                          <option key={s.slug} value={s.slug}>{s.name}</option>
+                        ))}
+                      </select>
                     </td>
-                    <td className="px-6 py-4">
-                      {order.proof_of_payment_url ? (
-                        <button
-                          onClick={() => setPreviewImage(order.proof_of_payment_url!)}
-                          className="flex items-center gap-1 text-orange-600 hover:text-orange-800 text-sm"
-                        >
-                          <Eye size={16} /> View Proof
-                        </button>
-                      ) : (
-                        <span className="text-xs text-gray-400">No proof</span>
-                      )}
-                      {order.payment_note && (
-                        <p className="text-xs text-gray-500 mt-1 truncate max-w-[150px]">
-                          Note: {order.payment_note}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {updatingId === order.id ? (
-                        <Loader2 size={16} className="animate-spin text-orange-500" />
-                      ) : (
-                        <div className="relative inline-block">
-                          <select
-                            value={order.status}
-                            onChange={(e) => updateStatus(order.id, e.target.value)}
-                            className={`appearance-none pr-6 pl-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${getStatusStyle(order.status)}`}
-                          >
-                            {statuses.map((s) => (
-                              <option key={s.slug} value={s.slug}>{s.name}</option>
-                            ))}
-                          </select>
-                          <ChevronDown size={12} className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      )}
-                      <span className={`text-xs ml-2 ${order.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {order.payment_status === 'paid' ? '✓ Paid' : 'Pending payment'}
+                    <td className="px-4 py-4">
+                      <span className={`text-xs px-2 py-1 rounded-full ${order.payment_status === 'paid' ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400'}`}>
+                        {order.payment_status === 'paid' ? 'Paid' : 'Pending'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      {order.tracking_number ? (
-                        <button onClick={() => openTrackingModal(order)} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                          <Truck size={14} /> {order.tracking_number.slice(0, 8)}...
-                        </button>
-                      ) : (
-                        <button onClick={() => openTrackingModal(order)} className="text-xs text-gray-400 hover:text-gray-600">
-                          Add Tracking
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-gray-400 whitespace-nowrap">
+                    <td className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/admin/orders/${order.id}/receipt`} className="p-2 rounded-lg hover:bg-green-50 text-green-600" title="Upload Receipt">
-                          <Upload size={15} />
-                        </Link>
-                        <Link href={`/admin/orders/${order.id}`} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600" title="View Details">
-                          <Eye size={15} />
-                        </Link>
-                        <button onClick={() => openTrackingModal(order)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500" title="Add Tracking">
-                          <Truck size={15} />
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center gap-1">
+                        <button
+                          onClick={() => exportSingleOrderPDF(order)}
+                          disabled={exporting}
+                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 transition"
+                          title="Download PDF Invoice"
+                        >
+                          <FileText size={16} />
                         </button>
-                        <button onClick={() => deleteOrder(order.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500" title="Delete">
-                          <Trash2 size={15} />
+                        <button
+                          onClick={() => openTrackingModal(order)}
+                          className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-600 dark:text-blue-400 transition"
+                          title="Add Tracking"
+                        >
+                          <Truck size={16} />
+                        </button>
+                        <button
+                          onClick={() => setPreviewImage(order.proof_of_payment_url!)}
+                          disabled={!order.proof_of_payment_url}
+                          className="p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-600 dark:text-orange-400 transition disabled:opacity-30"
+                          title="View Payment Proof"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-500 dark:text-red-400 transition"
+                          title="Delete Order"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
@@ -352,11 +509,11 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      {/* Proof of Payment Modal */}
+      {/* Payment Proof Modal */}
       {previewImage && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setPreviewImage(null)}>
-          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-lg overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setPreviewImage(null)} className="absolute top-2 right-2 bg-gray-800 text-white rounded-full p-1 hover:bg-gray-700">
+          <div className="relative max-w-3xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setPreviewImage(null)} className="absolute top-2 right-2 bg-gray-800 dark:bg-gray-700 text-white rounded-full p-1 hover:bg-gray-700">
               <X size={20} />
             </button>
             <Image src={previewImage} alt="Payment proof" width={800} height={600} className="object-contain w-full h-auto" />
@@ -364,33 +521,51 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Tracking Info Modal */}
+      {/* Tracking Modal */}
       {trackingModalOpen && selectedOrderId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setTrackingModalOpen(false)}>
-          <div className="relative max-w-md w-full bg-white rounded-xl shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Order Tracking Info</h2>
-              <button onClick={() => setTrackingModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full">
-                <X size={20} />
+          <div className="relative max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Update Tracking Info</h2>
+              <button onClick={() => setTrackingModalOpen(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Number</label>
-                <input type="text" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="e.g., TRK-123456789" className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tracking Number</label>
+                <input
+                  type="text"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 dark:text-white"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Notes (for customer)</label>
-                <textarea value={trackingNotes} onChange={(e) => setTrackingNotes(e.target.value)} placeholder="e.g., Handed to courier, expected delivery in 2-3 days" rows={3} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tracking Notes</label>
+                <textarea
+                  value={trackingNotes}
+                  onChange={(e) => setTrackingNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Add delivery notes for customer"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 dark:text-white"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (internal only)</label>
-                <textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} placeholder="Internal notes about this order" rows={2} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admin Notes (Internal)</label>
+                <textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Internal notes"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 dark:text-white"
+                />
               </div>
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setTrackingModalOpen(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                <button onClick={() => setTrackingModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
                 <button onClick={() => updateTracking(selectedOrderId)} disabled={updatingId === selectedOrderId} className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition disabled:opacity-50">
-                  {updatingId === selectedOrderId ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Save Tracking Info'}
+                  {updatingId === selectedOrderId ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Save Changes'}
                 </button>
               </div>
             </div>
