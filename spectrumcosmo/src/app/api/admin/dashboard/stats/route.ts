@@ -1,21 +1,20 @@
+// app/api/admin/dashboard/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { queryMany, queryOne } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   const authError = await requireAdmin(req);
   if (authError) return authError;
 
   try {
-    // Get today's date at midnight
+    const sql = getDb();
+    
+    // Today's stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // Today's stats
-    const [todayStats] = await queryMany`
+    const [todayStats] = await sql`
       SELECT 
         COALESCE(SUM(total_amount), 0) as revenue,
         COUNT(*) as orders
@@ -24,8 +23,11 @@ export async function GET(req: NextRequest) {
         AND status NOT IN ('cancelled', 'declined')
     `;
 
-    // Yesterday's stats (for growth calculation)
-    const [yesterdayStats] = await queryMany`
+    // Yesterday's stats
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const [yesterdayStats] = await sql`
       SELECT 
         COALESCE(SUM(total_amount), 0) as revenue,
         COUNT(*) as orders
@@ -35,16 +37,16 @@ export async function GET(req: NextRequest) {
         AND status NOT IN ('cancelled', 'declined')
     `;
 
-    // Active users today - count unique users who placed orders or visited
-    const [activeUsers] = await queryMany`
+    // Active users today
+    const [activeUsers] = await sql`
       SELECT COUNT(DISTINCT user_id) as count
       FROM orders 
       WHERE created_at >= ${today.toISOString()}
         AND user_id IS NOT NULL
     `;
 
-    // Active carts (using user_sessions as proxy since carts table doesn't exist)
-    const [activeCartsResult] = await queryMany`
+    // Active carts (30 min window)
+    const [activeCarts] = await sql`
       SELECT COUNT(DISTINCT session_id) as count
       FROM user_sessions 
       WHERE visited_at >= NOW() - INTERVAL '30 minutes'
@@ -54,7 +56,7 @@ export async function GET(req: NextRequest) {
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
     
-    const [failedLogins] = await queryMany`
+    const [failedLogins] = await sql`
       SELECT COUNT(*) as count
       FROM api_logs 
       WHERE endpoint = '/api/auth/login'
@@ -62,35 +64,32 @@ export async function GET(req: NextRequest) {
         AND created_at >= ${oneHourAgo.toISOString()}
     `;
 
-    // Average API response time (last 24 hours)
-    const [avgResponse] = await queryOne`
+    // Avg API response time
+    const [avgResponse] = await sql`
       SELECT AVG(response_time_ms) as avg_ms
       FROM api_logs 
       WHERE created_at >= ${today.toISOString()}
         AND response_time_ms IS NOT NULL
     `;
 
-    // Growth calculations (handle division by zero)
-    const revenueGrowth = yesterdayStats.revenue > 0 
+    const revenueGrowth = yesterdayStats?.revenue > 0 
       ? Number(((todayStats.revenue - yesterdayStats.revenue) / yesterdayStats.revenue * 100).toFixed(1))
       : 0;
     
-    const ordersGrowth = yesterdayStats.orders > 0 
+    const ordersGrowth = yesterdayStats?.orders > 0 
       ? Number(((todayStats.orders - yesterdayStats.orders) / yesterdayStats.orders * 100).toFixed(1))
       : 0;
 
-    // Cart abandonment rate (using sessions vs orders as proxy)
-    const totalSessions = Number(activeCartsResult?.count || 0);
-    const totalOrders = Number(todayStats.orders || 0);
-    const abandonedRate = totalSessions > 0 && totalOrders > 0 
-      ? Math.round(((totalSessions - totalOrders) / totalSessions) * 100)
-      : 0;
+    const totalSessions = Number(activeCarts?.count || 0);
+    const totalOrders = Number(todayStats?.orders || 0);
 
     return NextResponse.json({
-      revenue_today: Number(todayStats.revenue),
-      orders_today: Number(todayStats.orders),
+      revenue_today: Number(todayStats?.revenue || 0),
+      orders_today: Number(todayStats?.orders || 0),
       active_users_today: Number(activeUsers?.count || 0),
-      abandoned_carts: abandonedRate,
+      abandoned_carts: totalSessions > 0 && totalOrders > 0 
+        ? Math.round(((totalSessions - totalOrders) / totalSessions) * 100)
+        : 0,
       active_carts: totalSessions,
       failed_payments: 0,
       avg_api_response_ms: Math.round(avgResponse?.avg_ms || 0),
