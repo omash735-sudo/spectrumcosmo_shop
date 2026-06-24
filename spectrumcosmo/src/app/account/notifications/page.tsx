@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 import { 
   Bell, BellOff, Package, Truck, CreditCard, ArrowLeft, X, Trash2, Clock,
-  // Import all icons for dynamic loading
   Box, Bike, Plane, MapPin, ShoppingBag, Shirt, Watch, Gem, Camera, 
   Smartphone, Laptop, Coffee, Home, Dumbbell, Wallet, Banknote, Coins, 
   Receipt, Percent, Sparkles, Gift, Tag, Megaphone, Rocket, Trophy, 
   Star, Heart, Wrench, Settings, Database, Server, Cloud, Shield, Lock,
   Headphones, HelpCircle, MessageCircle, Phone, Mail, BellRing, Info, 
-  AlertTriangle, CheckCircle, XCircle, Calendar
+  AlertTriangle, CheckCircle, XCircle, Calendar, MoreVertical
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,15 +21,13 @@ interface Notification {
   action_label: string;
   is_read: boolean;
   created_at: string;
-  icon_name?: string; // Add icon_name field
+  icon_name?: string;
 }
 
-// Dynamic icon mapper - matches admin panel icons
 const getIconComponent = (iconName?: string) => {
   if (!iconName) return Bell;
   
   const iconMap: Record<string, any> = {
-    // Orders & Shipping
     'package': Package,
     'box': Box,
     'truck': Truck,
@@ -38,7 +35,6 @@ const getIconComponent = (iconName?: string) => {
     'plane': Plane,
     'map-pin': MapPin,
     'clock': Clock,
-    // Products & Inventory
     'shopping-bag': ShoppingBag,
     'shirt': Shirt,
     'watch': Watch,
@@ -49,14 +45,12 @@ const getIconComponent = (iconName?: string) => {
     'coffee': Coffee,
     'home': Home,
     'dumbbell': Dumbbell,
-    // Payments & Finance
     'credit-card': CreditCard,
     'wallet': Wallet,
     'banknote': Banknote,
     'coins': Coins,
     'receipt': Receipt,
     'percent': Percent,
-    // Promotions & Marketing
     'sparkles': Sparkles,
     'gift': Gift,
     'tag': Tag,
@@ -65,7 +59,6 @@ const getIconComponent = (iconName?: string) => {
     'trophy': Trophy,
     'star': Star,
     'heart': Heart,
-    // System & Maintenance
     'wrench': Wrench,
     'settings': Settings,
     'database': Database,
@@ -73,13 +66,11 @@ const getIconComponent = (iconName?: string) => {
     'cloud': Cloud,
     'shield': Shield,
     'lock': Lock,
-    // Customer Support
     'headphones': Headphones,
     'help-circle': HelpCircle,
     'message-circle': MessageCircle,
     'phone': Phone,
     'mail': Mail,
-    // Alerts & Updates
     'bell': Bell,
     'bell-ring': BellRing,
     'info': Info,
@@ -181,7 +172,6 @@ export default function NotificationsPage() {
     return 'Earlier';
   };
 
-  // Group notifications
   const groupedNotifications = notifications.reduce((groups, notif) => {
     const group = getDateGroup(notif.created_at);
     if (!groups[group]) groups[group] = [];
@@ -191,127 +181,150 @@ export default function NotificationsPage() {
 
   const groupOrder = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
+  // Separate unread notifications for "New" section
+  const unreadNotifications = notifications.filter(n => !n.is_read);
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-pulse text-gray-400 dark:text-gray-500 text-sm sm:text-base">Loading...</div>
+        <div className="animate-pulse text-gray-400 text-sm">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Link 
-            href="/account" 
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-            aria-label="Back to account"
-          >
-            <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notification Centre</h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Stay updated on your orders</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
         {notifications.length > 0 && (
           <button
             onClick={clearAllNotifications}
-            className="p-2 rounded-xl text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
-            title="Clear all notifications"
+            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <Trash2 size={18} />
+            Clear all
           </button>
         )}
       </div>
 
       {notifications.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BellOff size={28} className="text-gray-300 dark:text-gray-500" />
+        <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BellOff size={28} className="text-gray-300" />
           </div>
-          <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">We'll notify you when something arrives</p>
+          <p className="text-gray-500">No notifications yet</p>
+          <p className="text-gray-400 text-sm mt-1">We'll notify you when something arrives</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
+          {/* New Section - Unread notifications */}
+          {unreadNotifications.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">New</span>
+                <div className="h-px flex-1 bg-gray-200" />
+              </div>
+              <div className="space-y-3">
+                {unreadNotifications.map((notif) => {
+                  const Icon = getIconComponent(notif.icon_name);
+                  const timeAgo = getTimeAgo(notif.created_at);
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="flex gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                            <Icon size={18} className="text-blue-500" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-sm text-gray-900">
+                              {notif.title}
+                            </p>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                              {timeAgo}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                            {notif.message}
+                          </p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <button
+                              onClick={() => handleViewDetails(notif)}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                              {notif.action_label || 'View Details'}
+                            </button>
+                            <button
+                              onClick={() => markAsRead(notif.id)}
+                              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              Mark as read
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Grouped notifications */}
           {groupOrder.map(groupName => {
             const groupNotifs = groupedNotifications[groupName];
             if (!groupNotifs || groupNotifs.length === 0) return null;
+            
+            // Filter out unread notifications (already shown in "New" section)
+            const readNotifs = groupNotifs.filter(n => n.is_read);
+            if (readNotifs.length === 0) return null;
 
             return (
               <div key={groupName}>
-                {/* Group Header */}
                 <div className="flex items-center gap-2 mb-3">
-                  <Clock size={14} className="text-gray-400" />
-                  <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                     {groupName}
-                  </h2>
+                  </span>
+                  <div className="h-px flex-1 bg-gray-200" />
                 </div>
-
-                {/* Group Notifications */}
-                <div className="space-y-2">
-                  {groupNotifs.map((notif) => {
-                    // Use dynamic icon from admin, fallback to Bell
+                <div className="space-y-3">
+                  {readNotifs.map((notif) => {
                     const Icon = getIconComponent(notif.icon_name);
                     const timeAgo = getTimeAgo(notif.created_at);
 
                     return (
                       <div
                         key={notif.id}
-                        className={`bg-white dark:bg-gray-800 rounded-2xl border p-4 hover:shadow-md transition-all duration-200 ${
-                          !notif.is_read 
-                            ? 'border-l-4 border-l-orange-500 bg-orange-50/5 dark:bg-orange-950/10' 
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                        }`}
+                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                       >
                         <div className="flex gap-3">
                           <div className="flex-shrink-0">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                              !notif.is_read 
-                                ? 'bg-orange-100 dark:bg-orange-900/30' 
-                                : 'bg-gray-100 dark:bg-gray-700'
-                            }`}>
-                              <Icon size={18} className={`${
-                                !notif.is_read 
-                                  ? 'text-orange-600 dark:text-orange-400' 
-                                  : 'text-gray-500 dark:text-gray-400'
-                              }`} />
+                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+                              <Icon size={18} className="text-gray-400" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <p className={`font-medium text-sm ${
-                                !notif.is_read 
-                                  ? 'text-gray-900 dark:text-white' 
-                                  : 'text-gray-700 dark:text-gray-300'
-                              }`}>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium text-sm text-gray-700">
                                 {notif.title}
                               </p>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-400 dark:text-gray-500">
-                                  {timeAgo}
-                                </span>
-                                {!notif.is_read && (
-                                  <button
-                                    onClick={() => markAsRead(notif.id)}
-                                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                  >
-                                    ✓
-                                  </button>
-                                )}
-                              </div>
+                              <span className="text-xs text-gray-400 whitespace-nowrap">
+                                {timeAgo}
+                              </span>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">
                               {notif.message}
                             </p>
                             <button
                               onClick={() => handleViewDetails(notif)}
-                              className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+                              className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors mt-2"
                             >
-                              {notif.action_label || 'View Details'} →
+                              {notif.action_label || 'View Details'}
                             </button>
                           </div>
                         </div>
@@ -325,20 +338,20 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Modal for admin notifications */}
+      {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{modalTitle}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{modalTitle}</h3>
               <button 
                 onClick={() => setModalOpen(false)} 
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={18} className="text-gray-500" />
               </button>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+            <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">
               {modalMessage}
             </p>
           </div>
