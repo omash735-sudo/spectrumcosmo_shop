@@ -8,9 +8,10 @@ import {
   Receipt, Percent, Sparkles, Gift, Tag, Megaphone, Rocket, Trophy, 
   Star, Heart, Wrench, Settings, Database, Server, Cloud, Shield, Lock,
   Headphones, HelpCircle, MessageCircle, Phone, Mail, BellRing, Info, 
-  AlertTriangle, CheckCircle, XCircle, Calendar, MoreVertical
+  AlertTriangle, CheckCircle, XCircle, Calendar
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Notification {
   id: number | string;
@@ -84,6 +85,7 @@ const getIconComponent = (iconName?: string) => {
 };
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -181,7 +183,6 @@ export default function NotificationsPage() {
 
   const groupOrder = ['Today', 'Yesterday', 'This Week', 'Earlier'];
 
-  // Separate unread notifications for "New" section
   const unreadNotifications = notifications.filter(n => !n.is_read);
 
   if (loading) {
@@ -194,17 +195,26 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Notifications</h1>
-        {notifications.length > 0 && (
-          <button
-            onClick={clearAllNotifications}
-            className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Clear all
-          </button>
-        )}
+      {/* Header with Back Button */}
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+        </button>
+        <div className="flex-1 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Notifications</h1>
+          {notifications.length > 0 && (
+            <button
+              onClick={clearAllNotifications}
+              className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (
@@ -217,7 +227,6 @@ export default function NotificationsPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* New Section - Unread notifications */}
           {unreadNotifications.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -275,12 +284,10 @@ export default function NotificationsPage() {
             </div>
           )}
 
-          {/* Grouped notifications */}
           {groupOrder.map(groupName => {
             const groupNotifs = groupedNotifications[groupName];
             if (!groupNotifs || groupNotifs.length === 0) return null;
             
-            // Filter out unread notifications (already shown in "New" section)
             const readNotifs = groupNotifs.filter(n => n.is_read);
             if (readNotifs.length === 0) return null;
 
@@ -338,7 +345,6 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl dark:shadow-gray-900/50">
