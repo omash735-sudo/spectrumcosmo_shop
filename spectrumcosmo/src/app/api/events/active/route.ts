@@ -3,7 +3,7 @@ import { getDb, queryOne } from '@/lib/db';
 
 export async function GET() {
   try {
-    const sql = getDb();
+    const client = getDb();
     const event = await queryOne`
       SELECT * FROM site_events 
       WHERE active = true 
