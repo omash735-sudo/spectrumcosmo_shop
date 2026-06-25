@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, execute } from '@/lib/db';
+import { getDb, queryOne } from '@/lib/db';
 import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
@@ -15,9 +15,10 @@ export async function POST(request: NextRequest) {
     }
 
     const id = randomUUID().slice(0, 50);
-    const sql = getDb();
+    const client = getDb();
 
-    await execute`
+    // Insert registration using the client directly (tagged template)
+    await client`
       INSERT INTO event_registrations (
         id, event_id, full_name, email, phone, message, status, created_at
       ) VALUES (
