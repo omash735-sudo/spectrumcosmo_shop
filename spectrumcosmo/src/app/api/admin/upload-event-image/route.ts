@@ -1,11 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+// app/api/admin/upload-event-image/route.ts
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,36 +15,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Please upload JPEG, PNG, WebP, or GIF.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 5MB.' },
+        { status: 400 }
+      );
+    }
+
+    // Get Cloudinary config from environment
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
+
+    // Create form data for Cloudinary
+    const cloudinaryFormData = new FormData();
+    cloudinaryFormData.append('file', file);
+    cloudinaryFormData.append('upload_preset', uploadPreset);
+    cloudinaryFormData.append('folder', 'events/posters');
+    cloudinaryFormData.append('public_id', `event-poster-${type}-${Date.now()}`);
+    
+    // Add transformation parameters
+    cloudinaryFormData.append('transformation', JSON.stringify([
+      { width: 1200, height: 675, crop: 'fill' },
+      { quality: 'auto' },
+      { fetch_format: 'auto' }
+    ]));
 
     // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          folder: 'events/posters',
-          public_id: `event-${type}-${Date.now()}`,
-          transformation: [
-            { width: 1200, height: 675, crop: 'fill' },
-            { quality: 'auto' },
-          ],
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      ).end(buffer);
-    });
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: cloudinaryFormData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary upload error:', data);
+      throw new Error(data.error?.message || 'Upload failed');
+    }
+
+    if (!data?.secure_url) {
+      throw new Error('No secure_url in response');
+    }
 
     return NextResponse.json({
       success: true,
-      url: (result as any).secure_url,
+      url: data.secure_url,
+      public_id: data.public_id,
     });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to upload image' },
+      { error: error instanceof Error ? error.message : 'Failed to upload image' },
       { status: 500 }
     );
   }
