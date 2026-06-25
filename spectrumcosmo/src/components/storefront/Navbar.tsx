@@ -31,7 +31,8 @@ import {
   Package as PackageIcon,
   Sparkles,
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  CalendarDays
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -54,6 +55,7 @@ const categories = [
 const desktopLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products', hasDropdown: true },
+  { href: '/events', label: 'Events' },
   { href: '/reviews', label: 'Reviews' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
@@ -167,7 +169,6 @@ export default function Navbar() {
           ? 'bg-white/95 dark:bg-gray-950/95 shadow-lg backdrop-blur-md' 
           : 'bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800'
       )}>
-        {/* Top Bar - Announcement */}
         <div className="hidden md:block bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center py-2 text-sm">
           <div className="flex items-center justify-center gap-6">
             <span className="flex items-center gap-1"><Truck size={14} /> Free shipping over 50,000 MWK</span>
@@ -176,7 +177,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* DESKTOP HEADER */}
+        {/* Desktop Header */}
         <div className="hidden md:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
@@ -189,58 +190,79 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* Navigation with Dropdowns */}
+              {/* Navigation */}
               <nav className="flex items-center gap-1">
-                {desktopLinks.map(link => (
-                  <div
-                    key={link.href}
-                    className="relative"
-                    onMouseEnter={() => link.hasDropdown && handleMouseEnter(link.label)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <Link
-                      href={link.href}
-                      className={clsx(
-                        'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1',
-                        pathname === link.href
-                          ? 'bg-[#F97316] text-white shadow-sm'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
-                      )}
+                {desktopLinks.map(link => {
+                  const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+                  
+                  if (link.label === 'Events') {
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={clsx(
+                          'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5',
+                          isActive
+                            ? 'bg-[#F97316] text-white shadow-sm'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
+                        )}
+                      >
+                        <CalendarDays size={16} className={isActive ? 'text-white' : 'text-orange-500'} />
+                        {link.label}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={link.href}
+                      className="relative"
+                      onMouseEnter={() => link.hasDropdown && handleMouseEnter(link.label)}
+                      onMouseLeave={handleMouseLeave}
                     >
-                      {link.label}
-                      {link.hasDropdown && <ChevronDown size={14} className={clsx('transition-transform', openDropdown === link.label && 'rotate-180')} />}
-                    </Link>
-                    
-                    {/* Dropdown Menu */}
-                    {link.hasDropdown && openDropdown === link.label && (
-                      <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-2 z-50 dropdown-content">
-                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shop by Category</p>
-                        </div>
-                        {categories.map((cat) => {
-                          const Icon = cat.icon;
-                          return (
-                            <Link
-                              key={cat.name}
-                              href={cat.href}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 transition group"
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              <Icon size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
-                              {cat.name}
+                      <Link
+                        href={link.href}
+                        className={clsx(
+                          'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1',
+                          isActive
+                            ? 'bg-[#F97316] text-white shadow-sm'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
+                        )}
+                      >
+                        {link.label}
+                        {link.hasDropdown && <ChevronDown size={14} className={clsx('transition-transform', openDropdown === link.label && 'rotate-180')} />}
+                      </Link>
+                      
+                      {link.hasDropdown && openDropdown === link.label && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-2 z-50 dropdown-content">
+                          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shop by Category</p>
+                          </div>
+                          {categories.map((cat) => {
+                            const Icon = cat.icon;
+                            return (
+                              <Link
+                                key={cat.name}
+                                href={cat.href}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 transition group"
+                                onClick={() => setOpenDropdown(null)}
+                              >
+                                <Icon size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
+                                {cat.name}
+                              </Link>
+                            );
+                          })}
+                          <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2">
+                            <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition group">
+                              View All Products 
+                              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
                             </Link>
-                          );
-                        })}
-                        <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2">
-                          <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition group">
-                            View All Products 
-                            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
-                          </Link>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </nav>
 
               {/* Right Section */}
@@ -248,10 +270,8 @@ export default function Navbar() {
                 <CurrencySelector />
                 <SearchBar />
                 
-                {/* Notification Bell */}
                 {isLoggedIn && <NotificationBell />}
                 
-                {/* Cart Button */}
                 <div className="relative group">
                   <button 
                     onClick={openCart} 
@@ -273,7 +293,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE HEADER */}
+        {/* Mobile Header */}
         <div className="md:hidden px-4 py-3">
           <div className="flex items-center justify-between">
             <button 
@@ -311,7 +331,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MOBILE SIDEBAR */}
+      {/* Mobile Sidebar */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
@@ -378,6 +398,9 @@ export default function Navbar() {
               </Link>
               <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Package size={18} className="text-gray-500" /> Products
+              </Link>
+              <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
+                <CalendarDays size={18} className="text-orange-500" /> Events
               </Link>
               <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
                 <Star size={18} className="text-gray-500" /> Reviews
