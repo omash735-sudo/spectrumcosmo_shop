@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -15,7 +14,7 @@ function isAdminRoute(pathname: string): boolean {
 
 // Check if route needs carousel-friendly CSP
 function isCarouselRoute(pathname: string): boolean {
-  const carouselRoutes = ['/', '/products', '/product/'];
+  const carouselRoutes = ['/', '/products', '/product/', '/events'];
   return carouselRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 }
 
@@ -48,7 +47,7 @@ export async function middleware(request: NextRequest) {
     if (isAdminRoute(pathname)) {
       csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
     } 
-    // OPTION 2: Carousel routes (homepage, products) get carousel-friendly CSP
+    // OPTION 2: Carousel routes (homepage, products, events) get carousel-friendly CSP
     else if (isCarouselRoute(pathname)) {
       csp = [
         "default-src 'self'",
@@ -254,6 +253,7 @@ export const config = {
     '/product/:path*',
     '/reviews/:path*',
     '/checkout/:path*',
+    '/events/:path*', 
     '/api/:path*',
   ],
 };
