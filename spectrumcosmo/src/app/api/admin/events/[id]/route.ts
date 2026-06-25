@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, execute } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const {
       badge,
@@ -19,9 +19,9 @@ export async function PUT(
       active,
     } = body;
 
-    const sql = getDb();
+    const client = getDb();
 
-    await execute`
+    await client`
       UPDATE site_events SET
         badge = ${badge},
         title = ${title},
@@ -47,14 +47,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
-    const sql = getDb();
+    const { id } = await params;
+    const client = getDb();
 
-    await execute`
-      DELETE FROM site_events WHERE id = ${id}
+    await client`
+      DELETE FROM site_events 
+      WHERE id = ${id}
     `;
 
     return NextResponse.json({ success: true });
