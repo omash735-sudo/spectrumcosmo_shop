@@ -47,6 +47,7 @@ import {
   Send,
   Clock,
   RefreshCw,
+  CalendarDays, // Added for Events
 } from 'lucide-react';
 
 const navItems = [
@@ -61,7 +62,10 @@ const navItems = [
   { name: 'Content Blocks', href: '/admin/content-blocks', icon: Blocks, section: 'CORE' },
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
-  { name: 'Notifications', href: '/admin/notifications', icon: Bell, section: 'CORE' }, // ADDED
+  { name: 'Notifications', href: '/admin/notifications', icon: Bell, section: 'CORE' },
+  
+  // EVENTS SECTION - NEW
+  { name: 'Events', href: '/admin/events', icon: CalendarDays, section: 'CORE' },
   
   // DELIVERY SECTION
   { name: 'Delivery Areas', href: '/admin/delivery-areas', icon: MapPin, section: 'DELIVERY' },
@@ -192,7 +196,6 @@ function DeliveryQuoteBadge() {
   );
 }
 
-// Notification badge component
 function NotificationBadge() {
   const [unreadCount, setUnreadCount] = useState(0);
   
@@ -327,6 +330,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const showSecurityAlert = item.name === 'Security Center';
                 const showQuoteAlert = item.name === 'Delivery Quotes';
                 const showNotificationAlert = item.name === 'Notifications';
+                const isEvents = item.name === 'Events';
                 
                 return (
                   <Link
@@ -338,7 +342,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
-                    <Icon size={14} className="sm:w-[18px] sm:h-[18px]" />
+                    <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents ? 'text-orange-500' : ''}`} />
                     {item.name}
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
