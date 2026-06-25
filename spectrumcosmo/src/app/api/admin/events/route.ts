@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryMany, queryOne, execute } from '@/lib/db';
+import { getDb, queryMany } from '@/lib/db';
 import { randomUUID } from 'crypto';
 
 export async function GET() {
   try {
-    const sql = getDb();
+    const client = getDb();
     const events = await queryMany`
-      SELECT * FROM site_events ORDER BY created_at DESC
+      SELECT * FROM site_events 
+      ORDER BY created_at DESC
     `;
     return NextResponse.json({ events });
   } catch (error) {
@@ -33,9 +34,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const id = randomUUID().slice(0, 50);
-    const sql = getDb();
+    const client = getDb();
 
-    await execute`
+    await client`
       INSERT INTO site_events (
         id, badge, title, detail, href, google_form_link, 
         starts_at, ends_at, active, created_at, updated_at
