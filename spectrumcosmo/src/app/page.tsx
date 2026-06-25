@@ -8,15 +8,16 @@ import {
   CreditCard, Headphones, Send
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
+import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
 import Footer from '@/components/storefront/Footer';
 import { getDb, queryOne, queryMany } from '@/lib/db';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
+import HeroImageMarquee from '@/components/storefront/HeroImageMarquee';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
 
-// Types
 interface HeroSection {
   id: string;
   badge_text: string;
@@ -37,6 +38,8 @@ interface HeroSection {
   cat_image3_alt: string;
   cat_image4_url: string;
   cat_image4_alt: string;
+  bg_image_url?: string;
+  bg_image_url_dark?: string;
 }
 
 interface Product {
@@ -78,6 +81,8 @@ const fallbackHero: HeroSection = {
   cat_image3_alt: 'Pendant collection',
   cat_image4_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
   cat_image4_alt: 'Bracelet collection',
+  bg_image_url: '',
+  bg_image_url_dark: '',
 };
 
 function TrustBar() {
@@ -152,18 +157,31 @@ export default async function HomePage() {
   return (
     <>
       <style>{marqueeStyles}</style>
+      <EventAnnouncementBar />
       <Navbar />
       <main>
-        {/* Hero Section with solid colors */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-white dark:bg-gray-900">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-200/20 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-300/15 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          </div>
+          {h.bg_image_url && (
+            <Image
+              src={h.bg_image_url}
+              alt=""
+              fill
+              priority
+              className="object-cover dark:hidden"
+            />
+          )}
+          {h.bg_image_url_dark && (
+            <Image
+              src={h.bg_image_url_dark}
+              alt=""
+              fill
+              priority
+              className="object-cover hidden dark:block"
+            />
+          )}
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Left Content */}
               <div className="text-center lg:text-left">
                 <Link
                   href={h.badge_link || '#'}
@@ -224,31 +242,15 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* Right Images Gallery (desktop only) */}
-              <div className="hidden lg:grid grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
-                    <Image src={h.cat_image1_url} alt={h.cat_image1_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                    <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Shop T-Shirts →</span>
-                    </div>
-                  </div>
-                  <div className="relative h-44 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
-                    <Image src={h.cat_image4_url} alt={h.cat_image4_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                  </div>
-                </div>
-                <div className="space-y-4 pt-8">
-                  <div className="relative h-44 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
-                    <Image src={h.cat_image3_url} alt={h.cat_image3_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                  </div>
-                  <div className="relative h-72 rounded-2xl overflow-hidden group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
-                    <Image src={h.cat_image2_url} alt={h.cat_image2_alt} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                    <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Shop Hoodies →</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-10 lg:mt-0">
+                <HeroImageMarquee
+                  images={[
+                    { url: h.cat_image1_url, alt: h.cat_image1_alt },
+                    { url: h.cat_image2_url, alt: h.cat_image2_alt },
+                    { url: h.cat_image3_url, alt: h.cat_image3_alt },
+                    { url: h.cat_image4_url, alt: h.cat_image4_alt },
+                  ]}
+                />
               </div>
             </div>
           </div>
