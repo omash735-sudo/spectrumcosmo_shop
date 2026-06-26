@@ -160,6 +160,9 @@ export default async function HomePage() {
       <EventAnnouncementBar />
       <Navbar />
       <main>
+        {/* ============================================
+            HERO SECTION - FIXED FOR MOBILE
+            ============================================ */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center overflow-hidden bg-white dark:bg-gray-900">
           {h.bg_image_url && (
             <Image
@@ -180,69 +183,77 @@ export default async function HomePage() {
             />
           )}
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="text-center lg:text-left">
+          <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center">
+              {/* LEFT CONTENT - MOBILE OPTIMIZED */}
+              <div className="text-center lg:text-left w-full max-w-full overflow-hidden">
+                
+                {/* Badge - FIXED: Added truncate and max-width */}
                 <Link
                   href={h.badge_link || '#'}
-                  className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-medium px-4 py-2 rounded-full mb-6 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                  className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6 hover:bg-gray-200 dark:hover:bg-gray-700 transition max-w-full"
                 >
-                  <Sparkles size={14} className="text-orange-500" />
-                  {h.badge_text}
-                  <ArrowRight size={12} />
+                  <Sparkles size={12} className="text-orange-500 flex-shrink-0 sm:w-[14px] sm:h-[14px]" />
+                  <span className="truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">{h.badge_text}</span>
+                  <ArrowRight size={12} className="flex-shrink-0" />
                 </Link>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 dark:text-white leading-[1.2] mb-6 tracking-tight">
+                {/* Heading - FIXED: Smaller on mobile, proper word break */}
+                <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 dark:text-white leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight break-words">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
-                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent whitespace-nowrap">
+                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent break-words">
                       {h.highlighted_word}
                     </span>
-                    <svg className="absolute -bottom-3 left-0 w-full" height="10" viewBox="0 0 300 10" fill="none">
+                    <svg className="absolute -bottom-2 sm:-bottom-3 left-0 w-full" height="8" viewBox="0 0 300 10" fill="none">
                       <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#F97316" strokeWidth="3" strokeLinecap="round" fill="none"/>
                     </svg>
                   </span>{' '}
                   <span className="whitespace-nowrap">with pride.</span>
                 </h1>
 
-                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-8">
+                {/* Description - FIXED: Better mobile text size */}
+                <p className="text-sm xs:text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8 break-words">
                   {h.description}
                 </p>
 
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                {/* Buttons - FIXED: Better mobile spacing */}
+                <div className="flex flex-wrap gap-2 sm:gap-4 justify-center lg:justify-start">
                   <Link
                     href={h.button1_link}
-                    className="group bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center gap-2"
+                    className="group bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white px-5 sm:px-8 py-2.5 sm:py-4 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center gap-2 text-sm sm:text-base"
                   >
                     {h.button1_text}
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
                   </Link>
                   <Link
                     href="#featured"
-                    className="group border-2 border-gray-300 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 inline-flex items-center gap-2"
+                    className="group border-2 border-gray-300 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-5 sm:px-8 py-2.5 sm:py-4 rounded-full font-semibold transition-all duration-300 inline-flex items-center gap-2 text-sm sm:text-base"
                   >
                     View Collection
-                    <ShoppingBag size={18} className="group-hover:translate-x-1 transition-transform" />
+                    <ShoppingBag size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
                   </Link>
                 </div>
 
-                <div className="flex flex-wrap gap-6 justify-center lg:justify-start mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <Shield size={18} className="text-gray-500 dark:text-gray-500" />
-                    <span className="text-sm">{h.feature1}</span>
+                {/* Features - FIXED: Better mobile spacing */}
+                <div className="flex flex-wrap gap-4 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400">
+                    <Shield size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px]" />
+                    <span className="text-xs sm:text-sm">{h.feature1}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <Truck size={18} className="text-gray-500 dark:text-gray-500" />
-                    <span className="text-sm">{h.feature2}</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400">
+                    <Truck size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px]" />
+                    <span className="text-xs sm:text-sm">{h.feature2}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <Sparkles size={18} className="text-gray-500 dark:text-gray-500" />
-                    <span className="text-sm">{h.feature3}</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400">
+                    <Sparkles size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px]" />
+                    <span className="text-xs sm:text-sm">{h.feature3}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-10 lg:mt-0">
+              {/* RIGHT IMAGES - MARQUEE */}
+              <div className="mt-8 lg:mt-0">
                 <HeroImageMarquee
                   images={[
                     { url: h.cat_image1_url, alt: h.cat_image1_alt },
