@@ -1,6 +1,5 @@
 // lib/email/send.ts
 import nodemailer from 'nodemailer';
-import { renderEmailTemplate } from './templates';
 
 // Create transporter
 const transporter = nodemailer.createTransport({
