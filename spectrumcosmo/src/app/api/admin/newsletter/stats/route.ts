@@ -1,105 +1,122 @@
 // app/api/admin/newsletter/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryAsArray } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
-
-// Types
-interface CountResult {
-  count: string | number;
-}
-
-interface GrowthRow {
-  month: Date;
-  new: string | number;
-}
-
-interface CampaignRow {
-  id: string;
-  title: string;
-  sent_at: Date;
-  open_count: number;
-  click_count: number;
-  total_subscribers: number;
-}
-
-interface CampaignPerformance extends CampaignRow {
-  open_rate: string;
-  click_rate: string;
-}
-
-interface UnsubscribeRow {
-  email: string;
-  reason: string | null;
-  details: string | null;
-  created_at: Date;
-}
+import { getDb } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  const authError = requireAdmin(req);
+  const authError = await requireAdmin(req);
   if (authError) return authError;
 
   try {
     const sql = getDb();
 
-    // Total active subscribers
-    const totalActiveResult = await queryAsArray<CountResult>`
+    const [subscriberCount] = await sql`
       SELECT COUNT(*) as count FROM subscribers WHERE status = 'confirmed'
     `;
-    const totalActive = Number(totalActiveResult[0]?.count ?? 0);
 
-    // Subscriber growth (last 12 months)
-    const growthRows = await queryAsArray<GrowthRow>`
-      SELECT DATE_TRUNC('month', confirmed_at) as month, COUNT(*) as new
-      FROM subscribers
-      WHERE confirmed_at IS NOT NULL
-      GROUP BY month
-      ORDER BY month DESC
-      LIMIT 12
+    const [activeCount] = await sql`
+      SELECT COUNT(*) as count FROM subscribers 
+      WHERE status = 'confirmed' AND confirmed_at > NOW() - INTERVAL '90 days'
     `;
-    const growth = growthRows.map((row) => ({
-      month: new Date(row.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      new: Number(row.new),
-    }));
 
-    // Campaign performance
-    const campaignRows = await queryAsArray<CampaignRow>`
+    const [campaignCount] = await sql`
+      SELECT COUNT(*) as count FROM newsletter_campaigns
+    `;
+
+    const [avgStats] = await sql`
       SELECT 
-        c.id,
-        c.title,
-        c.sent_at,
-        c.open_count,
-        c.click_count,
-        (SELECT COUNT(*) FROM subscribers WHERE status = 'confirmed') as total_subscribers
-      FROM newsletter_campaigns c
-      WHERE c.status = 'sent'
-      ORDER BY c.sent_at DESC
+        AVG(open_count) as avg_open_count,
+        AVG(total_subscribers) as avg_total_subscribers
+      FROM newsletter_campaigns
+      WHERE status = 'sent' AND total_subscribers > 0
     `;
 
-    const performance: CampaignPerformance[] = campaignRows.map((c) => ({
-      ...c,
-      open_rate: ((c.open_count / c.total_subscribers) * 100).toFixed(1),
-      click_rate: ((c.click_count / c.total_subscribers) * 100).toFixed(1),
-    }));
+    let averageOpenRate = 0;
+    if (avgStats?.avg_open_count && avgStats?.avg_total_subscribers) {
+      averageOpenRate = Math.round((Number(avgStats.avg_open_count) / Number(avgStats.avg_total_subscribers)) * 100);
+    }
 
-    // Recent unsubscribes
-    const unsubscribes = await queryAsArray<UnsubscribeRow>`
-      SELECT email, reason, details, created_at
+    const campaignPerformance = await sql`
+      SELECT 
+        id,
+        title,
+        sent_at,
+        open_count,
+        click_count,
+        total_subscribers,
+        CASE WHEN total_subscribers > 0 THEN (open_count::float / total_subscribers * 100) ELSE 0 END as open_rate,
+        CASE WHEN open_count > 0 THEN (click_count::float / open_count * 100) ELSE 0 END as click_rate
+      FROM newsletter_campaigns
+      WHERE status = 'sent' AND total_subscribers > 0
+      ORDER BY sent_at DESC
+      LIMIT 5
+    `;
+
+    const growthData = await sql`
+      SELECT 
+        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
+        COUNT(*) as new_count
+      FROM subscribers 
+      WHERE status = 'confirmed' AND created_at > NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY DATE_TRUNC('month', created_at) ASC
+    `;
+
+    const unsubscribeLogs = await sql`
+      SELECT 
+        id,
+        email,
+        reason,
+        COALESCE(details, '') as details,
+        TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at
       FROM unsubscribe_feedback
       ORDER BY created_at DESC
-      LIMIT 20
+      LIMIT 10
     `;
 
+    const totalSubscribers = Number(subscriberCount?.count) || 0;
+    const totalActive = Number(activeCount?.count) || 0;
+    const totalCampaigns = Number(campaignCount?.count) || 0;
+
+    const growth = (growthData || []).map((row: any) => ({
+      month: row.month || 'No Data',
+      new: Number(row.new_count) || 0,
+    }));
+
+    if (growth.length === 0) {
+      growth.push({ month: 'No Data', new: 0 });
+    }
+
+    const performance = (campaignPerformance || []).map((row: any) => ({
+      id: row.id || '',
+      title: row.title || 'Untitled',
+      sent_at: row.sent_at || '',
+      open_count: Number(row.open_count) || 0,
+      click_count: Number(row.click_count) || 0,
+      open_rate: Math.round(Number(row.open_rate) || 0),
+      click_rate: Math.round(Number(row.click_rate) || 0),
+      total_subscribers: Number(row.total_subscribers) || 0,
+    }));
+
+    const unsubscribes = (unsubscribeLogs || []).map((row: any) => ({
+      id: row.id || '',
+      email: row.email || '',
+      reason: row.reason || 'No reason provided',
+      details: row.details || '',
+      created_at: row.created_at || '',
+    }));
+
     return NextResponse.json({
+      totalSubscribers,
+      totalCampaigns,
+      averageOpenRate,
       totalActive,
       growth,
       performance,
       unsubscribes,
     });
-  } catch (err) {
-    console.error('Newsletter stats error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  } catch (error) {
+    console.error('Stats error:', error);
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }
