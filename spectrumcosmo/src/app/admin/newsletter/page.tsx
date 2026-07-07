@@ -8,7 +8,7 @@ import { Metadata } from 'next';
 import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import NewsletterClient from '@/components/admin/NewsletterClient';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Plus, Users, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 // Local types matching the client component
@@ -22,15 +22,21 @@ interface Campaign {
   audience: AudienceType;
   open_count: number;
   click_count: number;
+  unsubscribe_count: number;
   created_at: string;
   sent_at?: string | null;
+  scheduled_for?: string | null;
   total_subscribers: number;
+  segment_name?: string | null;
 }
 
 interface NewsletterStats {
   totalSubscribers: number;
   totalCampaigns: number;
   averageOpenRate: number;
+  averageClickRate: number;
+  totalUnsubscribes: number;
+  subscriberGrowth: number;
 }
 
 export const metadata: Metadata = {
@@ -51,21 +57,37 @@ async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
     
     const [avgStats] = await sql`
       SELECT 
-        AVG(CASE WHEN total_subscribers > 0 THEN (open_count::float / total_subscribers * 100) ELSE 0 END) as avg_open_rate
+        AVG(CASE WHEN total_subscribers > 0 THEN (open_count::float / total_subscribers * 100) ELSE 0 END) as avg_open_rate,
+        AVG(CASE WHEN open_count > 0 THEN (click_count::float / open_count * 100) ELSE 0 END) as avg_click_rate,
+        COALESCE(SUM(unsubscribe_count), 0) as total_unsubscribes
       FROM newsletter_campaigns
       WHERE status = 'sent' AND total_subscribers > 0
+    `;
+    
+    // Calculate growth (compare to last month)
+    const [growth] = await sql`
+      SELECT 
+        COUNT(*) as current_count
+      FROM subscribers 
+      WHERE status = 'confirmed' AND created_at > NOW() - INTERVAL '30 days'
     `;
     
     return {
       totalSubscribers: Number(subscriberCount?.count) || 0,
       totalCampaigns: Number(campaignCount?.count) || 0,
       averageOpenRate: Math.round(Number(avgStats?.avg_open_rate) || 0),
+      averageClickRate: Math.round(Number(avgStats?.avg_click_rate) || 0),
+      totalUnsubscribes: Number(avgStats?.total_unsubscribes) || 0,
+      subscriberGrowth: Math.round((Number(growth?.current_count) || 0) / Math.max(Number(subscriberCount?.count) || 1, 1) * 100),
     };
   } catch {
     return {
       totalSubscribers: 0,
       totalCampaigns: 0,
       averageOpenRate: 0,
+      averageClickRate: 0,
+      totalUnsubscribes: 0,
+      subscriberGrowth: 0,
     };
   }
 }
@@ -94,8 +116,11 @@ export default async function AdminNewsletterPage() {
           c.audience,
           COALESCE(c.open_count, 0) as open_count,
           COALESCE(c.click_count, 0) as click_count,
+          COALESCE(c.unsubscribe_count, 0) as unsubscribe_count,
           c.created_at,
           c.sent_at,
+          c.scheduled_for,
+          c.segment_name,
           COALESCE(
             (SELECT COUNT(*) FROM subscribers WHERE status = 'confirmed'),
             0
@@ -120,36 +145,24 @@ export default async function AdminNewsletterPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Newsletter Hub</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Mail className="w-7 h-7 text-orange-500" />
+                Newsletter Hub
+              </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Manage campaigns, view analytics, and track subscriber engagement.
+                Manage campaigns, target audiences, and track subscriber engagement.
               </p>
             </div>
             
-            {stats && !error && (
-              <div className="hidden md:flex items-center gap-4 text-sm">
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    {stats.totalSubscribers.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Subscribers</p>
-                </div>
-                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    {stats.totalCampaigns}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Campaigns</p>
-                </div>
-                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                    {stats.averageOpenRate}%
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Avg. Open Rate</p>
-                </div>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Link
+                href="/admin/newsletter/new"
+                className="bg-orange-500 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-orange-600 transition shadow-md text-sm"
+              >
+                <Plus size={18} />
+                Create Newsletter
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -184,7 +197,8 @@ export default async function AdminNewsletterPage() {
           </div>
         ) : (
           <NewsletterClient 
-            initialCampaigns={campaigns} 
+            initialCampaigns={campaigns}
+            initialStats={stats || undefined}
           />
         )}
       </div>
