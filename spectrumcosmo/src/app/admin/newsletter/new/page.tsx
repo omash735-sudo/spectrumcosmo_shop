@@ -1,11 +1,10 @@
-// app/admin/newsletter/new/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { 
-  Loader2, Upload, X, Users, Target, Settings, 
+import {
+  Loader2, Upload, X, Users, Target, Settings,
   Send, Clock, CheckCircle, Sparkles,
   Zap, Bell, Tag, Star, Mail
 } from 'lucide-react';
@@ -26,31 +25,26 @@ interface SubscriberCount {
 export default function NewNewsletterPage() {
   const router = useRouter();
 
-  // Form state
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
-  
-  // Audience targeting
+
   const [audience, setAudience] = useState<'all' | 'active' | 'segment'>('all');
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [previewCount, setPreviewCount] = useState<SubscriberCount | null>(null);
   const [loadingCount, setLoadingCount] = useState(false);
-  
-  // Preference filters
+
   const [topicFilters, setTopicFilters] = useState<string[]>([]);
   const [frequencyFilter, setFrequencyFilter] = useState<string>('');
   const [promotionsFilter, setPromotionsFilter] = useState<boolean | null>(null);
-  
-  // Scheduling
+
   const [sendNow, setSendNow] = useState(true);
   const [scheduleFor, setScheduleFor] = useState('');
 
-  // Load available segments
   useEffect(() => {
     const fetchSegments = async () => {
       try {
@@ -66,7 +60,6 @@ export default function NewNewsletterPage() {
     fetchSegments();
   }, []);
 
-  // Preview subscriber count when filters change
   useEffect(() => {
     const getCount = async () => {
       setLoadingCount(true);
@@ -92,7 +85,7 @@ export default function NewNewsletterPage() {
         setLoadingCount(false);
       }
     };
-    
+
     const timeout = setTimeout(getCount, 500);
     return () => clearTimeout(timeout);
   }, [audience, selectedSegment, topicFilters, frequencyFilter, promotionsFilter]);
@@ -173,8 +166,8 @@ export default function NewNewsletterPage() {
       if (res.ok) {
         const data = await res.json();
         toast.success(
-          sendNow 
-            ? `Newsletter sent to ${data.totalRecipients} subscribers` 
+          sendNow
+            ? `Newsletter sent to ${data.totalRecipients} subscribers`
             : 'Newsletter scheduled'
         );
         router.push('/admin/newsletter');
@@ -208,7 +201,6 @@ export default function NewNewsletterPage() {
         </div>
 
         <div className="space-y-6">
-          {/* Basic Info */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -295,7 +287,6 @@ export default function NewNewsletterPage() {
             </div>
           </div>
 
-          {/* Targeting Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
               <Target size={20} className="text-orange-500" />
@@ -360,7 +351,6 @@ export default function NewNewsletterPage() {
               </div>
             </div>
 
-            {/* Custom Segment Builder */}
             {audience === 'segment' && (
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-4">
                 <div>
@@ -454,7 +444,6 @@ export default function NewNewsletterPage() {
                   </div>
                 </div>
 
-                {/* Preview Count */}
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     <span className="font-bold text-2xl text-orange-500">{previewCount?.count || 0}</span>
@@ -468,7 +457,6 @@ export default function NewNewsletterPage() {
             )}
           </div>
 
-          {/* Schedule Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
               <Clock size={20} className="text-orange-500" />
@@ -513,7 +501,6 @@ export default function NewNewsletterPage() {
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => router.back()}
