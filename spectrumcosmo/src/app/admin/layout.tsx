@@ -47,7 +47,8 @@ import {
   Send,
   Clock,
   RefreshCw,
-  CalendarDays, // Added for Events
+  CalendarDays,
+  UserPlus, // Added for Subscribers
 } from 'lucide-react';
 
 const navItems = [
@@ -89,6 +90,7 @@ const navItems = [
   
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
   { name: 'Newsletter', href: '/admin/newsletter', icon: Mail, section: 'GROWTH' },
+  { name: 'Subscribers', href: '/admin/subscribers', icon: UserPlus, section: 'GROWTH' }, // ✅ ADDED
   { name: 'Email Templates', href: '/admin/email-templates', icon: Mail, section: 'GROWTH' },
   { name: 'Customer Messages', href: '/admin/customer-messages', icon: MessageSquare, section: 'GROWTH' },
   { name: 'SMS Templates', href: '/admin/sms-templates', icon: Smartphone, section: 'GROWTH' },
@@ -331,6 +333,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const showQuoteAlert = item.name === 'Delivery Quotes';
                 const showNotificationAlert = item.name === 'Notifications';
                 const isEvents = item.name === 'Events';
+                const isSubscribers = item.name === 'Subscribers';
                 
                 return (
                   <Link
@@ -342,7 +345,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
-                    <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents ? 'text-orange-500' : ''}`} />
+                    <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents || isSubscribers ? 'text-orange-500' : ''}`} />
                     {item.name}
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
