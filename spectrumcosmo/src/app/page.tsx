@@ -163,7 +163,7 @@ export default async function HomePage() {
         {/* ============================================
             HERO SECTION - MOBILE OPTIMIZED
             ============================================ */}
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-white dark:bg-gray-900">
+        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-white dark:bg-gray-900 overflow-x-hidden">
           {h.bg_image_url && (
             <Image
               src={h.bg_image_url}
@@ -255,16 +255,18 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* RIGHT IMAGES - MARQUEE */}
-              <div className="mt-8 lg:mt-0">
-                <HeroImageMarquee
-                  images={[
-                    { url: h.cat_image1_url, alt: h.cat_image1_alt },
-                    { url: h.cat_image2_url, alt: h.cat_image2_alt },
-                    { url: h.cat_image3_url, alt: h.cat_image3_alt },
-                    { url: h.cat_image4_url, alt: h.cat_image4_alt },
-                  ]}
-                />
+              {/* RIGHT IMAGES - MARQUEE - FIXED FOR MOBILE */}
+              <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
+                <div className="relative -mx-4 sm:mx-0 px-4 sm:px-0">
+                  <HeroImageMarquee
+                    images={[
+                      { url: h.cat_image1_url, alt: h.cat_image1_alt },
+                      { url: h.cat_image2_url, alt: h.cat_image2_alt },
+                      { url: h.cat_image3_url, alt: h.cat_image3_alt },
+                      { url: h.cat_image4_url, alt: h.cat_image4_alt },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -344,8 +346,8 @@ export default async function HomePage() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Join Our Newsletter</h2>
             <p className="text-gray-300 mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
-            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input type="email" name="email" placeholder="Your email address" className="flex-1 px-5 py-3 rounded-full bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
+            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
+              <input type="email" name="email" placeholder="Your email address" className="w-full sm:flex-1 px-5 py-3 rounded-full bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
               <button type="submit" className="bg-gray-800 dark:bg-gray-800 hover:bg-gray-700 dark:hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
                 Subscribe <Send size={16} />
               </button>
