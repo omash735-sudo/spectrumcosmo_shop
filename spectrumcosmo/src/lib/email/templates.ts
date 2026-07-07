@@ -1,6 +1,8 @@
 // lib/email/templates.ts
 
 export function renderWelcomeEmail(name: string): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -39,7 +41,7 @@ export function renderWelcomeEmail(name: string): string {
               <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
                   <td style="background:#F97316;border-radius:50px;padding:12px 32px;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/products" style="color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;display:inline-block;">
+                    <a href="${appUrl}/products" style="color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;display:inline-block;">
                       Start Shopping →
                     </a>
                   </td>
@@ -47,7 +49,7 @@ export function renderWelcomeEmail(name: string): string {
               </table>
               <p style="color:#8a8aa8;font-size:13px;line-height:1.6;margin:24px 0 0;text-align:center;">
                 You can change your preferences anytime.<br>
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/newsletter/preferences" style="color:#F97316;text-decoration:none;">Manage preferences</a>
+                <a href="${appUrl}/newsletter/preferences" style="color:#F97316;text-decoration:none;">Manage preferences</a>
               </p>
             </td>
           </tr>
@@ -56,7 +58,7 @@ export function renderWelcomeEmail(name: string): string {
             <td style="background:#f8f9fa;padding:24px 30px;text-align:center;border-top:1px solid #e9ecef;">
               <p style="color:#8a8aa8;font-size:12px;margin:0;">
                 SpectrumCosmo · Wear your excitement with pride<br>
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email={{email}}" style="color:#8a8aa8;text-decoration:underline;">Unsubscribe</a>
+                <a href="${appUrl}/api/subscribe/unsubscribe?email={{email}}" style="color:#8a8aa8;text-decoration:underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
