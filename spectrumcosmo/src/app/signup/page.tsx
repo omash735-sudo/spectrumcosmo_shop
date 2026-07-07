@@ -1,10 +1,13 @@
-// app/signup/page.tsx
+// src/app/signup/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Loader2, ArrowLeft, Check, Mail, Lock, User } from 'lucide-react';
+import { 
+  Eye, EyeOff, Loader2, ArrowLeft, Check, Mail, Lock, User,
+  ChevronRight
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,13 +24,12 @@ const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776969140/kkkk_a1elqx.jpg'
 ];
 
-// Theme-aware logo URLs
 const LOGOS = {
   light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
   dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
 };
 
-export default function RegisterPage() {
+export default function SignupPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -107,7 +109,7 @@ export default function RegisterPage() {
         return;
       }
       
-      setSuccess('Registration successful! Please check your email to verify.');
+      setSuccess('Registration successful. Please check your email to verify.');
       setForm({ name: '', email: '', password: '', confirm: '' });
       setAcceptedTerms(false);
       
@@ -145,16 +147,16 @@ export default function RegisterPage() {
       }
       
       setShowCaptcha(false);
-      setSuccess('Registration successful! Please check your email to verify.');
+      setSuccess('Registration successful. Please check your email to verify.');
       setForm({ name: '', email: '', password: '', confirm: '' });
       setAcceptedTerms(false);
       
       setTimeout(() => {
         router.push('/auth/login?registered=true');
       }, 1500);
-    } catch (err) {
+    } catch {
       setError('CAPTCHA verification failed. Please try again.');
-      throw err;
+      throw new Error('CAPTCHA verification failed');
     }
   };
 
@@ -166,7 +168,6 @@ export default function RegisterPage() {
   const isDark = mounted && theme === 'dark';
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // Desktop layout
   if (isDesktop) {
     return (
       <>
@@ -443,7 +444,6 @@ export default function RegisterPage() {
     );
   }
 
-  // Mobile layout
   return (
     <>
       <div className={`min-h-screen flex items-center justify-center px-4 py-8 ${
@@ -455,7 +455,6 @@ export default function RegisterPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-sm"
         >
-          {/* Logo - Theme Aware */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.8 }}
