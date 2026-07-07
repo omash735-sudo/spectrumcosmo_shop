@@ -1,3 +1,4 @@
+// app/newsletter/preferences/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Bell, Tag, Zap, Star, Save, CheckCircle } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
+import toast from 'react-hot-toast';
 
 type Preferences = {
   frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
@@ -28,23 +30,50 @@ export default function PreferencesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [hasExistingPrefs, setHasExistingPrefs] = useState(false);
 
   useEffect(() => {
-    const emailParam = new URLSearchParams(window.location.search).get('email');
-    if (emailParam) setEmail(emailParam);
-
     const loadUserAndPrefs = async () => {
       try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
+        // Check if user is logged in
+        const meRes = await fetch('/api/auth/me');
+        let userEmail = '';
+        
+        if (meRes.ok) {
+          const data = await meRes.json();
           if (data?.user) {
             setUser(data.user);
+            userEmail = data.user.email;
             setEmail(data.user.email);
           }
         }
+
+        // If no email from user, check URL param
+        const emailParam = new URLSearchParams(window.location.search).get('email');
+        if (emailParam && !userEmail) {
+          setEmail(emailParam);
+          userEmail = emailParam;
+        }
+
+        // Load existing preferences
+        if (userEmail) {
+          const prefsRes = await fetch(`/api/subscribe/preferences?email=${encodeURIComponent(userEmail)}`);
+          if (prefsRes.ok) {
+            const data = await prefsRes.json();
+            if (data.preferences && Object.keys(data.preferences).length > 0) {
+              setHasExistingPrefs(true);
+              setPrefs({
+                frequency: data.preferences.frequency || 'weekly',
+                topics: data.preferences.topics || [],
+                promotions: data.preferences.promotions !== undefined ? data.preferences.promotions : true,
+                product_alerts: data.preferences.product_alerts !== undefined ? data.preferences.product_alerts : true,
+                anime_news: data.preferences.anime_news !== undefined ? data.preferences.anime_news : true,
+              });
+            }
+          }
+        }
       } catch (err) {
-        console.error('Failed to load user:', err);
+        console.error('Failed to load user/preferences:', err);
       } finally {
         setLoading(false);
       }
@@ -53,19 +82,31 @@ export default function PreferencesPage() {
   }, []);
 
   const savePreferences = async () => {
+    if (!email) {
+      toast.error('No email address found');
+      return;
+    }
+
     setSaving(true);
     setSaved(false);
     try {
-      await fetch('/api/subscribe/preferences', {
+      const res = await fetch('/api/subscribe/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, preferences: prefs }),
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      
+      if (res.ok) {
+        setSaved(true);
+        toast.success('Preferences saved successfully! 🎉');
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to save preferences');
+      }
     } catch (err) {
       console.error('Failed to save preferences:', err);
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -104,6 +145,11 @@ export default function PreferencesPage() {
               <p className="text-gray-500 dark:text-gray-400 mt-1">
                 Customize what you receive and how often
               </p>
+              {hasExistingPrefs && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  ✅ Your existing preferences have been loaded
+                </p>
+              )}
             </div>
 
             <div className="space-y-6">
