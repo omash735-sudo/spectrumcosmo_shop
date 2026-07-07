@@ -363,7 +363,7 @@ export default function NewsletterPage() {
                     <div>
                       <p className="font-medium text-white">{user?.email || 'Your email'}</p>
                       <p className="text-sm text-orange-200">
-                        {subscribed ? 'Subscribed ✅' : 'Not subscribed'}
+                        {subscribed ? 'Subscribed' : 'Not subscribed'}
                       </p>
                     </div>
                   </div>
