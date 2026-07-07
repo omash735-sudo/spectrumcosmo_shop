@@ -30,13 +30,13 @@ interface Campaign {
   segment_name?: string | null;
 }
 
-// This matches what NewsletterClient expects
+// This MUST match what NewsletterClient expects
 interface StatData {
   totalSubscribers: number;
   totalCampaigns: number;
   averageOpenRate: number;
   totalActive: number;
-  growth: number;
+  growth: { month: string; new: number }[];
   performance: {
     bestCampaign: string;
     bestOpenRate: number;
@@ -82,12 +82,15 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       LIMIT 1
     `;
     
-    // Calculate growth (compare to last month)
-    const [growth] = await sql`
+    // Get monthly growth data for the last 6 months
+    const growthData = await sql`
       SELECT 
-        COUNT(*) as current_count
+        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
+        COUNT(*) as new_count
       FROM subscribers 
-      WHERE status = 'confirmed' AND created_at > NOW() - INTERVAL '30 days'
+      WHERE status = 'confirmed' AND created_at > NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
     
     const totalSubscribers = Number(subscriberCount?.count) || 0;
@@ -95,16 +98,24 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
     const totalCampaigns = Number(campaignCount?.count) || 0;
     const averageOpenRate = Math.round(Number(avgStats?.avg_open_rate) || 0);
     const unsubscribes = Number(avgStats?.total_unsubscribes) || 0;
-    const growthPercent = totalSubscribers > 0 
-      ? Math.round((Number(growth?.current_count) || 0) / totalSubscribers * 100) 
-      : 0;
+    
+    // Format growth data
+    const growth = (growthData || []).map((row: any) => ({
+      month: row.month || 'No Data',
+      new: Number(row.new_count) || 0,
+    }));
+    
+    // If no growth data, provide default
+    if (growth.length === 0) {
+      growth.push({ month: 'No Data', new: 0 });
+    }
     
     return {
       totalSubscribers,
       totalCampaigns,
       averageOpenRate,
       totalActive,
-      growth: growthPercent,
+      growth,
       performance: {
         bestCampaign: bestCampaign?.title || 'No campaigns yet',
         bestOpenRate: Math.round(Number(bestCampaign?.open_rate) || 0),
@@ -118,7 +129,7 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       totalCampaigns: 0,
       averageOpenRate: 0,
       totalActive: 0,
-      growth: 0,
+      growth: [{ month: 'No Data', new: 0 }],
       performance: {
         bestCampaign: 'No data',
         bestOpenRate: 0,
@@ -234,7 +245,7 @@ export default async function AdminNewsletterPage() {
         ) : (
           <NewsletterClient 
             initialCampaigns={campaigns}
-            initialStats={stats || undefined}
+            initialStats={stats}
           />
         )}
       </div>
