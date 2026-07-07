@@ -39,8 +39,6 @@ export async function POST(req: NextRequest) {
       WHERE status = 'confirmed'
     `;
 
-    const queryParams: any[] = [];
-
     // Apply audience filters
     if (audience === 'active') {
       subscriberQuery += ` AND confirmed_at > NOW() - INTERVAL '90 days'`;
@@ -58,10 +56,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get subscribers
-    const subscribers = await queryMany<Subscriber>(subscriberQuery);
+    // Get subscribers - use sql template literal
+    const subscribers = await sql.query(subscriberQuery);
 
-    if (subscribers.length === 0) {
+    if (subscribers.rows.length === 0) {
       return NextResponse.json(
         { error: 'No subscribers match the selected audience' },
         { status: 400 }
@@ -85,7 +83,7 @@ export async function POST(req: NextRequest) {
         ${image_url || null}, 
         ${audience}, 
         ${schedule_for ? 'scheduled' : 'sending'}, 
-        ${subscribers.length}, 
+        ${subscribers.rows.length}, 
         NOW()
       )
       RETURNING id
@@ -99,12 +97,12 @@ export async function POST(req: NextRequest) {
         success: true,
         campaignId,
         message: `Campaign scheduled for ${new Date(schedule_for).toLocaleString()}`,
-        totalRecipients: subscribers.length,
+        totalRecipients: subscribers.rows.length,
       });
     }
 
     // Send emails
-    const emailPromises = subscribers.map(async (subscriber) => {
+    const emailPromises = subscribers.rows.map(async (subscriber: Subscriber) => {
       try {
         const html = renderNewsletterEmail(
           title,
@@ -146,8 +144,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       campaignId,
-      message: `Newsletter sent to ${subscribers.length} subscribers! 📨`,
-      totalRecipients: subscribers.length,
+      message: `Newsletter sent to ${subscribers.rows.length} subscribers! 📨`,
+      totalRecipients: subscribers.rows.length,
     });
   } catch (err) {
     console.error('Newsletter send error:', err);
