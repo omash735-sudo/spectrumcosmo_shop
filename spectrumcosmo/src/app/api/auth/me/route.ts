@@ -1,79 +1,65 @@
 // app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
-import { getDb, queryAsArray, queryOne } from '@/lib/db';
-
-async function ensureUsersTable() {
-  const sql = getDb();
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      phone TEXT,
-      password_hash TEXT NOT NULL,
-      profile_image TEXT,
-      is_admin BOOLEAN DEFAULT false,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW()
-    )
-  `;
-}
+import { getDb } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  const { user: userToken, error: authError } = await getVerifiedUser(req);
-
-  // If auth fails (missing token, expired, etc.), return null user (not an error)
-  if (authError || !userToken) {
-    return NextResponse.json({ user: null });
-  }
-
   try {
-    await ensureUsersTable();
+    const { user: userToken, error: authError } = await getVerifiedUser(req);
 
-    // Fetch user by ID – use queryAsArray to get a real array
-    const users = await queryAsArray<{
-      id: string;
-      name: string;
-      email: string;
-      phone: string | null;
-      profileImage: string | null;
-      is_admin: boolean;
-    }>`
+    if (authError) {
+      return NextResponse.json({ user: null });
+    }
+
+    if (!userToken) {
+      return NextResponse.json({ user: null });
+    }
+
+    const sql = getDb();
+    const [user] = await sql`
       SELECT 
         id, 
         name, 
         email, 
         phone, 
-        profile_image AS "profileImage",
-        is_admin
+        profile_image,
+        is_admin,
+        newsletter_subscribed,
+        account_status,
+        created_at
       FROM users 
       WHERE id = ${userToken.id}
     `;
 
-    if (users.length === 0) {
+    if (!user) {
       return NextResponse.json({ user: null });
     }
 
-    const user = users[0];
-
-    // Fetch newsletter subscription status – use queryOne
-    const subscription = await queryOne<{ is_subscribed: boolean }>`
-      SELECT is_subscribed FROM newsletter_subscriptions
-      WHERE user_id = ${userToken.id} OR email = ${user.email}
-      ORDER BY updated_at DESC
+    // Check subscription status from subscribers table
+    const [subscription] = await sql`
+      SELECT status FROM subscribers 
+      WHERE email = ${user.email}
+      ORDER BY created_at DESC
       LIMIT 1
     `;
-    const newsletter_subscribed = subscription?.is_subscribed ?? true;
+
+    const newsletter_subscribed = subscription?.status === 'confirmed';
 
     return NextResponse.json({
       user: {
-        ...user,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        profileImage: user.profile_image,
+        isAdmin: user.is_admin,
+        accountStatus: user.account_status,
         newsletter_subscribed,
+        createdAt: user.created_at,
       },
     });
   } catch (err) {
     console.error('Auth me error:', err);
-    // On any server error, return null user (not a 500)
     return NextResponse.json({ user: null });
   }
 }
