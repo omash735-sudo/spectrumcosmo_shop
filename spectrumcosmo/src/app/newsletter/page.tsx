@@ -10,10 +10,10 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import HeroCarousel from '@/components/storefront/HeroCarousel';
 import ContentBlockRenderer from '@/components/storefront/ContentBlockRenderer';
 import RequestCarousel from '@/components/storefront/RequestCarousel';
 import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
+import toast from 'react-hot-toast';
 
 interface ContentBlock {
   id: string;
@@ -28,7 +28,7 @@ interface ContentBlock {
 export default function NewsletterPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [subscribed, setSubscribed] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
@@ -38,22 +38,27 @@ export default function NewsletterPage() {
   const [feedbackDetails, setFeedbackDetails] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [emailInput, setEmailInput] = useState('');
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) {
-          router.push('/login');
+          // Not logged in - user can still subscribe
+          setUser(null);
+          setLoading(false);
           return;
         }
         const data = await res.json();
         setUser(data.user);
-        setSubscribed(data.user?.newsletter_subscribed ?? true);
         setEmailInput(data.user?.email || '');
+        
+        // Check subscription status
+        await checkSubscriptionStatus(data.user?.email);
       } catch (err) {
         console.error('Failed to load user:', err);
-        router.push('/login');
+        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -76,57 +81,98 @@ export default function NewsletterPage() {
     loadBlocks();
   }, [router]);
 
+  const checkSubscriptionStatus = async (email: string) => {
+    if (!email) return;
+    setCheckingSubscription(true);
+    try {
+      const res = await fetch(`/api/subscribe?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSubscribed(data.subscribed === true);
+      }
+    } catch (err) {
+      console.error('Failed to check subscription:', err);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
+
   const performUnsubscribe = async () => {
+    if (!user?.email) {
+      toast.error('No email found to unsubscribe');
+      return;
+    }
+    
     setSaving(true);
     try {
-      await fetch('/api/subscribe/unsubscribe', {
+      const res = await fetch('/api/subscribe/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user?.email }),
+        body: JSON.stringify({ 
+          email: user.email,
+          reason: feedbackReason || 'No reason provided',
+          details: feedbackDetails || '',
+        }),
       });
-      setSubscribed(false);
-      alert('Unsubscribed from newsletter');
+      
+      if (res.ok) {
+        setSubscribed(false);
+        toast.success('You have been unsubscribed. We\'re sad to see you go! 💔');
+        setShowFeedback(false);
+        setFeedbackReason('');
+        setFeedbackDetails('');
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to unsubscribe');
+      }
     } catch (error) {
       console.error('Failed to unsubscribe', error);
-      alert('Something went wrong');
+      toast.error('Something went wrong');
     } finally {
       setSaving(false);
     }
   };
 
   const performSubscribe = async (email: string) => {
+    if (!email.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    if (!email.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setSaving(true);
     try {
-      const res = await fetch('/api/auth/profile', {
-        method: 'PATCH',
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newsletterSubscribed: true }),
+        body: JSON.stringify({ 
+          email: email.trim(),
+          name: user?.name || '',
+        }),
       });
+      
+      const data = await res.json();
       
       if (res.ok) {
         setSubscribed(true);
-        alert('Successfully subscribed to the newsletter');
+        toast.success(data.message || 'Check your email to confirm subscription! 📧');
+        // Refresh subscription status
+        await checkSubscriptionStatus(email);
       } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to subscribe');
+        toast.error(data.error || 'Failed to subscribe');
       }
     } catch (error) {
       console.error('Failed to subscribe', error);
-      alert('Something went wrong');
+      toast.error('Something went wrong');
     } finally {
       setSaving(false);
     }
   };
 
   const handleSubscribe = async () => {
-    if (!emailInput.trim()) {
-      alert('Please enter your email address');
-      return;
-    }
-    if (!emailInput.includes('@')) {
-      alert('Please enter a valid email address');
-      return;
-    }
     await performSubscribe(emailInput);
   };
 
@@ -135,39 +181,18 @@ export default function NewsletterPage() {
   };
 
   const submitFeedbackAndUnsubscribe = async () => {
-    setSubmittingFeedback(true);
-    try {
-      await fetch('/api/subscribe/unsubscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user?.email,
-          reason: feedbackReason,
-          details: feedbackDetails,
-        }),
-      });
-      setSubscribed(false);
-      setShowFeedback(false);
-      setFeedbackReason('');
-      setFeedbackDetails('');
-      alert('Unsubscribed successfully');
-    } catch (err) {
-      console.error('Unsubscribe failed', err);
-      alert('Could not unsubscribe');
-    } finally {
-      setSubmittingFeedback(false);
-    }
+    await performUnsubscribe();
   };
 
   const toggleSubscription = async () => {
     if (subscribed) {
       handleUnsubscribeClick();
     } else {
-      await performSubscribe(user?.email || emailInput);
+      await performSubscribe(emailInput);
     }
   };
 
-  if (loading || blocksLoading) {
+  if (loading || blocksLoading || checkingSubscription) {
     return (
       <>
         <Navbar />
@@ -280,12 +305,10 @@ export default function NewsletterPage() {
               </p>
             </div>
 
-            {/* Request Carousel - Shows approved requests */}
             <div className="mb-16">
               <RequestCarousel />
             </div>
 
-            {/* Submit Request Form */}
             <div className="max-w-2xl mx-auto">
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 shadow-sm hover:shadow-md transition">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Submit Your Request</h3>
@@ -340,7 +363,7 @@ export default function NewsletterPage() {
                     <div>
                       <p className="font-medium text-white">{user?.email || 'Your email'}</p>
                       <p className="text-sm text-orange-200">
-                        {subscribed ? 'Subscribed' : 'Not subscribed'}
+                        {subscribed ? 'Subscribed ✅' : 'Not subscribed'}
                       </p>
                     </div>
                   </div>
@@ -362,7 +385,7 @@ export default function NewsletterPage() {
               {subscribed && (
                 <div className="mt-6 flex items-center justify-center gap-2 text-white bg-green-500/20 py-2 px-4 rounded-full max-w-xs mx-auto">
                   <CheckCircle size={16} />
-                  <span className="text-sm">Subscribed. Check your inbox.</span>
+                  <span className="text-sm">You're subscribed! Check your inbox.</span>
                 </div>
               )}
 
