@@ -1,3 +1,4 @@
+// app/privacy/page.tsx
 export const dynamic = 'force-dynamic';
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
@@ -8,12 +9,11 @@ export default async function PrivacyPage() {
   const [row] = await sql`SELECT content FROM page_contents WHERE page = 'privacy'`;
   const content = row?.content || {};
 
-  // Fallback to your existing detailed content if nothing in DB
   const title = content.title || 'Privacy Policy';
   const lastUpdated = content.last_updated || '2026-05-09';
   const htmlContent = content.content || `
     <h2>1. Introduction</h2>
-    <p>SpectrumCosmo (“we”, “us”, “our”) respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services. It complies with the Malawi Data Protection Act (No. 21 of 2021) and applies to all customers in Malawi and across Africa.</p>
+    <p>SpectrumCosmo ("we", "us", "our") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services. It complies with the Malawi Data Protection Act (No. 21 of 2021) and applies to all customers in Malawi and across Africa.</p>
 
     <h2>2. Data Controller Contact</h2>
     <p>SpectrumCosmo is the data controller responsible for your personal data.<br/>
@@ -48,14 +48,14 @@ export default async function PrivacyPage() {
 
     <h2>10. Your Privacy Rights (Malawi Data Protection Act)</h2>
     <p>You have the following rights regarding your personal data:</p>
-    <ul><li><strong>Right to access</strong> – receive a copy of your data we hold</li><li><strong>Right to rectification</strong> – correct inaccurate or incomplete data</li><li><strong>Right to erasure</strong> (“right to be forgotten”) – delete your data, subject to legal retention obligations</li><li><strong>Right to restriction of processing</strong> – limit how we use your data</li><li><strong>Right to data portability</strong> – receive your data in a structured, machine-readable format</li><li><strong>Right to object</strong> – object to processing based on legitimate interests</li><li><strong>Right to withdraw consent</strong> – where consent is required (e.g., marketing)</li></ul>
+    <ul><li><strong>Right to access</strong> – receive a copy of your data we hold</li><li><strong>Right to rectification</strong> – correct inaccurate or incomplete data</li><li><strong>Right to erasure</strong> ("right to be forgotten") – delete your data, subject to legal retention obligations</li><li><strong>Right to restriction of processing</strong> – limit how we use your data</li><li><strong>Right to data portability</strong> – receive your data in a structured, machine-readable format</li><li><strong>Right to object</strong> – object to processing based on legitimate interests</li><li><strong>Right to withdraw consent</strong> – where consent is required (e.g., marketing)</li></ul>
     <p>To exercise any of these rights, contact us at <a href="mailto:spectrumcosmo01@gmail.com">spectrumcosmo01@gmail.com</a>. We will respond within 30 days as required by Malawian law. There is no fee for most requests, but we may charge a reasonable fee for manifestly unfounded or excessive requests.</p>
 
     <h2>11. Beta Notice</h2>
     <p>This platform is currently in beta testing. While we take privacy and security seriously, you may experience bugs, temporary interruptions, or changes to features without prior notice. We will notify you of significant changes to this Privacy Policy via email or a notice on our website.</p>
 
     <h2>12. Changes to This Privacy Policy</h2>
-    <p>We may update this policy from time to time. The “Last Updated” date at the top indicates when changes were made. Continued use of our website after changes constitutes acceptance of the revised policy. For material changes, we will obtain your consent if required by law.</p>
+    <p>We may update this policy from time to time. The "Last Updated" date at the top indicates when changes were made. Continued use of our website after changes constitutes acceptance of the revised policy. For material changes, we will obtain your consent if required by law.</p>
 
     <h2>13. Contact and Complaints</h2>
     <p>For any privacy-related questions, requests, or complaints, please email us at <a href="mailto:spectrumcosmo01@gmail.com">spectrumcosmo01@gmail.com</a>. If you are not satisfied with our response, you have the right to lodge a complaint with the <strong>Malawi Data Protection Authority</strong>.</p>
@@ -64,10 +64,15 @@ export default async function PrivacyPage() {
   return (
     <>
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 py-12 bg-white">
-        <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        <p className="text-sm text-gray-500 mb-8">Last Updated: {new Date(lastUpdated).toLocaleDateString()}</p>
-        <div className="prose max-w-none leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+      <main className="max-w-4xl mx-auto px-4 py-12 bg-white dark:bg-gray-900 min-h-screen">
+        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">{title}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+          Last Updated: {new Date(lastUpdated).toLocaleDateString()}
+        </p>
+        <div 
+          className="prose prose-gray max-w-none leading-relaxed dark:prose-invert"
+          dangerouslySetInnerHTML={{ __html: htmlContent }} 
+        />
       </main>
       <Footer />
     </>
