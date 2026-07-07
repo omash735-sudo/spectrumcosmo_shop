@@ -6,6 +6,16 @@ import { format } from 'date-fns';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as XLSX from 'xlsx';
 
+interface SubscriberData {
+  Email: string;
+  Name: string;
+  Status: string;
+  'Subscribed Date': string;
+  'Confirmed Date': string;
+  'Unsubscribed Date': string;
+  Preferences: string;
+}
+
 export async function POST(req: NextRequest) {
   const authError = await requireAdmin(req);
   if (authError) return authError;
@@ -37,7 +47,7 @@ export async function POST(req: NextRequest) {
       ORDER BY created_at DESC
     `;
 
-    const data = subscribers.map((s: any) => ({
+    const data: SubscriberData[] = subscribers.map((s: any) => ({
       'Email': s.email,
       'Name': s.name || '-',
       'Status': s.status,
@@ -112,7 +122,7 @@ export async function POST(req: NextRequest) {
       const maxRows = 40;
       const rowsToShow = data.slice(0, maxRows);
       
-      rowsToShow.forEach((row: any) => {
+      rowsToShow.forEach((row: SubscriberData) => {
         let xPos2 = 50;
         const rowData = [
           String(row['Email'] || '-'),
@@ -185,13 +195,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Handle CSV export
+    // Handle CSV export - FIXED
     const headers = Object.keys(data[0] || {});
     const csvRows = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header] || '';
+      ...data.map((row: SubscriberData) => 
+        headers.map((header: string) => {
+          const value = row[header as keyof SubscriberData] || '';
           return `"${String(value).replace(/"/g, '""')}"`;
         }).join(',')
       )
