@@ -14,20 +14,28 @@ export async function POST(req: NextRequest) {
     const { format: exportFormat, subscriberIds } = await req.json();
     const sql = getDb();
 
-    // Get subscribers data
-    const result = await sql.query(`
+    if (!subscriberIds || subscriberIds.length === 0) {
+      return NextResponse.json({ error: 'No subscribers selected' }, { status: 400 });
+    }
+
+    // Build placeholders for the IN clause
+    const placeholders = subscriberIds.map((_: any, i: number) => `$${i + 1}`).join(',');
+    
+    // Get subscribers data using tagged template literals
+    const subscribers = await sql`
       SELECT 
-        id, email, name, status, 
+        id, 
+        email, 
+        name, 
+        status, 
         TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at,
         TO_CHAR(confirmed_at, 'YYYY-MM-DD HH24:MI:SS') as confirmed_at,
         TO_CHAR(unsubscribed_at, 'YYYY-MM-DD HH24:MI:SS') as unsubscribed_at,
         preferences
       FROM subscribers
-      WHERE id = ANY($1)
+      WHERE id IN (${placeholders})
       ORDER BY created_at DESC
-    `, [subscriberIds]);
-
-    const subscribers = result.rows;
+    `;
 
     const data = subscribers.map((s: any) => ({
       'Email': s.email,
@@ -42,14 +50,12 @@ export async function POST(req: NextRequest) {
     // Handle PDF export using pdf-lib
     if (exportFormat === 'pdf') {
       const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([612, 792]); // Letter size
+      const page = pdfDoc.addPage([612, 792]);
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       
-      const { width, height } = page.getSize();
-      let y = height - 50;
+      let y = 792 - 50;
       
-      // Header
       page.drawText('SpectrumCosmo - Subscribers Export', {
         x: 50,
         y,
@@ -78,12 +84,10 @@ export async function POST(req: NextRequest) {
       
       y -= 30;
       
-      // Table headers
       const headers = ['Email', 'Name', 'Status', 'Subscribed', 'Confirmed', 'Unsubscribed'];
       const colWidths = [150, 100, 70, 100, 100, 100];
-      let xPos = 50;
       
-      // Draw header background
+      // Header background
       page.drawRectangle({
         x: 50,
         y: y - 15,
@@ -92,6 +96,7 @@ export async function POST(req: NextRequest) {
         color: rgb(0.95, 0.95, 0.95),
       });
       
+      let xPos = 50;
       headers.forEach((header, i) => {
         page.drawText(header, {
           x: xPos + 5,
@@ -105,7 +110,6 @@ export async function POST(req: NextRequest) {
       
       y -= 25;
       
-      // Draw data rows (limit to fit on page)
       const maxRows = 40;
       const rowsToShow = data.slice(0, maxRows);
       
@@ -132,14 +136,8 @@ export async function POST(req: NextRequest) {
         });
         
         y -= 18;
-        
-        // Add new page if needed
-        if (y < 50) {
-          // This is simplified - for many rows, you'd add a new page
-        }
       });
       
-      // Footer
       if (data.length > maxRows) {
         y -= 10;
         page.drawText(`... and ${data.length - maxRows} more subscribers`, {
@@ -166,7 +164,6 @@ export async function POST(req: NextRequest) {
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(data);
       
-      // Set column widths
       worksheet['!cols'] = [
         { wch: 30 },
         { wch: 20 },
