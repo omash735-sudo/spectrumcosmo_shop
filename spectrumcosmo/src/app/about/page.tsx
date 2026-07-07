@@ -1,4 +1,7 @@
 // app/about/page.tsx
+'use client';
+
+import { useState } from 'react';
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -18,8 +21,8 @@ import {
   Award,
   Calendar,
   CheckCircle,
-  Quote,
   Mail,
+  HelpCircle,
   LucideIcon
 } from 'lucide-react';
 
@@ -83,7 +86,7 @@ export default async function AboutPage() {
   const signatureName = content.signature_name || '';
   const signatureTitle = content.signature_title || '';
   const signatureImage = content.signature_image || '';
-  const teamDescription = content.team_description || 'Curious Minds, Passionate Performers';
+  const teamDescription = content.team_description || 'The passionate minds behind Spectrum Cosmo, dedicated to creating quality products for quality people.';
 
   const coreValues = [
     { icon: Heart, title: 'Passion Driven', description: 'Everything we do is fueled by our love for anime and community.' },
@@ -104,7 +107,6 @@ export default async function AboutPage() {
       <Navbar />
       <main className="bg-white dark:bg-gray-900 overflow-hidden">
         
-        {/* Hero Section - Etsy/Shopify Style */}
         <section className="relative py-20 md:py-28 overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-orange-50/80 to-transparent dark:from-orange-950/20"></div>
@@ -130,7 +132,6 @@ export default async function AboutPage() {
                   {history}
                 </div>
                 
-                {/* Signature Section */}
                 {(signatureName || signatureImage) && (
                   <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-4">
@@ -180,7 +181,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Core Values Section */}
         <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
@@ -205,7 +205,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Vision & Mission Section */}
         <section className="py-20 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
@@ -233,7 +232,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Stats Section */}
         <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
@@ -258,63 +256,85 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Section - Benetics Style Grid */}
         <section className="py-20 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <span className="text-orange-500 dark:text-orange-400 text-sm font-semibold uppercase tracking-wider">Meet the Team</span>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mt-2">
-                {teamDescription || 'Curious Minds, Passionate Performers'}
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mt-2">
+                {teamDescription}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">
-                We are attentive listeners, empathetic understanders, intelligent thinkers and solution-driven doers.
+              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto text-sm md:text-base">
+                Dedicated to creating quality products for quality people.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayTeam.map((member: TeamMember, idx: number) => (
-                <div key={idx} className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 dark:border-gray-700">
-                  <div className="relative h-72 overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-800">
-                    {member.image ? (
-                      <img 
-                        src={member.image} 
-                        alt={member.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Users size={64} className="text-orange-300 dark:text-orange-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {displayTeam.map((member: TeamMember, idx: number) => {
+                const hasBio = member.bio && member.bio.length > 0;
+
+                return (
+                  <div 
+                    key={idx} 
+                    className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700"
+                  >
+                    <div className="relative h-56 md:h-72 overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-800">
+                      {member.image ? (
+                        <img 
+                          src={member.image} 
+                          alt={member.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Users size={48} className="text-orange-300 dark:text-orange-600" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      {member.email && (
+                        <div className="absolute bottom-4 left-0 right-0 px-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                          <a 
+                            href={`mailto:${member.email}`} 
+                            className="inline-flex items-center gap-2 text-white text-xs md:text-sm bg-black/40 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-black/60 transition"
+                          >
+                            <Mail size={14} />
+                            {member.email}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5 md:p-6">
+                      <div className="text-center">
+                        <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
+                        <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">{member.role}</p>
+                        
+                        {member.bio && (
+                          <p className="mt-3 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                            {member.bio}
+                          </p>
+                        )}
+
+                        {member.email && (
+                          <div className="mt-3 md:hidden">
+                            <a 
+                              href={`mailto:${member.email}`} 
+                              className="inline-flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 transition"
+                            >
+                              <Mail size={14} />
+                              {member.email}
+                            </a>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    {/* Email overlay on hover */}
-                    {member.email && (
-                      <div className="absolute bottom-4 left-0 right-0 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a 
-                          href={`mailto:${member.email}`} 
-                          className="inline-flex items-center gap-2 text-white text-sm bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-black/60 transition"
-                        >
-                          <Mail size={14} />
-                          {member.email}
-                        </a>
-                      </div>
-                    )}
+                    </div>
                   </div>
-                  <div className="p-6 text-center">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
-                    <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">{member.role}</p>
-                    {member.bio && (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-3 leading-relaxed">{member.bio}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Future Plans Section */}
         <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-4xl mx-auto text-center px-4">
             <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-6">
@@ -328,7 +348,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
         <section className="relative bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 py-20 overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
@@ -349,19 +368,29 @@ export default async function AboutPage() {
             <p className="text-gray-300 text-lg mb-8 max-w-xl mx-auto">
               Join our growing community of anime enthusiasts in Malawi and beyond.
             </p>
-            {communityLink ? (
-              <a
-                href={communityLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              {communityLink ? (
+                <a
+                  href={communityLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
+                >
+                  Join Our Community
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </a>
+              ) : (
+                <p className="text-gray-400 text-sm">Community link not configured.</p>
+              )}
+              
+              <Link
+                href="/faq"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full font-semibold transition-all duration-200 border border-white/20"
               >
-                Join Our Community
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </a>
-            ) : (
-              <p className="text-gray-400 text-sm">Community link not configured.</p>
-            )}
+                <HelpCircle size={18} />
+                Frequently Asked Questions
+              </Link>
+            </div>
           </div>
         </section>
       </main>
