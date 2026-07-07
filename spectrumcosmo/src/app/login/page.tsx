@@ -32,6 +32,12 @@ const trustBadges = [
   { icon: TrendingUp, label: 'Trusted Seller' },
 ];
 
+// Theme-aware logo URLs
+const LOGOS = {
+  light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
+  dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -111,7 +117,6 @@ export default function LoginPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate email before submitting
     const emailValidation = validateEmail(form.email);
     if (emailValidation) {
       setEmailError(emailValidation);
@@ -248,7 +253,7 @@ export default function LoginPage() {
   };
 
   const isDark = mounted && theme === 'dark';
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png";
+  const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
   // Desktop layout
   if (isDesktop) {
@@ -262,28 +267,23 @@ export default function LoginPage() {
         )}
 
         <div className="min-h-screen relative overflow-hidden bg-black">
-          {/* Slideshow Background */}
-          <AnimatePresence>
-            {activeSlides.map((img, i) => (
-              <div
-                key={i}
-                className={`absolute inset-0 transition-opacity duration-1000 ${
-                  i === index ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <div 
-                  className="absolute inset-0 bg-center bg-cover scale-105" 
-                  style={{ backgroundImage: `url(${img})` }} 
-                />
-              </div>
-            ))}
-          </AnimatePresence>
+          {activeSlides.map((img, i) => (
+            <div
+              key={i}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                i === index ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <div 
+                className="absolute inset-0 bg-center bg-cover scale-105" 
+                style={{ backgroundImage: `url(${img})` }} 
+              />
+            </div>
+          ))}
           
-          {/* Overlay Gradients */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           
-          {/* Decorative Elements */}
           <div className="absolute top-20 left-20 opacity-10">
             <Sparkles size={80} className="text-white" />
           </div>
@@ -292,7 +292,6 @@ export default function LoginPage() {
           </div>
 
           <div className="relative min-h-screen flex items-center px-12 z-10">
-            {/* Left Side - Brand Message */}
             <div className="flex-1 max-w-xl">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -318,7 +317,6 @@ export default function LoginPage() {
                   Sign in to access exclusive anime merch, track orders, and connect with fellow fans.
                 </p>
 
-                {/* Trust Badges */}
                 <div className="flex gap-6">
                   {trustBadges.map((badge, i) => {
                     const Icon = badge.icon;
@@ -341,7 +339,6 @@ export default function LoginPage() {
               </motion.div>
             </div>
 
-            {/* Right Side - Login Card */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -509,7 +506,6 @@ export default function LoginPage() {
             </motion.div>
           </div>
 
-          {/* Slide Indicators */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
             {activeSlides.map((_, i) => (
               <button
@@ -534,7 +530,9 @@ export default function LoginPage() {
     );
   }
 
-  // Mobile layout - Shopify/Etsy Grade
+  // ============================================
+  // MOBILE LAYOUT - With Dark/Light Mode Support
+  // ============================================
   return (
     <>
       {isTestAccount && (
@@ -545,7 +543,7 @@ export default function LoginPage() {
       )}
 
       <div className={`min-h-screen flex items-center justify-center px-4 py-8 ${
-        isDark ? 'bg-black' : 'bg-gray-50'
+        isDark ? 'bg-black' : 'bg-white'
       }`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -553,7 +551,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-sm"
         >
-          {/* Logo - Big on Mobile */}
+          {/* Logo - Theme Aware */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.8 }}
@@ -648,9 +646,9 @@ export default function LoginPage() {
                         : focusedField === 'email'
                         ? 'border-orange-500 ring-2 ring-orange-500/20'
                         : isDark
-                        ? 'bg-gray-800 border-gray-700'
-                        : 'bg-gray-50 border-gray-200'
-                    } text-white placeholder-gray-500 focus:outline-none`}
+                        ? 'bg-gray-800 border-gray-700 text-white'
+                        : 'bg-gray-50 border-gray-200 text-gray-900'
+                    } placeholder-gray-500 focus:outline-none`}
                     required
                   />
                 </div>
@@ -689,9 +687,9 @@ export default function LoginPage() {
                       focusedField === 'password'
                         ? 'border-orange-500 ring-2 ring-orange-500/20'
                         : isDark
-                        ? 'bg-gray-800 border-gray-700'
-                        : 'bg-gray-50 border-gray-200'
-                    } text-white placeholder-gray-500 focus:outline-none`}
+                        ? 'bg-gray-800 border-gray-700 text-white'
+                        : 'bg-gray-50 border-gray-200 text-gray-900'
+                    } placeholder-gray-500 focus:outline-none`}
                     required
                   />
                   <button
