@@ -1,4 +1,4 @@
-// app/auth/login/page.tsx
+// app/login/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
