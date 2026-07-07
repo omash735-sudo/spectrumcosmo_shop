@@ -40,6 +40,13 @@ interface CampaignPerformance {
   total_subscribers: number;
 }
 
+interface UnsubscribeLog {
+  id: string;
+  email: string;
+  reason: string;
+  created_at: string;
+}
+
 interface StatData {
   totalSubscribers: number;
   totalCampaigns: number;
@@ -47,7 +54,7 @@ interface StatData {
   totalActive: number;
   growth: { month: string; new: number }[];
   performance: CampaignPerformance[];
-  unsubscribes: number;
+  unsubscribes: UnsubscribeLog[];
 }
 
 export const metadata: Metadata = {
@@ -74,8 +81,7 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
     const [avgStats] = await sql`
       SELECT 
         AVG(open_count) as avg_open_count,
-        AVG(total_subscribers) as avg_total_subscribers,
-        COALESCE(SUM(unsubscribe_count), 0) as total_unsubscribes
+        AVG(total_subscribers) as avg_total_subscribers
       FROM newsletter_campaigns
       WHERE status = 'sent' AND total_subscribers > 0
     `;
@@ -109,10 +115,21 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
 
+    // Get unsubscribe logs - THIS IS THE FIX
+    const unsubscribeLogs = await sql`
+      SELECT 
+        id,
+        email,
+        reason,
+        TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at
+      FROM unsubscribe_feedback
+      ORDER BY created_at DESC
+      LIMIT 10
+    `;
+
     const totalSubscribers = Number(subscriberCount?.count) || 0;
     const totalActive = Number(activeCount?.count) || 0;
     const totalCampaigns = Number(campaignCount?.count) || 0;
-    const unsubscribes = Number(avgStats?.total_unsubscribes) || 0;
 
     const growth = (growthData || []).map((row: any) => ({
       month: row.month || 'No Data',
@@ -143,6 +160,13 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       };
     });
 
+    const unsubscribes = (unsubscribeLogs || []).map((row: any) => ({
+      id: row.id || '',
+      email: row.email || '',
+      reason: row.reason || 'No reason provided',
+      created_at: row.created_at || '',
+    }));
+
     return {
       totalSubscribers,
       totalCampaigns,
@@ -161,7 +185,7 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       totalActive: 0,
       growth: [{ month: 'No Data', new: 0 }],
       performance: [],
-      unsubscribes: 0,
+      unsubscribes: [],
     };
   }
 }
