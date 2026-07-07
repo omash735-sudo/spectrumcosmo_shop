@@ -1,14 +1,17 @@
+// app/auth/login/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff, Loader2, Check, Shield, ArrowLeft } from 'lucide-react';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,9 +26,13 @@ export default function LoginPage() {
   useEffect(() => {
     const verified = searchParams.get('verified');
     const errorParam = searchParams.get('error');
+    const registered = searchParams.get('registered');
     
     if (verified === 'true') {
       setSuccess('Email verified successfully! You can now log in.');
+    }
+    if (registered === 'true') {
+      setSuccess('Registration successful! Please check your email to verify your account.');
     }
     if (errorParam === 'invalid_token') {
       setError('Invalid or expired verification link. Request a new one below.');
@@ -76,8 +83,11 @@ export default function LoginPage() {
       }
       
       // Successful login
-      router.push('/account');
-      router.refresh();
+      setSuccess('Welcome back! Redirecting...');
+      setTimeout(() => {
+        router.push('/account');
+        router.refresh();
+      }, 800);
     } catch {
       setError('Something went wrong. Try again.');
       setLoading(false);
@@ -140,8 +150,11 @@ export default function LoginPage() {
       
       setShowCaptcha(false);
       setRequiresCaptcha(false);
-      router.push('/account');
-      router.refresh();
+      setSuccess('Welcome back! Redirecting...');
+      setTimeout(() => {
+        router.push('/account');
+        router.refresh();
+      }, 800);
     } catch (err) {
       setError('CAPTCHA verification failed. Please try again.');
       throw err;
@@ -155,28 +168,33 @@ export default function LoginPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-12">
+        {/* Animated background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-3xl animate-pulse delay-500" />
         </div>
 
         <div className="relative w-full max-w-md">
+          {/* Logo */}
           <div className="text-center mb-8">
             <Link href="/">
-              <h1 className="text-3xl font-black tracking-wider">
+              <h1 className="text-4xl font-black tracking-wider">
                 <span className="text-white">SPECTRUM</span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">COSMO</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-purple-500">COSMO</span>
               </h1>
             </Link>
             <p className="text-gray-400 mt-2 text-sm">Sign in to your account</p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
-            <h2 className="text-white text-xl font-bold mb-6">Welcome Back</h2>
+          {/* Card */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <h2 className="text-white text-xl font-bold mb-2">Welcome Back</h2>
+            <p className="text-gray-400 text-sm mb-6">Enter your credentials to access your account</p>
 
             {error && (
-              <div className={`text-sm rounded-lg px-4 py-3 mb-6 ${
+              <div className={`text-sm rounded-xl px-4 py-3 mb-4 ${
                 needsVerification
                   ? 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
                   : 'bg-red-500/10 border border-red-500/30 text-red-400'
@@ -186,13 +204,13 @@ export default function LoginPage() {
             )}
 
             {success && (
-              <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-lg px-4 py-3 mb-6">
+              <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm rounded-xl px-4 py-3 mb-4">
                 {success}
               </div>
             )}
 
             {requiresCaptcha && !showCaptcha && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm rounded-lg px-4 py-3 mb-6 flex items-center gap-2">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -202,35 +220,57 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="text-gray-400 text-sm mb-2 block">Email Address</label>
+                <label className="text-gray-400 text-sm font-medium mb-2 block">Email Address</label>
                 <input
                   type="email"
                   required
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   placeholder="you@example.com"
                 />
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm mb-2 block">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
-                  placeholder="••••••••"
-                />
+                <label className="text-gray-400 text-sm font-medium mb-2 block">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={form.password}
+                    onChange={e => setForm({ ...form, password: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all pr-12"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Link href="/auth/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Forgot password?
+                </Link>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white font-bold py-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="animate-spin" size={18} />
+                    Signing in...
+                  </span>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
 
@@ -249,24 +289,22 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-white/10 text-center">
               <p className="text-gray-400 text-sm">
-                Don&apos;t have an account?{' '}
-                <Link href="/auth/register" className="text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                Don't have an account?{' '}
+                <Link href="/auth/register" className="text-orange-400 hover:text-orange-300 font-medium transition-colors">
                   Create one
                 </Link>
               </p>
-              <Link href="/forgot-password" className="text-gray-500 text-xs hover:text-gray-400 transition-colors mt-2 inline-block">
-                Forgot password?
-              </Link>
             </div>
           </div>
 
           <div className="text-center mt-6">
-            <Link href="/" className="text-gray-500 text-sm hover:text-gray-400 transition-colors">
-              ← Back to Shop
+            <Link href="/" className="text-gray-500 text-sm hover:text-gray-400 transition-colors inline-flex items-center gap-1">
+              <ArrowLeft size={14} />
+              Back to Shop
             </Link>
           </div>
         </div>
-      </main>
+      </div>
 
       <CaptchaModal
         isOpen={showCaptcha}
