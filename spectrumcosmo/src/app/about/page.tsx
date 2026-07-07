@@ -1,12 +1,10 @@
 // app/about/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { getDb } from '@/lib/db';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import Link from 'next/link';
-import Image from 'next/image';
 import DynamicImageViewer from '@/components/storefront/DynamicImageViewer';
 import { 
   Sparkles, 
@@ -25,8 +23,6 @@ import {
   HelpCircle,
   LucideIcon
 } from 'lucide-react';
-
-export const dynamic = 'force-dynamic';
 
 interface StatItem {
   value: string;
@@ -63,10 +59,30 @@ const iconMap: Record<string, LucideIcon> = {
   Calendar, ShoppingBag, Users, Globe, Heart, Award, TrendingUp, CheckCircle, Target
 };
 
-export default async function AboutPage() {
-  const sql = getDb();
-  const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
-  const content = (row?.content || {}) as PageContent;
+export default function AboutPage() {
+  const [content, setContent] = useState<PageContent>({});
+  const [loading, setLoading] = useState(true);
+  const [expandedMember, setExpandedMember] = useState<number | null>(null);
+
+  const fetchContent = async () => {
+    try {
+      const res = await fetch('/api/admin/about');
+      const data = await res.json();
+      setContent(data);
+    } catch (error) {
+      console.error('Failed to fetch about content:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContent();
+
+    // Set up polling to check for updates every 5 seconds
+    const interval = setInterval(fetchContent, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const history = content.history || '';
   const vision = content.vision || 'To become the go-to destination for anime merchandise in Malawi and beyond.';
@@ -101,6 +117,21 @@ export default async function AboutPage() {
   ];
 
   const displayTeam = team.length > 0 ? team : defaultTeam;
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -270,12 +301,15 @@ export default async function AboutPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {displayTeam.map((member: TeamMember, idx: number) => {
+                const isExpanded = expandedMember === idx;
                 const hasBio = member.bio && member.bio.length > 0;
 
                 return (
                   <div 
                     key={idx} 
-                    className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700"
+                    className={`group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 ${
+                      isExpanded ? 'ring-2 ring-orange-500 shadow-lg' : ''
+                    }`}
                   >
                     <div className="relative h-56 md:h-72 overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-700 dark:to-gray-800">
                       {member.image ? (
@@ -310,9 +344,13 @@ export default async function AboutPage() {
                         <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mt-1">{member.role}</p>
                         
                         {member.bio && (
-                          <p className="mt-3 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
-                            {member.bio}
-                          </p>
+                          <div className="mt-3">
+                            <p className={`text-gray-500 dark:text-gray-400 text-sm leading-relaxed transition-all duration-300 ${
+                              isExpanded ? '' : 'line-clamp-2'
+                            }`}>
+                              {member.bio}
+                            </p>
+                          </div>
                         )}
 
                         {member.email && (
@@ -325,6 +363,25 @@ export default async function AboutPage() {
                               {member.email}
                             </a>
                           </div>
+                        )}
+
+                        {hasBio && (
+                          <button
+                            onClick={() => setExpandedMember(isExpanded ? null : idx)}
+                            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                          >
+                            <span>{isExpanded ? 'Show Less' : 'Learn More'}</span>
+                            <svg 
+                              className={`w-4 h-4 transition-transform duration-300 ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -368,27 +425,27 @@ export default async function AboutPage() {
             <p className="text-gray-300 text-lg mb-8 max-w-xl mx-auto">
               Join our growing community of anime enthusiasts in Malawi and beyond.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            
+            <div className="flex flex-col items-center gap-6">
               {communityLink ? (
                 <a
                   href={communityLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-10 py-4 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
                 >
                   Join Our Community
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </a>
               ) : (
-                <p className="text-gray-400 text-sm">Community link not configured.</p>
+                <span className="text-gray-400 text-sm">Community link not configured.</span>
               )}
               
               <Link
                 href="/faq"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-full font-semibold transition-all duration-200 border border-white/20"
+                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
               >
-                <HelpCircle size={18} />
-                Frequently Asked Questions
+                Frequently Asked Questions →
               </Link>
             </div>
           </div>
