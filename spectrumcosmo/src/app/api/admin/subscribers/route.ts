@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
-    const result = await sql.query(`
+    const subscribers = await sql`
       SELECT 
         id, 
         email, 
@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
         created_at
       FROM subscribers
       ORDER BY created_at DESC
-    `);
+    `;
 
-    return NextResponse.json(result.rows);
+    return NextResponse.json(subscribers);
   } catch (error) {
     console.error('Error fetching subscribers:', error);
     return NextResponse.json(
