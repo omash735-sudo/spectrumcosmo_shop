@@ -167,10 +167,11 @@ export default function RegisterPage() {
   const isDark = mounted && theme === 'dark';
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
+  // Desktop layout - Full screen, no scroll
   if (isDesktop) {
     return (
       <>
-        <div className="min-h-screen relative overflow-hidden bg-black">
+        <div className="h-screen relative overflow-hidden bg-black">
           {activeSlides.map((img, i) => (
             <div
               key={i}
@@ -179,15 +180,15 @@ export default function RegisterPage() {
               }`}
             >
               <div 
-                className="absolute inset-0 bg-center bg-cover scale-105" 
+                className="absolute inset-0 bg-center bg-cover" 
                 style={{ backgroundImage: `url(${img})` }} 
               />
             </div>
           ))}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-          <div className="relative min-h-screen flex items-center px-12 z-10">
+          <div className="relative h-full flex items-center px-12 z-10">
             <div className="flex-1 max-w-xl">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -203,13 +204,13 @@ export default function RegisterPage() {
                   </span>
                 </div>
                 
-                <h1 className="text-5xl font-bold mb-4 leading-tight">
+                <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Join the
                   <br />
                   <span className="text-orange-400">anime community</span>
                 </h1>
                 
-                <p className="text-gray-300 text-lg mb-8 max-w-md leading-relaxed">
+                <p className="text-gray-300 text-base mb-6 max-w-md leading-relaxed">
                   Create your account and start exploring exclusive anime merch, deals, and more.
                 </p>
               </motion.div>
@@ -219,15 +220,15 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="w-full max-w-md ml-auto"
+              className="w-full max-w-sm ml-auto"
             >
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center mx-auto mb-4">
-                    <User size={24} className="text-orange-400" />
+              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl">
+                <div className="text-center mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-3">
+                    <User size={20} className="text-orange-400" />
                   </div>
-                  <h2 className="text-white text-2xl font-bold">Create Account</h2>
-                  <p className="text-gray-400 text-sm mt-1">Join the SpectrumCosmo community</p>
+                  <h2 className="text-white text-xl font-bold">Create Account</h2>
+                  <p className="text-gray-400 text-xs mt-0.5">Join the SpectrumCosmo community</p>
                 </div>
 
                 <AnimatePresence>
@@ -236,7 +237,7 @@ export default function RegisterPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-red-500/20 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-4"
+                      className="bg-red-500/20 border border-red-500/30 text-red-400 text-xs rounded-xl px-3 py-2 mb-3"
                     >
                       {error}
                     </motion.div>
@@ -247,20 +248,20 @@ export default function RegisterPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-green-500/20 border border-green-500/30 text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
+                      className="bg-green-500/20 border border-green-500/30 text-green-400 text-xs rounded-xl px-3 py-2 mb-3"
                     >
                       {success}
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Full Name</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Full Name</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'name' ? 'scale-[1.02]' : ''
                     }`}>
-                      <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type="text"
                         placeholder="Enter your name"
@@ -268,7 +269,7 @@ export default function RegisterPage() {
                         onChange={e => setForm({ ...form, name: e.target.value })}
                         onFocus={() => setFocusedField('name')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'name'
                             ? 'border-orange-500 ring-2 ring-orange-500/20'
                             : 'border-white/10'
@@ -279,11 +280,11 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Email</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Email</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'email' ? 'scale-[1.02]' : ''
                     }`}>
-                      <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type="email"
                         placeholder="Enter your email"
@@ -291,7 +292,7 @@ export default function RegisterPage() {
                         onChange={e => setForm({ ...form, email: e.target.value })}
                         onFocus={() => setFocusedField('email')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'email'
                             ? 'border-orange-500 ring-2 ring-orange-500/20'
                             : 'border-white/10'
@@ -302,11 +303,11 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Password</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Password</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'password' ? 'scale-[1.02]' : ''
                     }`}>
-                      <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Min. 8 characters"
@@ -314,7 +315,7 @@ export default function RegisterPage() {
                         onChange={e => setForm({ ...form, password: e.target.value })}
                         onFocus={() => setFocusedField('password')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-10 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'password'
                             ? 'border-orange-500 ring-2 ring-orange-500/20'
                             : 'border-white/10'
@@ -324,19 +325,19 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Confirm Password</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Confirm Password</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'confirm' ? 'scale-[1.02]' : ''
                     }`}>
-                      <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type={showConfirm ? 'text' : 'password'}
                         placeholder="Repeat your password"
@@ -344,7 +345,7 @@ export default function RegisterPage() {
                         onChange={e => setForm({ ...form, confirm: e.target.value })}
                         onFocus={() => setFocusedField('confirm')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-10 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'confirm'
                             ? 'border-orange-500 ring-2 ring-orange-500/20'
                             : 'border-white/10'
@@ -354,22 +355,22 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
                       >
-                        {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 pt-1">
+                  <div className="flex items-start gap-2 pt-1">
                     <input
                       type="checkbox"
                       id="terms"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-gray-600 text-orange-500 focus:ring-orange-500 bg-white/10"
+                      className="mt-0.5 w-3.5 h-3.5 rounded border-gray-600 text-orange-500 focus:ring-orange-500 bg-white/10"
                     />
-                    <label htmlFor="terms" className="text-gray-400 text-sm leading-relaxed">
+                    <label htmlFor="terms" className="text-gray-400 text-xs leading-relaxed">
                       I agree to the{' '}
                       <Link href="/terms" className="text-orange-400 hover:text-orange-300 transition-colors">
                         Terms & Conditions
@@ -386,11 +387,11 @@ export default function RegisterPage() {
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="animate-spin" size={18} />
+                        <Loader2 className="animate-spin" size={16} />
                         Creating account...
                       </span>
                     ) : (
@@ -399,19 +400,19 @@ export default function RegisterPage() {
                   </motion.button>
                 </form>
 
-                <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                  <p className="text-gray-400 text-sm">
+                <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                  <p className="text-gray-400 text-xs">
                     Already have an account?{' '}
-                    <Link href="/auth/login" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-1">
+                    <Link href="/auth/login" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5 text-xs">
                       Sign in
-                      <ChevronRight size={14} />
+                      <ChevronRight size={12} />
                     </Link>
                   </p>
                 </div>
 
-                <div className="mt-4 text-center">
-                  <Link href="/" className="text-gray-500 text-sm hover:text-gray-400 transition-colors inline-flex items-center gap-1">
-                    <ArrowLeft size={14} />
+                <div className="mt-2 text-center">
+                  <Link href="/" className="text-gray-500 text-[11px] hover:text-gray-400 transition-colors inline-flex items-center gap-0.5">
+                    <ArrowLeft size={12} />
                     Back to Shop
                   </Link>
                 </div>
@@ -419,15 +420,15 @@ export default function RegisterPage() {
             </motion.div>
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {activeSlides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                className={`h-1 rounded-full transition-all duration-300 ${
                   i === index
-                    ? 'w-8 bg-orange-500'
-                    : 'bg-white/30 hover:bg-white/50'
+                    ? 'w-6 bg-orange-500'
+                    : 'w-1.5 bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
@@ -443,6 +444,7 @@ export default function RegisterPage() {
     );
   }
 
+  // Mobile layout
   return (
     <>
       <div className={`min-h-screen flex items-center justify-center px-4 py-8 ${
