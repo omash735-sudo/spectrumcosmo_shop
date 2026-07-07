@@ -1,7 +1,7 @@
 // app/api/newsletter/send/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryMany } from '@/lib/db';
-import { sendBulkEmails } from '@/lib/email/send';
+import { getDb } from '@/lib/db';
+import { sendEmail } from '@/lib/email/send';
 import { renderNewsletterEmail } from '@/lib/email/templates';
 
 interface Subscriber {
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     if (audience === 'active') {
       subscriberQuery += ` AND confirmed_at > NOW() - INTERVAL '90 days'`;
     } else if (audience === 'segment' && segment) {
-      // Handle preference-based segment
       const { topics, frequency } = segment;
       if (topics && topics.length > 0) {
         const topicConditions = topics.map((t: string) => 
@@ -56,10 +55,40 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get subscribers - use sql template literal
-    const subscribers = await sql.query(subscriberQuery);
+    // ✅ FIX: Use tagged template literal with sql
+    const subscribers = await sql`
+      SELECT id, email, name, preferences 
+      FROM subscribers 
+      WHERE status = 'confirmed'
+    `;
 
-    if (subscribers.rows.length === 0) {
+    // Apply filters manually since we can't use dynamic WHERE with tagged templates easily
+    let filteredSubscribers = subscribers;
+    
+    if (audience === 'active') {
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      filteredSubscribers = filteredSubscribers.filter((s: any) => 
+        new Date(s.confirmed_at) > ninetyDaysAgo
+      );
+    } else if (audience === 'segment' && segment) {
+      const { topics, frequency } = segment;
+      filteredSubscribers = filteredSubscribers.filter((s: any) => {
+        let match = true;
+        if (topics && topics.length > 0) {
+          const prefs = s.preferences || {};
+          const subscriberTopics = prefs.topics || [];
+          match = match && topics.some((t: string) => subscriberTopics.includes(t));
+        }
+        if (frequency) {
+          const prefs = s.preferences || {};
+          match = match && prefs.frequency === frequency;
+        }
+        return match;
+      });
+    }
+
+    if (filteredSubscribers.length === 0) {
       return NextResponse.json(
         { error: 'No subscribers match the selected audience' },
         { status: 400 }
@@ -83,7 +112,7 @@ export async function POST(req: NextRequest) {
         ${image_url || null}, 
         ${audience}, 
         ${schedule_for ? 'scheduled' : 'sending'}, 
-        ${subscribers.rows.length}, 
+        ${filteredSubscribers.length}, 
         NOW()
       )
       RETURNING id
@@ -97,12 +126,12 @@ export async function POST(req: NextRequest) {
         success: true,
         campaignId,
         message: `Campaign scheduled for ${new Date(schedule_for).toLocaleString()}`,
-        totalRecipients: subscribers.rows.length,
+        totalRecipients: filteredSubscribers.length,
       });
     }
 
     // Send emails
-    const emailPromises = subscribers.rows.map(async (subscriber: Subscriber) => {
+    const emailPromises = filteredSubscribers.map(async (subscriber: Subscriber) => {
       try {
         const html = renderNewsletterEmail(
           title,
@@ -144,8 +173,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       campaignId,
-      message: `Newsletter sent to ${subscribers.rows.length} subscribers! 📨`,
-      totalRecipients: subscribers.rows.length,
+      message: `Newsletter sent to ${filteredSubscribers.length} subscribers! 📨`,
+      totalRecipients: filteredSubscribers.length,
     });
   } catch (err) {
     console.error('Newsletter send error:', err);
