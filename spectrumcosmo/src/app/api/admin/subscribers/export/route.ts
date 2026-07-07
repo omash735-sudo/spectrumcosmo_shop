@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Build placeholders for the IN clause
     const placeholders = subscriberIds.map((_: any, i: number) => `$${i + 1}`).join(',');
     
-    // Get subscribers data using tagged template literals
+    // Get subscribers data
     const subscribers = await sql`
       SELECT 
         id, 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       'Preferences': s.preferences ? JSON.stringify(s.preferences) : 'None',
     }));
 
-    // Handle PDF export using pdf-lib
+    // Handle PDF export
     if (exportFormat === 'pdf') {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([612, 792]);
@@ -87,7 +87,6 @@ export async function POST(req: NextRequest) {
       const headers = ['Email', 'Name', 'Status', 'Subscribed', 'Confirmed', 'Unsubscribed'];
       const colWidths = [150, 100, 70, 100, 100, 100];
       
-      // Header background
       page.drawRectangle({
         x: 50,
         y: y - 15,
@@ -150,8 +149,9 @@ export async function POST(req: NextRequest) {
       }
       
       const pdfBytes = await pdfDoc.save();
+      const pdfBuffer = Buffer.from(pdfBytes);
       
-      return new NextResponse(pdfBytes, {
+      return new NextResponse(pdfBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename=subscribers_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
