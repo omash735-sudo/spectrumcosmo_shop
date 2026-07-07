@@ -9,7 +9,7 @@ import {
   FileText, FileSpreadsheet, FileDown, Trash2, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 interface Subscriber {
   id: number;
@@ -119,14 +119,14 @@ export default function AdminSubscribersPage() {
     return { total, confirmed, pending, unsubscribed };
   }, [subscribers]);
 
-  const handleExport = async (format: 'pdf' | 'excel' | 'csv') => {
-    setExporting(format);
+  const handleExport = async (exportType: 'pdf' | 'excel' | 'csv') => {
+    setExporting(exportType);
     try {
       const res = await fetch('/api/admin/subscribers/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          format,
+          format: exportType,
           filters,
           sortBy,
           sortOrder,
@@ -140,13 +140,16 @@ export default function AdminSubscribersPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `subscribers_${format(new Date(), 'yyyy-MM-dd')}.${format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv'}`;
+      
+      const fileExtension = exportType === 'pdf' ? 'pdf' : exportType === 'excel' ? 'xlsx' : 'csv';
+      link.download = `subscribers_${format(new Date(), 'yyyy-MM-dd')}.${fileExtension}`;
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${filteredSubscribers.length} subscribers as ${format.toUpperCase()}`);
+      toast.success(`Exported ${filteredSubscribers.length} subscribers as ${exportType.toUpperCase()}`);
     } catch (error) {
       toast.error('Export failed');
       console.error(error);
@@ -197,7 +200,7 @@ export default function AdminSubscribersPage() {
                 Manage your newsletter subscribers and their preferences
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => handleExport('pdf')}
                 disabled={!!exporting}
@@ -330,7 +333,7 @@ export default function AdminSubscribersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatDistanceToNow(new Date(subscriber.created_at), { addSuffix: true })}
+                        {format(new Date(subscriber.created_at), 'MMM d, yyyy')}
                       </p>
                     </td>
                     <td className="px-4 py-3">
@@ -351,12 +354,12 @@ export default function AdminSubscribersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <select
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-2 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                  className="px-2 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
@@ -369,7 +372,7 @@ export default function AdminSubscribersPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50"
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -379,7 +382,7 @@ export default function AdminSubscribersPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50"
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >
                   <ChevronRight size={18} />
                 </button>
