@@ -1,4 +1,3 @@
-// app/admin/newsletter/[id]/page.tsx
 export const dynamic = 'force-dynamic';
 
 import { getDb } from '@/lib/db';
@@ -16,7 +15,7 @@ export default async function NewsletterPreviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  
+
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
@@ -51,7 +50,7 @@ export default async function NewsletterPreviewPage({
       <div className="max-w-3xl mx-auto p-6">
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Newsletter Not Found</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">The newsletter you're looking for doesn't exist or has been deleted.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">The newsletter you are looking for does not exist or has been deleted.</p>
           <Link
             href="/admin/newsletter"
             className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 font-medium"
@@ -102,7 +101,6 @@ export default async function NewsletterPreviewPage({
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-        {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-800">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
@@ -157,7 +155,6 @@ export default async function NewsletterPreviewPage({
             </div>
           </div>
 
-          {/* Meta info */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
@@ -190,7 +187,6 @@ export default async function NewsletterPreviewPage({
           </div>
         </div>
 
-        {/* Stats */}
         {newsletter.status === 'sent' && (
           <div className="grid grid-cols-3 gap-4 p-6 bg-gray-50 dark:bg-gray-800/50">
             <div className="text-center">
@@ -238,7 +234,6 @@ export default async function NewsletterPreviewPage({
           </div>
         )}
 
-        {/* Content */}
         <div className="p-6">
           {newsletter.image_url && (
             <div className="relative w-full h-64 mb-6 rounded-xl overflow-hidden bg-gray-100">
@@ -257,7 +252,6 @@ export default async function NewsletterPreviewPage({
           />
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
