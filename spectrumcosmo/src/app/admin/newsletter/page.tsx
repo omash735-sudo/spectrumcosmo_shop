@@ -1,4 +1,3 @@
-// app/admin/newsletter/page.tsx
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
@@ -44,6 +43,7 @@ interface UnsubscribeLog {
   id: string;
   email: string;
   reason: string;
+  details: string;
   created_at: string;
 }
 
@@ -115,12 +115,12 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
 
-    // Get unsubscribe logs - THIS IS THE FIX
     const unsubscribeLogs = await sql`
       SELECT 
         id,
         email,
         reason,
+        COALESCE(details, '') as details,
         TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at
       FROM unsubscribe_feedback
       ORDER BY created_at DESC
@@ -164,6 +164,7 @@ async function getNewsletterStats(sql: any): Promise<StatData> {
       id: row.id || '',
       email: row.email || '',
       reason: row.reason || 'No reason provided',
+      details: row.details || '',
       created_at: row.created_at || '',
     }));
 
