@@ -1,3 +1,4 @@
+// app/admin/about/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -5,7 +6,6 @@ import { Loader2, Plus, Trash2, Upload, X, ChevronUp, ChevronDown, Save, Image a
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
-// Types
 interface Stat {
   value: string;
   label: string;
@@ -15,6 +15,8 @@ interface TeamMember {
   name: string;
   role: string;
   image: string;
+  bio?: string;
+  email?: string;
 }
 
 interface AboutContent {
@@ -28,9 +30,12 @@ interface AboutContent {
   image_mode: 'single' | 'carousel';
   single_image_url: string;
   carousel_images: string[];
+  signature_name: string;
+  signature_title: string;
+  signature_image: string;
+  team_description?: string;
 }
 
-// Constants
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo';
 
@@ -45,6 +50,10 @@ const defaultContent: AboutContent = {
   image_mode: 'single',
   single_image_url: '',
   carousel_images: [],
+  signature_name: '',
+  signature_title: '',
+  signature_image: '',
+  team_description: '',
 };
 
 export default function AdminAboutPage() {
@@ -164,7 +173,7 @@ export default function AdminAboutPage() {
   };
 
   const addTeam = () => {
-    const team = [...(content.team || []), { name: '', role: '', image: '' }];
+    const team = [...(content.team || []), { name: '', role: '', image: '', bio: '', email: '' }];
     updateField(['team'], team);
   };
 
@@ -184,6 +193,15 @@ export default function AdminAboutPage() {
     setUploadingImg(true);
     const url = await uploadImage(file);
     if (url) updateTeam(idx, 'image', url);
+    setUploadingImg(false);
+  };
+
+  const uploadSignatureImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImg(true);
+    const url = await uploadImage(file);
+    if (url) updateField(['signature_image'], url);
     setUploadingImg(false);
   };
 
@@ -219,7 +237,6 @@ export default function AdminAboutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -240,7 +257,6 @@ export default function AdminAboutPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation - Shopify Style */}
         <div className="flex gap-1 mb-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-1">
           <button
             onClick={() => setActiveTab('text')}
@@ -264,7 +280,6 @@ export default function AdminAboutPage() {
           </button>
         </div>
 
-        {/* Content Card */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {activeTab === 'text' ? (
             <div className="p-6 space-y-8">
@@ -314,6 +329,186 @@ export default function AdminAboutPage() {
                 </div>
               </section>
 
+              {/* Team Section - Updated with bio and email */}
+              <section>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-orange-500" />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h2>
+                  </div>
+                  <button
+                    onClick={addTeam}
+                    className="inline-flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700"
+                  >
+                    <Plus className="w-4 h-4" /> Add Member
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Team Section Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={content.team_description || ''}
+                    onChange={(e) => updateField(['team_description'], e.target.value)}
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Describe your team (e.g., Curious Minds, Passionate Performers)"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  {content.team?.map((member, idx) => (
+                    <div key={idx} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={member.name}
+                          onChange={(e) => updateTeam(idx, 'name', e.target.value)}
+                          className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Role / Title"
+                          value={member.role}
+                          onChange={(e) => updateTeam(idx, 'role', e.target.value)}
+                          className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <input
+                          type="text"
+                          placeholder="Email (optional)"
+                          value={member.email || ''}
+                          onChange={(e) => updateTeam(idx, 'email', e.target.value)}
+                          className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Bio (optional)"
+                          value={member.bio || ''}
+                          onChange={(e) => updateTeam(idx, 'bio', e.target.value)}
+                          className="border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {member.image ? (
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <Image src={member.image} alt={member.name} fill className="object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <Users className="w-5 h-5 text-gray-400" />
+                          </div>
+                        )}
+                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition">
+                          <Upload className="w-3 h-3" />
+                          {member.image ? 'Change Photo' : 'Upload Photo'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadTeamImage(idx, file);
+                            }}
+                          />
+                        </label>
+                        <button
+                          onClick={() => removeTeam(idx)}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded ml-auto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!content.team || content.team.length === 0) && (
+                    <p className="text-sm text-gray-400 text-center py-4">No team members added. Click "Add Member" to start.</p>
+                  )}
+                </div>
+              </section>
+
+              {/* Signature Section */}
+              <section>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Founder Signature</h2>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Signature Image
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      Upload a PNG with transparent background for best results (write on white paper, take photo, remove background)
+                    </p>
+                    <div className="flex items-center gap-4">
+                      {content.signature_image ? (
+                        <div className="relative p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                          <img
+                            src={content.signature_image}
+                            alt="Signature"
+                            className="h-16 object-contain"
+                          />
+                          <button
+                            onClick={() => updateField(['signature_image'], '')}
+                            className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full shadow-md"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-48 h-20 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+                          <span className="text-sm">No signature uploaded</span>
+                        </div>
+                      )}
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition">
+                        <Upload className="w-4 h-4" />
+                        {content.signature_image ? 'Replace' : 'Upload Signature'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={uploadSignatureImage}
+                          disabled={uploadingImg}
+                        />
+                      </label>
+                    </div>
+                    {uploadingImg && (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                        <Loader2 className="animate-spin w-4 h-4" />
+                        Uploading signature...
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Signature Name
+                    </label>
+                    <input
+                      type="text"
+                      value={content.signature_name || ''}
+                      onChange={(e) => updateField(['signature_name'], e.target.value)}
+                      placeholder="e.g., Nicholas Thomas"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Signature Title
+                    </label>
+                    <input
+                      type="text"
+                      value={content.signature_title || ''}
+                      onChange={(e) => updateField(['signature_title'], e.target.value)}
+                      placeholder="e.g., Founder & CEO"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+              </section>
+
               {/* Stats Section */}
               <section>
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">
@@ -354,78 +549,7 @@ export default function AdminAboutPage() {
                     </div>
                   ))}
                   {(!content.stats || content.stats.length === 0) && (
-                    <p className="text-sm text-gray-400 text-center py-4">No statistics added yet. Click "Add Stat" to start.</p>
-                  )}
-                </div>
-              </section>
-
-              {/* Team Section */}
-              <section>
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-orange-500" />
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Team Members</h2>
-                  </div>
-                  <button
-                    onClick={addTeam}
-                    className="inline-flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700"
-                  >
-                    <Plus className="w-4 h-4" /> Add Member
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {content.team?.map((member, idx) => (
-                    <div key={idx} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
-                      <div className="flex gap-3 mb-3">
-                        <input
-                          type="text"
-                          placeholder="Full Name"
-                          value={member.name}
-                          onChange={(e) => updateTeam(idx, 'name', e.target.value)}
-                          className="flex-1 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Role / Title"
-                          value={member.role}
-                          onChange={(e) => updateTeam(idx, 'role', e.target.value)}
-                          className="flex-1 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
-                        />
-                        <button
-                          onClick={() => removeTeam(idx)}
-                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {member.image ? (
-                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-                            <Image src={member.image} alt={member.name} fill className="object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <Users className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
-                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition">
-                          <Upload className="w-3 h-3" />
-                          {member.image ? 'Change Photo' : 'Upload Photo'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) uploadTeamImage(idx, file);
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                  {(!content.team || content.team.length === 0) && (
-                    <p className="text-sm text-gray-400 text-center py-4">No team members added. Click "Add Member" to start.</p>
+                    <p className="text-sm text-gray-400 text-center py-4">No statistics added yet.</p>
                   )}
                 </div>
               </section>
@@ -591,7 +715,7 @@ export default function AdminAboutPage() {
                     </div>
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    Drag and drop to reorder, or use the arrow buttons. Recommended image size: 800x600px.
+                    Recommended image size: 800x600px. Use arrow buttons to reorder.
                   </p>
                 </section>
               )}
