@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Eye, EyeOff, Loader2, Check, Shield, ArrowLeft, Mail, Lock, 
-  Sparkles, ChevronRight, Store, ShoppingBag, Star, Users,
-  TrendingUp, Award, Crown, Zap, Gift
+  Sparkles, ChevronRight, Store, Star, Users, TrendingUp
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
@@ -32,7 +31,6 @@ const trustBadges = [
   { icon: TrendingUp, label: 'Trusted Seller' },
 ];
 
-// Theme-aware logo URLs
 const LOGOS = {
   light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
   dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
@@ -255,7 +253,7 @@ export default function LoginPage() {
   const isDark = mounted && theme === 'dark';
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // Desktop layout
+  // Desktop layout - Full screen, no scroll
   if (isDesktop) {
     return (
       <>
@@ -266,7 +264,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="min-h-screen relative overflow-hidden bg-black">
+        <div className="h-screen relative overflow-hidden bg-black">
           {activeSlides.map((img, i) => (
             <div
               key={i}
@@ -275,23 +273,17 @@ export default function LoginPage() {
               }`}
             >
               <div 
-                className="absolute inset-0 bg-center bg-cover scale-105" 
+                className="absolute inset-0 bg-center bg-cover" 
                 style={{ backgroundImage: `url(${img})` }} 
               />
             </div>
           ))}
           
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          
-          <div className="absolute top-20 left-20 opacity-10">
-            <Sparkles size={80} className="text-white" />
-          </div>
-          <div className="absolute bottom-20 left-40 opacity-5">
-            <Store size={100} className="text-white" />
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-          <div className="relative min-h-screen flex items-center px-12 z-10">
+          <div className="relative h-full flex items-center px-12 z-10">
+            {/* Left Side - Brand Message */}
             <div className="flex-1 max-w-xl">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -307,17 +299,17 @@ export default function LoginPage() {
                   </span>
                 </div>
                 
-                <h1 className="text-5xl font-bold mb-4 leading-tight">
+                <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Welcome back to the
                   <br />
                   <span className="text-orange-400">anime marketplace</span>
                 </h1>
                 
-                <p className="text-gray-300 text-lg mb-8 max-w-md leading-relaxed">
+                <p className="text-gray-300 text-base mb-6 max-w-md leading-relaxed">
                   Sign in to access exclusive anime merch, track orders, and connect with fellow fans.
                 </p>
 
-                <div className="flex gap-6">
+                <div className="flex gap-4">
                   {trustBadges.map((badge, i) => {
                     const Icon = badge.icon;
                     return (
@@ -328,10 +320,10 @@ export default function LoginPage() {
                         transition={{ delay: 0.2 + i * 0.1 }}
                         className="flex items-center gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                          <Icon size={14} className="text-orange-400" />
+                        <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
+                          <Icon size={13} className="text-orange-400" />
                         </div>
-                        <span className="text-sm text-gray-300">{badge.label}</span>
+                        <span className="text-xs text-gray-300">{badge.label}</span>
                       </motion.div>
                     );
                   })}
@@ -339,19 +331,20 @@ export default function LoginPage() {
               </motion.div>
             </div>
 
+            {/* Right Side - Login Card */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="w-full max-w-md ml-auto"
+              className="w-full max-w-sm ml-auto"
             >
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center mx-auto mb-4">
-                    <Lock size={24} className="text-orange-400" />
+              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl">
+                <div className="text-center mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-3">
+                    <Lock size={20} className="text-orange-400" />
                   </div>
-                  <h2 className="text-white text-2xl font-bold">Sign In</h2>
-                  <p className="text-gray-400 text-sm mt-1">Access your SpectrumCosmo account</p>
+                  <h2 className="text-white text-xl font-bold">Sign In</h2>
+                  <p className="text-gray-400 text-xs mt-0.5">Access your SpectrumCosmo account</p>
                 </div>
 
                 <AnimatePresence>
@@ -360,7 +353,7 @@ export default function LoginPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className={`text-sm rounded-xl px-4 py-3 mb-4 ${
+                      className={`text-xs rounded-xl px-3 py-2 mb-3 ${
                         needsVerification
                           ? 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400'
                           : 'bg-red-500/20 border border-red-500/30 text-red-400'
@@ -375,20 +368,20 @@ export default function LoginPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-green-500/20 border border-green-500/30 text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
+                      className="bg-green-500/20 border border-green-500/30 text-green-400 text-xs rounded-xl px-3 py-2 mb-3"
                     >
                       {success}
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <form onSubmit={onSubmit} className="space-y-5">
+                <form onSubmit={onSubmit} className="space-y-3">
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Email Address</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Email Address</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'email' ? 'scale-[1.02]' : ''
                     }`}>
-                      <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         ref={emailInputRef}
                         type="email"
@@ -397,7 +390,7 @@ export default function LoginPage() {
                         onChange={handleEmailChange}
                         onFocus={() => setFocusedField('email')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           emailError
                             ? 'border-red-500 ring-2 ring-red-500/20'
                             : focusedField === 'email'
@@ -411,7 +404,7 @@ export default function LoginPage() {
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-red-400 text-xs mt-1"
+                        className="text-red-400 text-[10px] mt-0.5"
                       >
                         {emailError}
                       </motion.p>
@@ -419,11 +412,11 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="text-gray-300 text-sm font-medium mb-2 block">Password</label>
+                    <label className="text-gray-300 text-xs font-medium mb-1 block">Password</label>
                     <div className={`relative transition-all duration-200 ${
                       focusedField === 'password' ? 'scale-[1.02]' : ''
                     }`}>
-                      <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         ref={passwordInputRef}
                         type={showPassword ? 'text' : 'password'}
@@ -432,7 +425,7 @@ export default function LoginPage() {
                         onChange={e => setForm({ ...form, password: e.target.value })}
                         onFocus={() => setFocusedField('password')}
                         onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
+                        className={`w-full pl-9 pr-10 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'password'
                             ? 'border-orange-500 ring-2 ring-orange-500/20'
                             : 'border-white/10'
@@ -442,17 +435,17 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <Link href="/auth/forgot-password" className="text-sm text-gray-400 hover:text-orange-400 transition-all hover:translate-x-0.5 inline-flex items-center gap-1">
+                    <Link href="/auth/forgot-password" className="text-xs text-gray-400 hover:text-orange-400 transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5">
                       Forgot password?
-                      <ChevronRight size={14} />
+                      <ChevronRight size={12} />
                     </Link>
                   </div>
 
@@ -461,11 +454,11 @@ export default function LoginPage() {
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="animate-spin" size={18} />
+                        <Loader2 className="animate-spin" size={16} />
                         Signing in...
                       </span>
                     ) : (
@@ -475,30 +468,30 @@ export default function LoginPage() {
                 </form>
 
                 {needsVerification && (
-                  <div className="mt-4 text-center">
+                  <div className="mt-3 text-center">
                     <button
                       onClick={handleResendVerification}
                       disabled={resending}
-                      className="text-orange-400 hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
+                      className="text-orange-400 hover:text-orange-300 text-xs transition-colors disabled:opacity-50"
                     >
                       {resending ? 'Sending...' : 'Resend verification email'}
                     </button>
                   </div>
                 )}
 
-                <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                  <p className="text-gray-400 text-sm">
+                <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                  <p className="text-gray-400 text-xs">
                     Don't have an account?{' '}
-                    <Link href="/auth/register" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-1">
+                    <Link href="/auth/register" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5 text-xs">
                       Create one
-                      <ChevronRight size={14} />
+                      <ChevronRight size={12} />
                     </Link>
                   </p>
                 </div>
 
-                <div className="mt-4 text-center">
-                  <Link href="/" className="text-gray-500 text-sm hover:text-gray-400 transition-colors inline-flex items-center gap-1">
-                    <ArrowLeft size={14} />
+                <div className="mt-2 text-center">
+                  <Link href="/" className="text-gray-500 text-[11px] hover:text-gray-400 transition-colors inline-flex items-center gap-0.5">
+                    <ArrowLeft size={12} />
                     Back to Shop
                   </Link>
                 </div>
@@ -506,15 +499,16 @@ export default function LoginPage() {
             </motion.div>
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+          {/* Slide Indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {activeSlides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                className={`h-1 rounded-full transition-all duration-300 ${
                   i === index
-                    ? 'w-8 bg-orange-500'
-                    : 'bg-white/30 hover:bg-white/50'
+                    ? 'w-6 bg-orange-500'
+                    : 'w-1.5 bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
@@ -530,9 +524,7 @@ export default function LoginPage() {
     );
   }
 
-  // ============================================
-  // MOBILE LAYOUT - With Dark/Light Mode Support
-  // ============================================
+  // Mobile layout
   return (
     <>
       {isTestAccount && (
@@ -551,7 +543,6 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-sm"
         >
-          {/* Logo - Theme Aware */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0.8 }}
@@ -570,7 +561,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Card */}
           <div className={`rounded-2xl p-6 shadow-xl ${
             isDark 
               ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
