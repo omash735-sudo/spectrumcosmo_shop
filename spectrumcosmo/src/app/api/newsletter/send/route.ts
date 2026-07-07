@@ -9,6 +9,7 @@ interface Subscriber {
   email: string;
   name: string;
   preferences: any;
+  confirmed_at?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -32,58 +33,38 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Build subscriber query based on audience
-    let subscriberQuery = `
-      SELECT id, email, name, preferences 
-      FROM subscribers 
-      WHERE status = 'confirmed'
-    `;
-
-    // Apply audience filters
-    if (audience === 'active') {
-      subscriberQuery += ` AND confirmed_at > NOW() - INTERVAL '90 days'`;
-    } else if (audience === 'segment' && segment) {
-      const { topics, frequency } = segment;
-      if (topics && topics.length > 0) {
-        const topicConditions = topics.map((t: string) => 
-          `preferences->>'topics' LIKE '%${t}%'`
-        ).join(' OR ');
-        subscriberQuery += ` AND (${topicConditions})`;
-      }
-      if (frequency) {
-        subscriberQuery += ` AND preferences->>'frequency' = '${frequency}'`;
-      }
-    }
-
-    // ✅ FIX: Use tagged template literal with sql
+    // Get subscribers using tagged template literal
     const subscribers = await sql`
-      SELECT id, email, name, preferences 
+      SELECT id, email, name, preferences, confirmed_at
       FROM subscribers 
       WHERE status = 'confirmed'
     `;
 
-    // Apply filters manually since we can't use dynamic WHERE with tagged templates easily
-    let filteredSubscribers = subscribers;
+    // Type assertion to tell TypeScript this is an array of Subscriber
+    let filteredSubscribers = subscribers as Subscriber[];
     
+    // Apply audience filters in JavaScript
     if (audience === 'active') {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      filteredSubscribers = filteredSubscribers.filter((s: any) => 
-        new Date(s.confirmed_at) > ninetyDaysAgo
+      filteredSubscribers = filteredSubscribers.filter((s) => 
+        s.confirmed_at && new Date(s.confirmed_at) > ninetyDaysAgo
       );
     } else if (audience === 'segment' && segment) {
       const { topics, frequency } = segment;
-      filteredSubscribers = filteredSubscribers.filter((s: any) => {
+      filteredSubscribers = filteredSubscribers.filter((s) => {
         let match = true;
+        const prefs = s.preferences || {};
+        
         if (topics && topics.length > 0) {
-          const prefs = s.preferences || {};
           const subscriberTopics = prefs.topics || [];
           match = match && topics.some((t: string) => subscriberTopics.includes(t));
         }
+        
         if (frequency) {
-          const prefs = s.preferences || {};
           match = match && prefs.frequency === frequency;
         }
+        
         return match;
       });
     }
@@ -154,14 +135,16 @@ export async function POST(req: NextRequest) {
           VALUES (${campaignId}, ${subscriber.id}, NOW())
         `;
 
-        return { success: true };
+        return { success: true, email: subscriber.email };
       } catch (error) {
         console.error(`Failed to send to ${subscriber.email}:`, error);
-        return { success: false };
+        return { success: false, email: subscriber.email };
       }
     });
 
-    await Promise.all(emailPromises);
+    const results = await Promise.all(emailPromises);
+    const successful = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
 
     // Update campaign status
     await sql`
@@ -173,8 +156,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       campaignId,
-      message: `Newsletter sent to ${filteredSubscribers.length} subscribers! 📨`,
+      message: `Newsletter sent to ${successful} subscribers! 📨 (${failed} failed)`,
       totalRecipients: filteredSubscribers.length,
+      successful,
+      failed,
     });
   } catch (err) {
     console.error('Newsletter send error:', err);
