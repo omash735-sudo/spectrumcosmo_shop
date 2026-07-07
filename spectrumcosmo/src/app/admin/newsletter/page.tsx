@@ -8,7 +8,7 @@ import { Metadata } from 'next';
 import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import NewsletterClient from '@/components/admin/NewsletterClient';
-import { AlertCircle, RefreshCw, Plus, Users, Mail } from 'lucide-react';
+import { AlertCircle, RefreshCw, Plus, Mail } from 'lucide-react';
 import Link from 'next/link';
 
 // Local types matching the client component
@@ -30,13 +30,18 @@ interface Campaign {
   segment_name?: string | null;
 }
 
-interface NewsletterStats {
+// This matches what NewsletterClient expects
+interface StatData {
   totalSubscribers: number;
   totalCampaigns: number;
   averageOpenRate: number;
-  averageClickRate: number;
-  totalUnsubscribes: number;
-  subscriberGrowth: number;
+  totalActive: number;
+  growth: number;
+  performance: {
+    bestCampaign: string;
+    bestOpenRate: number;
+  };
+  unsubscribes: number;
 }
 
 export const metadata: Metadata = {
@@ -45,10 +50,15 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 };
 
-async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
+async function getNewsletterStats(sql: any): Promise<StatData> {
   try {
     const [subscriberCount] = await sql`
       SELECT COUNT(*) as count FROM subscribers WHERE status = 'confirmed'
+    `;
+    
+    const [activeCount] = await sql`
+      SELECT COUNT(*) as count FROM subscribers 
+      WHERE status = 'confirmed' AND confirmed_at > NOW() - INTERVAL '90 days'
     `;
     
     const [campaignCount] = await sql`
@@ -58,10 +68,18 @@ async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
     const [avgStats] = await sql`
       SELECT 
         AVG(CASE WHEN total_subscribers > 0 THEN (open_count::float / total_subscribers * 100) ELSE 0 END) as avg_open_rate,
-        AVG(CASE WHEN open_count > 0 THEN (click_count::float / open_count * 100) ELSE 0 END) as avg_click_rate,
         COALESCE(SUM(unsubscribe_count), 0) as total_unsubscribes
       FROM newsletter_campaigns
       WHERE status = 'sent' AND total_subscribers > 0
+    `;
+    
+    const [bestCampaign] = await sql`
+      SELECT title, 
+        CASE WHEN total_subscribers > 0 THEN (open_count::float / total_subscribers * 100) ELSE 0 END as open_rate
+      FROM newsletter_campaigns
+      WHERE status = 'sent' AND total_subscribers > 0
+      ORDER BY open_rate DESC
+      LIMIT 1
     `;
     
     // Calculate growth (compare to last month)
@@ -72,22 +90,40 @@ async function getNewsletterStats(sql: any): Promise<NewsletterStats> {
       WHERE status = 'confirmed' AND created_at > NOW() - INTERVAL '30 days'
     `;
     
+    const totalSubscribers = Number(subscriberCount?.count) || 0;
+    const totalActive = Number(activeCount?.count) || 0;
+    const totalCampaigns = Number(campaignCount?.count) || 0;
+    const averageOpenRate = Math.round(Number(avgStats?.avg_open_rate) || 0);
+    const unsubscribes = Number(avgStats?.total_unsubscribes) || 0;
+    const growthPercent = totalSubscribers > 0 
+      ? Math.round((Number(growth?.current_count) || 0) / totalSubscribers * 100) 
+      : 0;
+    
     return {
-      totalSubscribers: Number(subscriberCount?.count) || 0,
-      totalCampaigns: Number(campaignCount?.count) || 0,
-      averageOpenRate: Math.round(Number(avgStats?.avg_open_rate) || 0),
-      averageClickRate: Math.round(Number(avgStats?.avg_click_rate) || 0),
-      totalUnsubscribes: Number(avgStats?.total_unsubscribes) || 0,
-      subscriberGrowth: Math.round((Number(growth?.current_count) || 0) / Math.max(Number(subscriberCount?.count) || 1, 1) * 100),
+      totalSubscribers,
+      totalCampaigns,
+      averageOpenRate,
+      totalActive,
+      growth: growthPercent,
+      performance: {
+        bestCampaign: bestCampaign?.title || 'No campaigns yet',
+        bestOpenRate: Math.round(Number(bestCampaign?.open_rate) || 0),
+      },
+      unsubscribes,
     };
-  } catch {
+  } catch (error) {
+    console.error('Stats error:', error);
     return {
       totalSubscribers: 0,
       totalCampaigns: 0,
       averageOpenRate: 0,
-      averageClickRate: 0,
-      totalUnsubscribes: 0,
-      subscriberGrowth: 0,
+      totalActive: 0,
+      growth: 0,
+      performance: {
+        bestCampaign: 'No data',
+        bestOpenRate: 0,
+      },
+      unsubscribes: 0,
     };
   }
 }
@@ -101,7 +137,7 @@ export default async function AdminNewsletterPage() {
   }
 
   let campaigns: Campaign[] = [];
-  let stats: NewsletterStats | null = null;
+  let stats: StatData | null = null;
   let error: string | null = null;
 
   try {
