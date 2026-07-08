@@ -1,19 +1,23 @@
 // src/app/api/admin/quote-requests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getVerifiedAdmin } from '@/lib/auth';
-import { getDb } from '@/lib/db';
+import { getDb, queryMany } from '@/lib/db';
+import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const { user, error } = await getVerifiedAdmin(req);
+  const { user, error } = await getVerifiedUser(req);
   if (error) return error;
+  
+  if (!user?.is_admin) {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get('status') || 'pending';
 
   try {
     const sql = getDb();
-    
-    const quotes = await sql`
+
+    const quotes = await queryMany`
       SELECT 
         qr.id,
         qr.order_id,
@@ -44,8 +48,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error } = await getVerifiedAdmin(req);
+  const { user, error } = await getVerifiedUser(req);
   if (error) return error;
+  
+  if (!user?.is_admin) {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     const sql = getDb();
-    
+
     const result = await sql`
       INSERT INTO quote_requests (
         order_id,
@@ -72,12 +80,12 @@ export async function POST(req: NextRequest) {
         created_at,
         updated_at
       ) VALUES (
-        ${order_id},
+        ${order_id}::uuid,
         ${customer_name},
         ${customer_email},
         ${customer_phone},
         ${delivery_location},
-        ${requested_method},
+        ${requested_method || 'Standard Delivery'},
         'pending',
         NOW(),
         NOW()
