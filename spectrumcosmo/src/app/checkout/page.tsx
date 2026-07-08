@@ -1,3 +1,4 @@
+// app/checkout/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -224,7 +225,9 @@ export default function CheckoutPage() {
       if (methodsRes.ok) {
         const methods = await methodsRes.json();
         setDeliveryMethods(methods);
-        if (methods.length > 0) setSelectedDeliveryId(methods[0].id);
+        if (methods.length > 0) {
+          setSelectedDeliveryId(methods[0].id);
+        }
       }
 
       if (areasRes.ok) {
@@ -603,9 +606,12 @@ export default function CheckoutPage() {
   };
 
   const handleProceedToReview = () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setError('Please fill in all required fields');
+      return;
+    }
     if (items.length === 0) {
-      setError('Cart is empty');
+      setError('Your cart is empty');
       return;
     }
     if (!selectedDeliveryId) {
@@ -878,7 +884,10 @@ export default function CheckoutPage() {
                             type="radio"
                             name="delivery_method"
                             checked={selectedDeliveryId === method.id}
-                            onChange={() => setSelectedDeliveryId(method.id)}
+                            onChange={() => {
+                              setSelectedDeliveryId(method.id);
+                              setError('');
+                            }}
                             className="w-5 h-5 text-orange-500 shrink-0"
                           />
                           <div>
@@ -960,7 +969,10 @@ export default function CheckoutPage() {
                                 type="radio"
                                 name="payment_method"
                                 checked={selectedPaymentProvider?.id === p.id}
-                                onChange={() => setSelectedPaymentProvider(p)}
+                                onChange={() => {
+                                  setSelectedPaymentProvider(p);
+                                  setError('');
+                                }}
                                 className="w-5 h-5 text-orange-500 shrink-0"
                               />
                               <span className="font-medium text-gray-800 dark:text-white text-sm sm:text-base">{p.name}</span>
@@ -992,7 +1004,10 @@ export default function CheckoutPage() {
                                 type="radio"
                                 name="payment_method"
                                 checked={selectedPaymentProvider?.id === p.id}
-                                onChange={() => setSelectedPaymentProvider(p)}
+                                onChange={() => {
+                                  setSelectedPaymentProvider(p);
+                                  setError('');
+                                }}
                                 className="w-5 h-5 text-orange-500 shrink-0"
                               />
                               <span className="font-medium text-gray-800 dark:text-white text-sm sm:text-base">{p.name}</span>
@@ -1106,7 +1121,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handleProceedToReview}
-                disabled={loading || items.length === 0}
+                disabled={loading}
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-200 dark:shadow-orange-900/30 text-base sm:text-lg"
               >
                 {loading ? (
