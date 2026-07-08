@@ -11,15 +11,11 @@ import { formatCurrencyAmount } from '@/lib/currency';
 import { 
   Loader2, Tag, Gift, X, CheckCircle, Info, Truck, 
   CreditCard, Shield, User, Mail, Phone, MapPin, 
-  MessageSquare, ChevronRight, Lock, Sparkles, 
-  Banknote, Smartphone, Clock, ArrowRight, ShoppingBag,
-  Home, AlertTriangle, Send, Eye
+  MessageSquare, ChevronRight, Lock, 
+  Banknote, Smartphone, ArrowRight, ShoppingBag,
+  AlertTriangle, Send, Eye
 } from 'lucide-react';
 import Image from 'next/image';
-
-// ============================================
-// TYPES
-// ============================================
 
 interface DeliveryMethod {
   id: number;
@@ -77,10 +73,6 @@ interface ServiceabilityResponse {
   requiresQuote: boolean;
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
 const validateEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
@@ -89,23 +81,17 @@ const validateMalawiPhone = (phone: string): boolean => {
   return /^(099|088|098)\d{7}$/.test(phone);
 };
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotalUsd, clearCart, removeItem, updateQty } = useCart();
   const { currency, rates } = useCurrency();
 
-  // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
 
-  // Delivery State
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
   const [deliveryAreas, setDeliveryAreas] = useState<DeliveryArea[]>([]);
@@ -114,7 +100,6 @@ export default function CheckoutPage() {
   const [requiresQuote, setRequiresQuote] = useState(false);
   const [quoteRequested, setQuoteRequested] = useState(false);
 
-  // Payment State
   const [paymentProviders, setPaymentProviders] = useState<{
     automatic_enabled: boolean;
     manual_enabled: boolean;
@@ -123,7 +108,6 @@ export default function CheckoutPage() {
   } | null>(null);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<PaymentProvider | null>(null);
 
-  // Form State
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -136,7 +120,6 @@ export default function CheckoutPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  // Promo & Referral State
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -147,18 +130,12 @@ export default function CheckoutPage() {
   const [savedReferral, setSavedReferral] = useState('');
   const [referralMessage, setReferralMessage] = useState('');
 
-  // UI State
   const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [error, setError] = useState('');
   const [showOrderReview, setShowOrderReview] = useState(false);
-  const [showBackWarning, setShowBackWarning] = useState(false);
   const [taxRate, setTaxRate] = useState(16.5);
   const [taxName, setTaxName] = useState('VAT');
-
-  // ============================================
-  // CALCULATIONS
-  // ============================================
 
   const subtotal = useMemo(
     () => subtotalUsd * (rates[currency] ?? 1),
@@ -185,10 +162,6 @@ export default function CheckoutPage() {
   const totalBeforeTax = subtotal + deliveryFee - discountAmount;
   const finalTotal = totalBeforeTax + taxAmount;
 
-  // ============================================
-  // CART ACTIONS
-  // ============================================
-
   const handleUpdateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       removeItem(productId);
@@ -196,10 +169,6 @@ export default function CheckoutPage() {
       updateQty(productId, newQuantity);
     }
   };
-
-  // ============================================
-  // FETCH DATA
-  // ============================================
 
   const fetchAuthStatus = useCallback(async () => {
     try {
@@ -297,7 +266,6 @@ export default function CheckoutPage() {
     }
   }, [isLoggedIn, fetchSavedAddresses]);
 
-  // Check serviceability when location changes
   useEffect(() => {
     const checkServiceability = async () => {
       if (!form.location || form.location.length < 3 || !selectedDeliveryId) return;
@@ -317,6 +285,15 @@ export default function CheckoutPage() {
         setRequiresQuote(!data.isServiceable);
       } catch (err) {
         console.error('Serviceability check failed:', err);
+        setServiceability({
+          isServiceable: true,
+          area: null,
+          baseFee: 5000,
+          estimatedDays: '2-3 days',
+          message: null,
+          requiresQuote: false,
+        });
+        setRequiresQuote(false);
       } finally {
         setCheckingServiceability(false);
       }
@@ -325,10 +302,6 @@ export default function CheckoutPage() {
     const timer = setTimeout(checkServiceability, 500);
     return () => clearTimeout(timer);
   }, [form.location, selectedDeliveryId]);
-
-  // ============================================
-  // FORM VALIDATION
-  // ============================================
 
   const validateField = useCallback((field: string, value: string): string => {
     switch (field) {
@@ -370,10 +343,6 @@ export default function CheckoutPage() {
       notes: form.notes,
     });
   };
-
-  // ============================================
-  // PROMO & REFERRAL
-  // ============================================
 
   const applyPromoCode = async () => {
     if (!promoCode.trim()) {
@@ -432,10 +401,6 @@ export default function CheckoutPage() {
     setReferralMessage(`Referral code ${referralCode.toUpperCase()} saved! Your friend will get credit after your purchase.`);
     setReferralCode('');
   };
-
-  // ============================================
-  // CHECKOUT SUBMISSION
-  // ============================================
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -567,7 +532,6 @@ export default function CheckoutPage() {
       if (!orderRes.ok) throw new Error(orderData.error || 'Order creation failed');
       const orderId = orderData.id;
 
-      // Save address if requested
       if (saveNewAddress && isLoggedIn && form.location) {
         try {
           await fetch('/api/account/addresses', {
@@ -588,7 +552,6 @@ export default function CheckoutPage() {
         }
       }
 
-      // Create account if requested
       if (createAccount && !isLoggedIn) {
         try {
           const password = Math.random().toString(36).slice(-8);
@@ -660,22 +623,6 @@ export default function CheckoutPage() {
     setShowOrderReview(true);
   };
 
-  // Back button protection
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (appliedPromo || savedReferral || Object.values(form).some(v => v)) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [appliedPromo, savedReferral, form]);
-
-  // ============================================
-  // RENDER HELPERS
-  // ============================================
-
   const inputClasses = (fieldName: string) => `
     w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 text-base dark:bg-gray-800 dark:text-white
     ${focusedField === fieldName 
@@ -710,7 +657,6 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
           
-          {/* Header */}
           <div className="text-center mb-6 sm:mb-8 lg:mb-12">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Secure Checkout</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-2">Complete your purchase with confidence</p>
@@ -731,9 +677,7 @@ export default function CheckoutPage() {
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             
-            {/* Left Column - Form */}
             <div className="flex-1 space-y-4 sm:space-y-6">
-              {/* Login Prompt for Guests */}
               {!isLoggedIn && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between flex-wrap gap-3">
@@ -754,7 +698,6 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* Address Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -763,7 +706,6 @@ export default function CheckoutPage() {
                   </h2>
                 </div>
                 <div className="p-4 sm:p-6">
-                  {/* Saved Addresses */}
                   {isLoggedIn && savedAddresses.length > 0 && (
                     <div className="mb-5">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Saved Addresses</label>
@@ -805,7 +747,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {/* Address Form */}
                   {(selectedAddressId === null || savedAddresses.length === 0) && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -914,7 +855,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Delivery Method Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -955,7 +895,6 @@ export default function CheckoutPage() {
                     ))}
                   </div>
 
-                  {/* Serviceability Status */}
                   {checkingServiceability && (
                     <div className="mt-4 flex items-center gap-2 text-gray-500 dark:text-gray-400">
                       <Loader2 size={16} className="animate-spin" />
@@ -993,7 +932,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Method Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -1076,7 +1014,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Promo Code Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="p-4 sm:p-6">
                   {appliedPromo ? (
@@ -1122,7 +1059,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Referral Code Section */}
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="p-4 sm:p-6">
                   {savedReferral ? (
@@ -1168,26 +1104,24 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {!requiresQuote && !quoteRequested && (
-                <button
-                  onClick={handleProceedToReview}
-                  disabled={loading || items.length === 0 || !serviceability?.isServiceable}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-200 dark:shadow-orange-900/30 text-base sm:text-lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={20} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Eye size={18} />
-                      Review Order
-                      <ArrowRight size={18} />
-                    </>
-                  )}
-                </button>
-              )}
+              <button
+                onClick={handleProceedToReview}
+                disabled={loading || items.length === 0}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-200 dark:shadow-orange-900/30 text-base sm:text-lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Eye size={18} />
+                    Review Order
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
 
               {requiresQuote && !quoteRequested && (
                 <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-center">
@@ -1206,7 +1140,6 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Right Column - Order Summary */}
             <div className="lg:w-96 xl:w-[400px]">
               <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 sticky top-24 overflow-hidden">
                 <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700">
@@ -1218,7 +1151,6 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div className="p-4 sm:p-6">
-                  {/* Items List with Edit */}
                   <div className="space-y-3 max-h-80 overflow-y-auto mb-4">
                     {items.map((item) => {
                       const itemPrice = item.priceUsd * (rates[currency] ?? 1);
@@ -1263,7 +1195,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {/* Totals */}
                   <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                       <span>Subtotal</span>
@@ -1309,7 +1240,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Order Review Modal */}
       {showOrderReview && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
@@ -1321,7 +1251,6 @@ export default function CheckoutPage() {
             </div>
             
             <div className="overflow-y-auto p-6 space-y-5 max-h-[calc(90vh-70px)]">
-              {/* Order Items */}
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Items</h3>
                 <div className="space-y-2">
@@ -1336,7 +1265,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Delivery Details */}
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Delivery Details</h3>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2 text-sm">
@@ -1349,7 +1277,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Method */}
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Payment Method</h3>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
@@ -1357,7 +1284,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Price Breakdown */}
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Price Breakdown</h3>
                 <div className="space-y-2 text-sm">
@@ -1369,7 +1295,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowOrderReview(false)}
@@ -1384,35 +1309,6 @@ export default function CheckoutPage() {
                 >
                   {loading ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
                   Confirm & Pay
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Back Button Warning Modal */}
-      {showBackWarning && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Leave Checkout?</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                If you leave now, you may lose your applied promo code and discount.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowBackWarning(false)}
-                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-                >
-                  Stay on Checkout
-                </button>
-                <button
-                  onClick={() => router.back()}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  Leave Anyway
                 </button>
               </div>
             </div>
