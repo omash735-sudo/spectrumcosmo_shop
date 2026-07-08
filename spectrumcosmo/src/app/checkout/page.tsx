@@ -1153,6 +1153,24 @@ export default function CheckoutPage() {
                   </button>
                 </div>
               )}
+
+              {/* DEBUG BUTTON - Remove after testing */}
+              <button
+                onClick={() => {
+                  console.log('=== CHECKOUT STATE DEBUG ===');
+                  console.log('selectedDeliveryId:', selectedDeliveryId);
+                  console.log('selectedPaymentProvider:', selectedPaymentProvider);
+                  console.log('requiresQuote:', requiresQuote);
+                  console.log('quoteRequested:', quoteRequested);
+                  console.log('items.length:', items.length);
+                  console.log('form:', form);
+                  console.log('serviceability:', serviceability);
+                  console.log('=== END DEBUG ===');
+                }}
+                className="w-full bg-gray-500 text-white py-2 rounded-lg text-sm hover:bg-gray-600 transition"
+              >
+                Debug State (Click after filling form)
+              </button>
             </div>
 
             <div className="lg:w-96 xl:w-[400px]">
