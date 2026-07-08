@@ -15,8 +15,8 @@ interface QuoteRequest {
   admin_quote_fee: number | null;
   admin_quote_notes: string | null;
   status: string;
-  total_amount: number;
-  order_created_at: string;
+  total_amount: number | null;
+  order_created_at: string | null;
   created_at: string;
 }
 
@@ -38,6 +38,7 @@ export default function AdminDeliveryQuotesPage() {
       const data = await res.json();
       setQuotes(data);
     } catch (err) {
+      console.error('Fetch error:', err);
       toast.error('Failed to load quote requests');
     } finally {
       setLoading(false);
@@ -79,6 +80,7 @@ export default function AdminDeliveryQuotesPage() {
       setShowModal(false);
       fetchQuotes();
     } catch (err) {
+      console.error('Submit error:', err);
       toast.error('Failed to send response');
     } finally {
       setSubmitting(false);
@@ -100,6 +102,18 @@ export default function AdminDeliveryQuotesPage() {
     }
   };
 
+  // Helper function to safely format currency
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return '0';
+    return amount.toLocaleString();
+  };
+
+  // Helper function to safely get order ID
+  const getOrderId = (orderId: string) => {
+    if (!orderId) return 'N/A';
+    return orderId.slice(-8);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -110,13 +124,11 @@ export default function AdminDeliveryQuotesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Delivery Quote Requests</h1>
         <p className="text-gray-500 text-sm mt-1">Review and respond to customer quote requests</p>
       </div>
 
-      {/* Filter Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
         {['pending', 'quoted', 'paid', 'rejected'].map((tab) => (
           <button
@@ -136,7 +148,6 @@ export default function AdminDeliveryQuotesPage() {
         ))}
       </div>
 
-      {/* Quotes List */}
       <div className="space-y-4">
         {quotes.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -152,30 +163,30 @@ export default function AdminDeliveryQuotesPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                      Order #{quote.order_id.slice(-8)}
+                      Order #{getOrderId(quote.order_id)}
                     </h3>
                     {getStatusBadge(quote.status)}
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <User size={14} /> {quote.customer_name}
+                      <User size={14} /> {quote.customer_name || 'Unknown'}
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <Mail size={14} /> {quote.customer_email}
+                      <Mail size={14} /> {quote.customer_email || 'No email'}
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <Phone size={14} /> {quote.customer_phone}
+                      <Phone size={14} /> {quote.customer_phone || 'No phone'}
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <MapPin size={14} /> {quote.delivery_location}
+                      <MapPin size={14} /> {quote.delivery_location || 'No location'}
                     </div>
                   </div>
                   
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-gray-500">
-                    <span>Products Total: MWK {quote.total_amount.toLocaleString()}</span>
+                    <span>Products Total: MWK {formatCurrency(quote.total_amount)}</span>
                     <span>Requested: {quote.requested_method || 'Not specified'}</span>
-                    <span>Requested: {new Date(quote.created_at).toLocaleDateString()}</span>
+                    <span>Requested: {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
                 
@@ -192,7 +203,6 @@ export default function AdminDeliveryQuotesPage() {
         )}
       </div>
 
-      {/* Quote Response Modal */}
       {showModal && selectedQuote && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -201,25 +211,23 @@ export default function AdminDeliveryQuotesPage() {
                 Respond to Quote Request
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Order #{selectedQuote.order_id.slice(-8)}
+                Order #{getOrderId(selectedQuote.order_id)}
               </p>
             </div>
             
             <div className="p-6 space-y-5">
-              {/* Customer Info */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2">
                 <p className="font-medium text-gray-900 dark:text-white">Customer Details</p>
                 <div className="text-sm space-y-1">
-                  <p><span className="text-gray-500">Name:</span> {selectedQuote.customer_name}</p>
-                  <p><span className="text-gray-500">Email:</span> {selectedQuote.customer_email}</p>
-                  <p><span className="text-gray-500">Phone:</span> {selectedQuote.customer_phone}</p>
-                  <p><span className="text-gray-500">Location:</span> {selectedQuote.delivery_location}</p>
+                  <p><span className="text-gray-500">Name:</span> {selectedQuote.customer_name || 'Unknown'}</p>
+                  <p><span className="text-gray-500">Email:</span> {selectedQuote.customer_email || 'No email'}</p>
+                  <p><span className="text-gray-500">Phone:</span> {selectedQuote.customer_phone || 'No phone'}</p>
+                  <p><span className="text-gray-500">Location:</span> {selectedQuote.delivery_location || 'No location'}</p>
                   <p><span className="text-gray-500">Requested Method:</span> {selectedQuote.requested_method || 'Standard'}</p>
-                  <p><span className="text-gray-500">Products Total:</span> MWK {selectedQuote.total_amount.toLocaleString()}</p>
+                  <p><span className="text-gray-500">Products Total:</span> MWK {formatCurrency(selectedQuote.total_amount)}</p>
                 </div>
               </div>
 
-              {/* Quote Form */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Delivery Fee (MWK) *
