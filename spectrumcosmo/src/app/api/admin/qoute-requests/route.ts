@@ -1,28 +1,18 @@
-// app/api/admin/quote-requests/route.ts
+// src/app/api/admin/quote-requests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getVerifiedAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
+  const { user, error } = await getVerifiedAdmin(req);
+  if (error) return error;
+
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status') || 'pending';
+
   try {
-    const { user, error } = await getVerifiedUser(req);
-    if (error) return error;
-    
-    // Check if user exists
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (!user.is_admin) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status') || 'pending';
-
     const sql = getDb();
-
+    
     const quotes = await sql`
       SELECT 
         qr.id,
@@ -36,10 +26,7 @@ export async function GET(req: NextRequest) {
         qr.admin_quote_notes,
         qr.status,
         qr.created_at,
-        qr.responded_at,
-        o.total_amount,
-        o.created_at as order_created_at,
-        o.delivery_quote_status
+        o.total_amount
       FROM quote_requests qr
       LEFT JOIN orders o ON qr.order_id = o.id
       WHERE qr.status = ${status}
@@ -48,9 +35,61 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(quotes);
   } catch (err) {
-    console.error('Failed to fetch quote requests:', err);
+    console.error('Error fetching quote requests:', err);
     return NextResponse.json(
-      { error: 'Failed to fetch quote requests', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Failed to load quote requests' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const { user, error } = await getVerifiedAdmin(req);
+  if (error) return error;
+
+  try {
+    const body = await req.json();
+    const { 
+      order_id, 
+      customer_name, 
+      customer_email, 
+      customer_phone, 
+      delivery_location,
+      requested_method 
+    } = body;
+
+    const sql = getDb();
+    
+    const result = await sql`
+      INSERT INTO quote_requests (
+        order_id,
+        customer_name,
+        customer_email,
+        customer_phone,
+        delivery_location,
+        requested_method,
+        status,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${order_id},
+        ${customer_name},
+        ${customer_email},
+        ${customer_phone},
+        ${delivery_location},
+        ${requested_method},
+        'pending',
+        NOW(),
+        NOW()
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json(result[0], { status: 201 });
+  } catch (err) {
+    console.error('Error creating quote request:', err);
+    return NextResponse.json(
+      { error: 'Failed to create quote request' },
       { status: 500 }
     );
   }
