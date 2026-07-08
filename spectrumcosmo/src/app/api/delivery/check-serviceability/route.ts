@@ -1,5 +1,6 @@
+// app/api/delivery/check-serviceability/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryAsArray, queryOne } from '@/lib/db';
+import { getDb } from '@/lib/db';
 
 interface DeliveryArea {
   id: number;
@@ -13,7 +14,10 @@ interface DeliveryArea {
 
 export async function POST(req: NextRequest) {
   try {
-    const { location, deliveryMethodId } = await req.json();
+    const body = await req.json();
+    const { location, deliveryMethodId } = body;
+
+    console.log('Serviceability check:', { location, deliveryMethodId });
 
     if (!location || !deliveryMethodId) {
       return NextResponse.json(
@@ -24,55 +28,83 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Get all delivery areas
-    const areas = await queryAsArray<DeliveryArea>`
+    // Get all active delivery areas
+    const areas = await sql`
       SELECT id, area_name, city, base_fee, express_multiplier, 
              estimated_days_standard, estimated_days_express
       FROM delivery_areas
       WHERE is_active = true
-      ORDER BY sort_order ASC
+      ORDER BY sort_order ASC NULLS LAST
     `;
 
-    // Find matching area based on location string
-    const matchedArea = areas.find(area => 
-      location.toLowerCase().includes(area.area_name.toLowerCase()) ||
-      location.toLowerCase().includes(area.city.toLowerCase())
-    );
+    console.log('Delivery areas found:', areas.length);
 
-    // Get delivery method details
-    const deliveryMethod = await queryOne<{ name: string; type: string }>`
-      SELECT name, type FROM delivery_methods WHERE id = ${deliveryMethodId}
-    `;
+    if (areas.length === 0) {
+      return NextResponse.json({
+        isServiceable: true,
+        area: null,
+        baseFee: 5000,
+        estimatedDays: '2-3 days',
+        message: 'Standard delivery available',
+        requiresQuote: false,
+      });
+    }
+
+    const cleanLocation = location.toLowerCase().trim();
+    
+    const matchedArea = areas.find((area: any) => {
+      const areaName = (area.area_name || '').toLowerCase().trim();
+      const city = (area.city || '').toLowerCase().trim();
+      
+      return cleanLocation.includes(areaName) || 
+             cleanLocation.includes(city) ||
+             areaName.includes(cleanLocation) ||
+             city.includes(cleanLocation);
+    });
+
+    console.log('Matched area:', matchedArea?.area_name || 'None');
+
+    let deliveryMethod = null;
+    try {
+      const [method] = await sql`
+        SELECT name, type FROM delivery_methods WHERE id = ${deliveryMethodId}
+      `;
+      deliveryMethod = method;
+    } catch (err) {
+      console.log('Could not fetch delivery method, using default');
+    }
 
     if (matchedArea) {
-      // Serviceable - return area details with isServiceable = true
+      const isExpress = deliveryMethod?.type === 'express' || deliveryMethodId === 2;
+      
       return NextResponse.json({
         isServiceable: true,
         area: matchedArea,
         baseFee: matchedArea.base_fee,
-        estimatedDays: deliveryMethod?.type === 'express' 
-          ? matchedArea.estimated_days_express 
-          : matchedArea.estimated_days_standard,
+        estimatedDays: isExpress 
+          ? matchedArea.estimated_days_express || '1-2 days'
+          : matchedArea.estimated_days_standard || '2-3 days',
         message: null,
         requiresQuote: false,
       });
     } else {
-      // Not serviceable - needs quote
-      // Checkout expects isServiceable = false to trigger quote flow
       return NextResponse.json({
         isServiceable: false,
         area: null,
         baseFee: null,
         estimatedDays: null,
         defaultFee: 10000,
-        message: 'Your location is outside our standard delivery zones. You will only pay for products now. Our team will contact you with a delivery fee quote.',
+        message: 'Your location is outside our standard delivery zones. Request a delivery quote.',
         requiresQuote: true,
       });
     }
   } catch (err) {
     console.error('Serviceability check error:', err);
     return NextResponse.json(
-      { error: 'Failed to check serviceability' },
+      { 
+        error: 'Failed to check serviceability',
+        message: err instanceof Error ? err.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
