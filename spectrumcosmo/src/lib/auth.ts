@@ -1,3 +1,4 @@
+// lib/auth.ts
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
@@ -59,7 +60,7 @@ export function getUserFromRequest(req: NextRequest): UserPayload | null {
   return verifyUserToken(token)
 }
 
-// Enhanced version that also checks account status
+// Enhanced version that also checks account status and admin
 export async function getVerifiedUser(req: NextRequest): Promise<{ user: any; error: NextResponse | null }> {
   const payload = getUserFromRequest(req)
   if (!payload) {
@@ -68,7 +69,7 @@ export async function getVerifiedUser(req: NextRequest): Promise<{ user: any; er
 
   const sql = getDb()
   const [user] = await sql`
-    SELECT id, email, account_status, deleted_at
+    SELECT id, email, account_status, deleted_at, is_admin
     FROM users
     WHERE id = ${payload.id}
   `
