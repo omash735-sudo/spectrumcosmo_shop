@@ -35,10 +35,10 @@ type User = {
 function UserGreetingSkeleton() {
   return (
     <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+      <div className="w-10 h-10 rounded-full bg-[var(--background-secondary)] animate-pulse" />
       <div className="flex-1">
-        <div className="h-4 bg-gray-200 rounded w-24 mb-1 animate-pulse" />
-        <div className="h-3 bg-gray-200 rounded w-32 animate-pulse" />
+        <div className="h-4 bg-[var(--background-secondary)] rounded w-24 mb-1 animate-pulse" />
+        <div className="h-3 bg-[var(--background-secondary)] rounded w-32 animate-pulse" />
       </div>
     </div>
   );
@@ -110,7 +110,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   const SidebarContent = () => (
     <>
       {/* Logo + Brand */}
-      <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
+      <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
         <div className="relative h-10 w-auto">
           <Image 
             src={logoSrc} 
@@ -122,43 +122,45 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
           />
         </div>
         <div>
-          <h2 className="font-bold text-gray-800 dark:text-gray-200 text-lg">My Account</h2>
-          <p className="text-xs text-gray-400">Manage everything in one place</p>
+          <h2 className="font-bold text-[var(--foreground)] text-lg">My Account</h2>
+          <p className="text-xs text-[var(--foreground-muted)]">Manage everything in one place</p>
         </div>
       </div>
 
-      {/* User Greeting */}
-      <div className="mx-4 mt-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl">
-        <div className="flex items-center gap-3">
-          {/* Profile picture or fallback */}
-          <div className="w-10 h-10 rounded-full bg-orange-200 dark:bg-orange-800 flex items-center justify-center overflow-hidden">
-            {loadingUser ? (
-              <Loader2 className="animate-spin text-orange-500 w-4 h-4" />
-            ) : user?.profileImage ? (
-              <Image
-                src={user.profileImage}
-                alt={user.name || 'Profile'}
-                width={40}
-                height={40}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User size={20} className="text-orange-700 dark:text-orange-300" />
-            )}
-          </div>
-          <div>
-            {loadingUser ? (
-              <UserGreetingSkeleton />
-            ) : (
-              <>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Welcome back, {user?.name?.split(' ')[0] || 'Guest'}
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">
-                  {user?.email || 'Spectrum Member'}
-                </p>
-              </>
-            )}
+      {/* User Greeting - With Manga Panel */}
+      <div className="mx-4 mt-4 manga-bg cards-manga rounded-xl overflow-hidden">
+        <div className="relative z-10 p-3 bg-[var(--primary)]/10">
+          <div className="flex items-center gap-3">
+            {/* Profile picture or fallback */}
+            <div className="w-10 h-10 rounded-full bg-[var(--primary)]/20 flex items-center justify-center overflow-hidden">
+              {loadingUser ? (
+                <Loader2 className="animate-spin text-[var(--primary)] w-4 h-4" />
+              ) : user?.profileImage ? (
+                <Image
+                  src={user.profileImage}
+                  alt={user.name || 'Profile'}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-[var(--primary)]" />
+              )}
+            </div>
+            <div>
+              {loadingUser ? (
+                <UserGreetingSkeleton />
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-[var(--foreground)]">
+                    Welcome back, {user?.name?.split(' ')[0] || 'Guest'}
+                  </p>
+                  <p className="text-xs text-[var(--primary)]">
+                    {user?.email || 'Spectrum Member'}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -177,12 +179,12 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
               className={clsx(
                 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
                 active
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'
+                  ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
+                  : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--foreground)]'
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <item.icon size={18} className={active ? 'text-white' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'} />
+              <item.icon size={18} className={active ? 'text-white' : 'text-[var(--foreground-muted)] group-hover:text-[var(--foreground)]'} />
               {item.name}
               {active && (
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" aria-hidden="true"></span>
@@ -192,17 +194,17 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 text-center">
+      <div className="p-4 border-t border-[var(--border)] text-[10px] text-[var(--foreground-muted)] text-center">
         SpectrumCosmo © 2026
       </div>
     </>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950/50">
+    <div className="min-h-screen bg-[var(--background)]">
       <div className="flex relative">
         {/* DESKTOP SIDEBAR */}
-        <aside className="hidden md:flex md:w-72 flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-r border-gray-100 dark:border-gray-800 sticky top-0 h-screen shadow-sm">
+        <aside className="hidden md:flex md:w-72 flex-col bg-[var(--background-card)] backdrop-blur-sm border-r border-[var(--border)] sticky top-0 h-screen shadow-sm">
           <SidebarContent />
         </aside>
 
@@ -210,7 +212,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         <div className="md:hidden fixed bottom-6 right-6 z-50">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="bg-orange-600 text-white p-3 rounded-full shadow-lg hover:bg-orange-700 transition"
+            className="bg-[var(--primary)] text-white p-3 rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition"
             aria-label="Open mobile menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -226,14 +228,14 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
               onClick={() => setMobileMenuOpen(false)}
               aria-hidden="true"
             />
-            <div className="absolute left-0 top-0 bottom-0 w-[80%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
+            <div className="absolute left-0 top-0 bottom-0 w-[80%] max-w-sm bg-[var(--background-card)] shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 border-r border-[var(--border)]">
               <div className="flex justify-end p-4">
                 <button 
                   onClick={() => setMobileMenuOpen(false)} 
-                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1 rounded-full hover:bg-[var(--background-secondary)]"
                   aria-label="Close mobile menu"
                 >
-                  <X size={22} />
+                  <X size={22} className="text-[var(--foreground)]" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
