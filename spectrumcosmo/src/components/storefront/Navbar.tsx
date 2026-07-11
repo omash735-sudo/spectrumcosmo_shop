@@ -70,12 +70,45 @@ const HIDE_WHATSAPP_PATHS = [
   '/account/payments', '/account/settings', '/account/profile',
 ];
 
+interface BannerItem {
+  icon: string;
+  text: string;
+}
+
+interface BannerData {
+  is_active: boolean;
+  items: BannerItem[];
+  background_color: string;
+  text_color: string;
+}
+
+// Map icon strings to actual Lucide components
+const iconMap: Record<string, any> = {
+  Truck,
+  Shield,
+  Tag,
+  Sparkles,
+  Star,
+  Heart,
+  Gift,
+  Zap,
+  Clock,
+  Package,
+  ShoppingCart,
+};
+
+const getIconComponent = (iconName: string) => {
+  return iconMap[iconName] || Tag;
+};
+
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [bannerData, setBannerData] = useState<BannerData | null>(null);
+  const [bannerLoading, setBannerLoading] = useState(true);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
   const { resolvedTheme } = useSettings();
@@ -86,6 +119,24 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Fetch banner data
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        const res = await fetch('/api/banner');
+        if (res.ok) {
+          const data = await res.json();
+          setBannerData(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch banner:', err);
+      } finally {
+        setBannerLoading(false);
+      }
+    };
+    fetchBanner();
   }, []);
 
   useEffect(() => {
@@ -133,6 +184,11 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
+  // Determine banner display
+  const showBanner = bannerData?.is_active !== false && bannerData?.items?.length > 0;
+  const bgColor = bannerData?.background_color || 'var(--primary)';
+  const textColor = bannerData?.text_color || '#FFFFFF';
+
   return (
     <>
       <style>{`
@@ -156,26 +212,72 @@ export default function Navbar() {
             transform: translateY(0);
           }
         }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
         .whatsapp-float { animation: float 2s ease-in-out infinite; }
         .whatsapp-pulse { animation: pulse-ring 1.5s infinite; }
         .dropdown-content {
           animation: slide-down 0.2s ease-out;
+        }
+        .banner-marquee {
+          animation: marquee 20s linear infinite;
         }
       `}</style>
 
       <header className={clsx(
         'sticky top-0 z-50 transition-all duration-300',
         scrolled 
-          ? 'bg-white/95 dark:bg-gray-950/95 shadow-lg backdrop-blur-md' 
-          : 'bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800'
+          ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md' 
+          : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
       )}>
-        <div className="hidden md:block bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center py-2 text-sm">
-          <div className="flex items-center justify-center gap-6">
-            <span className="flex items-center gap-1"><Truck size={14} /> Free shipping over 50,000 MWK</span>
-            <span className="flex items-center gap-1"><Shield size={14} /> 30-day returns</span>
-            <span className="flex items-center gap-1"><Tag size={14} /> Subscribe for 10% off</span>
+        
+        {/* Dynamic Top Banner */}
+        {showBanner && !bannerLoading && (
+          <div 
+            className="hidden md:block text-center py-2 text-sm overflow-hidden"
+            style={{ 
+              backgroundColor: bgColor, 
+              color: textColor 
+            }}
+          >
+            <div className="flex items-center justify-center gap-6 whitespace-nowrap">
+              {bannerData.items.map((item, index) => {
+                const Icon = getIconComponent(item.icon);
+                return (
+                  <span key={index} className="flex items-center gap-1">
+                    <Icon size={14} />
+                    {item.text}
+                  </span>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Mobile Banner - Marquee style for limited space */}
+        {showBanner && !bannerLoading && (
+          <div 
+            className="md:hidden py-1.5 text-xs overflow-hidden"
+            style={{ 
+              backgroundColor: bgColor, 
+              color: textColor 
+            }}
+          >
+            <div className="flex whitespace-nowrap banner-marquee">
+              {[...bannerData.items, ...bannerData.items].map((item, index) => {
+                const Icon = getIconComponent(item.icon);
+                return (
+                  <span key={index} className="flex items-center gap-1 mx-4">
+                    <Icon size={12} />
+                    {item.text}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Desktop Header */}
         <div className="hidden md:block">
@@ -185,8 +287,8 @@ export default function Navbar() {
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-9 w-auto transition-transform group-hover:scale-105" />
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
-                  Spectrum<span className="text-[#F97316]">Cosmo</span>
+                <span className="text-xl font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
+                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
                 </span>
               </Link>
 
@@ -203,11 +305,11 @@ export default function Navbar() {
                         className={clsx(
                           'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5',
                           isActive
-                            ? 'bg-[#F97316] text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
+                            ? 'bg-[var(--primary)] text-white shadow-sm'
+                            : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--primary)]'
                         )}
                       >
-                        <CalendarDays size={16} className={isActive ? 'text-white' : 'text-orange-500'} />
+                        <CalendarDays size={16} className={isActive ? 'text-white' : 'text-[var(--primary)]'} />
                         {link.label}
                       </Link>
                     );
@@ -225,8 +327,8 @@ export default function Navbar() {
                         className={clsx(
                           'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1',
                           isActive
-                            ? 'bg-[#F97316] text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#F97316]'
+                            ? 'bg-[var(--primary)] text-white shadow-sm'
+                            : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--primary)]'
                         )}
                       >
                         {link.label}
@@ -234,9 +336,9 @@ export default function Navbar() {
                       </Link>
                       
                       {link.hasDropdown && openDropdown === link.label && (
-                        <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-2 z-50 dropdown-content">
-                          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Shop by Category</p>
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--background-card)] rounded-xl shadow-lg border border-[var(--border)] py-2 z-50 dropdown-content">
+                          <div className="px-4 py-2 border-b border-[var(--border)]">
+                            <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Shop by Category</p>
                           </div>
                           {categories.map((cat) => {
                             const Icon = cat.icon;
@@ -244,16 +346,16 @@ export default function Navbar() {
                               <Link
                                 key={cat.name}
                                 href={cat.href}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-600 transition group"
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--foreground-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition group"
                                 onClick={() => setOpenDropdown(null)}
                               >
-                                <Icon size={18} className="text-gray-400 group-hover:text-orange-500 transition" />
+                                <Icon size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition" />
                                 {cat.name}
                               </Link>
                             );
                           })}
-                          <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2">
-                            <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition group">
+                          <div className="border-t border-[var(--border)] mt-2 pt-2">
+                            <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-[var(--primary)] hover:bg-[var(--primary)]/10 transition group">
                               View All Products 
                               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
                             </Link>
@@ -275,12 +377,12 @@ export default function Navbar() {
                 <div className="relative group">
                   <button 
                     onClick={openCart} 
-                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
                     aria-label="Cart"
                   >
-                    <ShoppingCart size={20} className="text-gray-700 dark:text-gray-300" />
+                    <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
                     {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[18px] h-4 px-1 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold min-w-[18px] h-4 px-1 rounded-full flex items-center justify-center shadow-sm">
                         {totalItems > 99 ? '99+' : totalItems}
                       </span>
                     )}
@@ -298,16 +400,16 @@ export default function Navbar() {
           <div className="flex items-center justify-between">
             <button 
               onClick={() => setMobileMenuOpen(true)} 
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
               aria-label="Menu"
             >
-              <Menu size={22} className="text-gray-700 dark:text-gray-300" />
+              <Menu size={22} className="text-[var(--foreground-muted)]" />
             </button>
 
             <Link href="/" className="flex items-center gap-2">
               <img src={logoSrc} alt="SpectrumCosmo" className="h-7 w-auto" />
-              <span className="text-base font-bold text-gray-800 dark:text-white">
-                Spectrum<span className="text-[#F97316]">Cosmo</span>
+              <span className="text-base font-bold text-[var(--foreground)]">
+                Spectrum<span className="text-[var(--primary)]">Cosmo</span>
               </span>
             </Link>
 
@@ -316,12 +418,12 @@ export default function Navbar() {
               <UserMenu />
               <button 
                 onClick={openCart} 
-                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
                 aria-label="Cart"
               >
-                <ShoppingCart size={20} className="text-gray-700 dark:text-gray-300" />
+                <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#F97316] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
                 )}
@@ -334,45 +436,45 @@ export default function Navbar() {
       {/* Mobile Sidebar */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
-          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-800">
+          <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-[var(--background-card)] shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
                 <img src={logoSrc} alt="Logo" className="h-7 w-auto" />
-                <span className="font-bold text-gray-800 dark:text-white">Menu</span>
+                <span className="font-bold text-[var(--foreground)]">Menu</span>
               </div>
-              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                <X size={20} className="text-gray-700 dark:text-gray-300" />
+              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition">
+                <X size={20} className="text-[var(--foreground-muted)]" />
               </button>
             </div>
 
-            <div className="p-5 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
+            <div className="p-5 bg-[var(--background-secondary)] border-b border-[var(--border)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {profileImage ? (
                     <Image src={profileImage} alt={displayName} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
-                      <User size={18} className="text-orange-500" />
+                    <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
+                      <User size={18} className="text-[var(--primary)]" />
                     </div>
                   )}
                   <div>
-                    <p className="font-semibold text-gray-800 dark:text-white">{displayName}</p>
-                    <p className="text-xs text-gray-400">{isLoggedIn ? 'Logged in' : 'Guest'}</p>
+                    <p className="font-semibold text-[var(--foreground)]">{displayName}</p>
+                    <p className="text-xs text-[var(--foreground-muted)]">{isLoggedIn ? 'Logged in' : 'Guest'}</p>
                   </div>
                 </div>
                 {isLoggedIn ? (
-                  <Link href="/account/profile" onClick={closeMobileMenu} className="text-xs text-orange-500 font-medium hover:underline">
+                  <Link href="/account/profile" onClick={closeMobileMenu} className="text-xs text-[var(--primary)] font-medium hover:underline">
                     Profile
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-orange-500 text-white px-3 py-1 rounded-full hover:bg-orange-600">
+                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white px-3 py-1 rounded-full hover:bg-[var(--primary-hover)]">
                     Sign In
                   </Link>
                 )}
               </div>
             </div>
 
-            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+            <div className="px-5 py-3 border-b border-[var(--border)]">
               <CurrencySelector />
             </div>
 
@@ -381,7 +483,7 @@ export default function Navbar() {
                 router.push('/products');
                 closeMobileMenu();
               }}
-              className="mx-5 mt-5 block bg-gradient-to-r from-[#F97316] to-orange-500 hover:from-orange-600 hover:to-orange-700 p-3.5 rounded-xl transition-all duration-200 shadow-md"
+              className="mx-5 mt-5 block bg-[var(--primary)] hover:bg-[var(--primary-hover)] p-3.5 rounded-xl transition-all duration-200 shadow-md"
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white">Shop Now</span>
@@ -393,52 +495,52 @@ export default function Navbar() {
             </button>
 
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <Home size={18} className="text-gray-500" /> Home
+              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <Home size={18} className="text-[var(--foreground-muted)]" /> Home
               </Link>
-              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <Package size={18} className="text-gray-500" /> Products
+              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <Package size={18} className="text-[var(--foreground-muted)]" /> Products
               </Link>
-              <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <CalendarDays size={18} className="text-orange-500" /> Events
+              <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <CalendarDays size={18} className="text-[var(--primary)]" /> Events
               </Link>
-              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <Star size={18} className="text-gray-500" /> Reviews
+              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <Star size={18} className="text-[var(--foreground-muted)]" /> Reviews
               </Link>
-              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <Info size={18} className="text-gray-500" /> About
+              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <Info size={18} className="text-[var(--foreground-muted)]" /> About
               </Link>
-              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <HelpCircle size={18} className="text-gray-500" /> Contact
+              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> Contact
               </Link>
-              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                <HelpCircle size={18} className="text-gray-500" /> FAQ
+              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> FAQ
               </Link>
               
-              <button onClick={openCart} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left text-gray-700 dark:text-gray-300">
-                <ShoppingCart size={18} className="text-gray-500" /> Cart
+              <button onClick={openCart} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-left text-[var(--foreground-muted)]">
+                <ShoppingCart size={18} className="text-[var(--foreground-muted)]" /> Cart
                 {totalItems > 0 && (
-                  <span className="ml-auto bg-orange-100 dark:bg-orange-950/30 text-orange-600 text-xs px-2 py-0.5 rounded-full">{totalItems}</span>
+                  <span className="ml-auto bg-[var(--primary)]/10 text-[var(--primary)] text-xs px-2 py-0.5 rounded-full">{totalItems}</span>
                 )}
               </button>
               
               {isLoggedIn && (
                 <>
-                  <div className="border-t my-3 mx-3 border-gray-100 dark:border-gray-800"></div>
-                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                    <Clock size={18} className="text-gray-500" /> Orders
+                  <div className="border-t my-3 mx-3 border-[var(--border)]"></div>
+                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                    <Clock size={18} className="text-[var(--foreground-muted)]" /> Orders
                   </Link>
-                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                    <Heart size={18} className="text-gray-500" /> Wishlist
+                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                    <Heart size={18} className="text-[var(--foreground-muted)]" /> Wishlist
                   </Link>
-                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300">
-                    <Settings size={18} className="text-gray-500" /> Settings
+                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+                    <Settings size={18} className="text-[var(--foreground-muted)]" /> Settings
                   </Link>
                 </>
               )}
             </div>
 
-            <div className="p-5 border-t border-gray-100 dark:border-gray-800">
+            <div className="p-5 border-t border-[var(--border)]">
               {isLoggedIn ? (
                 <button 
                   onClick={async () => {
@@ -451,8 +553,8 @@ export default function Navbar() {
                   <LogOut size={18} /> Log out
                 </button>
               ) : (
-                <div className="text-center text-xs text-gray-400">
-                  New customer? <Link href="/signup" onClick={closeMobileMenu} className="text-orange-500 font-medium">Create account</Link>
+                <div className="text-center text-xs text-[var(--foreground-muted)]">
+                  New customer? <Link href="/signup" onClick={closeMobileMenu} className="text-[var(--primary)] font-medium">Create account</Link>
                 </div>
               )}
             </div>
