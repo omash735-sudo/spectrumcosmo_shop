@@ -123,8 +123,8 @@ export default function ProfilePage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your profile...</p>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-[var(--foreground-muted)] text-sm sm:text-base">Loading your profile...</p>
         </div>
       </div>
     )
@@ -132,74 +132,78 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/account" className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
-            <ArrowLeft size={16} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
+          <Link href="/account" className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-full transition">
+            <ArrowLeft size={16} className="text-[var(--foreground-muted)] sm:w-5 sm:h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="w-1 h-5 sm:h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">My Profile</h1>
-              <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
+              <div className="w-1 h-5 sm:h-6 bg-[var(--primary)] rounded-full"></div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">My Profile</h1>
+              <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">Manage your personal information</p>
+            <p className="text-[var(--foreground-muted)] text-xs sm:text-sm mt-0.5 sm:mt-1">Manage your personal information</p>
           </div>
         </div>
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-        {/* Avatar Section */}
-        <div className="relative bg-gradient-to-r from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 px-4 sm:px-6 py-5 sm:py-6 md:py-8 border-b border-gray-100 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <div className="relative group">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 ring-4 ring-white dark:ring-gray-800 shadow-md">
-                {user?.profileImage ? (
-                  <Image 
-                    src={user.profileImage} 
-                    alt={user.name || 'Profile'} 
-                    width={112} 
-                    height={112} 
-                    className="w-full h-full object-cover" 
+      <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden">
+        
+        {/* Avatar Section - With Manga Panel */}
+        <div className="manga-bg cards-manga relative">
+          <div className="relative z-10 bg-[var(--background-secondary)] px-4 sm:px-6 py-5 sm:py-6 md:py-8 border-b border-[var(--border)]">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="relative group">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-[var(--background-secondary)] ring-4 ring-[var(--background-card)] shadow-md">
+                  {user?.profileImage ? (
+                    <Image 
+                      src={user.profileImage} 
+                      alt={user.name || 'Profile'} 
+                      width={112} 
+                      height={112} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[var(--primary)]/20">
+                      <User size={40} className="text-[var(--primary)] sm:w-12 sm:h-12" />
+                    </div>
+                  )}
+                </div>
+                <label className="absolute bottom-0 right-0 bg-[var(--primary)] text-white p-1.5 sm:p-2 rounded-full cursor-pointer shadow-md hover:bg-[var(--primary-hover)] transition-all duration-200 hover:scale-105">
+                  <Camera size={12} className="sm:w-3.5 sm:h-3.5" />
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/jpeg,image/png,image/webp" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file)
+                    }} 
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50">
-                    <User size={40} className="text-orange-400 dark:text-orange-500 sm:w-12 sm:h-12" />
+                </label>
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                    <Loader2 className="animate-spin text-white w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 bg-orange-500 text-white p-1.5 sm:p-2 rounded-full cursor-pointer shadow-md hover:bg-orange-600 transition-all duration-200 hover:scale-105">
-                <Camera size={12} className="sm:w-3.5 sm:h-3.5" />
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/jpeg,image/png,image/webp" 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) uploadImage(file)
-                  }} 
-                />
-              </label>
-              {uploading && (
-                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                  <Loader2 className="animate-spin text-white w-5 h-5 sm:w-6 sm:h-6" />
+              <div className="text-center sm:text-left">
+                <h2 className="text-lg sm:text-xl font-bold text-[var(--foreground)]">{user?.name || 'User'}</h2>
+                <div className="flex items-center justify-center sm:justify-start gap-1 text-[var(--foreground-muted)] text-xs sm:text-sm mt-1">
+                  <Mail size={12} className="sm:w-3.5 sm:h-3.5" />
+                  <span className="break-all">{user?.email}</span>
                 </div>
-              )}
-            </div>
-            <div className="text-center sm:text-left">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{user?.name || 'User'}</h2>
-              <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
-                <Mail size={12} className="sm:w-3.5 sm:h-3.5" />
-                <span className="break-all">{user?.email}</span>
+                {user?.phone && (
+                  <div className="flex items-center justify-center sm:justify-start gap-1 text-[var(--foreground-muted)] text-xs sm:text-sm mt-0.5">
+                    <Phone size={12} className="sm:w-3.5 sm:h-3.5" />
+                    <span>{user.phone}</span>
+                  </div>
+                )}
               </div>
-              {user?.phone && (
-                <div className="flex items-center justify-center sm:justify-start gap-1 text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-                  <Phone size={12} className="sm:w-3.5 sm:h-3.5" />
-                  <span>{user.phone}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -208,12 +212,12 @@ export default function ProfilePage() {
         <form onSubmit={updateProfile} className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">Full Name</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1 sm:mb-1.5">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input
                   type="text"
-                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all outline-none"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all outline-none"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
@@ -221,12 +225,12 @@ export default function ProfilePage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-1.5">Phone Number</label>
+              <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1 sm:mb-1.5">Phone Number</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <input
                   type="tel"
-                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all outline-none"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all outline-none"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   placeholder="Add your phone number"
@@ -235,11 +239,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
+          <div className="pt-3 sm:pt-4 border-t border-[var(--border)]">
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 shadow-sm text-sm sm:text-base"
+              className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-50 shadow-sm text-sm sm:text-base"
             >
               {saving ? <Loader2 className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Save size={16} className="sm:w-[18px] sm:h-[18px]" />}
               {saving ? 'Saving...' : 'Save Changes'}
