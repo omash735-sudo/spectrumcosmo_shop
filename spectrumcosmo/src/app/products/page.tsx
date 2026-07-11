@@ -67,7 +67,7 @@ const heroSettings = {
   titleAlignment: 'center' as const,
   subtitleAlignment: 'center' as const,
   verticalPosition: 'bottom' as const,
-  buttonBgColor: '#F97316',
+  buttonBgColor: '#C96712',
   buttonTextColor: '#FFFFFF',
 };
 
@@ -147,7 +147,9 @@ export default async function ProductsPage({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white dark:bg-gray-900">
+      <main className="min-h-screen bg-[var(--background)]">
+        
+        {/* HERO CAROUSEL - No manga panel */}
         <HeroCarousel
           titleColor={heroSettings.titleColor}
           subtitleColor={heroSettings.subtitleColor}
@@ -158,120 +160,128 @@ export default async function ProductsPage({
           buttonTextColor={heroSettings.buttonTextColor}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          
-          <FeaturedProducts />
-
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-gray-100 dark:border-gray-800">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                {params.q ? `Search results for "${params.q}"` : params.category && params.category !== 'All' ? params.category : 'All Products'}
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
-              </p>
-            </div>
+        {/* FEATURED PRODUCTS - No manga panel, just background color */}
+        <div className="bg-[var(--background-secondary)] py-8 md:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FeaturedProducts />
           </div>
+        </div>
 
-          <div className="mb-8">
-            <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  name="q"
-                  defaultValue={params.q || ''}
-                  placeholder="Search for anime merch, apparel, accessories..."
-                  className="w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl py-4 pl-6 pr-14 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-2.5 rounded-xl hover:from-orange-600 hover:to-orange-700 transition shadow-md"
-                  aria-label="Search"
-                >
-                  <Search size={18} />
-                </button>
+        {/* PRODUCTS GRID - With manga panel */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 manga-bg hero-manga">
+          <div className="relative z-10">
+            
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+                  {params.q ? `Search results for "${params.q}"` : params.category && params.category !== 'All' ? params.category : 'All Products'}
+                </h1>
+                <p className="text-[var(--foreground-muted)] text-sm mt-1">
+                  {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
+                </p>
               </div>
-              {params.q && (
-                <div className="text-center mt-3">
-                  <Link href={clearFilters()} className="text-sm text-orange-500 hover:text-orange-600">
-                    Clear search
-                  </Link>
-                </div>
-              )}
-            </form>
-          </div>
+            </div>
 
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal size={16} className="text-gray-500 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-              {params.category && params.category !== 'All' && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 rounded-full text-xs">
-                  Category: {params.category}
-                  <Link href={clearFilters()} className="hover:text-red-500">
-                    <X size={12} />
-                  </Link>
-                </span>
+            <div className="mb-8">
+              <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="q"
+                    defaultValue={params.q || ''}
+                    placeholder="Search for anime merch, apparel, accessories..."
+                    className="w-full border border-[var(--border)] bg-[var(--background-card)] rounded-2xl py-4 pl-6 pr-14 text-base text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent shadow-sm"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white p-2.5 rounded-xl transition shadow-md"
+                    aria-label="Search"
+                  >
+                    <Search size={18} />
+                  </button>
+                </div>
+                {params.q && (
+                  <div className="text-center mt-3">
+                    <Link href={clearFilters()} className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]">
+                      Clear search
+                    </Link>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-[var(--foreground-muted)]" />
+                <span className="text-sm font-medium text-[var(--foreground-muted)]">Filters:</span>
+                {params.category && params.category !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs">
+                    Category: {params.category}
+                    <Link href={clearFilters()} className="hover:text-red-500">
+                      <X size={12} />
+                    </Link>
+                  </span>
+                )}
+              </div>
+              {hasFilters && (
+                <Link href={clearFilters()} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+                  <X size={12} /> Clear all filters
+                </Link>
               )}
             </div>
-            {hasFilters && (
-              <Link href={clearFilters()} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
-                <X size={12} /> Clear all filters
-              </Link>
+
+            <div className="mb-10">
+              <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
+                <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
+                  {categoryNames.map((cat) => {
+                    const isActive = (!params.category && cat === 'All') || params.category === cat;
+                    let href;
+                    if (params.q) {
+                      href = cat === 'All'
+                        ? `/products?q=${encodeURIComponent(params.q)}`
+                        : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
+                    } else {
+                      href = cat === 'All'
+                        ? '/products'
+                        : `/products?category=${encodeURIComponent(cat)}`;
+                    }
+                    return (
+                      <a
+                        key={cat}
+                        href={href}
+                        className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                          isActive
+                            ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-200 dark:shadow-none'
+                            : 'bg-[var(--background-card)] text-[var(--foreground-muted)] hover:bg-[var(--border)]'
+                        }`}
+                      >
+                        {cat}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {productCardProps.length === 0 ? (
+              <div className="text-center py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+                <div className="w-20 h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search size={32} className="text-[var(--foreground-muted)]" />
+                </div>
+                <h3 className="text-lg font-medium text-[var(--foreground)] mb-2">No products found</h3>
+                <p className="text-[var(--foreground-muted)]">Try adjusting your search or browse our categories.</p>
+                <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium">
+                  View all products →
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {productCardProps.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
             )}
           </div>
-
-          <div className="mb-10">
-            <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
-              <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
-                {categoryNames.map((cat) => {
-                  const isActive = (!params.category && cat === 'All') || params.category === cat;
-                  let href;
-                  if (params.q) {
-                    href = cat === 'All'
-                      ? `/products?q=${encodeURIComponent(params.q)}`
-                      : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
-                  } else {
-                    href = cat === 'All'
-                      ? '/products'
-                      : `/products?category=${encodeURIComponent(cat)}`;
-                  }
-                  return (
-                    <a
-                      key={cat}
-                      href={href}
-                      className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-200 dark:shadow-none'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {cat}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {productCardProps.length === 0 ? (
-            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search size={32} className="text-gray-400 dark:text-gray-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No products found</h3>
-              <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or browse our categories.</p>
-              <Link href="/products" className="inline-block mt-4 text-orange-500 hover:text-orange-600 font-medium">
-                View all products →
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {productCardProps.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
         </div>
       </main>
       <Footer />
