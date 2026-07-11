@@ -257,8 +257,8 @@ export default function AccountPaymentsPage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin text-orange-500 w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your orders...</p>
+          <Loader2 className="animate-spin text-[var(--primary)] w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3" />
+          <p className="text-[var(--foreground-muted)] text-sm sm:text-base">Loading your orders...</p>
         </div>
       </div>
     )
@@ -266,24 +266,25 @@ export default function AccountPaymentsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-6 md:py-8">
+      
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-          <div className="w-1 h-5 sm:h-7 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Payments & Orders</h1>
-          <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
+          <div className="w-1 h-5 sm:h-7 bg-[var(--primary)] rounded-full"></div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">Payments & Orders</h1>
+          <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
         </div>
-        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Track your orders and submit payment proof</p>
+        <p className="text-[var(--foreground-muted)] text-xs sm:text-sm">Track your orders and submit payment proof</p>
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 p-8 sm:p-12 text-center shadow-sm">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <Package size={28} className="text-gray-300 dark:text-gray-500 sm:w-8 sm:h-8" />
+        <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-8 sm:p-12 text-center shadow-sm">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <Package size={28} className="text-[var(--foreground-muted)]/50 sm:w-8 sm:h-8" />
           </div>
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-2">No orders found</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-5 sm:mb-6">You haven't placed any orders yet</p>
-          <Link href="/products" className="inline-flex items-center gap-2 bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:bg-orange-600 transition">
+          <h3 className="text-base sm:text-lg font-medium text-[var(--foreground)] mb-2">No orders found</h3>
+          <p className="text-[var(--foreground-muted)] text-sm mb-5 sm:mb-6">You haven't placed any orders yet</p>
+          <Link href="/products" className="inline-flex items-center gap-2 bg-[var(--primary)] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium text-sm sm:text-base hover:bg-[var(--primary-hover)] transition">
             Start Shopping <ArrowRight size={14} className="sm:w-4 sm:h-4" />
           </Link>
         </div>
@@ -301,13 +302,14 @@ export default function AccountPaymentsPage() {
             const totalAmount = parseAmount(order.total_amount)
 
             return (
-              <div key={order.id} className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+              <div key={order.id} className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                
                 {/* Header */}
-                <div className="p-3.5 sm:p-4 md:p-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800">
+                <div className="p-3.5 sm:p-4 md:p-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
                   <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <div>
-                      <p className="text-xs sm:text-sm font-mono font-medium text-gray-900 dark:text-white">{orderDisplayNumber}</p>
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      <p className="text-xs sm:text-sm font-mono font-medium text-[var(--foreground)]">{orderDisplayNumber}</p>
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-0.5">
                         <Clock size={10} className="sm:w-3 sm:h-3" />
                         <span>{formatDate(order.created_at)}</span>
                       </div>
@@ -323,43 +325,44 @@ export default function AccountPaymentsPage() {
 
                 {/* Body */}
                 <div className="p-3.5 sm:p-4 md:p-5 space-y-4 sm:space-y-5">
+                  
                   {/* Product Info */}
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">{order.product_name}</p>
+                    <p className="font-semibold text-[var(--foreground)] text-base sm:text-lg">{order.product_name}</p>
                     {totalAmount > 0 && (
-                      <p className="text-orange-600 dark:text-orange-400 font-bold text-lg sm:text-xl mt-1">MWK {totalAmount.toLocaleString()}</p>
+                      <p className="text-[var(--primary)] font-bold text-lg sm:text-xl mt-1">MWK {totalAmount.toLocaleString()}</p>
                     )}
                     {order.custom_details && (
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">{order.custom_details}</p>
+                      <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-1.5 sm:mt-2">{order.custom_details}</p>
                     )}
                   </div>
 
                   {/* Payment Instructions */}
                   {isPending && !hasProof && selectedOption && selectedOption.account_number && (
-                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-3.5 sm:p-4 border border-amber-200 dark:border-amber-800">
+                    <div className="bg-[var(--primary)]/10 rounded-xl p-3.5 sm:p-4 border border-[var(--primary)]/20">
                       <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                         {selectedOption.logo_url && (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex-shrink-0 bg-white dark:bg-gray-800 rounded-xl p-1.5 sm:p-2 shadow-sm">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex-shrink-0 bg-[var(--background-card)] rounded-xl p-1.5 sm:p-2 shadow-sm border border-[var(--border)]">
                             <Image src={selectedOption.logo_url} alt={selectedOption.name} width={40} height={40} className="object-contain" />
                           </div>
                         )}
                         <div className="flex-1 w-full">
-                          <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm sm:text-base">Payment Instructions</p>
-                          <div className="mt-2 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-500">
+                          <p className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Payment Instructions</p>
+                          <div className="mt-2 p-2 bg-[var(--background-card)]/50 rounded-lg border border-[var(--border)]">
+                            <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
                               Send the exact amount to:
                             </p>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <code className="text-sm sm:text-lg font-mono font-bold text-amber-800 dark:text-amber-400 break-all">{selectedOption.account_number}</code>
+                              <code className="text-sm sm:text-lg font-mono font-bold text-[var(--foreground)] break-all">{selectedOption.account_number}</code>
                               <button
                                 onClick={() => copyToClipboard(selectedOption.account_number!, order.id)}
-                                className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded transition flex-shrink-0"
+                                className="p-1 hover:bg-[var(--background-secondary)] rounded transition flex-shrink-0"
                               >
-                                {copied === order.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-amber-600" />}
+                                {copied === order.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-[var(--primary)]" />}
                               </button>
                             </div>
                           </div>
-                          <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-500 mt-2">After payment, upload proof below for verification.</p>
+                          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-2">After payment, upload proof below for verification.</p>
                         </div>
                       </div>
                     </div>
@@ -367,20 +370,20 @@ export default function AccountPaymentsPage() {
 
                   {/* Upload Proof Section */}
                   {isPending && !hasProof && (
-                    <div className="border-t dark:border-gray-700 pt-3.5 sm:pt-4">
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">Upload Payment Proof</label>
+                    <div className="border-t border-[var(--border)] pt-3.5 sm:pt-4">
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-2 sm:mb-3">Upload Payment Proof</label>
                       
                       {/* Drag & Drop Area */}
                       {!proofFiles[order.id] ? (
                         <div 
-                          className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 sm:p-6 text-center hover:border-orange-400 dark:hover:border-orange-500 transition cursor-pointer"
+                          className="border-2 border-dashed border-[var(--border)] rounded-xl p-4 sm:p-6 text-center hover:border-[var(--primary)] transition cursor-pointer"
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, order.id)}
                           onClick={() => document.getElementById(`file-${order.id}`)?.click()}
                         >
-                          <Upload size={24} className="text-gray-400 dark:text-gray-500 mx-auto mb-1 sm:mb-2 sm:w-8 sm:h-8" />
-                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Drag & drop your receipt here, or click to browse</p>
-                          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                          <Upload size={24} className="text-[var(--foreground-muted)] mx-auto mb-1 sm:mb-2 sm:w-8 sm:h-8" />
+                          <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">Drag & drop your receipt here, or click to browse</p>
+                          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]/60 mt-1">PNG, JPG up to 5MB</p>
                           <input
                             id={`file-${order.id}`}
                             type="file"
@@ -393,10 +396,10 @@ export default function AccountPaymentsPage() {
                           />
                         </div>
                       ) : (
-                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 sm:p-4">
+                        <div className="bg-[var(--background-secondary)] rounded-xl p-3 sm:p-4 border border-[var(--border)]">
                           <div className="flex items-center gap-2 sm:gap-3">
                             {proofPreviews[order.id] ? (
-                              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-600 rounded-lg overflow-hidden relative">
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[var(--background)] rounded-lg overflow-hidden relative border border-[var(--border)]">
                                 <Image 
                                   src={proofPreviews[order.id]} 
                                   alt="Preview" 
@@ -405,15 +408,15 @@ export default function AccountPaymentsPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                                <ImageIcon size={20} className="text-gray-400 sm:w-6 sm:h-6" />
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[var(--background)] rounded-lg flex items-center justify-center border border-[var(--border)]">
+                                <ImageIcon size={20} className="text-[var(--foreground-muted)] sm:w-6 sm:h-6" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{proofFiles[order.id]?.name}</p>
-                              <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">{formatFileSize(proofFiles[order.id]?.size || 0)}</p>
+                              <p className="text-xs sm:text-sm font-medium text-[var(--foreground)] truncate">{proofFiles[order.id]?.name}</p>
+                              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">{formatFileSize(proofFiles[order.id]?.size || 0)}</p>
                             </div>
-                            <button onClick={() => removeFile(order.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded">
+                            <button onClick={() => removeFile(order.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition">
                               <X size={14} className="sm:w-4 sm:h-4" />
                             </button>
                           </div>
@@ -425,11 +428,15 @@ export default function AccountPaymentsPage() {
                         value={notes[order.id] || ''}
                         onChange={(e) => setNotes(prev => ({ ...prev, [order.id]: e.target.value }))}
                         rows={2}
-                        className="w-full mt-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className="w-full mt-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl p-2.5 sm:p-3 text-xs sm:text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                       />
 
                       {messages[order.id] && (
-                        <div className={`mt-2 p-2.5 sm:p-3 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 ${messages[order.id].type === 'success' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400'}`}>
+                        <div className={`mt-2 p-2.5 sm:p-3 rounded-xl text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 ${
+                          messages[order.id].type === 'success' 
+                            ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' 
+                            : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                        }`}>
                           {messages[order.id].type === 'success' ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                           {messages[order.id].text}
                         </div>
@@ -438,7 +445,7 @@ export default function AccountPaymentsPage() {
                       <button
                         onClick={() => uploadProof(order.id)}
                         disabled={uploading === order.id || !proofFiles[order.id]}
-                        className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 sm:py-3 rounded-xl font-medium text-sm hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
+                        className="w-full mt-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2.5 sm:py-3 rounded-xl font-medium text-sm transition disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
                       >
                         {uploading === order.id ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
                         {uploading === order.id ? 'Submitting...' : 'Submit Payment Proof'}
@@ -455,7 +462,7 @@ export default function AccountPaymentsPage() {
                       </div>
                       <button
                         onClick={() => window.open(order.proof_of_payment_url, '_blank')}
-                        className="text-orange-600 dark:text-orange-400 hover:text-orange-700 text-xs sm:text-sm underline flex items-center gap-1"
+                        className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-xs sm:text-sm underline flex items-center gap-1 transition"
                       >
                         <Eye size={12} /> View uploaded proof
                       </button>
@@ -464,30 +471,30 @@ export default function AccountPaymentsPage() {
                   )}
 
                   {/* Tracking Timeline */}
-                  <div className="border-t dark:border-gray-700 pt-3.5 sm:pt-4">
-                    <p className="font-semibold text-xs sm:text-sm mb-3 sm:mb-4 text-gray-800 dark:text-gray-200">Order Progress</p>
+                  <div className="border-t border-[var(--border)] pt-3.5 sm:pt-4">
+                    <p className="font-semibold text-xs sm:text-sm mb-3 sm:mb-4 text-[var(--foreground)]">Order Progress</p>
                     <div className="space-y-2.5 sm:space-y-3">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
-                        <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Order placed</p>
-                        <span className="text-[9px] sm:text-xs text-gray-400 dark:text-gray-500 ml-auto">
+                        <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Order placed</p>
+                        <span className="text-[9px] sm:text-xs text-[var(--foreground-muted)]/60 ml-auto">
                           {order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasProof ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                        <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">Payment proof submitted</p>
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasProof ? 'bg-green-500' : 'bg-[var(--border)]'}`} />
+                        <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Payment proof submitted</p>
                       </div>
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${order.status === 'approved' ? 'bg-green-500' : order.status === 'declined' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                        <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${order.status === 'approved' ? 'bg-green-500' : order.status === 'declined' ? 'bg-red-500' : 'bg-[var(--border)]'}`} />
+                        <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
                           {order.status === 'approved' ? 'Payment approved' : order.status === 'declined' ? 'Payment rejected' : 'Awaiting admin approval'}
                         </p>
                       </div>
                       {(order.status === 'shipped' || order.status === 'delivered') && (
                         <div className="flex items-center gap-2 sm:gap-3">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
-                          <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
+                          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
                             {order.status === 'shipped' ? 'Order shipped' : 'Order delivered'}
                           </p>
                         </div>
@@ -497,8 +504,8 @@ export default function AccountPaymentsPage() {
 
                   {/* Payment Method Footer */}
                   {order.payment_method && (
-                    <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t dark:border-gray-700 pt-3 flex items-center gap-1">
-                      <CreditCard size={10} /> Payment: {order.payment_method}
+                    <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] border-t border-[var(--border)] pt-3 flex items-center gap-1">
+                      <CreditCard size={10} className="text-[var(--primary)]" /> Payment: {order.payment_method}
                     </p>
                   )}
                 </div>
