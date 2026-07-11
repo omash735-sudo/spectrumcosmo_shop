@@ -97,8 +97,8 @@ export default function AccountOverview() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Loading your account...</p>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-[var(--foreground-muted)] text-sm sm:text-base">Loading your account...</p>
         </div>
       </div>
     )
@@ -106,9 +106,12 @@ export default function AccountOverview() {
 
   return (
     <div className="space-y-5 sm:space-y-6 md:space-y-8">
-      {/* Welcome Banner - Solid Colors */}
-      <div className="bg-orange-500 dark:bg-orange-600 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
-        <div className="p-5 sm:p-6 md:p-8">
+      
+      {/* ============================================
+          WELCOME BANNER - With Manga Panel
+          ============================================ */}
+      <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
+        <div className="relative z-10 bg-[var(--primary)]/95 p-5 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
@@ -130,50 +133,54 @@ export default function AccountOverview() {
         </div>
       </div>
 
-      {/* Stats Cards - Solid Colors */}
+      {/* ============================================
+          STATS CARDS - Clean (No Manga)
+          ============================================ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Link href="/account/orders" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
-            <ShoppingBag size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
+        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <ShoppingBag size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
-          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Total Orders</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">{orders.length}</p>
+          <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Total Orders</p>
         </Link>
         
-        <Link href="/account/wishlist" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
-            <Heart size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
+        <Link href="/account/wishlist" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <Heart size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{wishlistCount}</p>
-          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Wishlist Items</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">{wishlistCount}</p>
+          <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Wishlist Items</p>
         </Link>
         
-        <Link href="/account/addresses" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
-            <MapPin size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
+        <Link href="/account/addresses" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <MapPin size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{addressesCount}</p>
-          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Saved Addresses</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">{addressesCount}</p>
+          <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Saved Addresses</p>
         </Link>
         
-        <Link href="/account/orders" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 hover:-translate-y-0.5">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-950/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
-            <PackageSearch size={18} className="text-orange-600 dark:text-orange-400 sm:w-5 sm:h-5" />
+        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
+            <PackageSearch size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{activeOrdersCount}</p>
-          <p className="text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">Active Orders</p>
+          <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">{activeOrdersCount}</p>
+          <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Active Orders</p>
         </Link>
       </div>
 
-      {/* Recent Orders Section - Solid Colors */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      {/* ============================================
+          RECENT ORDERS SECTION - Clean (No Manga)
+          ============================================ */}
+      <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+        <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <TrendingUp size={16} className="text-orange-500 sm:w-[18px] sm:h-[18px]" />
-              <h3 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Recent Orders</h3>
+              <TrendingUp size={16} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
+              <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Recent Orders</h3>
             </div>
-            <Link href="/account/orders" className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 font-medium flex items-center gap-1 group">
+            <Link href="/account/orders" className="text-xs sm:text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium flex items-center gap-1 group">
               View all
               <ArrowRight size={12} className="group-hover:translate-x-0.5 transition" />
             </Link>
@@ -182,16 +189,16 @@ export default function AccountOverview() {
 
         {recentOrders.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
-            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <ShoppingBag size={24} className="text-gray-400 dark:text-gray-500 sm:w-8 sm:h-8" />
+            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <ShoppingBag size={24} className="text-[var(--foreground-muted)] sm:w-8 sm:h-8" />
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No orders yet.</p>
-            <Link href="/products" className="inline-block mt-2 sm:mt-3 text-orange-500 hover:text-orange-600 font-medium text-xs sm:text-sm">
+            <p className="text-[var(--foreground-muted)] text-sm">No orders yet.</p>
+            <Link href="/products" className="inline-block mt-2 sm:mt-3 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium text-xs sm:text-sm">
               Start Shopping <ArrowRight size={12} className="inline ml-1" />
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-[var(--border)]">
             {recentOrders.map((order) => {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
@@ -202,12 +209,12 @@ export default function AccountOverview() {
                 <Link 
                   key={order.id} 
                   href={`/account/orders/${order.id}`}
-                  className="block p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition group"
+                  className="block p-4 sm:p-5 hover:bg-[var(--background-secondary)] transition group"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <p className="font-mono text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)]">
                           {orderDisplayNumber}
                         </p>
                         <span className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
@@ -215,7 +222,7 @@ export default function AccountOverview() {
                           {statusConfig.label}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2">
+                      <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1.5 sm:mt-2">
                         <span className="flex items-center gap-0.5 sm:gap-1">
                           <Calendar size={10} className="sm:w-3 sm:h-3" />
                           {new Date(order.created_at).toLocaleDateString()}
@@ -226,12 +233,12 @@ export default function AccountOverview() {
                         </span>
                       </div>
                       {order.items && order.items.length > 0 && (
-                        <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
+                        <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]/60 mt-1 line-clamp-1">
                           {order.items.map((i: any) => i.product_name).join(', ')}
                         </p>
                       )}
                     </div>
-                    <ChevronRight size={14} className="text-gray-400 group-hover:text-orange-500 transition-transform group-hover:translate-x-0.5 sm:w-4 sm:h-4" />
+                    <ChevronRight size={14} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition-transform group-hover:translate-x-0.5 sm:w-4 sm:h-4" />
                   </div>
                 </Link>
               )
@@ -240,41 +247,46 @@ export default function AccountOverview() {
         )}
       </div>
 
-      {/* Quick Links - Solid Colors */}
+      {/* ============================================
+          QUICK LINKS - Clean (No Manga)
+          ============================================ */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Link href="/account/profile" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 text-center">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 transition">
-            <User size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition sm:w-5 sm:h-5" />
+        <Link href="/account/profile" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
+            <User size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition sm:w-5 sm:h-5" />
           </div>
-          <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition text-sm sm:text-base">Profile</h3>
-          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Manage your info</p>
+          <h3 className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition text-sm sm:text-base">Profile</h3>
+          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Manage your info</p>
         </Link>
-        <Link href="/account/settings" className="group bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 text-center">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/30 transition">
-            <Settings size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition sm:w-5 sm:h-5" />
+        <Link href="/account/settings" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
+            <Settings size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition sm:w-5 sm:h-5" />
           </div>
-          <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition text-sm sm:text-base">Settings</h3>
-          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-0.5 sm:mt-1">Preferences & security</p>
+          <h3 className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition text-sm sm:text-base">Settings</h3>
+          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Preferences & security</p>
         </Link>
       </div>
 
-      {/* Benefits Banner - Solid Colors */}
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-gray-100 dark:border-gray-700">
+      {/* ============================================
+          BENEFITS BANNER - Clean (No Manga)
+          ============================================ */}
+      <div className="bg-[var(--background-secondary)] rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-[var(--border)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
-              <Gift size={14} className="text-orange-600 dark:text-orange-400 sm:w-[18px] sm:h-[18px]" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
+              <Gift size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
             </div>
             <div>
-              <p className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Earn rewards with every purchase</p>
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Join our loyalty program for exclusive benefits</p>
+              <p className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Earn rewards with every purchase</p>
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Join our loyalty program for exclusive benefits</p>
             </div>
           </div>
-          <Link href="/rewards" className="text-orange-600 dark:text-orange-400 hover:text-orange-700 text-xs sm:text-sm font-medium flex items-center gap-0.5 sm:gap-1">
+          <Link href="/rewards" className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-xs sm:text-sm font-medium flex items-center gap-0.5 sm:gap-1">
             Learn more <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5" />
           </Link>
         </div>
       </div>
+      
     </div>
   )
 }
