@@ -45,7 +45,6 @@ export default function NewsletterPage() {
       try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) {
-          // Not logged in - user can still subscribe
           setUser(null);
           setLoading(false);
           return;
@@ -54,7 +53,6 @@ export default function NewsletterPage() {
         setUser(data.user);
         setEmailInput(data.user?.email || '');
         
-        // Check subscription status
         await checkSubscriptionStatus(data.user?.email);
       } catch (err) {
         console.error('Failed to load user:', err);
@@ -159,7 +157,6 @@ export default function NewsletterPage() {
       if (res.ok) {
         setSubscribed(true);
         toast.success(data.message || 'Check your email to confirm subscription! 📧');
-        // Refresh subscription status
         await checkSubscriptionStatus(email);
       } else {
         toast.error(data.error || 'Failed to subscribe');
@@ -196,10 +193,10 @@ export default function NewsletterPage() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 border-3 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+            <div className="w-12 h-12 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[var(--foreground-muted)]">Loading...</p>
           </div>
         </div>
         <Footer />
@@ -210,10 +207,12 @@ export default function NewsletterPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900">
+      <main className="min-h-screen bg-[var(--background)]">
         
-        {/* Hero Section */}
-        <div className="relative bg-gradient-to-r from-orange-600 to-orange-500 overflow-hidden">
+        {/* ============================================
+            HERO SECTION - Clean (No Manga)
+            ============================================ */}
+        <div className="relative bg-[var(--primary)] overflow-hidden">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -239,12 +238,12 @@ export default function NewsletterPage() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="Your email address"
-                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition dark:bg-gray-800/50 dark:border-gray-700"
+                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition"
                 />
                 <button
                   onClick={handleSubscribe}
                   disabled={saving}
-                  className="bg-white text-orange-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
+                  className="bg-white text-[var(--primary)] px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   Subscribe
@@ -255,51 +254,57 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        {/* Benefits Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-4">
-              <Crown size={14} className="text-orange-600 dark:text-orange-400" />
-              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Why Subscribe</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">What You'll Get</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Zap size={28} className="text-orange-600 dark:text-orange-400" />
+        {/* ============================================
+            BENEFITS SECTION - With Manga Panel
+            ============================================ */}
+        <div className="py-20 manga-bg hero-manga">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
+                <Crown size={14} className="text-[var(--primary)]" />
+                <span className="text-xs font-medium text-[var(--primary)]">Why Subscribe</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Early Access</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Be the first to know about new drops and restocks before everyone else.</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">What You'll Get</h2>
+              <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
             </div>
-            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Gift size={28} className="text-orange-600 dark:text-orange-400" />
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Zap size={28} className="text-[var(--primary)]" />
+                </div>
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Early Access</h3>
+                <p className="text-[var(--foreground-muted)] text-sm">Be the first to know about new drops and restocks before everyone else.</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Exclusive Discounts</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Get subscriber-only promo codes and special offers.</p>
-            </div>
-            <div className="group bg-white dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <BookOpen size={28} className="text-orange-600 dark:text-orange-400" />
+              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Gift size={28} className="text-[var(--primary)]" />
+                </div>
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Exclusive Discounts</h3>
+                <p className="text-[var(--foreground-muted)] text-sm">Get subscriber-only promo codes and special offers.</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">VIP News</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Weekly anime updates, merch news, and community highlights.</p>
+              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <BookOpen size={28} className="text-[var(--primary)]" />
+                </div>
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">VIP News</h3>
+                <p className="text-[var(--foreground-muted)] text-sm">Weekly anime updates, merch news, and community highlights.</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Community Wishlist Section */}
-        <div className="bg-gradient-to-br from-orange-50/30 to-white dark:from-gray-800/50 dark:to-gray-900 py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ============================================
+            COMMUNITY WISHLIST SECTION - With Manga Panel
+            ============================================ */}
+        <div className="py-20 manga-bg cards-manga">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 px-4 py-2 rounded-full mb-4">
-                <Heart size={18} className="text-orange-600 dark:text-orange-400" />
-                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Community Driven</span>
+              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-4 py-2 rounded-full mb-4">
+                <Heart size={18} className="text-[var(--primary)]" />
+                <span className="text-sm font-medium text-[var(--primary)]">Community Driven</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">Community Wishlist</h2>
-              <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-3">Community Wishlist</h2>
+              <p className="text-[var(--foreground-muted)] max-w-2xl mx-auto">
                 Request products you want to see. Submit your ideas with images and descriptions. 
                 Trending requests with high demand become reality.
               </p>
@@ -310,9 +315,9 @@ export default function NewsletterPage() {
             </div>
 
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-8 shadow-sm hover:shadow-md transition">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Submit Your Request</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">
+              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition">
+                <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">Submit Your Request</h3>
+                <p className="text-[var(--foreground-muted)] text-sm mb-5">
                   Have a product in mind? Tell us what you want – upload reference images and describe your idea.
                   Our team will review it and if there's enough interest, we'll make it.
                 </p>
@@ -322,16 +327,22 @@ export default function NewsletterPage() {
           </div>
         </div>
 
-        {/* Content Blocks */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-16">
-          {blocks.map((block) => (
-            <ContentBlockRenderer key={block.id} block={block} />
-          ))}
+        {/* ============================================
+            CONTENT BLOCKS - With Manga Panel
+            ============================================ */}
+        <div className="py-20 manga-bg hero-manga">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+            {blocks.map((block) => (
+              <ContentBlockRenderer key={block.id} block={block} />
+            ))}
+          </div>
         </div>
 
-        {/* Newsletter Subscription Card */}
+        {/* ============================================
+            NEWSLETTER SUBSCRIPTION CARD - Clean (No Manga)
+            ============================================ */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-          <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-3xl shadow-xl overflow-hidden transform hover:scale-[1.01] transition-transform duration-300">
+          <div className="bg-[var(--primary)] rounded-3xl shadow-xl overflow-hidden transform hover:scale-[1.01] transition-transform duration-300">
             <div className="p-8 md:p-12 text-center">
               <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Mail size={40} className="text-white" />
@@ -373,7 +384,7 @@ export default function NewsletterPage() {
                     className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 ${
                       subscribed
                         ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-white text-orange-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700'
+                        : 'bg-white text-[var(--primary)] hover:bg-gray-100'
                     } disabled:opacity-50 shadow-md`}
                   >
                     {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
@@ -403,21 +414,21 @@ export default function NewsletterPage() {
       {/* Feedback Modal */}
       {showFeedback && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b dark:border-gray-700">
+          <div className="bg-[var(--background-card)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-[var(--border)]">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">We're sad to see you go</h3>
-                <button onClick={() => setShowFeedback(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                  <X size={20} className="text-gray-500 dark:text-gray-400" />
+                <h3 className="text-xl font-semibold text-[var(--foreground)]">We're sad to see you go</h3>
+                <button onClick={() => setShowFeedback(false)} className="p-1 hover:bg-[var(--background-secondary)] rounded-lg">
+                  <X size={20} className="text-[var(--foreground-muted)]" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Help us improve by sharing your reason</p>
+              <p className="text-sm text-[var(--foreground-muted)] mt-1">Help us improve by sharing your reason</p>
             </div>
             <div className="p-6">
               <select
                 value={feedbackReason}
                 onChange={(e) => setFeedbackReason(e.target.value)}
-                className="w-full p-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
+                className="w-full p-3 border border-[var(--border)] bg-[var(--background-card)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)]"
               >
                 <option value="">Select a reason...</option>
                 <option>Too many emails</option>
@@ -430,12 +441,12 @@ export default function NewsletterPage() {
                 onChange={(e) => setFeedbackDetails(e.target.value)}
                 placeholder="Any additional feedback (optional)"
                 rows={3}
-                className="w-full p-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl mb-4 focus:ring-2 focus:ring-orange-500"
+                className="w-full p-3 border border-[var(--border)] bg-[var(--background-card)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)]"
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowFeedback(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition"
                 >
                   Cancel
                 </button>
