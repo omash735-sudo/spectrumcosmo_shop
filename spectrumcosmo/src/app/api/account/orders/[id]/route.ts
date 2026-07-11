@@ -1,3 +1,4 @@
+// app/api/account/orders/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
@@ -26,7 +27,7 @@ export async function GET(
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  const statusInfo = await getStatusDisplayInfo(order.status);
+  const statusInfo = getStatusDisplayInfo(order.status);
   const history = await getOrderStatusHistory(orderId);
 
   return NextResponse.json({
