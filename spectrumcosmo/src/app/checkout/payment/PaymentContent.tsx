@@ -842,7 +842,10 @@ export default function PaymentPage() {
 
                   <div className={`p-3 rounded-xl text-center ${paymentStatusConfig.bg}`}>
                     <div className={`flex items-center justify-center gap-2 ${paymentStatusConfig.color}`}>
-                      <paymentStatusConfig.icon size={16} />
+                      {order.payment_status === 'paid' && <CheckCircle size={16} />}
+                      {order.payment_status === 'pending' && <Clock size={16} />}
+                      {order.payment_status === 'awaiting_verification' && <AlertCircle size={16} />}
+                      {order.payment_status === 'pending_products' && <Clock size={16} />}
                       <span className="font-medium text-sm">Payment: {paymentStatusConfig.label}</span>
                     </div>
                   </div>
