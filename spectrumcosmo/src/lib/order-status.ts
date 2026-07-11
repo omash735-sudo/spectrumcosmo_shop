@@ -1,4 +1,5 @@
 // lib/order-status.ts
+import { getDb } from '@/lib/db';
 import { 
   Clock, Package, Truck, CheckCircle2, XCircle, AlertCircle, Send
 } from 'lucide-react';
@@ -88,22 +89,10 @@ export const PAYMENT_STATUS_CONFIG = {
   }
 };
 
-// ============================================
-// FUNCTIONS FOR API ROUTES (maintains compatibility)
-// ============================================
-
-// Status display info for order detail page
 export function getStatusDisplayInfo(status: string) {
   const config = STATUS_CONFIG[status as OrderStatus];
   if (!config) {
-    return {
-      label: 'Unknown',
-      color: 'text-gray-700 dark:text-gray-400',
-      bg: 'bg-gray-100 dark:bg-gray-800',
-      icon: Clock,
-      step: 0,
-      description: 'Unknown status'
-    };
+    return null;
   }
   return {
     label: config.label,
@@ -115,9 +104,8 @@ export function getStatusDisplayInfo(status: string) {
   };
 }
 
-// Get order status history (for timeline)
 export async function getOrderStatusHistory(orderId: string) {
-  const sql = getDb(); // Need to import getDb
+  const sql = getDb();
   try {
     const history = await sql`
       SELECT 
@@ -149,7 +137,104 @@ export async function getOrderStatusHistory(orderId: string) {
   }
 }
 
-// Helper to get status steps for tracking
+export async function getAllowedStatusTransitions(currentStatus: string): Promise<string[]> {
+  const transitions: Record<string, string[]> = {
+    'pending': ['awaiting_verification', 'cancelled'],
+    'pending_quote': ['awaiting_verification', 'cancelled'],
+    'awaiting_verification': ['processing', 'cancelled'],
+    'processing': ['shipped', 'cancelled'],
+    'shipped': ['delivered', 'cancelled'],
+    'delivered': [],
+    'cancelled': []
+  };
+  return transitions[currentStatus] || [];
+}
+
+export async function updateOrderStatus(params: {
+  orderId: string;
+  newStatusSlug: string;
+  adminNotes?: string;
+  trackingNumber?: string;
+  trackingNotes?: string;
+  changedBy: string;
+  ipAddress?: string;
+}) {
+  const { 
+    orderId, 
+    newStatusSlug, 
+    adminNotes, 
+    trackingNumber, 
+    trackingNotes,
+    changedBy,
+    ipAddress 
+  } = params;
+
+  const sql = getDb();
+
+  const [order] = await sql`
+    SELECT status FROM orders WHERE id = ${orderId}::uuid
+  `;
+
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  const oldStatus = order.status;
+
+  // Insert status history
+  await sql`
+    INSERT INTO order_status_history (
+      order_id, old_status, new_status, changed_by, notes, changed_at, ip_address
+    ) VALUES (
+      ${orderId}::uuid, ${oldStatus}, ${newStatusSlug}, ${changedBy}, 
+      ${adminNotes || null}, NOW(), ${ipAddress || null}
+    )
+  `;
+
+  // Update order
+  let updateQuery = sql`
+    UPDATE orders 
+    SET status = ${newStatusSlug}, updated_at = NOW()
+  `;
+
+  // Add tracking number if provided
+  if (trackingNumber) {
+    updateQuery = sql`
+      UPDATE orders 
+      SET status = ${newStatusSlug}, 
+          tracking_number = ${trackingNumber},
+          tracking_notes = ${trackingNotes || null},
+          updated_at = NOW()
+      WHERE id = ${orderId}::uuid
+      RETURNING *
+    `;
+  } else if (adminNotes) {
+    updateQuery = sql`
+      UPDATE orders 
+      SET status = ${newStatusSlug}, 
+          admin_notes = ${adminNotes},
+          updated_at = NOW()
+      WHERE id = ${orderId}::uuid
+      RETURNING *
+    `;
+  } else {
+    updateQuery = sql`
+      UPDATE orders 
+      SET status = ${newStatusSlug}, updated_at = NOW()
+      WHERE id = ${orderId}::uuid
+      RETURNING *
+    `;
+  }
+
+  const [updatedOrder] = await updateQuery;
+
+  return { 
+    order: updatedOrder,
+    oldStatus,
+    newStatus: newStatusSlug
+  };
+}
+
 export function getOrderStatusSteps(status: string) {
   const allSteps = [
     { key: 'placed', label: 'Order Placed' },
@@ -177,21 +262,6 @@ export function getOrderStatusSteps(status: string) {
   }));
 }
 
-// Get next statuses allowed from current status
-export function getNextAllowedStatuses(currentStatus: string): string[] {
-  const statusFlow: Record<string, string[]> = {
-    'pending': ['awaiting_verification', 'cancelled'],
-    'pending_quote': ['awaiting_verification', 'cancelled'],
-    'awaiting_verification': ['processing', 'cancelled'],
-    'processing': ['shipped', 'cancelled'],
-    'shipped': ['delivered', 'cancelled'],
-    'delivered': [],
-    'cancelled': []
-  };
-  return statusFlow[currentStatus] || [];
-}
-
-// Get status badge for admin
 export function getAdminStatusBadge(status: string) {
   const config = STATUS_CONFIG[status as OrderStatus];
   if (!config) {
@@ -208,7 +278,6 @@ export function getAdminStatusBadge(status: string) {
   };
 }
 
-// Helper to format status for display
 export function formatStatusLabel(status: string): string {
   const config = STATUS_CONFIG[status as OrderStatus];
   return config?.label || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
