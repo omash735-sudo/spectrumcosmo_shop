@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import {
   User, MapPin, DollarSign, Globe, Bell, Mail, Star, Shield, FileText, Trash2,
@@ -332,12 +333,22 @@ export default function SettingsPage() {
             <p className="text-[var(--foreground-muted)] text-xs sm:text-sm ml-10 sm:ml-14">Manage your account preferences and security</p>
           </div>
 
-          {/* User Banner - With Manga Panel */}
+          {/* User Banner - With Manga Panel & Profile Picture */}
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg mb-6 sm:mb-8">
             <div className="relative z-10 bg-[var(--primary)] p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User size={24} className="text-white sm:w-8 sm:h-8" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0 ring-2 ring-white/30">
+                  {user?.profileImage ? (
+                    <Image 
+                      src={user.profileImage} 
+                      alt={user.name || 'Profile'} 
+                      width={64} 
+                      height={64} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <User size={24} className="text-white sm:w-8 sm:h-8" />
+                  )}
                 </div>
                 <div className="flex-1 text-center sm:text-left">
                   <h2 className="text-lg sm:text-xl font-bold text-white">{user?.name || user?.email?.split('@')[0]}</h2>
