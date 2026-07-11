@@ -188,28 +188,29 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-pulse text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
+        <div className="animate-pulse text-[var(--foreground-muted)] text-sm">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="max-w-2xl mx-auto px-4 py-6 bg-[var(--background)] min-h-screen">
+      
       {/* Header with Back Button */}
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+          className="p-2 hover:bg-[var(--background-secondary)] rounded-xl transition-colors"
           aria-label="Go back"
         >
-          <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+          <ArrowLeft size={20} className="text-[var(--foreground-muted)]" />
         </button>
         <div className="flex-1 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Notifications</h1>
+          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Notifications</h1>
           {notifications.length > 0 && (
             <button
               onClick={clearAllNotifications}
-              className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
             >
               Clear all
             </button>
@@ -217,21 +218,24 @@ export default function NotificationsPage() {
         </div>
       </div>
 
+      {/* Empty State */}
       {notifications.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-sm dark:shadow-gray-900/30">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BellOff size={28} className="text-gray-300 dark:text-gray-500" />
+        <div className="bg-[var(--background-card)] rounded-2xl p-12 text-center shadow-sm border border-[var(--border)]">
+          <div className="w-16 h-16 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
+            <BellOff size={28} className="text-[var(--foreground-muted)]/50" />
           </div>
-          <p className="text-gray-500 dark:text-gray-400">No notifications yet</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">We'll notify you when something arrives</p>
+          <p className="text-[var(--foreground-muted)]">No notifications yet</p>
+          <p className="text-[var(--foreground-muted)]/60 text-sm mt-1">We'll notify you when something arrives</p>
         </div>
       ) : (
         <div className="space-y-8">
+          
+          {/* Unread Notifications */}
           {unreadNotifications.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">New</span>
-                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                <span className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">New</span>
+                <div className="h-px flex-1 bg-[var(--border)]" />
               </div>
               <div className="space-y-3">
                 {unreadNotifications.map((notif) => {
@@ -241,36 +245,36 @@ export default function NotificationsPage() {
                   return (
                     <div
                       key={notif.id}
-                      className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-gray-900/30 hover:shadow-md dark:hover:shadow-gray-900/50 transition-shadow duration-200"
+                      className="bg-[var(--background-card)] rounded-2xl p-4 shadow-sm border border-[var(--border)] hover:shadow-md transition-shadow duration-200"
                     >
                       <div className="flex gap-3">
                         <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                            <Icon size={18} className="text-blue-500 dark:text-blue-400" />
+                          <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+                            <Icon size={18} className="text-[var(--primary)]" />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-medium text-sm text-gray-900 dark:text-white">
+                            <p className="font-medium text-sm text-[var(--foreground)]">
                               {notif.title}
                             </p>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                            <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
                               {timeAgo}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                          <p className="text-sm text-[var(--foreground-muted)] mt-1 leading-relaxed">
                             {notif.message}
                           </p>
                           <div className="flex items-center gap-3 mt-2">
                             <button
                               onClick={() => handleViewDetails(notif)}
-                              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                              className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
                             >
                               {notif.action_label || 'View Details'}
                             </button>
                             <button
                               onClick={() => markAsRead(notif.id)}
-                              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              className="text-xs text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
                             >
                               Mark as read
                             </button>
@@ -284,6 +288,7 @@ export default function NotificationsPage() {
             </div>
           )}
 
+          {/* Read Notifications Grouped by Date */}
           {groupOrder.map(groupName => {
             const groupNotifs = groupedNotifications[groupName];
             if (!groupNotifs || groupNotifs.length === 0) return null;
@@ -294,10 +299,10 @@ export default function NotificationsPage() {
             return (
               <div key={groupName}>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  <span className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">
                     {groupName}
                   </span>
-                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-px flex-1 bg-[var(--border)]" />
                 </div>
                 <div className="space-y-3">
                   {readNotifs.map((notif) => {
@@ -307,29 +312,29 @@ export default function NotificationsPage() {
                     return (
                       <div
                         key={notif.id}
-                        className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-gray-900/30 hover:shadow-md dark:hover:shadow-gray-900/50 transition-shadow duration-200"
+                        className="bg-[var(--background-card)] rounded-2xl p-4 shadow-sm border border-[var(--border)] hover:shadow-md transition-shadow duration-200"
                       >
                         <div className="flex gap-3">
                           <div className="flex-shrink-0">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
-                              <Icon size={18} className="text-gray-400 dark:text-gray-500" />
+                            <div className="w-10 h-10 rounded-full bg-[var(--background-secondary)] flex items-center justify-center">
+                              <Icon size={18} className="text-[var(--foreground-muted)]" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                              <p className="font-medium text-sm text-[var(--foreground)]/70">
                                 {notif.title}
                               </p>
-                              <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                              <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
                                 {timeAgo}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                            <p className="text-sm text-[var(--foreground-muted)] mt-1 leading-relaxed">
                               {notif.message}
                             </p>
                             <button
                               onClick={() => handleViewDetails(notif)}
-                              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors mt-2"
+                              className="text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors mt-2"
                             >
                               {notif.action_label || 'View Details'}
                             </button>
@@ -345,24 +350,26 @@ export default function NotificationsPage() {
         </div>
       )}
 
+      {/* Admin Notification Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl dark:shadow-gray-900/50">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-[var(--background-card)] rounded-2xl max-w-md w-full p-6 shadow-xl border border-[var(--border)]">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{modalTitle}</h3>
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">{modalTitle}</h3>
               <button 
                 onClick={() => setModalOpen(false)} 
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                className="p-1 hover:bg-[var(--background-secondary)] rounded-lg transition"
               >
-                <X size={18} className="text-gray-500 dark:text-gray-400" />
+                <X size={18} className="text-[var(--foreground-muted)]" />
               </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+            <p className="text-[var(--foreground-muted)] whitespace-pre-wrap leading-relaxed">
               {modalMessage}
             </p>
           </div>
         </div>
       )}
+      
     </div>
   );
 }
