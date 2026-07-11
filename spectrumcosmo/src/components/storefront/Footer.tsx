@@ -175,18 +175,18 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 text-white mt-20">
+      <footer className="bg-[var(--background-secondary)] dark:bg-[var(--background-secondary)] text-[var(--foreground)] mt-20 border-t border-[var(--border)]">
         {/* Newsletter Section */}
-        <div className="border-b border-white/10 dark:border-gray-800">
+        <div className="border-b border-[var(--border)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="text-center md:text-left">
-                <div className="inline-flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full mb-3">
-                  <Sparkles size={14} className="text-orange-400" />
-                  <span className="text-xs font-medium text-orange-400">Get 10% off</span>
+                <div className="inline-flex items-center gap-2 bg-[var(--primary)]/20 px-3 py-1 rounded-full mb-3">
+                  <Sparkles size={14} className="text-[var(--primary)]" />
+                  <span className="text-xs font-medium text-[var(--primary)]">Get 10% off</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">Subscribe for exclusive offers</h3>
-                <p className="text-gray-400 text-sm mt-1">Anime news, drops & 10% off your first order</p>
+                <h3 className="text-xl font-bold text-[var(--foreground)]">Subscribe for exclusive offers</h3>
+                <p className="text-[var(--foreground-muted)] text-sm mt-1">Anime news, drops & 10% off your first order</p>
               </div>
               
               <form onSubmit={handleSubscribe} className="w-full md:w-80">
@@ -197,20 +197,20 @@ export default function Footer() {
                     onChange={(e) => setEmailSub(e.target.value)}
                     onBlur={() => checkSubscriptionStatus(emailSub)}
                     placeholder="Your email address"
-                    className="flex-1 px-4 py-3 rounded-l-xl bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
+                    className="flex-1 px-4 py-3 rounded-l-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-[var(--foreground-muted)]"
                     required
                     disabled={submitting}
                   />
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 rounded-r-xl hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50"
+                    className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] px-5 rounded-r-xl transition disabled:opacity-50 text-white"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   </button>
                 </div>
                 {(checking || submitting) && !subStatus && (
-                  <p className="text-xs text-gray-400 mt-2">Checking...</p>
+                  <p className="text-xs text-[var(--foreground-muted)] mt-2">Checking...</p>
                 )}
                 {subStatus && (
                   <p className={`text-xs mt-2 ${subStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
@@ -236,7 +236,7 @@ export default function Footer() {
                 className="object-contain"
                 priority
               />
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-[var(--foreground-muted)] text-sm leading-relaxed">
                 Wear your excitement with pride. Premium custom apparel and anime merchandise for those who live boldly.
               </p>
               <div className="flex gap-2 pt-2">
@@ -250,7 +250,7 @@ export default function Footer() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-9 h-9 bg-white/10 dark:bg-gray-800 rounded-full flex items-center justify-center transition-all hover:scale-110 ${social.color}`}
+                      className={`w-9 h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white ${social.color}`}
                       aria-label={social.key}
                     >
                       <Icon size={16} />
@@ -259,7 +259,7 @@ export default function Footer() {
                 })}
                 <a
                   href={`mailto:${links.email}`}
-                  className="w-9 h-9 bg-white/10 dark:bg-gray-800 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:bg-orange-500"
+                  className="w-9 h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--primary)]"
                   aria-label="Email"
                 >
                   <Mail size={16} />
@@ -269,11 +269,11 @@ export default function Footer() {
 
             {/* Quick Links - 2 columns */}
             <div className="lg:col-span-2">
-              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Shop</h3>
+              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Shop</h3>
               <ul className="space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-sm text-gray-400 hover:text-orange-400 transition">
+                    <Link href={link.href} className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                       {link.label}
                     </Link>
                   </li>
@@ -283,30 +283,30 @@ export default function Footer() {
 
             {/* Support - 3 columns */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Support</h3>
+              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Support</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/shipping" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                  <Link href="/shipping" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Shipping Info
                   </Link>
                 </li>
                 <li>
-                  <Link href="/returns" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                  <Link href="/returns" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Returns & Exchanges
                   </Link>
                 </li>
                 <li>
-                  <Link href="/size-guide" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                  <Link href="/size-guide" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Size Guide
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                  <Link href="/terms" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-sm text-gray-400 hover:text-orange-400 transition">
+                  <Link href="/privacy" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Privacy Policy
                   </Link>
                 </li>
@@ -315,13 +315,13 @@ export default function Footer() {
 
             {/* Trust & Payment - 3 columns */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-sm uppercase text-gray-400 mb-4">Why Shop With Us</h3>
+              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Why Shop With Us</h3>
               <ul className="space-y-2 mb-4">
                 {trustFeatures.map((feature, idx) => {
                   const Icon = feature.icon
                   return (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-gray-400">
-                      <Icon size={14} className="text-orange-500" />
+                    <li key={idx} className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                      <Icon size={14} className="text-[var(--primary)]" />
                       {feature.text}
                     </li>
                   )
@@ -331,9 +331,9 @@ export default function Footer() {
                 {paymentIcons.map((payment, idx) => {
                   const Icon = payment.icon
                   return (
-                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 dark:bg-gray-800 rounded-lg">
-                      <Icon size={14} className="text-gray-300 dark:text-gray-400" />
-                      <span className="text-xs text-gray-400">{payment.name}</span>
+                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--background)] rounded-lg border border-[var(--border)]">
+                      <Icon size={14} className="text-[var(--foreground-muted)]" />
+                      <span className="text-xs text-[var(--foreground-muted)]">{payment.name}</span>
                     </div>
                   )
                 })}
@@ -342,16 +342,16 @@ export default function Footer() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-white/10 dark:border-gray-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-gray-500">
+          <div className="border-t border-[var(--border)] mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-[var(--foreground-muted)]">
               © {new Date().getFullYear()} SpectrumCosmo. All rights reserved.
             </p>
             <div className="flex gap-5 text-xs">
-              <Link href="/terms" className="text-gray-500 hover:text-orange-400 transition">Terms</Link>
-              <Link href="/privacy" className="text-gray-500 hover:text-orange-400 transition">Privacy</Link>
-              <Link href="/shipping" className="text-gray-500 hover:text-orange-400 transition">Shipping</Link>
+              <Link href="/terms" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Terms</Link>
+              <Link href="/privacy" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Privacy</Link>
+              <Link href="/shipping" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Shipping</Link>
             </div>
-            <p className="text-xs text-gray-500 italic">
+            <p className="text-xs text-[var(--foreground-muted)] italic">
               "Wear your excitement with pride"
             </p>
           </div>
@@ -362,7 +362,7 @@ export default function Footer() {
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-all hover:scale-110"
+          className="fixed bottom-6 right-6 z-50 bg-[var(--primary)] text-white p-3 rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition-all hover:scale-110"
           aria-label="Back to top"
         >
           <ArrowUp size={20} />
