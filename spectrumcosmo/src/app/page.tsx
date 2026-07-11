@@ -161,9 +161,9 @@ export default async function HomePage() {
       <Navbar />
       <main>
         {/* ============================================
-            HERO SECTION - Background: var(--background) = #111111 (dark) / #f5f5f5 (light)
+            HERO SECTION - manga-bg + hero-manga
             ============================================ */}
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden">
+        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga">
           {h.bg_image_url && (
             <Image
               src={h.bg_image_url}
@@ -183,7 +183,7 @@ export default async function HomePage() {
             />
           )}
 
-          <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
               
               {/* LEFT CONTENT */}
@@ -275,10 +275,10 @@ export default async function HomePage() {
         <TrustBar />
 
         {/* ============================================
-            CATEGORIES SECTION - Background: var(--background-card) = #232323 (dark) / #ffffff (light)
+            CATEGORIES SECTION - manga-bg + cards-manga
             ============================================ */}
-        <div className="bg-[var(--background-card)] py-8 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Shop by Category</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">Explore Our Collections</h2>
@@ -289,10 +289,10 @@ export default async function HomePage() {
         </div>
 
         {/* ============================================
-            FEATURED PRODUCTS - Background: var(--background-secondary) = #1B1B1B (dark) / #e8e8e8 (light)
+            FEATURED PRODUCTS - manga-bg + cards-manga
             ============================================ */}
-        <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-[var(--background-secondary)] py-8 md:py-16 manga-bg cards-manga" id="featured">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Trending Now</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">Featured Products</h2>
@@ -303,11 +303,11 @@ export default async function HomePage() {
         </div>
 
         {/* ============================================
-            REVIEWS SECTION - Background: var(--background) = #111111 (dark) / #f5f5f5 (light)
+            REVIEWS SECTION - manga-bg + hero-manga
             ============================================ */}
         {reviews && reviews.length > 0 && (
-          <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)] manga-bg hero-manga">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Testimonials</span>
                 <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">What Our Customers Say</h2>
@@ -348,19 +348,19 @@ export default async function HomePage() {
         )}
 
         {/* ============================================
-            RECENTLY VIEWED - Background: var(--background-card) = #232323 (dark) / #ffffff (light)
+            RECENTLY VIEWED - manga-bg + cards-manga
             ============================================ */}
-        <div className="bg-[var(--background-card)] py-8 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <RecentlyViewed />
           </div>
         </div>
 
         {/* ============================================
-            NEWSLETTER - Background: var(--background-hero) = #111111 (dark) / #111111 (light - always dark)
+            NEWSLETTER - manga-bg + footer-manga
             ============================================ */}
-        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
-          <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)] manga-bg footer-manga">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
             <div className="inline-flex items-center gap-2 bg-[var(--background-card)] px-4 py-2 rounded-full mb-6 border border-[var(--border)]">
               <Zap size={16} className="text-[var(--primary)]" />
               <span className="text-[var(--foreground-muted)] text-sm font-medium">Stay Updated</span>
@@ -383,10 +383,10 @@ export default async function HomePage() {
         </div>
 
         {/* ============================================
-            CTA SECTION - Background: var(--background-secondary) = #1B1B1B (dark) / #e8e8e8 (light)
+            CTA SECTION - manga-bg + hero-manga
             ============================================ */}
-        <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)]">
-          <div className="max-w-4xl mx-auto px-4 text-center">
+        <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)] manga-bg hero-manga">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl sm:text-5xl font-bold text-[var(--foreground)] mb-6">
               Ready to wear your <span className="text-[var(--primary)] underline decoration-2">excitement?</span>
             </h2>
