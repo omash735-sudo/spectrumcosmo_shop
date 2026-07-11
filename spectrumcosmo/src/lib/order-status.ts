@@ -278,3 +278,25 @@ export function formatStatusLabel(status: string): string {
   const config = STATUS_CONFIG[status as OrderStatus];
   return config?.label || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
+
+export function getStatusFlow() {
+  return {
+    statuses: Object.keys(STATUS_CONFIG).map(key => ({
+      slug: key,
+      label: STATUS_CONFIG[key as OrderStatus].label,
+      color: STATUS_CONFIG[key as OrderStatus].color.replace('text-', '').replace(' dark:', ''),
+      bg: STATUS_CONFIG[key as OrderStatus].bg,
+      step: STATUS_CONFIG[key as OrderStatus].step,
+      description: STATUS_CONFIG[key as OrderStatus].description
+    })),
+    transitions: {
+      'pending': ['awaiting_verification', 'cancelled'],
+      'pending_quote': ['awaiting_verification', 'cancelled'],
+      'awaiting_verification': ['processing', 'cancelled'],
+      'processing': ['shipped', 'cancelled'],
+      'shipped': ['delivered', 'cancelled'],
+      'delivered': [],
+      'cancelled': []
+    }
+  };
+}
