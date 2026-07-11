@@ -68,8 +68,8 @@ export default function NotificationSettingsPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
-          <Loader2 className="animate-spin text-orange-500 dark:text-orange-400" size={32} />
+        <main className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+          <Loader2 className="animate-spin text-[var(--primary])" size={32} />
         </main>
         <Footer />
       </>
@@ -79,32 +79,36 @@ export default function NotificationSettingsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 md:py-10">
+      <main className="min-h-screen bg-[var(--background)] py-6 sm:py-8 md:py-10">
         <div className="max-w-2xl mx-auto px-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                  <Bell className="text-orange-600 dark:text-orange-400" size={20} />
+          <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-6">
+            
+            {/* Header - With Manga Panel */}
+            <div className="manga-bg cards-manga rounded-xl overflow-hidden mb-6">
+              <div className="relative z-10 flex items-center justify-between p-4 sm:p-5 bg-[var(--background-card)]/95">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center">
+                    <Bell className="text-[var(--primary)]" size={20} />
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Notification Centre</h1>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Notification Centre</h1>
-              </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                <Clock size={12} />
-                <span>Preferences</span>
+                <div className="text-xs text-[var(--foreground-muted)] flex items-center gap-1">
+                  <Clock size={12} />
+                  <span>Preferences</span>
+                </div>
               </div>
             </div>
 
             <div className="space-y-1">
               {/* Email Notifications */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-[var(--background-secondary)] transition-colors gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Mail className="text-gray-500 dark:text-gray-400" size={18} />
+                  <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Mail className="text-[var(--foreground-muted)]" size={18} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Receive updates via email</p>
+                    <p className="font-medium text-[var(--foreground)]">Email Notifications</p>
+                    <p className="text-sm text-[var(--foreground-muted)]">Receive updates via email</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
@@ -114,19 +118,19 @@ export default function NotificationSettingsPage() {
                     onChange={(e) => setLocalSettings({...localSettings, emailNotifications: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500 dark:peer-checked:bg-orange-400"></div>
+                  <div className="w-11 h-6 bg-[var(--border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-[var(--border)] peer-checked:bg-[var(--primary)]"></div>
                 </label>
               </div>
 
               {/* SMS Alerts */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-[var(--background-secondary)] transition-colors gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Smartphone className="text-gray-500 dark:text-gray-400" size={18} />
+                  <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Smartphone className="text-[var(--foreground-muted)]" size={18} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">SMS Alerts</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Text message updates for orders</p>
+                    <p className="font-medium text-[var(--foreground)]">SMS Alerts</p>
+                    <p className="text-sm text-[var(--foreground-muted)]">Text message updates for orders</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
@@ -136,19 +140,19 @@ export default function NotificationSettingsPage() {
                     onChange={(e) => setLocalSettings({...localSettings, smsAlerts: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500 dark:peer-checked:bg-orange-400"></div>
+                  <div className="w-11 h-6 bg-[var(--border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-[var(--border)] peer-checked:bg-[var(--primary)]"></div>
                 </label>
               </div>
 
               {/* Order Updates */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-[var(--background-secondary)] transition-colors gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Bell className="text-gray-500 dark:text-gray-400" size={18} />
+                  <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Bell className="text-[var(--foreground-muted)]" size={18} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Order Updates</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Shipping, delivery, and returns</p>
+                    <p className="font-medium text-[var(--foreground)]">Order Updates</p>
+                    <p className="text-sm text-[var(--foreground-muted)]">Shipping, delivery, and returns</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
@@ -158,19 +162,19 @@ export default function NotificationSettingsPage() {
                     onChange={(e) => setLocalSettings({...localSettings, orderUpdates: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500 dark:peer-checked:bg-orange-400"></div>
+                  <div className="w-11 h-6 bg-[var(--border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-[var(--border)] peer-checked:bg-[var(--primary)]"></div>
                 </label>
               </div>
 
               {/* Promotions & Offers */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-3 rounded-xl hover:bg-[var(--background-secondary)] transition-colors gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Mail className="text-gray-500 dark:text-gray-400" size={18} />
+                  <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Mail className="text-[var(--foreground-muted)]" size={18} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Promotions & Offers</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Discounts, sales, and exclusive deals</p>
+                    <p className="font-medium text-[var(--foreground)]">Promotions & Offers</p>
+                    <p className="text-sm text-[var(--foreground-muted)]">Discounts, sales, and exclusive deals</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer ml-11 sm:ml-0">
@@ -180,7 +184,7 @@ export default function NotificationSettingsPage() {
                     onChange={(e) => setLocalSettings({...localSettings, promotions: e.target.checked})}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500 dark:peer-checked:bg-orange-400"></div>
+                  <div className="w-11 h-6 bg-[var(--border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-[var(--border)] peer-checked:bg-[var(--primary)]"></div>
                 </label>
               </div>
 
@@ -188,7 +192,7 @@ export default function NotificationSettingsPage() {
               <button 
                 onClick={saveSettings} 
                 disabled={saving} 
-                className="w-full bg-orange-500 hover:bg-orange-600 dark:bg-orange-500 dark:hover:bg-orange-600 text-white py-3.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 mt-6 shadow-sm hover:shadow-md"
+                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 mt-6 shadow-sm hover:shadow-md"
               >
                 {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                 Save Preferences
