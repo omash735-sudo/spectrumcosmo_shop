@@ -186,8 +186,10 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
-  // Determine banner display
-  const showBanner = bannerData?.is_active !== false && bannerData?.items?.length > 0;
+  // Determine banner display - Fixed TypeScript error
+  const showBanner = bannerData?.is_active !== false && 
+    bannerData?.items && 
+    bannerData.items.length > 0;
   const bgColor = bannerData?.background_color || 'var(--primary)';
   const textColor = bannerData?.text_color || '#FFFFFF';
 
