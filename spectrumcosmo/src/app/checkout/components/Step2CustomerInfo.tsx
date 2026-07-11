@@ -45,6 +45,13 @@ export default function Step2CustomerInfo({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Auto-select first delivery method when they load
+  useEffect(() => {
+    if (deliveryMethods.length > 0 && selectedDeliveryMethodId === null) {
+      onSelectDeliveryMethod(deliveryMethods[0].id);
+    }
+  }, [deliveryMethods, selectedDeliveryMethodId, onSelectDeliveryMethod]);
+
   const validateField = (field: string, value: string): string => {
     switch (field) {
       case 'name':
@@ -96,7 +103,14 @@ export default function Step2CustomerInfo({
   };
 
   const handleNext = () => {
+    console.log('=== handleNext called ===');
+    console.log('Form values:', form);
+    console.log('Selected delivery method:', selectedDeliveryMethodId);
+    console.log('Requires quote:', requiresQuote);
+    console.log('Quote requested:', quoteRequested);
+
     const isValid = validateForm();
+    console.log('Form valid:', isValid);
 
     if (!isValid) {
       toast.error('Please fill in all required fields correctly');
@@ -113,6 +127,12 @@ export default function Step2CustomerInfo({
       return;
     }
 
+    if (requiresQuote && !quoteRequested) {
+      toast('Please request a delivery quote first');
+      return;
+    }
+
+    console.log('All valid, proceeding to next step');
     onNext();
   };
 
@@ -349,10 +369,14 @@ export default function Step2CustomerInfo({
         </button>
         <button
           onClick={handleNext}
-          disabled={isSubmitting || !selectedDeliveryMethodId}
-          className="flex-[2] bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
+          disabled={isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)}
+          className={`flex-[2] py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20 ${
+            isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)
+              ? 'bg-gray-400 cursor-not-allowed text-white'
+              : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
+          }`}
         >
-          Review Order
+          {requiresQuote && !quoteRequested ? 'Request Quote First' : 'Review Order'}
         </button>
       </div>
     </div>
