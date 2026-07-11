@@ -87,3 +87,129 @@ export const PAYMENT_STATUS_CONFIG = {
     bg: 'bg-green-50 dark:bg-green-950/30'
   }
 };
+
+// ============================================
+// FUNCTIONS FOR API ROUTES (maintains compatibility)
+// ============================================
+
+// Status display info for order detail page
+export function getStatusDisplayInfo(status: string) {
+  const config = STATUS_CONFIG[status as OrderStatus];
+  if (!config) {
+    return {
+      label: 'Unknown',
+      color: 'text-gray-700 dark:text-gray-400',
+      bg: 'bg-gray-100 dark:bg-gray-800',
+      icon: Clock,
+      step: 0,
+      description: 'Unknown status'
+    };
+  }
+  return {
+    label: config.label,
+    color: config.color,
+    bg: config.bg,
+    icon: config.icon,
+    step: config.step,
+    description: config.description
+  };
+}
+
+// Get order status history (for timeline)
+export async function getOrderStatusHistory(orderId: string) {
+  const sql = getDb(); // Need to import getDb
+  try {
+    const history = await sql`
+      SELECT 
+        id, 
+        old_status, 
+        new_status, 
+        changed_by, 
+        notes, 
+        changed_at,
+        CASE 
+          WHEN new_status = 'delivered' THEN 'green'
+          WHEN new_status = 'shipped' THEN 'purple'
+          WHEN new_status = 'processing' THEN 'blue'
+          WHEN new_status = 'pending_quote' THEN 'orange'
+          WHEN new_status = 'awaiting_verification' THEN 'orange'
+          WHEN new_status = 'pending' THEN 'yellow'
+          WHEN new_status = 'cancelled' THEN 'red'
+          ELSE 'gray'
+        END as color,
+        new_status as status_name
+      FROM order_status_history
+      WHERE order_id = ${orderId}::uuid
+      ORDER BY changed_at ASC
+    `;
+    return history || [];
+  } catch (err) {
+    console.error('Error fetching order history:', err);
+    return [];
+  }
+}
+
+// Helper to get status steps for tracking
+export function getOrderStatusSteps(status: string) {
+  const allSteps = [
+    { key: 'placed', label: 'Order Placed' },
+    { key: 'payment', label: 'Payment' },
+    { key: 'processing', label: 'Processing' },
+    { key: 'shipped', label: 'Shipped' },
+    { key: 'delivered', label: 'Delivered' }
+  ];
+
+  const statusMap: Record<string, number> = {
+    'pending': 1,
+    'pending_quote': 1,
+    'awaiting_verification': 2,
+    'processing': 3,
+    'shipped': 4,
+    'delivered': 5,
+    'cancelled': 0
+  };
+
+  const completedSteps = statusMap[status] || 0;
+  return allSteps.map((step, index) => ({
+    ...step,
+    completed: index < completedSteps,
+    isCurrent: index === completedSteps - 1
+  }));
+}
+
+// Get next statuses allowed from current status
+export function getNextAllowedStatuses(currentStatus: string): string[] {
+  const statusFlow: Record<string, string[]> = {
+    'pending': ['awaiting_verification', 'cancelled'],
+    'pending_quote': ['awaiting_verification', 'cancelled'],
+    'awaiting_verification': ['processing', 'cancelled'],
+    'processing': ['shipped', 'cancelled'],
+    'shipped': ['delivered', 'cancelled'],
+    'delivered': [],
+    'cancelled': []
+  };
+  return statusFlow[currentStatus] || [];
+}
+
+// Get status badge for admin
+export function getAdminStatusBadge(status: string) {
+  const config = STATUS_CONFIG[status as OrderStatus];
+  if (!config) {
+    return {
+      label: 'Unknown',
+      color: 'text-gray-700 dark:text-gray-400',
+      bg: 'bg-gray-100 dark:bg-gray-800'
+    };
+  }
+  return {
+    label: config.label,
+    color: config.color,
+    bg: config.bg
+  };
+}
+
+// Helper to format status for display
+export function formatStatusLabel(status: string): string {
+  const config = STATUS_CONFIG[status as OrderStatus];
+  return config?.label || status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
