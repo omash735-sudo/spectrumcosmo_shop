@@ -56,11 +56,11 @@ export default function SupportPage() {
       {/* HEADER */}
       <div>
         <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-          <div className="w-1 h-5 sm:h-6 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Customer Support</h1>
-          <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
+          <div className="w-1 h-5 sm:h-6 bg-[var(--primary)] rounded-full"></div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">Customer Support</h1>
+          <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
         </div>
-        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+        <p className="text-[var(--foreground-muted)] text-xs sm:text-sm">
           We're here to help you anytime
         </p>
       </div>
@@ -69,57 +69,57 @@ export default function SupportPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
 
         {/* LIVE CHAT */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="bg-[var(--background-card)] border border-[var(--border)] rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 dark:bg-green-950/30 rounded-full flex items-center justify-center">
               <MessageCircle size={16} className="text-green-600 dark:text-green-400 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Live Chat</h2>
+            <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Live Chat</h2>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+          <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-1 sm:mt-2">
             Talk to us instantly on WhatsApp
           </p>
           <button
             onClick={openWhatsApp}
-            className="w-full mt-3 sm:mt-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
+            className="w-full mt-3 sm:mt-4 bg-green-600 hover:bg-green-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
           >
             Start Chat
           </button>
         </div>
 
         {/* EMAIL */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="bg-[var(--background-card)] border border-[var(--border)] rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-950/30 rounded-full flex items-center justify-center">
               <Mail size={16} className="text-blue-600 dark:text-blue-400 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Email Support</h2>
+            <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Email Support</h2>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+          <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-1 sm:mt-2">
             Response within 24 hours
           </p>
           <button
             onClick={sendEmail}
-            className="w-full mt-3 sm:mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
+            className="w-full mt-3 sm:mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
           >
             Send Email
           </button>
         </div>
 
         {/* CALL */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="bg-[var(--background-card)] border border-[var(--border)] rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-200">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-950/30 rounded-full flex items-center justify-center">
               <Phone size={16} className="text-purple-600 dark:text-purple-400 sm:w-[18px] sm:h-[18px]" />
             </div>
-            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">Call Us</h2>
+            <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Call Us</h2>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+          <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-1 sm:mt-2">
             Instant phone support
           </p>
           <a
             href="tel:+265893160202"
-            className="flex items-center justify-center gap-2 w-full mt-3 sm:mt-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
+            className="flex items-center justify-center gap-2 w-full mt-3 sm:mt-4 bg-purple-600 hover:bg-purple-700 text-white py-2 sm:py-2.5 rounded-xl font-medium text-sm transition-all duration-200 shadow-sm"
           >
             <Phone size={14} />
             Call Now
@@ -127,68 +127,70 @@ export default function SupportPage() {
         </div>
       </div>
 
-      {/* FAQ */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4 sm:mb-5">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 dark:bg-orange-950/30 rounded-full flex items-center justify-center">
-            <HelpCircle size={16} className="text-orange-600 dark:text-orange-400 sm:w-[18px] sm:h-[18px]" />
-          </div>
-          <h2 className="font-semibold text-gray-800 dark:text-white text-base sm:text-lg">Frequently Asked Questions</h2>
-        </div>
-
-        <div className="space-y-2.5 sm:space-y-3">
-          {faqs.map((f, i) => (
-            <div
-              key={i}
-              className="border border-gray-100 dark:border-gray-700 rounded-lg sm:rounded-xl overflow-hidden"
-            >
-              <button
-                className="w-full p-3 sm:p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-              >
-                <span className="font-medium text-gray-800 dark:text-gray-200 text-xs sm:text-sm">
-                  {f.q}
-                </span>
-                {openFAQ === i ? (
-                  <ChevronUp size={16} className="text-orange-500 flex-shrink-0" />
-                ) : (
-                  <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                )}
-              </button>
-              {openFAQ === i && (
-                <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
-                    {f.a}
-                  </p>
-                </div>
-              )}
+      {/* FAQ - With Manga Panel */}
+      <div className="manga-bg cards-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-[var(--border)]">
+        <div className="relative z-10 bg-[var(--background-card)] p-4 sm:p-5 md:p-6">
+          <div className="flex items-center gap-2 mb-4 sm:mb-5">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
+              <HelpCircle size={16} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
             </div>
-          ))}
+            <h2 className="font-semibold text-[var(--foreground)] text-base sm:text-lg">Frequently Asked Questions</h2>
+          </div>
+
+          <div className="space-y-2.5 sm:space-y-3">
+            {faqs.map((f, i) => (
+              <div
+                key={i}
+                className="border border-[var(--border)] rounded-lg sm:rounded-xl overflow-hidden"
+              >
+                <button
+                  className="w-full p-3 sm:p-4 flex items-center justify-between text-left hover:bg-[var(--background-secondary)] transition"
+                  onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+                >
+                  <span className="font-medium text-[var(--foreground)] text-xs sm:text-sm">
+                    {f.q}
+                  </span>
+                  {openFAQ === i ? (
+                    <ChevronUp size={16} className="text-[var(--primary)] flex-shrink-0" />
+                  ) : (
+                    <ChevronDown size={16} className="text-[var(--foreground-muted)] flex-shrink-0" />
+                  )}
+                </button>
+                {openFAQ === i && (
+                  <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+                    <p className="text-[var(--foreground-muted)] text-xs sm:text-sm leading-relaxed">
+                      {f.a}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Still Need Help Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-white dark:from-gray-800 dark:to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 text-center border border-gray-100 dark:border-gray-700">
-        <h3 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base mb-1 sm:mb-2">Still need help?</h3>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">Can't find what you're looking for? Contact our support team.</p>
+      <div className="bg-[var(--background-secondary)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 text-center border border-[var(--border)]">
+        <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-1 sm:mb-2">Still need help?</h3>
+        <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mb-3 sm:mb-4">Can't find what you're looking for? Contact our support team.</p>
         <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
           <button
             onClick={openWhatsApp}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-orange-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs sm:text-sm font-medium transition shadow-sm"
           >
             <MessageCircle size={14} />
             WhatsApp Us
           </button>
           <button
             onClick={sendEmail}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-[var(--border)] rounded-lg text-xs sm:text-sm font-medium text-[var(--foreground)] hover:bg-[var(--background-card)] transition"
           >
             <Mail size={14} />
             Email Us
           </button>
           <Link
             href="/faq"
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-[var(--border)] rounded-lg text-xs sm:text-sm font-medium text-[var(--foreground)] hover:bg-[var(--background-card)] transition"
           >
             <HelpCircle size={14} />
             View All FAQs
@@ -197,7 +199,7 @@ export default function SupportPage() {
       </div>
 
       {/* FOOT NOTE */}
-      <div className="text-center text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
+      <div className="text-center text-[10px] sm:text-xs text-[var(--foreground-muted)]">
         SpectrumCosmo Support • We respond fast
       </div>
     </div>
