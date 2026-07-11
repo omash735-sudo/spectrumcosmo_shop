@@ -38,6 +38,19 @@ interface VerificationEmailData {
   token: string;
 }
 
+// Brand Colors
+const BRAND_COLORS = {
+  primary: '#C96712',      // Burnt Orange
+  primaryDark: '#E27716',  // Orange Hover
+  primaryLight: '#F5F0EB', // Light background
+  dark: '#111111',         // Rich Black
+  darkCard: '#232323',     // Cards
+  text: '#F5F5F5',         // Pure White
+  textMuted: '#9A9A9A',    // Cool Gray
+  border: '#343434',       // Borders
+  white: '#FFFFFF',
+};
+
 // Constants
 const TEMPLATE_CACHE_TTL = 3600000; // 1 hour
 const MAX_RETRIES = 3;
@@ -103,7 +116,6 @@ function cleanTemplateCache(): void {
 setInterval(cleanTemplateCache, 60000);
 
 async function getEmailTemplate(name: string): Promise<EmailTemplate | null> {
-  // Check cache
   const cached = templateCache.get(name);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.template;
@@ -137,7 +149,6 @@ function replacePlaceholders(text: string, placeholders: Record<string, string>)
     result = result.replace(regex, value);
   }
   
-  // Handle conditional blocks {{#key}}content{{/key}}
   const conditionalRegex = /{{#(\w+)}}([\s\S]*?){{\/\1}}/g;
   result = result.replace(conditionalRegex, (match, key, content) => {
     const value = placeholders[key];
@@ -155,12 +166,12 @@ function getStatusColorHex(colorName: string): string {
     yellow: '#EAB308',
     blue: '#3B82F6',
     purple: '#8B5CF6',
-    orange: '#F97316',
+    orange: '#C96712',
     green: '#22C55E',
     red: '#EF4444',
-    gray: '#6B7280',
+    gray: '#9A9A9A',
   };
-  return colorMap[colorName] || '#F97316';
+  return colorMap[colorName] || '#C96712';
 }
 
 // Retry wrapper for email sending
@@ -200,14 +211,14 @@ export async function sendDynamicStatusEmail(data: DynamicStatusEmailData): Prom
     return;
   }
 
-  const statusMessage = statusInfo.description || `Your order has been ${statusInfo.name.toLowerCase()}.`;
+  const statusMessage = statusInfo.description || `Your order has been ${statusInfo.label.toLowerCase()}.`;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.com';
 
   const placeholders: Record<string, string> = {
     customer_name: data.customerName,
     order_number: data.orderNumber,
     total_amount: `MWK ${data.totalAmount.toLocaleString()}`,
-    status_name: statusInfo.name,
+    status_name: statusInfo.label,
     status_color: getStatusColorHex(statusInfo.color),
     status_message: statusMessage,
     tracking_url: `${appUrl}/account/orders/${data.orderId}`,
@@ -233,42 +244,47 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData): P
   
   const itemsHtml = data.items.map(item => `
     <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">MWK ${item.price.toLocaleString()}</td>
+      <td style="padding: 8px; border-bottom: 1px solid ${BRAND_COLORS.border};">${item.name}</td>
+      <td style="padding: 8px; border-bottom: 1px solid ${BRAND_COLORS.border}; text-align: center;">${item.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid ${BRAND_COLORS.border}; text-align: right; color: ${BRAND_COLORS.primary};">
+        MWK ${item.price.toLocaleString()}
+      </td>
     </tr>
   `).join('');
   
   const html = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
-      <div style="background: #F97316; padding: 24px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Order Confirmed!</h1>
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid ${BRAND_COLORS.border}; border-radius: 20px; overflow: hidden; background: ${BRAND_COLORS.white};">
+      <div style="background: ${BRAND_COLORS.primary}; padding: 24px 20px; text-align: center;">
+        <h1 style="color: ${BRAND_COLORS.white}; margin: 0; font-size: 28px;">Order Confirmed! 🎉</h1>
+        <p style="color: ${BRAND_COLORS.white}; opacity: 0.9; margin: 8px 0 0;">Wear your excitement with pride</p>
       </div>
-      <div style="padding: 24px; background: white;">
-        <p style="font-size: 16px;">Hi <strong>${data.name}</strong>,</p>
-        <p>Thank you for your order! We've received your order and will process it shortly.</p>
+      <div style="padding: 24px; background: ${BRAND_COLORS.white};">
+        <p style="font-size: 16px; color: ${BRAND_COLORS.dark};">Hi <strong>${data.name}</strong>,</p>
+        <p style="color: ${BRAND_COLORS.dark};">Thank you for your order! We've received your order and will process it shortly.</p>
         
-        <div style="background: #f9f9f9; padding: 16px; border-radius: 12px; margin: 20px 0;">
-          <p style="margin: 0 0 8px;"><strong>Order Number:</strong> ${data.orderNumber}</p>
-          <p style="margin: 0;"><strong>Estimated Delivery:</strong> ${data.estimatedDays} business days</p>
+        <div style="background: #f9f9f9; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid ${BRAND_COLORS.border};">
+          <p style="margin: 0 0 8px; color: ${BRAND_COLORS.dark};"><strong>Order Number:</strong> ${data.orderNumber}</p>
+          <p style="margin: 0; color: ${BRAND_COLORS.dark};"><strong>Estimated Delivery:</strong> ${data.estimatedDays} business days</p>
         </div>
         
-        <h3 style="margin: 20px 0 12px;">Order Items</h3>
-        <table style="width: 100%; border-collapse: collapse;">
+        <h3 style="margin: 20px 0 12px; color: ${BRAND_COLORS.dark};">Order Items</h3>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid ${BRAND_COLORS.border}; border-radius: 8px; overflow: hidden;">
           <thead>
-            <tr style="background: #f0f0f0;">
-              <th style="padding: 8px; text-align: left;">Product</th>
-              <th style="padding: 8px; text-align: center;">Qty</th>
-              <th style="padding: 8px; text-align: right;">Price</th>
-             </tr>
+            <tr style="background: ${BRAND_COLORS.primary};">
+              <th style="padding: 10px 12px; text-align: left; color: ${BRAND_COLORS.white};">Product</th>
+              <th style="padding: 10px 12px; text-align: center; color: ${BRAND_COLORS.white};">Qty</th>
+              <th style="padding: 10px 12px; text-align: right; color: ${BRAND_COLORS.white};">Price</th>
+            </tr>
           </thead>
           <tbody>
             ${itemsHtml}
           </tbody>
           <tfoot>
-            <tr>
-              <td colspan="2" style="padding: 12px 8px; text-align: right; font-weight: bold;">Total:</td>
-              <td style="padding: 12px 8px; text-align: right; font-weight: bold; color: #F97316;">
+            <tr style="background: #f9f9f9;">
+              <td colspan="2" style="padding: 12px 12px; text-align: right; font-weight: bold; color: ${BRAND_COLORS.dark};">
+                Total:
+              </td>
+              <td style="padding: 12px 12px; text-align: right; font-weight: bold; color: ${BRAND_COLORS.primary}; font-size: 18px;">
                 MWK ${data.totalAmount.toLocaleString()}
               </td>
             </tr>
@@ -277,13 +293,16 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData): P
         
         <div style="text-align: center; margin: 30px 0 20px;">
           <a href="${appUrl}/account/orders/${data.orderId}" 
-             style="background: #F97316; color: white; padding: 10px 24px; border-radius: 40px; text-decoration: none; font-weight: bold;">
-            Track Your Order
+             style="background: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.white}; padding: 12px 32px; border-radius: 40px; text-decoration: none; font-weight: bold; display: inline-block;">
+            Track Your Order →
           </a>
         </div>
         
-        <hr style="margin: 20px 0;" />
-        <p style="font-size: 12px; color: #888;">SpectrumCosmo – Wear your excitement with pride.</p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid ${BRAND_COLORS.border};" />
+        <p style="font-size: 12px; color: ${BRAND_COLORS.textMuted}; text-align: center;">
+          SpectrumCosmo – Wear your excitement with pride.<br>
+          © ${new Date().getFullYear()} SpectrumCosmo. All rights reserved.
+        </p>
       </div>
     </div>
   `;
@@ -303,21 +322,26 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   const fromEmail = process.env.GMAIL_USER || process.env.SMTP_USER || 'noreply@spectrumcosmo.com';
   
   const html = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
-      <div style="background: #F97316; padding: 24px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Verify Your Email</h1>
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid ${BRAND_COLORS.border}; border-radius: 20px; overflow: hidden; background: ${BRAND_COLORS.white};">
+      <div style="background: ${BRAND_COLORS.primary}; padding: 24px 20px; text-align: center;">
+        <h1 style="color: ${BRAND_COLORS.white}; margin: 0; font-size: 28px;">Verify Your Email</h1>
+        <p style="color: ${BRAND_COLORS.white}; opacity: 0.9; margin: 8px 0 0;">Welcome to SpectrumCosmo!</p>
       </div>
-      <div style="padding: 24px; background: white;">
-        <p style="font-size: 16px;">Hi <strong>${name}</strong>,</p>
-        <p>Thanks for joining SpectrumCosmo! Please confirm your email address by clicking the button below:</p>
+      <div style="padding: 24px; background: ${BRAND_COLORS.white};">
+        <p style="font-size: 16px; color: ${BRAND_COLORS.dark};">Hi <strong>${name}</strong>,</p>
+        <p style="color: ${BRAND_COLORS.dark};">Thanks for joining SpectrumCosmo! Please confirm your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${verificationUrl}" style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">
-            Verify Email Address
+          <a href="${verificationUrl}" 
+             style="background: ${BRAND_COLORS.primary}; color: ${BRAND_COLORS.white}; padding: 12px 32px; border-radius: 40px; text-decoration: none; font-weight: bold; display: inline-block;">
+            Verify Email Address →
           </a>
         </div>
-        <p style="font-size: 13px; color: #777;">This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
-        <hr style="margin: 20px 0;" />
-        <p style="font-size: 12px; color: #888;">SpectrumCosmo – Wear your excitement with pride.</p>
+        <p style="font-size: 13px; color: ${BRAND_COLORS.textMuted};">This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid ${BRAND_COLORS.border};" />
+        <p style="font-size: 12px; color: ${BRAND_COLORS.textMuted}; text-align: center;">
+          SpectrumCosmo – Wear your excitement with pride.<br>
+          © ${new Date().getFullYear()} SpectrumCosmo. All rights reserved.
+        </p>
       </div>
     </div>
   `;
