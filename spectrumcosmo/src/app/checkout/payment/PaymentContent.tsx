@@ -85,7 +85,6 @@ export default function PaymentPage() {
   const [dragActive, setDragActive] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
 
-  // Constants
   const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
   const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -370,12 +369,12 @@ export default function PaymentPage() {
   const { order, provider, existing_proof, existing_note, existing_transaction_ref, items } = paymentData;
   const isPaid = order.payment_status === 'paid';
   const isAwaiting = order.payment_status === 'awaiting_verification';
+  const isPendingProducts = order.payment_status === 'pending_products';
   const isCancelled = order.status === 'cancelled';
   const isQuoteOrder = order.delivery_quote_status === 'quoted';
-  const canUpload = !isPaid && !isAwaiting && !isCancelled && !isQuoteOrder;
+  const canUpload = !isPaid && !isAwaiting && !isCancelled && !isQuoteOrder && !isPendingProducts;
   const hasExpiry = order.expires_at && new Date(order.expires_at) > new Date();
 
-  // Get status configs
   const orderStatusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
 
@@ -391,7 +390,6 @@ export default function PaymentPage() {
       <main className="min-h-screen bg-[var(--background)] py-8 sm:py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
               {isQuoteOrder ? 'Complete Delivery Payment' : 'Complete Your Payment'}
@@ -403,7 +401,6 @@ export default function PaymentPage() {
             </p>
           </div>
 
-          {/* Step Progress Indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-center gap-2 sm:gap-4">
               {steps.map((step, idx) => (
@@ -430,10 +427,8 @@ export default function PaymentPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             
-            {/* LEFT COLUMN - Payment Instructions and Upload */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Payment Deadline Warning */}
               {hasExpiry && canUpload && (
                 <div className="bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
                   <Timer className="text-yellow-600 dark:text-yellow-400 w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -445,7 +440,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Quote Payment Card */}
               {isQuoteOrder && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -464,7 +458,7 @@ export default function PaymentPage() {
                       <span className="text-2xl font-bold text-[var(--primary)]">MWK {order.quoted_delivery_fee?.toLocaleString()}</span>
                     </div>
                   </div>
-                  {order.payment_status === 'pending_products' && (
+                  {isPendingProducts && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={retryingPayment}
@@ -477,7 +471,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Order Summary Card - Collapsible */}
               <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                 <button
                   onClick={() => setShowOrderItems(!showOrderItems)}
@@ -515,7 +508,6 @@ export default function PaymentPage() {
                 )}
               </div>
 
-              {/* Payment Instructions Card - Manual Payment Only */}
               {provider && !isPaid && !isQuoteOrder && (
                 <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                   <div className="bg-[var(--primary)] px-6 py-4">
@@ -526,7 +518,6 @@ export default function PaymentPage() {
                     <p className="text-orange-100 text-xs mt-1">Follow these steps to complete your payment</p>
                   </div>
                   <div className="p-6 space-y-5">
-                    {/* Provider Info */}
                     <div className="flex items-center gap-4 p-4 bg-[var(--background-secondary)] rounded-xl">
                       <div className="w-12 h-12 bg-[var(--background-card)] rounded-full flex items-center justify-center shadow-sm">
                         {provider.category === 'mobile_money' ? (
@@ -542,7 +533,6 @@ export default function PaymentPage() {
                       </div>
                     </div>
 
-                    {/* Account Details */}
                     <div className="space-y-3">
                       {provider.category === 'mobile_money' && provider.account_number && (
                         <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
@@ -595,7 +585,6 @@ export default function PaymentPage() {
                       )}
                     </div>
 
-                    {/* Instructions */}
                     {provider.instructions && (
                       <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
                         <p className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
@@ -605,7 +594,6 @@ export default function PaymentPage() {
                       </div>
                     )}
 
-                    {/* Total Amount */}
                     <div className="border-t border-[var(--border)] pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-[var(--foreground-muted)]">Total Amount to Pay</span>
@@ -621,7 +609,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Automatic Payment Button */}
               {provider?.type === 'automatic' && !isPaid && !isQuoteOrder && (
                 <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                   <div className="bg-green-600 px-6 py-4">
@@ -648,7 +635,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Upload Payment Proof Card */}
               {canUpload && !isQuoteOrder && (
                 <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                   <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
@@ -660,7 +646,6 @@ export default function PaymentPage() {
                   </div>
                   <div className="p-6">
                     <form onSubmit={uploadProof} className="space-y-5">
-                      {/* Drag and Drop Upload Area */}
                       {!proofFile ? (
                         <div
                           onDragEnter={handleDrag}
@@ -750,7 +735,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Existing Proof Card */}
               {existing_proof && (
                 <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                   <div className={`px-6 py-4 border-b border-[var(--border)] ${isAwaiting ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
@@ -802,7 +786,6 @@ export default function PaymentPage() {
               )}
             </div>
 
-            {/* RIGHT COLUMN - Order Total Card */}
             <div className="lg:col-span-1">
               <div className="bg-[var(--background-card)] rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden sticky top-24">
                 <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
@@ -850,7 +833,6 @@ export default function PaymentPage() {
                     <span className="text-[var(--primary)] text-xl">MWK {order.total_amount.toLocaleString()}</span>
                   </div>
 
-                  {/* Order Status Badge */}
                   <div className={`mt-4 p-3 rounded-xl text-center ${orderStatusConfig.bg}`}>
                     <div className={`flex items-center justify-center gap-2 ${orderStatusConfig.color}`}>
                       <orderStatusConfig.icon size={16} />
@@ -858,7 +840,6 @@ export default function PaymentPage() {
                     </div>
                   </div>
 
-                  {/* Payment Status Badge */}
                   <div className={`p-3 rounded-xl text-center ${paymentStatusConfig.bg}`}>
                     <div className={`flex items-center justify-center gap-2 ${paymentStatusConfig.color}`}>
                       <paymentStatusConfig.icon size={16} />
@@ -866,7 +847,6 @@ export default function PaymentPage() {
                     </div>
                   </div>
 
-                  {/* Security Badges */}
                   <div className="mt-4 pt-3 border-t border-[var(--border)]">
                     <div className="flex items-center justify-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
@@ -886,7 +866,6 @@ export default function PaymentPage() {
                     </div>
                   </div>
 
-                  {/* Help Section */}
                   <div className="mt-4 pt-3 border-t border-[var(--border)]">
                     <p className="text-xs text-[var(--foreground-muted)] text-center">Need help with payment?</p>
                     <div className="flex items-center justify-center gap-4 mt-2">
@@ -907,7 +886,6 @@ export default function PaymentPage() {
                 </div>
               </div>
 
-              {/* Tip Card */}
               <div className="mt-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
                 <div className="flex items-start gap-3">
                   <Sparkles size={16} className="text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
