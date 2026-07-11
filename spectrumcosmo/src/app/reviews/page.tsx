@@ -203,27 +203,29 @@ export default function ReviewsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-900 py-12">
+      <main className="min-h-screen bg-[var(--background)] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-4">
-              <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
-              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Testimonials</span>
+          {/* Header - With Manga Panel */}
+          <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-12">
+            <div className="relative z-10 text-center p-6 sm:p-8 md:p-10 bg-[var(--background-card)]/95">
+              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
+                <Sparkles size={14} className="text-[var(--primary)]" />
+                <span className="text-xs font-medium text-[var(--primary)]">Testimonials</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">Customer Reviews</h1>
+              <p className="text-[var(--foreground-muted)] mt-2 max-w-xl mx-auto">See what our customers are saying about SpectrumCosmo products.</p>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Customer Reviews</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-xl mx-auto">See what our customers are saying about SpectrumCosmo products.</p>
           </div>
 
           {/* Rating Summary Card */}
           {allReviews.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="bg-[var(--background-card)] rounded-2xl p-6 mb-8 shadow-sm border border-[var(--border)]">
               <div className="flex flex-col md:flex-row gap-6 items-center">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-gray-900 dark:text-white">{averageRating.toFixed(1)}</div>
+                  <div className="text-4xl font-bold text-[var(--foreground)]">{averageRating.toFixed(1)}</div>
                   <StarRating rating={averageRating} size={20} />
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Based on {totalReviews} reviews</p>
+                  <p className="text-sm text-[var(--foreground-muted)] mt-1">Based on {totalReviews} reviews</p>
                 </div>
                 <div className="flex-1 space-y-2">
                   {[5, 4, 3, 2, 1].map(star => {
@@ -235,11 +237,11 @@ export default function ReviewsPage() {
                         onClick={() => setRatingFilter(ratingFilter === star ? null : star)}
                         className="w-full flex items-center gap-2 group"
                       >
-                        <span className="text-sm text-gray-600 dark:text-gray-400 w-8">{star} ★</span>
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <span className="text-sm text-[var(--foreground-muted)] w-8">{star} ★</span>
+                        <div className="flex-1 h-2 bg-[var(--background-secondary)] rounded-full overflow-hidden">
                           <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${percentage}%` }} />
                         </div>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 w-10">{count}</span>
+                        <span className="text-xs text-[var(--foreground-muted)] w-10">{count}</span>
                       </button>
                     );
                   })}
@@ -250,13 +252,13 @@ export default function ReviewsPage() {
 
           {/* Tabs */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-            <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+            <div className="inline-flex bg-[var(--background-secondary)] rounded-full p-1">
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition ${
                   activeTab === 'all'
-                    ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400'
+                    ? 'bg-[var(--background-card)] text-[var(--primary)] shadow-sm'
+                    : 'text-[var(--foreground-muted)] hover:text-[var(--primary)]'
                 }`}
               >
                 All Reviews
@@ -265,8 +267,8 @@ export default function ReviewsPage() {
                 onClick={() => setActiveTab('my')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition ${
                   activeTab === 'my'
-                    ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400'
+                    ? 'bg-[var(--background-card)] text-[var(--primary)] shadow-sm'
+                    : 'text-[var(--foreground-muted)] hover:text-[var(--primary)]'
                 }`}
               >
                 My Reviews
@@ -278,7 +280,7 @@ export default function ReviewsPage() {
                 {ratingFilter !== null && (
                   <button
                     onClick={() => setRatingFilter(null)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs font-medium"
                   >
                     {ratingFilter} ★ <X size={12} />
                   </button>
@@ -287,13 +289,13 @@ export default function ReviewsPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-1.5 pr-8 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500"
+                    className="appearance-none bg-[var(--background-card)] border border-[var(--border)] rounded-full px-4 py-1.5 pr-8 text-sm text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)]"
                   >
                     {sortOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] pointer-events-none" />
                 </div>
               </div>
             )}
@@ -303,16 +305,16 @@ export default function ReviewsPage() {
           {activeTab === 'all' && (
             loadingAll ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-orange-500" size={40} />
+                <Loader2 className="animate-spin text-[var(--primary])" size={40} />
               </div>
             ) : filteredReviews.length === 0 ? (
-              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <Star size={48} className="text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">No reviews found</p>
+              <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+                <Star size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
+                <p className="text-[var(--foreground-muted)]">No reviews found</p>
                 {(ratingFilter !== null || sortBy !== 'newest') && (
                   <button
                     onClick={() => { setRatingFilter(null); setSortBy('newest'); }}
-                    className="mt-4 text-orange-500 hover:text-orange-600 text-sm"
+                    className="mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm"
                   >
                     Clear filters →
                   </button>
@@ -326,22 +328,22 @@ export default function ReviewsPage() {
           {/* My Reviews Tab */}
           {activeTab === 'my' && (
             !user ? (
-              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <User size={48} className="text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 mb-4">Please login to see your reviews</p>
-                <a href="/login" className="inline-block bg-orange-500 text-white px-6 py-2 rounded-full font-medium hover:bg-orange-600 transition">
+              <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+                <User size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
+                <p className="text-[var(--foreground-muted)] mb-4">Please login to see your reviews</p>
+                <a href="/login" className="inline-block bg-[var(--primary)] text-white px-6 py-2 rounded-full font-medium hover:bg-[var(--primary-hover)] transition">
                   Login
                 </a>
               </div>
             ) : loadingMy ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-orange-500" size={40} />
+                <Loader2 className="animate-spin text-[var(--primary])" size={40} />
               </div>
             ) : myReviews.length === 0 ? (
-              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <Edit2 size={48} className="text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't written any reviews yet</p>
-                <Link href="/reviews/submit" className="inline-block bg-orange-500 text-white px-6 py-2 rounded-full font-medium hover:bg-orange-600 transition">
+              <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+                <Edit2 size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
+                <p className="text-[var(--foreground-muted)] mb-4">You haven't written any reviews yet</p>
+                <Link href="/reviews/submit" className="inline-block bg-[var(--primary)] text-white px-6 py-2 rounded-full font-medium hover:bg-[var(--primary-hover)] transition">
                   Write a Review
                 </Link>
               </div>
@@ -357,17 +359,17 @@ export default function ReviewsPage() {
                   const isEditing = editingId === review.id;
 
                   return (
-                    <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition">
+                    <div key={review.id} className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6 shadow-sm hover:shadow-md transition">
                       <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                         <div className="flex-1">
                           {isEditing ? (
                             <div className="space-y-4">
                               <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rating:</span>
+                                <span className="text-sm font-medium text-[var(--foreground)]">Rating:</span>
                                 <select 
                                   value={editRating} 
                                   onChange={(e) => setEditRating(parseInt(e.target.value))}
-                                  className="border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-1.5 text-sm focus:ring-orange-500"
+                                  className="border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-lg px-3 py-1.5 text-sm focus:ring-[var(--primary)]"
                                 >
                                   {[5,4,3,2,1].map(r => (
                                     <option key={r} value={r}>{r} Star{r !== 1 ? 's' : ''}</option>
@@ -377,21 +379,21 @@ export default function ReviewsPage() {
                               <textarea
                                 value={editText}
                                 onChange={(e) => setEditText(e.target.value)}
-                                className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                className="w-full border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl p-3 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                                 rows={4}
                               />
                               <div className="flex gap-3">
                                 <button
                                   onClick={() => handleSaveEdit(review.id)}
                                   disabled={isSaving}
-                                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-2 rounded-xl text-sm font-medium hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 inline-flex items-center gap-2"
+                                  className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-5 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 inline-flex items-center gap-2"
                                 >
                                   {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                   {isSaving ? 'Saving...' : 'Save Changes'}
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
-                                  className="border border-gray-300 dark:border-gray-600 px-5 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition inline-flex items-center gap-2"
+                                  className="border border-[var(--border)] px-5 py-2 rounded-xl text-sm font-medium text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition inline-flex items-center gap-2"
                                 >
                                   <X size={14} />
                                   Cancel
@@ -403,11 +405,11 @@ export default function ReviewsPage() {
                               <StarRating rating={review.rating} size={18} />
                               {review.product_name && (
                                 <div className="flex items-center gap-1 mt-2">
-                                  <ShoppingBag size={12} className="text-gray-400 dark:text-gray-500" />
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">Product: {review.product_name}</p>
+                                  <ShoppingBag size={12} className="text-[var(--foreground-muted)]" />
+                                  <p className="text-xs text-[var(--foreground-muted)]">Product: {review.product_name}</p>
                                 </div>
                               )}
-                              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mt-3">"{review.review_text}"</p>
+                              <p className="text-[var(--foreground)] text-sm leading-relaxed mt-3">"{review.review_text}"</p>
                             </>
                           )}
                         </div>
@@ -419,7 +421,7 @@ export default function ReviewsPage() {
                           {canEdit && !isEditing && (
                             <button
                               onClick={() => handleEdit(review)}
-                              className="text-orange-500 hover:text-orange-600 text-sm font-medium inline-flex items-center gap-1"
+                              className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm font-medium inline-flex items-center gap-1"
                             >
                               <Edit2 size={14} />
                               Edit Review
@@ -428,18 +430,18 @@ export default function ReviewsPage() {
                         </div>
                       </div>
                       {!isEditing && review.image_url && (
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden border mt-3">
+                        <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-[var(--border)] mt-3">
                           <Image src={review.image_url} alt="Review" fill className="object-cover" />
                         </div>
                       )}
                       {!isEditing && (
-                        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                          <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[var(--border)]">
+                          <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
                             <Calendar size={12} />
                             <span>{new Date(review.created_at).toLocaleDateString()}</span>
                           </div>
                           {review.updated_at && review.updated_at !== review.created_at && (
-                            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                            <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
                               <Edit2 size={12} />
                               <span>Edited</span>
                             </div>
