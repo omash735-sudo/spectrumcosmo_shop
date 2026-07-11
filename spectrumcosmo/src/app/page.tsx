@@ -96,7 +96,7 @@ function TrustBar() {
   ];
   const doubledItems = [...trustItems, ...trustItems];
   return (
-    <div className="bg-gray-900 dark:bg-gray-950 text-white overflow-hidden py-3">
+    <div className="bg-[var(--background-secondary)] dark:bg-[var(--background-secondary)] text-[var(--foreground)] overflow-hidden py-3 border-y border-[var(--border)]">
       <div className="relative w-full">
         <div 
           className="flex whitespace-nowrap animate-marquee hover:animation-pause"
@@ -106,7 +106,7 @@ function TrustBar() {
             const Icon = item.icon;
             return (
               <div key={idx} className="flex items-center gap-2 mx-6 text-sm font-medium">
-                <Icon size={16} className="text-orange-400 flex-shrink-0" />
+                <Icon size={16} className="text-[var(--primary)] flex-shrink-0" />
                 <span>{item.text}</span>
               </div>
             );
@@ -161,9 +161,9 @@ export default async function HomePage() {
       <Navbar />
       <main>
         {/* ============================================
-            HERO SECTION - MOBILE OPTIMIZED
+            HERO SECTION - Background: var(--background) = #111111 (dark) / #f5f5f5 (light)
             ============================================ */}
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-white dark:bg-gray-900 overflow-x-hidden">
+        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden">
           {h.bg_image_url && (
             <Image
               src={h.bg_image_url}
@@ -186,15 +186,15 @@ export default async function HomePage() {
           <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
               
-              {/* LEFT CONTENT - FIXED FOR MOBILE */}
+              {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 
                 {/* Badge */}
                 <Link
                   href={h.badge_link || '#'}
-                  className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6 hover:bg-gray-200 dark:hover:bg-gray-700 transition max-w-full"
+                  className="inline-flex items-center gap-2 bg-[var(--background-card)] dark:bg-[var(--background-card)] text-[var(--foreground)] text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6 hover:bg-[var(--border)] dark:hover:bg-[var(--border)] transition max-w-full border border-[var(--border)]"
                 >
-                  <Sparkles size={12} className="text-orange-500 flex-shrink-0 sm:w-[14px] sm:h-[14px]" />
+                  <Sparkles size={12} className="text-[var(--primary)] flex-shrink-0 sm:w-[14px] sm:h-[14px]" />
                   <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-xs">
                     {h.badge_text}
                   </span>
@@ -202,21 +202,21 @@ export default async function HomePage() {
                 </Link>
 
                 {/* Heading */}
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 dark:text-white leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
+                <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
-                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] bg-clip-text text-transparent">
                       {h.highlighted_word}
                     </span>
                     <svg className="absolute -bottom-2 sm:-bottom-3 left-0 w-full" height="8" viewBox="0 0 300 10" fill="none">
-                      <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#F97316" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                      <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#C96712" strokeWidth="3" strokeLinecap="round" fill="none"/>
                     </svg>
                   </span>{' '}
                   <span className="whitespace-nowrap">with pride.</span>
                 </h1>
 
                 {/* Description */}
-                <p className="text-sm xs:text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8">
+                <p className="text-sm xs:text-base sm:text-lg text-[var(--foreground-muted)] leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8">
                   {h.description}
                 </p>
 
@@ -224,14 +224,14 @@ export default async function HomePage() {
                 <div className="flex flex-wrap gap-2 sm:gap-4 justify-center lg:justify-start">
                   <Link
                     href={h.button1_link}
-                    className="group bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white px-5 sm:px-8 py-2.5 sm:py-4 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center gap-2 text-sm sm:text-base"
+                    className="btn-primary"
                   >
                     {h.button1_text}
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
                   </Link>
                   <Link
                     href="#featured"
-                    className="group border-2 border-gray-300 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-5 sm:px-8 py-2.5 sm:py-4 rounded-full font-semibold transition-all duration-300 inline-flex items-center gap-2 text-sm sm:text-base whitespace-nowrap"
+                    className="btn-secondary"
                   >
                     View Collection
                     <ShoppingBag size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
@@ -239,23 +239,23 @@ export default async function HomePage() {
                 </div>
 
                 {/* Features */}
-                <div className="flex flex-wrap gap-3 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    <Shield size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                <div className="flex flex-wrap gap-3 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--border)]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
+                    <Shield size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature1}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    <Truck size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
+                    <Truck size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature2}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    <Sparkles size={15} className="text-gray-500 dark:text-gray-500 sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
+                    <Sparkles size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature3}</span>
                   </div>
                 </div>
               </div>
 
-              {/* RIGHT IMAGES - MARQUEE - FIXED FOR MOBILE */}
+              {/* RIGHT IMAGES - MARQUEE */}
               <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
                 <div className="relative -mx-4 sm:mx-0 px-4 sm:px-0">
                   <HeroImageMarquee
@@ -274,59 +274,72 @@ export default async function HomePage() {
 
         <TrustBar />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-          <div className="text-center mb-12">
-            <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Shop by Category</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">Explore Our Collections</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">Find the perfect piece that matches your style and passion</p>
+        {/* ============================================
+            CATEGORIES SECTION - Background: var(--background-card) = #232323 (dark) / #ffffff (light)
+            ============================================ */}
+        <div className="bg-[var(--background-card)] py-8 md:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Shop by Category</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">Explore Our Collections</h2>
+              <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">Find the perfect piece that matches your style and passion</p>
+            </div>
+            <CategoriesSection />
           </div>
-          <CategoriesSection />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16" id="featured">
-          <div className="text-center mb-12">
-            <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Trending Now</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">Featured Products</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">Handpicked items our customers love</p>
+        {/* ============================================
+            FEATURED PRODUCTS - Background: var(--background-secondary) = #1B1B1B (dark) / #e8e8e8 (light)
+            ============================================ */}
+        <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Trending Now</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">Featured Products</h2>
+              <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">Handpicked items our customers love</p>
+            </div>
+            <FeaturedProducts />
           </div>
-          <FeaturedProducts />
         </div>
 
+        {/* ============================================
+            REVIEWS SECTION - Background: var(--background) = #111111 (dark) / #f5f5f5 (light)
+            ============================================ */}
         {reviews && reviews.length > 0 && (
-          <div className="bg-orange-50 dark:bg-gray-800 py-8 md:py-16">
+          <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
-                <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">Testimonials</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">What Our Customers Say</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-3">Join thousands of happy customers who love their SpectrumCosmo gear</p>
+                <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Testimonials</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">What Our Customers Say</h2>
+                <p className="text-[var(--foreground-muted)] mt-3">Join thousands of happy customers who love their SpectrumCosmo gear</p>
               </div>
               <div className="grid md:grid-cols-3 gap-6">
                 {reviews.slice(0, 3).map((review, idx) => (
-                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div key={idx} className="bg-[var(--background-card)] rounded-2xl p-6 shadow-sm border border-[var(--border)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                     <div className="flex gap-1 mb-3">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'} />
+                        <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-[var(--primary)] text-[var(--primary)]' : 'text-[var(--border)]'} />
                       ))}
                     </div>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">"{review.review_text || review.comment || 'Amazing quality! The design is perfect.'}"</p>
+                    <p className="text-[var(--foreground-muted)] text-sm leading-relaxed">"{review.review_text || review.comment || 'Amazing quality! The design is perfect.'}"</p>
                     <div className="mt-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                      <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
+                        <span className="text-[var(--primary)] font-semibold">
                           {(review.customer_name || review.user_name || review.name || 'A').charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
+                        <p className="font-semibold text-[var(--foreground)] text-sm">
                           {review.customer_name || review.user_name || review.name || 'Verified Buyer'}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">Verified Purchase</p>
+                        <p className="text-xs text-[var(--foreground-muted)]">Verified Purchase</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="text-center mt-8">
-                <Link href="/reviews" className="inline-flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors">
+                <Link href="/reviews" className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] font-medium transition-colors">
                   Read all reviews <ArrowRight size={16} />
                 </Link>
               </div>
@@ -334,41 +347,57 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-          <RecentlyViewed />
-        </div>
-
-        <div className="bg-gray-900 dark:bg-gray-950 py-16 lg:py-20">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="inline-flex items-center gap-2 bg-gray-800 dark:bg-gray-800 px-4 py-2 rounded-full mb-6">
-              <Zap size={16} className="text-gray-400" />
-              <span className="text-gray-300 text-sm font-medium">Stay Updated</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Join Our Newsletter</h2>
-            <p className="text-gray-300 mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
-            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
-              <input type="email" name="email" placeholder="Your email address" className="w-full sm:flex-1 px-5 py-3 rounded-full bg-white/10 dark:bg-gray-800/50 border border-white/20 dark:border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all" />
-              <button type="submit" className="bg-gray-800 dark:bg-gray-800 hover:bg-gray-700 dark:hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center gap-2 justify-center shadow-md hover:shadow-lg">
-                Subscribe <Send size={16} />
-              </button>
-            </form>
-            <p className="text-gray-500 text-xs mt-4">No spam. Unsubscribe anytime.</p>
+        {/* ============================================
+            RECENTLY VIEWED - Background: var(--background-card) = #232323 (dark) / #ffffff (light)
+            ============================================ */}
+        <div className="bg-[var(--background-card)] py-8 md:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <RecentlyViewed />
           </div>
         </div>
 
-        <section className="bg-gray-50 dark:bg-gray-900 py-20 lg:py-24">
+        {/* ============================================
+            NEWSLETTER - Background: var(--background-hero) = #111111 (dark) / #111111 (light - always dark)
+            ============================================ */}
+        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              Ready to wear your <span className="underline decoration-2">excitement?</span>
+            <div className="inline-flex items-center gap-2 bg-[var(--background-card)] px-4 py-2 rounded-full mb-6 border border-[var(--border)]">
+              <Zap size={16} className="text-[var(--primary)]" />
+              <span className="text-[var(--foreground-muted)] text-sm font-medium">Stay Updated</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#F5F5F5] mb-4">Join Our Newsletter</h2>
+            <p className="text-[#9A9A9A] mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
+            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Your email address" 
+                className="w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all" 
+              />
+              <button type="submit" className="btn-primary justify-center">
+                Subscribe <Send size={16} />
+              </button>
+            </form>
+            <p className="text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
+          </div>
+        </div>
+
+        {/* ============================================
+            CTA SECTION - Background: var(--background-secondary) = #1B1B1B (dark) / #e8e8e8 (light)
+            ============================================ */}
+        <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)]">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <h2 className="text-4xl sm:text-5xl font-bold text-[var(--foreground)] mb-6">
+              Ready to wear your <span className="text-[var(--primary)] underline decoration-2">excitement?</span>
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-10 max-w-xl mx-auto">
+            <p className="text-[var(--foreground-muted)] text-lg mb-10 max-w-xl mx-auto">
               Browse our full collection and find the piece that speaks to your passion.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/products" className="bg-gray-900 dark:bg-gray-800 text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-800 dark:hover:bg-gray-700 transition-all inline-flex items-center gap-2 shadow-lg hover:shadow-xl">
+              <Link href="/products" className="btn-primary">
                 Explore Products <ArrowRight size={18} />
               </Link>
-              <Link href="/reviews/submit" className="border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-8 py-4 rounded-full font-semibold hover:border-gray-600 dark:hover:border-gray-400 hover:text-gray-900 dark:hover:text-white transition-all inline-flex items-center gap-2">
+              <Link href="/reviews/submit" className="btn-secondary">
                 Share Your Story
               </Link>
             </div>
