@@ -1,3 +1,4 @@
+// app/checkout/payment/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,6 +16,9 @@ import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import toast from 'react-hot-toast';
+import { orderService } from '@/lib/services/orderService';
+import { Order, PaymentStatus, OrderStatus } from '@/lib/types/order';
+import { STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/lib/order-status';
 
 type PaymentData = {
   order: {
@@ -26,16 +30,16 @@ type PaymentData = {
     subtotal: number;
     shipping_cost: number;
     discount_amount: number;
-    payment_status: string;
+    payment_status: PaymentStatus;
     payment_method: string;
-    status: string;
+    status: OrderStatus;
     promo_code: string | null;
     promo_discount: number | null;
     referral_code: string | null;
     created_at: string;
     expires_at: string;
-    delivery_quote_status?: string;
-    quoted_delivery_fee?: number;
+    delivery_quote_status?: 'pending' | 'quoted' | 'paid' | null;
+    quoted_delivery_fee?: number | null;
   };
   provider: {
     name: string;
@@ -60,7 +64,7 @@ type PaymentData = {
   }>;
 };
 
-export default function PaymentContent() {
+export default function PaymentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId');
@@ -80,6 +84,11 @@ export default function PaymentContent() {
   const [copied, setCopied] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
+
+  // Constants
+  const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
+  const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   useEffect(() => {
     if (!orderId) {
@@ -159,7 +168,7 @@ export default function PaymentContent() {
   };
 
   const handleFile = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_FILE_SIZE) {
       toast.error('File size must be less than 5MB');
       setMessage({ type: 'error', text: 'File size must be less than 5MB' });
       return;
@@ -196,10 +205,7 @@ export default function PaymentContent() {
     setUploading(true);
     setMessage(null);
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
       toast.error('Upload service not configured');
       setUploading(false);
       return;
@@ -207,28 +213,22 @@ export default function PaymentContent() {
 
     const formData = new FormData();
     formData.append('file', proofFile);
-    formData.append('upload_preset', uploadPreset);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
     try {
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: 'POST',
         body: formData,
       });
       const uploadData = await uploadRes.json();
       if (!uploadData.secure_url) throw new Error('Upload failed');
 
-      const confirmRes = await fetch('/api/account/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: orderId,
-          proofOfPaymentUrl: uploadData.secure_url,
-          paymentNote: note,
-          transactionReference: transactionRef,
-        }),
-      });
-
-      if (!confirmRes.ok) throw new Error('Failed to save proof');
+      await orderService.uploadPaymentProof(
+        orderId!,
+        uploadData.secure_url,
+        note,
+        transactionRef
+      );
 
       toast.success('Payment proof submitted! Our team will verify within 24 hours.');
       setMessage({ type: 'success', text: 'Payment proof submitted! Our team will verify within 24 hours.' });
@@ -319,21 +319,21 @@ export default function PaymentContent() {
     const days = Math.floor(hours / 24);
     
     if (days > 2) return `${days} days remaining`;
-    if (hours > 0) return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} min${minutes !== 1 ? 's' : ''} remaining`;
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} remaining`;
+    if (hours > 0) return `${hours}h ${minutes}m remaining`;
+    return `${minutes}m remaining`;
   };
 
   if (loading) {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <main className="min-h-screen bg-[var(--background)] flex items-center justify-center">
           <div className="text-center">
             <div className="relative">
-              <div className="w-16 h-16 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
-              <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-orange-500 w-6 h-6 animate-pulse" />
+              <div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+              <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--primary)] w-6 h-6 animate-pulse" />
             </div>
-            <p className="text-gray-500 mt-4">Loading payment details...</p>
+            <p className="text-[var(--foreground-muted)] mt-4">Loading payment details...</p>
           </div>
         </main>
         <Footer />
@@ -345,17 +345,17 @@ export default function PaymentContent() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+        <main className="min-h-screen bg-[var(--background)] py-12">
           <div className="max-w-md mx-auto px-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center animate-in fade-in zoom-in duration-300">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-[var(--background-card)] rounded-2xl shadow-xl p-8 text-center border border-[var(--border)]">
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="text-red-500 w-10 h-10" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Order Not Found</h2>
-              <p className="text-gray-500 mb-6">We couldn't find your payment details. Please check your order number.</p>
+              <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">Order Not Found</h2>
+              <p className="text-[var(--foreground-muted)] mb-6">We couldn't find your payment details. Please check your order number.</p>
               <button 
                 onClick={() => router.push('/account/orders')} 
-                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl font-medium hover:from-orange-600 hover:to-orange-700 transition shadow-sm"
+                className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-3 rounded-xl font-medium transition shadow-sm"
               >
                 View My Orders
               </button>
@@ -375,6 +375,10 @@ export default function PaymentContent() {
   const canUpload = !isPaid && !isAwaiting && !isCancelled && !isQuoteOrder;
   const hasExpiry = order.expires_at && new Date(order.expires_at) > new Date();
 
+  // Get status configs
+  const orderStatusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+  const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
+
   const steps = [
     { label: 'Order Placed', status: order.payment_status !== 'pending' || isPaid || isAwaiting },
     { label: isQuoteOrder ? 'Quote Received' : 'Payment Submitted', status: isQuoteOrder || isAwaiting || isPaid },
@@ -384,15 +388,15 @@ export default function PaymentContent() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 sm:py-12">
+      <main className="min-h-screen bg-[var(--background)] py-8 sm:py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">
               {isQuoteOrder ? 'Complete Delivery Payment' : 'Complete Your Payment'}
             </h1>
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-[var(--foreground-muted)] text-sm mt-2">
               {isQuoteOrder 
                 ? 'Pay your quoted delivery fee to confirm your order'
                 : 'Submit your payment proof to confirm your order'}
@@ -407,17 +411,17 @@ export default function PaymentContent() {
                   <div className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                       step.status 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md' 
-                        : 'bg-gray-200 text-gray-500'
+                        ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20' 
+                        : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)]'
                     }`}>
                       {step.status ? <CheckCircle size={16} /> : idx + 1}
                     </div>
-                    <span className={`text-xs sm:text-sm hidden sm:inline ${step.status ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                    <span className={`text-xs sm:text-sm hidden sm:inline ${step.status ? 'text-[var(--foreground)] font-medium' : 'text-[var(--foreground-muted)]'}`}>
                       {step.label}
                     </span>
                   </div>
                   {idx < steps.length - 1 && (
-                    <div className={`w-8 sm:w-12 h-0.5 mx-1 sm:mx-2 ${step.status ? 'bg-green-500' : 'bg-gray-200'}`} />
+                    <div className={`w-8 sm:w-12 h-0.5 mx-1 sm:mx-2 ${step.status ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}`} />
                   )}
                 </div>
               ))}
@@ -431,40 +435,40 @@ export default function PaymentContent() {
               
               {/* Payment Deadline Warning */}
               {hasExpiry && canUpload && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3 animate-in slide-in-from-top-2">
-                  <Timer className="text-yellow-600 w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
+                  <Timer className="text-yellow-600 dark:text-yellow-400 w-5 h-5 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-yellow-800">Payment Deadline</p>
-                    <p className="text-xs text-yellow-700">Complete your payment before {new Date(order.expires_at).toLocaleString()} to avoid order cancellation.</p>
-                    <p className="text-xs font-medium text-yellow-800 mt-1">{getTimeRemaining(order.expires_at)}</p>
+                    <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">Payment Deadline</p>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-500">Complete your payment before {new Date(order.expires_at).toLocaleString()} to avoid order cancellation.</p>
+                    <p className="text-xs font-medium text-yellow-800 dark:text-yellow-400 mt-1">{getTimeRemaining(order.expires_at)}</p>
                   </div>
                 </div>
               )}
 
-              {/* Quote Payment Card (for delivery quote orders) */}
+              {/* Quote Payment Card */}
               {isQuoteOrder && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-[var(--primary)] rounded-full flex items-center justify-center">
                       <Send size={24} className="text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-blue-800">Delivery Quote Accepted</h2>
-                      <p className="text-sm text-blue-600">Quoted delivery fee: MWK {order.quoted_delivery_fee?.toLocaleString()}</p>
+                      <h2 className="text-lg font-bold text-blue-800 dark:text-blue-400">Delivery Quote Accepted</h2>
+                      <p className="text-sm text-blue-600 dark:text-blue-500">Quoted delivery fee: MWK {order.quoted_delivery_fee?.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl p-4 mb-4">
-                    <p className="text-sm text-gray-600 mb-2">Your delivery fee has been quoted by our team. Complete the payment below to confirm your order.</p>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">Amount to Pay:</span>
-                      <span className="text-2xl font-bold text-blue-600">MWK {order.quoted_delivery_fee?.toLocaleString()}</span>
+                  <div className="bg-[var(--background-card)] rounded-xl p-4 mb-4 border border-[var(--border)]">
+                    <p className="text-sm text-[var(--foreground-muted)] mb-2">Your delivery fee has been quoted by our team. Complete the payment below to confirm your order.</p>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <span className="text-sm font-medium text-[var(--foreground)]">Amount to Pay:</span>
+                      <span className="text-2xl font-bold text-[var(--primary)]">MWK {order.quoted_delivery_fee?.toLocaleString()}</span>
                     </div>
                   </div>
                   {order.payment_status === 'pending_products' && (
                     <button
                       onClick={handleRetryPayment}
                       disabled={retryingPayment}
-                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition flex items-center justify-center gap-2"
+                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
                     >
                       {retryingPayment ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
                       Pay Delivery Fee via Mobile Money
@@ -474,35 +478,35 @@ export default function PaymentContent() {
               )}
 
               {/* Order Summary Card - Collapsible */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
                 <button
                   onClick={() => setShowOrderItems(!showOrderItems)}
-                  className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white hover:bg-gray-50 transition"
+                  className="w-full px-6 py-4 flex items-center justify-between bg-[var(--background-secondary)] hover:bg-[var(--background-secondary)] transition"
                 >
                   <div className="flex items-center gap-2">
-                    <Package size={18} className="text-orange-500" />
-                    <span className="font-semibold text-gray-800">Order Summary</span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <Package size={18} className="text-[var(--primary)]" />
+                    <span className="font-semibold text-[var(--foreground)]">Order Summary</span>
+                    <span className="text-xs text-[var(--foreground-muted)] bg-[var(--background)] px-2 py-0.5 rounded-full">
                       {items?.length || 0} items
                     </span>
                   </div>
-                  {showOrderItems ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+                  {showOrderItems ? <ChevronUp size={18} className="text-[var(--foreground-muted)]" /> : <ChevronDown size={18} className="text-[var(--foreground-muted)]" />}
                 </button>
                 
                 {showOrderItems && (
-                  <div className="p-6 space-y-3 max-h-96 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                  <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
                     {items?.map((item) => (
-                      <div key={item.id} className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
-                        <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <div key={item.id} className="flex gap-3 py-3 border-b border-[var(--border)] last:border-0">
+                        <div className="w-14 h-14 bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
                           {item.image_url && (
                             <Image src={item.image_url} alt={item.product_name} width={56} height={56} className="w-full h-full object-cover" />
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-800 text-sm line-clamp-2">{item.product_name}</p>
-                          <p className="text-xs text-gray-400 mt-1">Qty: {item.quantity}</p>
+                          <p className="font-medium text-[var(--foreground)] text-sm line-clamp-2">{item.product_name}</p>
+                          <p className="text-xs text-[var(--foreground-muted)] mt-1">Qty: {item.quantity}</p>
                         </div>
-                        <p className="font-medium text-gray-800 text-sm whitespace-nowrap">
+                        <p className="font-medium text-[var(--foreground)] text-sm whitespace-nowrap">
                           MWK {item.total_price.toLocaleString()}
                         </p>
                       </div>
@@ -513,8 +517,8 @@ export default function PaymentContent() {
 
               {/* Payment Instructions Card - Manual Payment Only */}
               {provider && !isPaid && !isQuoteOrder && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
-                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                  <div className="bg-[var(--primary)] px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Banknote size={20} />
                       Payment Instructions
@@ -523,35 +527,35 @@ export default function PaymentContent() {
                   </div>
                   <div className="p-6 space-y-5">
                     {/* Provider Info */}
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <div className="flex items-center gap-4 p-4 bg-[var(--background-secondary)] rounded-xl">
+                      <div className="w-12 h-12 bg-[var(--background-card)] rounded-full flex items-center justify-center shadow-sm">
                         {provider.category === 'mobile_money' ? (
-                          <Smartphone className="text-orange-500" size={24} />
+                          <Smartphone className="text-[var(--primary)]" size={24} />
                         ) : (
-                          <Building className="text-orange-500" size={24} />
+                          <Building className="text-[var(--primary)]" size={24} />
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Payment Provider</p>
-                        <p className="font-semibold text-gray-800 text-lg">{provider.name}</p>
-                        <p className="text-xs text-gray-400 capitalize">{provider.category?.replace('_', ' ')}</p>
+                        <p className="text-xs text-[var(--foreground-muted)]">Payment Provider</p>
+                        <p className="font-semibold text-[var(--foreground)] text-lg">{provider.name}</p>
+                        <p className="text-xs text-[var(--foreground-muted)] capitalize">{provider.category?.replace('_', ' ')}</p>
                       </div>
                     </div>
 
                     {/* Account Details */}
                     <div className="space-y-3">
                       {provider.category === 'mobile_money' && provider.account_number && (
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-100">
-                          <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                            <Smartphone size={12} /> Mobile Money Number
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                          <p className="text-xs text-[var(--foreground-muted)] mb-1 flex items-center gap-1">
+                            <Smartphone size={12} className="text-[var(--primary)]" /> Mobile Money Number
                           </p>
                           <div className="flex items-center justify-between">
-                            <code className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</code>
+                            <code className="text-xl font-mono font-bold text-[var(--foreground)]">{provider.account_number}</code>
                             <button
                               onClick={() => copyToClipboard(provider.account_number!)}
-                              className="p-2 hover:bg-gray-200 rounded-lg transition"
+                              className="p-2 hover:bg-[var(--background-secondary)] rounded-lg transition"
                             >
-                              {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
+                              {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-[var(--foreground-muted)]" />}
                             </button>
                           </div>
                         </div>
@@ -560,31 +564,31 @@ export default function PaymentContent() {
                       {provider.category === 'bank' && (
                         <>
                           {provider.account_number && (
-                            <div className="p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-100">
-                              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                                <CreditCard size={12} /> Account Number
+                            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                              <p className="text-xs text-[var(--foreground-muted)] mb-1 flex items-center gap-1">
+                                <CreditCard size={12} className="text-[var(--primary)]" /> Account Number
                               </p>
                               <div className="flex items-center justify-between">
-                                <code className="text-xl font-mono font-bold text-gray-900">{provider.account_number}</code>
+                                <code className="text-xl font-mono font-bold text-[var(--foreground)]">{provider.account_number}</code>
                                 <button
                                   onClick={() => copyToClipboard(provider.account_number!)}
-                                  className="p-2 hover:bg-gray-200 rounded-lg transition"
+                                  className="p-2 hover:bg-[var(--background-secondary)] rounded-lg transition"
                                 >
-                                  {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
+                                  {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-[var(--foreground-muted)]" />}
                                 </button>
                               </div>
                             </div>
                           )}
                           {provider.account_name && (
-                            <div className="p-4 bg-gray-50 rounded-xl">
-                              <p className="text-xs text-gray-500 mb-1">Account Name</p>
-                              <p className="font-medium text-gray-800">{provider.account_name}</p>
+                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl">
+                              <p className="text-xs text-[var(--foreground-muted)] mb-1">Account Name</p>
+                              <p className="font-medium text-[var(--foreground)]">{provider.account_name}</p>
                             </div>
                           )}
                           {provider.branch && (
-                            <div className="p-4 bg-gray-50 rounded-xl">
-                              <p className="text-xs text-gray-500 mb-1">Branch</p>
-                              <p className="text-gray-800">{provider.branch}</p>
+                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl">
+                              <p className="text-xs text-[var(--foreground-muted)] mb-1">Branch</p>
+                              <p className="text-[var(--foreground)]">{provider.branch}</p>
                             </div>
                           )}
                         </>
@@ -593,22 +597,22 @@ export default function PaymentContent() {
 
                     {/* Instructions */}
                     {provider.instructions && (
-                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                        <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
                           <FileText size={14} /> Important Instructions
                         </p>
-                        <div className="prose prose-sm max-w-none text-blue-700" dangerouslySetInnerHTML={{ __html: provider.instructions }} />
+                        <div className="prose prose-sm max-w-none text-blue-700 dark:text-blue-300" dangerouslySetInnerHTML={{ __html: provider.instructions }} />
                       </div>
                     )}
 
                     {/* Total Amount */}
-                    <div className="border-t border-gray-100 pt-4">
+                    <div className="border-t border-[var(--border)] pt-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Total Amount to Pay</span>
+                        <span className="text-[var(--foreground-muted)]">Total Amount to Pay</span>
                         <div>
-                          <span className="text-2xl font-bold text-orange-600">MWK {order.total_amount.toLocaleString()}</span>
+                          <span className="text-2xl font-bold text-[var(--primary)]">MWK {order.total_amount.toLocaleString()}</span>
                           {order.discount_amount > 0 && (
-                            <p className="text-xs text-green-600 text-right">Includes {order.discount_amount.toLocaleString()} MWK discount</p>
+                            <p className="text-xs text-green-600 dark:text-green-400 text-right">Includes {order.discount_amount.toLocaleString()} MWK discount</p>
                           )}
                         </div>
                       </div>
@@ -619,8 +623,8 @@ export default function PaymentContent() {
 
               {/* Automatic Payment Button */}
               {provider?.type === 'automatic' && !isPaid && !isQuoteOrder && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                  <div className="bg-green-600 px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Zap size={20} />
                       Instant Payment
@@ -628,14 +632,14 @@ export default function PaymentContent() {
                     <p className="text-green-100 text-xs mt-1">Pay directly from your mobile money</p>
                   </div>
                   <div className="p-6 text-center">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Smartphone size={40} className="text-green-600" />
+                    <div className="w-20 h-20 bg-green-100 dark:bg-green-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Smartphone size={40} className="text-green-600 dark:text-green-400" />
                     </div>
-                    <p className="text-gray-600 mb-4">Click the button below to receive a payment request on your phone</p>
+                    <p className="text-[var(--foreground-muted)] mb-4">Click the button below to receive a payment request on your phone</p>
                     <button
                       onClick={handleRetryPayment}
                       disabled={retryingPayment}
-                      className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition flex items-center justify-center gap-2"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
                     >
                       {retryingPayment ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
                       Pay with {provider.name}
@@ -644,15 +648,15 @@ export default function PaymentContent() {
                 </div>
               )}
 
-              {/* Upload Payment Proof Card - Manual Payment Only */}
+              {/* Upload Payment Proof Card */}
               {canUpload && !isQuoteOrder && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                    <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                      <Upload size={18} className="text-orange-500" />
+                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                  <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
+                    <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
+                      <Upload size={18} className="text-[var(--primary)]" />
                       Upload Payment Proof
                     </h2>
-                    <p className="text-xs text-gray-400 mt-1">After making payment, upload your receipt or screenshot here</p>
+                    <p className="text-xs text-[var(--foreground-muted)] mt-1">After making payment, upload your receipt or screenshot here</p>
                   </div>
                   <div className="p-6">
                     <form onSubmit={uploadProof} className="space-y-5">
@@ -664,12 +668,12 @@ export default function PaymentContent() {
                           onDragOver={handleDrag}
                           onDrop={handleDrop}
                           className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer
-                            ${dragActive ? 'border-orange-500 bg-orange-50 scale-[1.02]' : 'border-gray-300 hover:border-orange-400 bg-gray-50 hover:bg-gray-100'}`}
+                            ${dragActive ? 'border-[var(--primary)] bg-[var(--primary)]/10 scale-[1.02]' : 'border-[var(--border)] hover:border-[var(--primary)] bg-[var(--background-secondary)] hover:bg-[var(--background)]'}`}
                           onClick={() => document.getElementById('file-input')?.click()}
                         >
-                          <Upload className={`w-10 h-10 mx-auto mb-3 transition ${dragActive ? 'text-orange-500 scale-110' : 'text-gray-400'}`} />
-                          <p className="text-sm text-gray-600">Drag and drop your receipt here, or click to browse</p>
-                          <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
+                          <Upload className={`w-10 h-10 mx-auto mb-3 transition ${dragActive ? 'text-[var(--primary)] scale-110' : 'text-[var(--foreground-muted)]'}`} />
+                          <p className="text-sm text-[var(--foreground-muted)]">Drag and drop your receipt here, or click to browse</p>
+                          <p className="text-xs text-[var(--foreground-muted)] mt-1">PNG, JPG, WEBP up to 5MB</p>
                           <input
                             id="file-input"
                             type="file"
@@ -679,21 +683,21 @@ export default function PaymentContent() {
                           />
                         </div>
                       ) : (
-                        <div className="border rounded-xl p-4 bg-gray-50 animate-in fade-in duration-200">
+                        <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--background-secondary)]">
                           <div className="flex items-center gap-3">
-                            <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-16 h-16 bg-[var(--background)] rounded-lg overflow-hidden flex-shrink-0">
                               {proofPreview && (
                                 <Image src={proofPreview} alt="Preview" width={64} height={64} className="w-full h-full object-cover" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800 truncate">{proofFile.name}</p>
-                              <p className="text-xs text-gray-400">{(proofFile.size / 1024).toFixed(0)} KB</p>
+                              <p className="text-sm font-medium text-[var(--foreground)] truncate">{proofFile.name}</p>
+                              <p className="text-xs text-[var(--foreground-muted)]">{(proofFile.size / 1024).toFixed(0)} KB</p>
                             </div>
                             <button
                               type="button"
                               onClick={removeFile}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -702,24 +706,24 @@ export default function PaymentContent() {
                       )}
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Reference (Optional)</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Transaction Reference (Optional)</label>
                         <input
                           type="text"
                           value={transactionRef}
                           onChange={(e) => setTransactionRef(e.target.value)}
-                          className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl p-3 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                           placeholder="e.g., TRX-123456, Reference number from your bank"
                         />
-                        <p className="text-xs text-gray-400 mt-1">Helps us verify your payment faster</p>
+                        <p className="text-xs text-[var(--foreground-muted)] mt-1">Helps us verify your payment faster</p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Additional Notes (Optional)</label>
                         <textarea
                           rows={2}
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
-                          className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl p-3 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                           placeholder="Any extra information about your payment"
                         />
                       </div>
@@ -727,7 +731,7 @@ export default function PaymentContent() {
                       <button
                         type="submit"
                         disabled={uploading || !proofFile}
-                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-orange-200"
+                        className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm shadow-[var(--primary)]/20"
                       >
                         {uploading ? (
                           <>
@@ -748,38 +752,38 @@ export default function PaymentContent() {
 
               {/* Existing Proof Card */}
               {existing_proof && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className={`px-6 py-4 border-b border-gray-100 ${isAwaiting ? 'bg-blue-50' : 'bg-green-50'}`}>
-                    <h2 className={`font-semibold flex items-center gap-2 ${isAwaiting ? 'text-blue-700' : 'text-green-700'}`}>
+                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                  <div className={`px-6 py-4 border-b border-[var(--border)] ${isAwaiting ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
+                    <h2 className={`font-semibold flex items-center gap-2 ${isAwaiting ? 'text-blue-700 dark:text-blue-400' : 'text-green-700 dark:text-green-400'}`}>
                       {isAwaiting ? <Clock size={18} /> : <CheckCircle size={18} />}
                       {isAwaiting ? 'Payment Under Review' : 'Payment Proof Submitted'}
                     </h2>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <ImageIcon className="text-gray-400" size={20} />
-                      <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-700 underline text-sm flex items-center gap-1">
+                      <ImageIcon className="text-[var(--foreground-muted)]" size={20} />
+                      <a href={existing_proof} target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:text-[var(--primary-hover)] underline text-sm flex items-center gap-1">
                         <Eye size={14} /> View uploaded receipt
                       </a>
                     </div>
                     {existing_transaction_ref && (
-                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500">Transaction Reference</p>
-                        <p className="text-sm font-mono font-medium text-gray-700">{existing_transaction_ref}</p>
+                      <div className="mb-3 p-3 bg-[var(--background-secondary)] rounded-lg">
+                        <p className="text-xs text-[var(--foreground-muted)]">Transaction Reference</p>
+                        <p className="text-sm font-mono font-medium text-[var(--foreground)]">{existing_transaction_ref}</p>
                       </div>
                     )}
                     {existing_note && (
                       <div className="mb-3">
-                        <p className="text-xs text-gray-500">Notes</p>
-                        <p className="text-sm text-gray-600">{existing_note}</p>
+                        <p className="text-xs text-[var(--foreground-muted)]">Notes</p>
+                        <p className="text-sm text-[var(--foreground)]">{existing_note}</p>
                       </div>
                     )}
                     {isAwaiting && (
-                      <div className="mt-4 p-3 bg-blue-50 rounded-xl flex items-start gap-2 border border-blue-100">
-                        <Clock size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl flex items-start gap-2 border border-blue-100 dark:border-blue-800">
+                        <Clock size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-blue-700">Your payment is being reviewed</p>
-                          <p className="text-xs text-blue-600">We'll notify you once verified. This usually takes 24-48 hours.</p>
+                          <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Your payment is being reviewed</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-500">We'll notify you once verified. This usually takes 24-48 hours.</p>
                         </div>
                       </div>
                     )}
@@ -800,94 +804,95 @@ export default function PaymentContent() {
 
             {/* RIGHT COLUMN - Order Total Card */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky top-24">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                  <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <ReceiptText size={18} className="text-orange-500" />
+              <div className="bg-[var(--background-card)] rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden sticky top-24">
+                <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
+                  <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
+                    <ReceiptText size={18} className="text-[var(--primary)]" />
                     Order Summary
                   </h2>
                 </div>
                 <div className="p-6 space-y-3">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Order #{order.id.slice(-8)}</span>
-                    <span className="text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString()}</span>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--foreground-muted)]">Order #{order.id.slice(-8)}</span>
+                    <span className="text-xs text-[var(--foreground-muted)]">{new Date(order.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span>MWK {order.subtotal?.toLocaleString() || order.total_amount.toLocaleString()}</span>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--foreground-muted)]">Subtotal</span>
+                    <span className="text-[var(--foreground)]">MWK {order.subtotal?.toLocaleString() || order.total_amount.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span>MWK {order.shipping_cost?.toLocaleString() || '0'}</span>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--foreground-muted)]">Shipping</span>
+                    <span className="text-[var(--foreground)]">MWK {order.shipping_cost?.toLocaleString() || '0'}</span>
                   </div>
                   {order.discount_amount > 0 && (
-                    <div className="flex justify-between text-green-600">
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>Discount</span>
                       <span>- MWK {order.discount_amount.toLocaleString()}</span>
                     </div>
                   )}
                   {order.promo_code && (
                     <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-1 text-gray-500">
+                      <span className="flex items-center gap-1 text-[var(--foreground-muted)]">
                         <Tag size={12} /> Promo: {order.promo_code}
                       </span>
-                      <span className="text-green-600">{order.promo_discount}% off</span>
+                      <span className="text-green-600 dark:text-green-400">{order.promo_discount}% off</span>
                     </div>
                   )}
                   {order.referral_code && (
                     <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-1 text-gray-500">
+                      <span className="flex items-center gap-1 text-[var(--foreground-muted)]">
                         <Gift size={12} /> Referral: {order.referral_code}
                       </span>
                     </div>
                   )}
-                  <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900">
-                    <span>Total</span>
-                    <span className="text-orange-600 text-xl">MWK {order.total_amount.toLocaleString()}</span>
+                  <div className="border-t border-[var(--border)] pt-3 flex justify-between font-bold">
+                    <span className="text-[var(--foreground)]">Total</span>
+                    <span className="text-[var(--primary)] text-xl">MWK {order.total_amount.toLocaleString()}</span>
+                  </div>
+
+                  {/* Order Status Badge */}
+                  <div className={`mt-4 p-3 rounded-xl text-center ${orderStatusConfig.bg}`}>
+                    <div className={`flex items-center justify-center gap-2 ${orderStatusConfig.color}`}>
+                      <orderStatusConfig.icon size={16} />
+                      <span className="font-medium text-sm">{orderStatusConfig.label}</span>
+                    </div>
                   </div>
 
                   {/* Payment Status Badge */}
-                  <div className={`mt-4 p-3 rounded-xl text-center ${
-                    isPaid ? 'bg-green-50' : isAwaiting ? 'bg-blue-50' : isQuoteOrder ? 'bg-indigo-50' : 'bg-yellow-50'
-                  }`}>
-                    <div className={`flex items-center justify-center gap-2 ${
-                      isPaid ? 'text-green-700' : isAwaiting ? 'text-blue-700' : isQuoteOrder ? 'text-indigo-700' : 'text-yellow-700'
-                    }`}>
-                      {isPaid ? <CheckCircle size={16} /> : isAwaiting ? <Clock size={16} /> : isQuoteOrder ? <Send size={16} /> : <AlertCircle size={16} />}
-                      <span className="font-medium text-sm">
-                        {isPaid ? 'Payment Confirmed' : isAwaiting ? 'Awaiting Verification' : isQuoteOrder ? 'Delivery Quote Ready' : 'Payment Pending'}
-                      </span>
+                  <div className={`p-3 rounded-xl text-center ${paymentStatusConfig.bg}`}>
+                    <div className={`flex items-center justify-center gap-2 ${paymentStatusConfig.color}`}>
+                      <paymentStatusConfig.icon size={16} />
+                      <span className="font-medium text-sm">Payment: {paymentStatusConfig.label}</span>
                     </div>
-                    {isAwaiting && <p className="text-xs text-blue-600 mt-1">Verification within 24 hours</p>}
                   </div>
 
                   {/* Security Badges */}
-                  <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="mt-4 pt-3 border-t border-[var(--border)]">
                     <div className="flex items-center justify-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Lock size={12} className="text-green-600" />
+                      <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                        <Lock size={12} className="text-green-600 dark:text-green-400" />
                         SSL Secure
                       </div>
-                      <div className="w-1 h-1 rounded-full bg-gray-300" />
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Shield size={12} className="text-green-600" />
+                      <div className="w-1 h-1 rounded-full bg-[var(--border)]" />
+                      <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                        <Shield size={12} className="text-green-600 dark:text-green-400" />
                         Buyer Protection
                       </div>
-                      <div className="w-1 h-1 rounded-full bg-gray-300" />
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <FileCheck size={12} className="text-green-600" />
+                      <div className="w-1 h-1 rounded-full bg-[var(--border)]" />
+                      <div className="flex items-center gap-1 text-xs text-[var(--foreground-muted)]">
+                        <FileCheck size={12} className="text-green-600 dark:text-green-400" />
                         Verified Payment
                       </div>
                     </div>
                   </div>
 
                   {/* Help Section */}
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 text-center">Need help with payment?</p>
+                  <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                    <p className="text-xs text-[var(--foreground-muted)] text-center">Need help with payment?</p>
                     <div className="flex items-center justify-center gap-4 mt-2">
                       <button
                         onClick={() => router.push('/contact')}
-                        className="text-xs text-orange-500 hover:text-orange-600 flex items-center gap-1 transition"
+                        className="text-xs text-[var(--primary)] hover:text-[var(--primary-hover)] flex items-center gap-1 transition"
                       >
                         <HelpCircle size={12} /> Support
                       </button>
@@ -903,12 +908,12 @@ export default function PaymentContent() {
               </div>
 
               {/* Tip Card */}
-              <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+              <div className="mt-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
                 <div className="flex items-start gap-3">
-                  <Sparkles size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                  <Sparkles size={16} className="text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-amber-800">Payment Tips</p>
-                    <p className="text-xs text-amber-700 mt-1">
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-400">Payment Tips</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
                       Include your order number as reference when making payment for faster verification.
                     </p>
                   </div>
