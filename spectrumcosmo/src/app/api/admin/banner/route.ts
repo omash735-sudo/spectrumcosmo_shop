@@ -1,6 +1,6 @@
 // app/api/admin/banner/route.ts
 import { NextResponse } from 'next/server';
-import { getDb, queryOne, queryMany, query } from '@/lib/db';
+import { getDb, queryOne, queryMany } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,8 +64,8 @@ export async function POST(request: Request) {
     `;
 
     if (existing) {
-      // Update existing banner
-      await query`
+      // Update existing banner using raw SQL with queryOne (since it supports any query)
+      await queryOne`
         UPDATE top_banner 
         SET 
           items = ${JSON.stringify(items)}::jsonb,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       `;
     } else {
       // Insert new banner
-      await query`
+      await queryOne`
         INSERT INTO top_banner (items, is_active, background_color, text_color)
         VALUES (
           ${JSON.stringify(items)}::jsonb,
