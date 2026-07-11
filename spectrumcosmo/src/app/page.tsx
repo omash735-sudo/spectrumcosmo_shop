@@ -289,10 +289,10 @@ export default async function HomePage() {
         </div>
 
         {/* ============================================
-            FEATURED PRODUCTS - manga-bg + cards-manga
+            FEATURED PRODUCTS - NO manga panel, just background color
             ============================================ */}
-        <div className="bg-[var(--background-secondary)] py-8 md:py-16 manga-bg cards-manga" id="featured">
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">Trending Now</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">Featured Products</h2>
@@ -357,10 +357,10 @@ export default async function HomePage() {
         </div>
 
         {/* ============================================
-            NEWSLETTER - manga-bg + footer-manga
+            NEWSLETTER - NO manga panel, just #111111 background
             ============================================ */}
-        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)] manga-bg footer-manga">
-          <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
+        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
+          <div className="max-w-4xl mx-auto px-4 text-center">
             <div className="inline-flex items-center gap-2 bg-[var(--background-card)] px-4 py-2 rounded-full mb-6 border border-[var(--border)]">
               <Zap size={16} className="text-[var(--primary)]" />
               <span className="text-[var(--foreground-muted)] text-sm font-medium">Stay Updated</span>
