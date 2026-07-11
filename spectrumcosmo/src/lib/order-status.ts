@@ -86,6 +86,11 @@ export const PAYMENT_STATUS_CONFIG = {
     label: 'Paid',
     color: 'text-green-700 dark:text-green-400',
     bg: 'bg-green-50 dark:bg-green-950/30'
+  },
+  pending_products: {
+    label: 'Products Paid (Quote Pending)',
+    color: 'text-blue-700 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/30'
   }
 };
 
