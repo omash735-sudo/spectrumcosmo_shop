@@ -157,6 +157,7 @@ export async function updateOrderStatus(params: {
   trackingNumber?: string;
   trackingNotes?: string;
   changedBy: string;
+  changedById?: string;
   ipAddress?: string;
 }) {
   const { 
@@ -166,6 +167,7 @@ export async function updateOrderStatus(params: {
     trackingNumber, 
     trackingNotes,
     changedBy,
+    changedById,
     ipAddress 
   } = params;
 
@@ -180,24 +182,18 @@ export async function updateOrderStatus(params: {
   }
 
   const oldStatus = order.status;
+  const changedByIdValue = changedById || changedBy;
 
-  // Insert status history
   await sql`
     INSERT INTO order_status_history (
       order_id, old_status, new_status, changed_by, notes, changed_at, ip_address
     ) VALUES (
-      ${orderId}::uuid, ${oldStatus}, ${newStatusSlug}, ${changedBy}, 
+      ${orderId}::uuid, ${oldStatus}, ${newStatusSlug}, ${changedByIdValue}, 
       ${adminNotes || null}, NOW(), ${ipAddress || null}
     )
   `;
 
-  // Update order
-  let updateQuery = sql`
-    UPDATE orders 
-    SET status = ${newStatusSlug}, updated_at = NOW()
-  `;
-
-  // Add tracking number if provided
+  let updateQuery;
   if (trackingNumber) {
     updateQuery = sql`
       UPDATE orders 
