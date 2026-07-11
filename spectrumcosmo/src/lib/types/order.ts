@@ -12,7 +12,8 @@ export type OrderStatus =
 export type PaymentStatus = 
   | 'pending' 
   | 'awaiting_verification' 
-  | 'paid';
+  | 'paid'
+  | 'pending_products';
 
 export type QuoteStatus = 
   | 'pending' 
