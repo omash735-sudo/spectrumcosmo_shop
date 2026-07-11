@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, Loader2, AlertTriangle, Send } from 'lucide-react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, Loader2, AlertTriangle, Send, CheckCircle } from 'lucide-react';
 import { CheckoutFormData, ServiceabilityResponse, DeliveryMethod } from '@/lib/types/order';
 
 interface Step2CustomerInfoProps {
@@ -68,7 +68,6 @@ export default function Step2CustomerInfo({
     const error = validateField(field, value);
     setFormErrors(prev => ({ ...prev, [field]: error }));
 
-    // Debounced serviceability check for location
     if (field === 'location' && value.length >= 3 && selectedDeliveryMethodId) {
       if (locationTimeout) clearTimeout(locationTimeout);
       const timeout = setTimeout(() => {
@@ -91,7 +90,6 @@ export default function Step2CustomerInfo({
   const handleNext = () => {
     if (validateForm() && selectedDeliveryMethodId) {
       if (requiresQuote && !quoteRequested) {
-        // Show error or trigger quote request
         return;
       }
       onNext();
@@ -117,7 +115,6 @@ export default function Step2CustomerInfo({
 
   return (
     <div className="space-y-6">
-      {/* Customer Info */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -224,7 +221,6 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
-      {/* Delivery Method */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -274,7 +270,6 @@ export default function Step2CustomerInfo({
             ))}
           </div>
 
-          {/* Serviceability Status */}
           {serviceability && !serviceability.isServiceable && (
             <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
               <div className="flex items-start gap-3">
@@ -315,14 +310,12 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
           <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Navigation Buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onPrev}
