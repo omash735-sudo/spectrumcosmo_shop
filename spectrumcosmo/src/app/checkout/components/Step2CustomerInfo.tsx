@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, MessageSquare, Truck, Loader2, AlertTriangle, Send, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { CheckoutFormData, ServiceabilityResponse, DeliveryMethod } from '@/lib/types/order';
 
 interface Step2CustomerInfoProps {
@@ -54,10 +55,13 @@ export default function Step2CustomerInfo({
         return '';
       case 'phone':
         if (!value) return 'Phone number is required';
-        if (!/^(099|088|098)\d{7}$/.test(value)) return 'Enter a valid Malawi phone number (099 123 4567)';
+        const cleanPhone = value.replace(/\s/g, '');
+        if (!/^\d{10}$/.test(cleanPhone)) {
+          return 'Enter a valid 10-digit phone number';
+        }
         return '';
       case 'location':
-        return value.trim().length < 5 ? 'Please enter your full delivery address' : '';
+        return value.trim().length < 3 ? 'Please enter your delivery address' : '';
       default:
         return '';
     }
@@ -84,16 +88,45 @@ export default function Step2CustomerInfo({
     errors.phone = validateField('phone', form.phone);
     errors.location = validateField('location', form.location);
     setFormErrors(errors);
-    return !Object.values(errors).some(e => e);
+    const hasErrors = Object.values(errors).some(e => e);
+    if (hasErrors) {
+      console.log('Validation errors:', errors);
+    }
+    return !hasErrors;
   };
 
   const handleNext = () => {
-    if (validateForm() && selectedDeliveryMethodId) {
-      if (requiresQuote && !quoteRequested) {
-        return;
+    console.log('=== handleNext called ===');
+    console.log('Form values:', form);
+    console.log('Selected delivery method:', selectedDeliveryMethodId);
+    console.log('Requires quote:', requiresQuote);
+    console.log('Quote requested:', quoteRequested);
+
+    const isValid = validateForm();
+    console.log('Form valid:', isValid);
+
+    if (!isValid) {
+      toast.error('Please fill in all required fields correctly');
+      const firstError = Object.keys(formErrors).find(key => formErrors[key]);
+      if (firstError) {
+        const element = document.querySelector(`input[name="${firstError}"]`);
+        if (element) (element as HTMLInputElement).focus();
       }
-      onNext();
+      return;
     }
+
+    if (!selectedDeliveryMethodId) {
+      toast.error('Please select a delivery method');
+      return;
+    }
+
+    if (requiresQuote && !quoteRequested) {
+      toast.info('Please request a delivery quote first');
+      return;
+    }
+
+    console.log('All valid, proceeding to next step');
+    onNext();
   };
 
   const inputClasses = (fieldName: string) => `
@@ -132,6 +165,7 @@ export default function Step2CustomerInfo({
                 <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                 <input
                   type="text"
+                  name="name"
                   value={form.name}
                   onFocus={() => setFocusedField('name')}
                   onBlur={() => setFocusedField(null)}
@@ -150,6 +184,7 @@ export default function Step2CustomerInfo({
                 <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                 <input
                   type="tel"
+                  name="phone"
                   value={form.phone}
                   onFocus={() => setFocusedField('phone')}
                   onBlur={() => setFocusedField(null)}
@@ -170,6 +205,7 @@ export default function Step2CustomerInfo({
               <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
               <input
                 type="email"
+                name="email"
                 value={form.email}
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
@@ -189,6 +225,7 @@ export default function Step2CustomerInfo({
               <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
               <input
                 type="text"
+                name="location"
                 value={form.location}
                 onFocus={() => setFocusedField('location')}
                 onBlur={() => setFocusedField(null)}
@@ -326,7 +363,11 @@ export default function Step2CustomerInfo({
         <button
           onClick={handleNext}
           disabled={isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)}
-          className="flex-[2] bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
+          className={`flex-[2] py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20 ${
+            isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)
+              ? 'bg-gray-400 cursor-not-allowed text-white'
+              : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
+          }`}
         >
           {requiresQuote && !quoteRequested ? 'Request Quote First' : 'Review Order'}
         </button>
