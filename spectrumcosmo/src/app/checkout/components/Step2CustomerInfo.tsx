@@ -121,7 +121,7 @@ export default function Step2CustomerInfo({
     }
 
     if (requiresQuote && !quoteRequested) {
-      toast.info('Please request a delivery quote first');
+      toast('Please request a delivery quote first');
       return;
     }
 
@@ -327,7 +327,7 @@ export default function Step2CustomerInfo({
                   {quoteRequested && (
                     <div className="mt-3 flex items-center gap-2 text-green-600 dark:text-green-500">
                       <CheckCircle size={16} />
-                      <span className="text-sm">Quote request submitted! Check your email.</span>
+                      <span className="text-sm">Quote request submitted. Check your email.</span>
                     </div>
                   )}
                 </div>
