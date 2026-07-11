@@ -86,6 +86,20 @@ export default async function ContactPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
           
+          {/* Contact Section Heading - Centered */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
+              <Sparkles size={14} className="text-[var(--primary)]" />
+              <span className="text-xs font-medium text-[var(--primary)]">Contact Us</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+              Got questions, ideas, or just want to connect?
+            </h2>
+            <p className="text-[var(--foreground-muted)] mt-2 max-w-xl mx-auto">
+              We'd love to hear from you
+            </p>
+          </div>
+
           {/* Contact Section Grid */}
           <div className="grid lg:grid-cols-3 gap-8 mb-16">
             
