@@ -90,13 +90,13 @@ export default async function EventsPage() {
         <div className={`
           rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl hover:-translate-y-1
           ${featured 
-            ? 'bg-gradient-to-br from-orange-50 to-white dark:from-gray-800 dark:to-gray-900 border-orange-200 dark:border-orange-800' 
-            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+            ? 'bg-[var(--background-secondary)] border-[var(--primary)]/20' 
+            : 'bg-[var(--background-card)] border-[var(--border)]'
           }
         `}>
           {/* Poster Image */}
           {event.poster_image_url && (
-            <div className="relative w-full aspect-[16/9] bg-gray-100 dark:bg-gray-800">
+            <div className="relative w-full aspect-[16/9] bg-[var(--background-secondary)]">
               <Image
                 src={event.poster_image_url}
                 alt={event.title}
@@ -104,7 +104,7 @@ export default async function EventsPage() {
                 className="object-cover"
               />
               {event.featured && (
-                <div className="absolute top-4 left-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                <div className="absolute top-4 left-4 bg-[var(--primary)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                   <Sparkles size={12} />
                   Featured Event
                 </div>
@@ -115,11 +115,11 @@ export default async function EventsPage() {
           <div className="p-6">
             {/* Badge & Type */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider bg-orange-500/20 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold uppercase tracking-wider bg-[var(--primary)]/20 text-[var(--primary)] px-3 py-1 rounded-full">
                 {event.badge}
               </span>
               {event.event_type && (
-                <span className="text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-3 py-1 rounded-full">
+                <span className="text-xs uppercase tracking-wider bg-[var(--background-secondary)] text-[var(--foreground-muted)] px-3 py-1 rounded-full">
                   {event.event_type}
                 </span>
               )}
@@ -132,20 +132,20 @@ export default async function EventsPage() {
             </div>
 
             {/* Title */}
-            <h3 className={`font-bold mb-2 ${featured ? 'text-2xl' : 'text-xl'} text-gray-900 dark:text-white`}>
+            <h3 className={`font-bold mb-2 ${featured ? 'text-2xl' : 'text-xl'} text-[var(--foreground)]`}>
               {event.title}
             </h3>
 
             {/* Description */}
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4">
+            <p className="text-[var(--foreground-muted)] text-sm leading-relaxed mb-4">
               {event.detail}
             </p>
 
             {/* Event Details */}
-            <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="space-y-2 mb-4 text-sm text-[var(--foreground-muted)]">
               {event.event_date && (
                 <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-orange-500 flex-shrink-0" />
+                  <Calendar size={16} className="text-[var(--primary)] flex-shrink-0" />
                   <span>{formatDate(event.event_date)}</span>
                   {event.event_end_date && (
                     <span> - {formatDate(event.event_end_date)}</span>
@@ -154,14 +154,14 @@ export default async function EventsPage() {
               )}
               {event.location && (
                 <div className="flex items-center gap-2">
-                  <MapPin size={16} className="text-orange-500 flex-shrink-0" />
+                  <MapPin size={16} className="text-[var(--primary)] flex-shrink-0" />
                   <span>{event.location}</span>
-                  {event.venue && <span className="text-gray-400">• {event.venue}</span>}
+                  {event.venue && <span className="text-[var(--foreground-muted)]/50">• {event.venue}</span>}
                 </div>
               )}
               {event.max_attendees && (
                 <div className="flex items-center gap-2">
-                  <Users size={16} className="text-orange-500 flex-shrink-0" />
+                  <Users size={16} className="text-[var(--primary)] flex-shrink-0" />
                   <span>
                     {event.current_attendees || 0} / {event.max_attendees} attendees
                     {event.current_attendees && event.current_attendees >= event.max_attendees && (
@@ -173,7 +173,7 @@ export default async function EventsPage() {
             </div>
 
             {/* Registration Button */}
-            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[var(--border)]">
               {event.registration_required && canRegister && (
                 event.registration_form_url ? (
                   <a
@@ -195,14 +195,14 @@ export default async function EventsPage() {
               )}
               
               {event.registration_required && !canRegister && (
-                <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 rounded-full">
+                <div className="text-sm text-[var(--foreground-muted)] flex items-center gap-2 px-4 py-2.5 bg-[var(--background-secondary)] rounded-full">
                   {!isRegistrationOpen ? 'Registration Closed' : 'Event Full'}
                 </div>
               )}
 
               <Link
                 href={event.href || `/events/${event.id}`}
-                className="inline-flex items-center justify-center gap-2 bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors flex-1"
+                className="inline-flex items-center justify-center gap-2 bg-[var(--background)] hover:bg-[var(--background-secondary)] text-[var(--foreground)] px-6 py-2.5 rounded-full text-sm font-medium transition-colors flex-1 border border-[var(--border)]"
               >
                 Learn More <ArrowRight size={14} />
               </Link>
@@ -216,17 +216,17 @@ export default async function EventsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white dark:bg-gray-900 pt-8 md:pt-16">
+      <main className="min-h-screen bg-[var(--background)] pt-8 md:pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-12">
-            <span className="text-gray-600 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">
+            <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">
               Stay Updated
             </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mt-2">
+            <h1 className="text-4xl md:text-5xl font-bold text-[var(--foreground)] mt-2">
               Events & Announcements
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-2xl mx-auto">
+            <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
               Discover upcoming events, product drops, and exclusive offers from SpectrumCosmo
             </p>
           </div>
@@ -246,14 +246,14 @@ export default async function EventsPage() {
             </div>
           ) : !featuredEvent && (
             <div className="text-center py-20">
-              <CalendarDays size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <CalendarDays size={64} className="mx-auto text-[var(--foreground-muted)]/30 mb-4" />
+              <h3 className="text-2xl font-semibold text-[var(--foreground)] mb-2">
                 No Events Right Now
               </h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-[var(--foreground-muted)]">
                 Check back soon for upcoming events and announcements!
               </p>
-              <Link href="/" className="inline-flex items-center gap-2 mt-6 text-orange-600 dark:text-orange-400 hover:underline">
+              <Link href="/" className="inline-flex items-center gap-2 mt-6 text-[var(--primary)] hover:text-[var(--primary-hover)]">
                 Return to Home <ArrowRight size={16} />
               </Link>
             </div>
