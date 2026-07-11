@@ -1,7 +1,7 @@
 // app/checkout/components/Step3OrderReview.tsx
 'use client';
 
-import { CheckCircle, Truck, Package, CreditCard, Lock, Shield, User, Phone, Mail, MapPin } from 'lucide-react';
+import { CheckCircle, Truck, Package, CreditCard, Lock, Shield, User, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import { formatCurrencyAmount } from '@/lib/currency';
@@ -47,7 +47,6 @@ export default function Step3OrderReview({
 
   return (
     <div className="space-y-6">
-      {/* Items */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -73,7 +72,6 @@ export default function Step3OrderReview({
         </div>
       </div>
 
-      {/* Customer & Delivery Details */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4">
           <h3 className="font-semibold text-[var(--foreground)] text-sm flex items-center gap-2 mb-3">
@@ -108,7 +106,6 @@ export default function Step3OrderReview({
         </div>
       </div>
 
-      {/* Payment Method */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4">
         <h3 className="font-semibold text-[var(--foreground)] text-sm flex items-center gap-2 mb-2">
           <CreditCard size={16} className="text-[var(--primary)]" />
@@ -117,7 +114,6 @@ export default function Step3OrderReview({
         <p className="text-[var(--foreground)]">{selectedPaymentProvider?.name || 'Not selected'}</p>
       </div>
 
-      {/* Price Breakdown */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6">
         <h3 className="font-semibold text-[var(--foreground)] mb-4">Price Breakdown</h3>
         <div className="space-y-2 text-sm">
@@ -150,7 +146,6 @@ export default function Step3OrderReview({
         </div>
       </div>
 
-      {/* Security Badges */}
       <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[var(--foreground-muted)]">
         <div className="flex items-center gap-1">
           <Lock size={12} className="text-green-600 dark:text-green-400" />
@@ -168,14 +163,12 @@ export default function Step3OrderReview({
         </div>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
           <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Navigation Buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onBack}
