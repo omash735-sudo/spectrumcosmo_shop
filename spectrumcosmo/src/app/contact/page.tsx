@@ -58,10 +58,10 @@ export default async function ContactPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white dark:bg-gray-900">
+      <main className="min-h-screen bg-[var(--background)]">
         
-        {/* Hero Section */}
-        <div className="relative h-[400px] md:h-[500px] overflow-hidden">
+        {/* Hero Section - With Manga Panel */}
+        <div className="manga-bg hero-manga relative h-[400px] md:h-[500px] overflow-hidden">
           <Image
             src={heroImage}
             alt="Contact Us"
@@ -69,8 +69,8 @@ export default async function ContactPage() {
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative z-10 absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
               <Sparkles size={16} className="text-orange-400" />
               <span className="text-white text-sm font-medium">Get in Touch</span>
@@ -91,66 +91,66 @@ export default async function ContactPage() {
             
             {/* Contact Info Cards */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-800 rounded-2xl p-6 border border-orange-100 dark:border-orange-900/30">
+              <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                    <Mail size={20} className="text-orange-600 dark:text-orange-400" />
+                  <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center">
+                    <Mail size={20} className="text-[var(--primary)]" />
                   </div>
-                  <h3 className="font-semibold text-gray-800 dark:text-white">Email Us</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Email Us</h3>
                 </div>
-                <a href={`mailto:${contactDetails.email}`} className="text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition block">
+                <a href={`mailto:${contactDetails.email}`} className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition block">
                   {contactDetails.email}
                 </a>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">We'll respond within 24 hours</p>
+                <p className="text-xs text-[var(--foreground-muted)] mt-2">We'll respond within 24 hours</p>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-gray-800 rounded-2xl p-6 border border-blue-100 dark:border-blue-900/30">
+              <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950/30 rounded-xl flex items-center justify-center">
                     <Phone size={20} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-800 dark:text-white">Call Us</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Call Us</h3>
                 </div>
-                <a href={`tel:${contactDetails.phone}`} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition block">
+                <a href={`tel:${contactDetails.phone}`} className="text-[var(--foreground-muted)] hover:text-blue-600 dark:hover:text-blue-400 transition block">
                   {contactDetails.phone}
                 </a>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Mon-Fri, 9am - 6pm</p>
+                <p className="text-xs text-[var(--foreground-muted)] mt-2">Mon-Fri, 9am - 6pm</p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-gray-800 rounded-2xl p-6 border border-green-100 dark:border-green-900/30">
+              <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-950/30 rounded-xl flex items-center justify-center">
                     <MapPin size={20} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-800 dark:text-white">Visit Us</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Visit Us</h3>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300">{contactDetails.address}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">By appointment only</p>
+                <p className="text-[var(--foreground-muted)]">{contactDetails.address}</p>
+                <p className="text-xs text-[var(--foreground-muted)] mt-2">By appointment only</p>
               </div>
 
               {/* Social Links */}
               {(socialLinks.facebook || socialLinks.instagram || socialLinks.twitter || socialLinks.youtube) && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Follow Us</h3>
+                <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
+                  <h3 className="font-semibold text-[var(--foreground)] mb-4">Follow Us</h3>
                   <div className="flex gap-3">
                     {socialLinks.facebook && (
-                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition group">
-                        <Facebook size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
+                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-[var(--background-secondary)] rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition group">
+                        <Facebook size={18} className="text-[var(--foreground-muted)] group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.instagram && (
-                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-500 transition group">
-                        <Instagram size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
+                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-[var(--background-secondary)] rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-500 transition group">
+                        <Instagram size={18} className="text-[var(--foreground-muted)] group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.twitter && (
-                      <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sky-500 transition group">
-                        <Twitter size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
+                      <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-[var(--background-secondary)] rounded-full flex items-center justify-center hover:bg-sky-500 transition group">
+                        <Twitter size={18} className="text-[var(--foreground-muted)] group-hover:text-white" />
                       </a>
                     )}
                     {socialLinks.youtube && (
-                      <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-red-600 transition group">
-                        <Youtube size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-white" />
+                      <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-[var(--background-secondary)] rounded-full flex items-center justify-center hover:bg-red-600 transition group">
+                        <Youtube size={18} className="text-[var(--foreground-muted)] group-hover:text-white" />
                       </a>
                     )}
                   </div>
@@ -160,73 +160,73 @@ export default async function ContactPage() {
 
             {/* Contact Form */}
             <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 px-6 py-5 border-b dark:border-gray-700">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{formTitle}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{formSubtitle}</p>
+              <div className="bg-[var(--background-card)] rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-secondary)] px-6 py-5 border-b border-[var(--border)]">
+                  <h2 className="text-xl font-bold text-[var(--foreground)]">{formTitle}</h2>
+                  <p className="text-sm text-[var(--foreground-muted)] mt-1">{formSubtitle}</p>
                 </div>
                 <div className="p-6">
                   <form action="/api/contact" method="POST" className="space-y-5">
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name *</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Full Name *</label>
                         <input 
                           name="fullName" 
                           type="text" 
                           required
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                           placeholder="John Doe"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email Address *</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Email Address *</label>
                         <input 
                           name="email" 
                           type="email" 
                           required
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                          className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                           placeholder="john@example.com"
                         />
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Phone Number</label>
                         <input 
                           name="contactNumber" 
                           type="tel" 
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
+                          className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:ring-2 focus:ring-[var(--primary)]"
                           placeholder="+265 123 456 789"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Subject</label>
+                        <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Subject</label>
                         <input 
                           name="subject" 
                           type="text" 
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500"
+                          className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:ring-2 focus:ring-[var(--primary)]"
                           placeholder="How can we help?"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Message *</label>
+                      <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Message *</label>
                       <textarea 
                         name="message" 
                         rows={5} 
                         required
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                        className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                         placeholder="Tell us how we can help..."
                       />
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
+                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
                     >
                       <Send size={18} className="group-hover:translate-x-0.5 transition" />
                       Send Message
                     </button>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                    <p className="text-xs text-[var(--foreground-muted)] text-center">
                       We'll get back to you within 24-48 hours
                     </p>
                   </form>
@@ -239,12 +239,12 @@ export default async function ContactPage() {
           {featureGrid.length > 0 && (
             <div className="mb-16">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full mb-3">
-                  <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
-                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Why Choose Us</span>
+                <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-3">
+                  <Sparkles size={14} className="text-[var(--primary)]" />
+                  <span className="text-xs font-medium text-[var(--primary)]">Why Choose Us</span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Connect With Us</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">Explore partnership opportunities</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Connect With Us</h2>
+                <p className="text-[var(--foreground-muted)] mt-2">Explore partnership opportunities</p>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {featureGrid.map((item: any, idx: number) => {
@@ -253,17 +253,17 @@ export default async function ContactPage() {
                     <Link
                       key={idx}
                       href={item.link || '#'}
-                      className="group bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 text-center"
+                      className="group bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)] shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1 text-center"
                     >
-                      <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-500 transition-colors">
-                        <Icon size={24} className="text-orange-600 dark:text-orange-400 group-hover:text-white transition-colors" />
+                      <div className="w-14 h-14 bg-[var(--primary)]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-[var(--primary)] transition-colors">
+                        <Icon size={24} className="text-[var(--primary)] group-hover:text-white transition-colors" />
                       </div>
-                      <h3 className="font-semibold text-gray-800 dark:text-white group-hover:text-orange-600 transition mb-2">
+                      <h3 className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{item.description}</p>
+                      <p className="text-sm text-[var(--foreground-muted)] line-clamp-2">{item.description}</p>
                       <div className="mt-3 opacity-0 group-hover:opacity-100 transition">
-                        <ArrowRight size={16} className="text-orange-500 mx-auto" />
+                        <ArrowRight size={16} className="text-[var(--primary)] mx-auto" />
                       </div>
                     </Link>
                   );
@@ -274,20 +274,20 @@ export default async function ContactPage() {
 
           {/* Community CTA */}
           {communityLink && (
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 rounded-2xl p-8 text-center">
-              <div className="inline-flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full mb-4">
-                <Users size={14} className="text-orange-400" />
-                <span className="text-xs font-medium text-orange-400">Join the Movement</span>
+            <div className="bg-[var(--background-secondary)] rounded-2xl p-8 text-center border border-[var(--border)]">
+              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
+                <Users size={14} className="text-[var(--primary)]" />
+                <span className="text-xs font-medium text-[var(--primary)]">Join the Movement</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Become Part of Our Community</h3>
-              <p className="text-gray-300 mb-6 max-w-md mx-auto">
+              <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">Become Part of Our Community</h3>
+              <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
                 Connect with fellow anime enthusiasts and get exclusive updates
               </p>
               <a
                 href={communityLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
+                className="inline-flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-8 py-3 rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl group"
               >
                 <MessageCircle size={18} />
                 Join Our Community
@@ -298,9 +298,9 @@ export default async function ContactPage() {
 
           {/* FAQ Link */}
           <div className="text-center mt-12">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-[var(--foreground-muted)] text-sm">
               Have questions? Check our{' '}
-              <Link href="/faq" className="text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-medium">
+              <Link href="/faq" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium">
                 Frequently Asked Questions
               </Link>
             </p>
