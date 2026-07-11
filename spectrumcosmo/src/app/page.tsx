@@ -1,3 +1,4 @@
+// app/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -5,7 +6,7 @@ import Image from 'next/image';
 import { 
   ArrowRight, Sparkles, Shield, Truck, Star, 
   ShoppingBag, Zap, CheckCircle, 
-  CreditCard, Headphones, Send
+  CreditCard, Headphones, Send, Gift
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
@@ -63,7 +64,7 @@ interface Review {
 
 const fallbackHero: HeroSection = {
   id: 'fallback',
-  badge_text: 'New collection just dropped',
+  badge_text: 'Get Early Access',
   badge_link: '/products',
   heading_prefix: 'Wear your',
   highlighted_word: 'excitement',
@@ -189,14 +190,14 @@ export default async function HomePage() {
               {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 
-                {/* Badge */}
+                {/* Badge - Updated with Gift icon and "Get Early Access" */}
                 <Link
                   href={h.badge_link || '#'}
                   className="inline-flex items-center gap-2 bg-[var(--background-card)] dark:bg-[var(--background-card)] text-[var(--foreground)] text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6 hover:bg-[var(--border)] dark:hover:bg-[var(--border)] transition max-w-full border border-[var(--border)]"
                 >
-                  <Sparkles size={12} className="text-[var(--primary)] flex-shrink-0 sm:w-[14px] sm:h-[14px]" />
-                  <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-xs">
-                    {h.badge_text}
+                  <Gift size={14} className="text-[var(--primary)] flex-shrink-0" />
+                  <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-xs font-bold">
+                    Get Early Access
                   </span>
                   <ArrowRight size={12} className="flex-shrink-0" />
                 </Link>
