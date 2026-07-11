@@ -176,3 +176,136 @@ h4 { font-size: 1.25rem; font-weight: 700; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--primary-hover);
 }
+
+/* ============================================
+   MANGA PANEL BACKGROUND - SUBTLE OVERLAY
+   ============================================ */
+
+.manga-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Desktop background image */
+.manga-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  background-image: url('https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775819/e8905d788934e65f2415767a07b698fd_vhzpbq.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: opacity 0.3s ease;
+}
+
+/* Mobile version */
+@media (max-width: 768px) {
+  .manga-bg::before {
+    background-image: url('https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775798/9b8e69a00494ab278c6f3f1e8d1a4f0c_vkjyhx.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.08;
+  }
+}
+
+/* Light mode - subtle */
+.manga-bg::before {
+  opacity: 0.05;
+}
+
+/* Dark mode - slightly more visible */
+.dark .manga-bg::before {
+  opacity: 0.10;
+}
+
+/* Mobile dark mode */
+@media (max-width: 768px) {
+  .dark .manga-bg::before {
+    opacity: 0.12;
+  }
+}
+
+/* ============================================
+   PER-SECTION OPACITY VARIATIONS
+   ============================================ */
+
+/* Hero - slightly stronger */
+.hero-manga::before {
+  opacity: 0.08 !important;
+}
+.dark .hero-manga::before {
+  opacity: 0.12 !important;
+}
+
+/* Cards/Products - lighter */
+.cards-manga::before {
+  opacity: 0.04 !important;
+}
+.dark .cards-manga::before {
+  opacity: 0.07 !important;
+}
+
+/* Newsletter/Footer - very light */
+.footer-manga::before {
+  opacity: 0.03 !important;
+}
+.dark .footer-manga::before {
+  opacity: 0.06 !important;
+}
+
+/* Mobile overrides */
+@media (max-width: 768px) {
+  .hero-manga::before {
+    opacity: 0.10 !important;
+  }
+  .dark .hero-manga::before {
+    opacity: 0.14 !important;
+  }
+  .cards-manga::before {
+    opacity: 0.06 !important;
+  }
+  .dark .cards-manga::before {
+    opacity: 0.09 !important;
+  }
+  .footer-manga::before {
+    opacity: 0.05 !important;
+  }
+  .dark .footer-manga::before {
+    opacity: 0.08 !important;
+  }
+}
+
+/* ============================================
+   MANGA PANEL POSITIONING OPTIONS
+   ============================================ */
+
+/* Option: Bottom right corner */
+.manga-bg-bottom-right::before {
+  background-position: bottom right;
+  background-size: 60% auto;
+}
+
+/* Option: Top left corner */
+.manga-bg-top-left::before {
+  background-position: top left;
+  background-size: 50% auto;
+}
+
+/* Option: Center with fade edges */
+.manga-bg-center-fade::before {
+  background-position: center;
+  background-size: 80% auto;
+  mask-image: radial-gradient(ellipse at center, black 50%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 50%, transparent 80%);
+}
+
+/* ============================================
+   CONTENT MUST BE ABOVE MANGA PANEL
+   ============================================ */
+.manga-bg > * {
+  position: relative;
+  z-index: 1;
+}
