@@ -32,7 +32,9 @@ import {
   Sparkles,
   GraduationCap,
   ArrowRight,
-  CalendarDays
+  CalendarDays,
+  Gift,
+  Zap
 } from 'lucide-react';
 import clsx from 'clsx';
 
