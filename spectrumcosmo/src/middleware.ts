@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const WRITE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
-const SKIP_SECURITY_PATHS = ['/_next/', '/favicon.ico', '/api/security/', '/api/log-request', '/api/cron/'];
+const SKIP_SECURITY_PATHS = ['/_next/', '/favicon.ico', '/api/security/', '/api/log-request', '/api/cron/', '/api/csrf'];
 
 function shouldSkipSecurity(pathname: string): boolean {
   return SKIP_SECURITY_PATHS.some(path => pathname.includes(path));
@@ -12,7 +12,6 @@ function isAdminRoute(pathname: string): boolean {
   return pathname.startsWith('/api/admin/') || pathname.startsWith('/admin');
 }
 
-// Check if route needs carousel-friendly CSP
 function isCarouselRoute(pathname: string): boolean {
   const carouselRoutes = ['/', '/products', '/product/', '/events'];
   return carouselRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
@@ -29,7 +28,6 @@ function generateNonce(): string {
 
 export async function middleware(request: NextRequest) {
   try {
-    // Dynamically import security modules so that any import error is caught
     const { getRedisClient, isRateLimited, isIpBlocked, blockIp } = await import('@/lib/security/redis-client');
     const { getRule } = await import('@/lib/security/rules');
     const { isWhitelisted } = await import('@/lib/security/whitelist');
@@ -39,16 +37,12 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.next();
 
     const { pathname } = request.nextUrl;
-    
-    // Choose CSP based on route
+
     let csp: string;
-    
-    // OPTION 1: Admin routes get permissive CSP
+
     if (isAdminRoute(pathname)) {
       csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
-    } 
-    // OPTION 2: Carousel routes (homepage, products, events) get carousel-friendly CSP
-    else if (isCarouselRoute(pathname)) {
+    } else if (isCarouselRoute(pathname)) {
       csp = [
         "default-src 'self'",
         `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:`,
@@ -62,9 +56,7 @@ export async function middleware(request: NextRequest) {
         "base-uri 'self'",
         "form-action 'self'",
       ].join('; ');
-    }
-    // OPTION 3: Other public routes get strict CSP
-    else {
+    } else {
       csp = [
         "default-src 'self'",
         `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'nonce-${nonce}'`,
@@ -91,7 +83,6 @@ export async function middleware(request: NextRequest) {
     const method = request.method;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
-    // Token blacklist check
     const userToken = request.cookies.get('user_token')?.value;
     if (userToken) {
       const isBlacklisted = await isTokenBlacklisted(userToken, getRedisClient);
@@ -214,7 +205,6 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// Helper to copy headers (to avoid duplication)
 function copySecurityHeaders(response: NextResponse, csp: string) {
   response.headers.set('Content-Security-Policy', csp);
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -224,7 +214,6 @@ function copySecurityHeaders(response: NextResponse, csp: string) {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
 }
 
-// Small helper to check token blacklist (avoid duplicate code)
 async function isTokenBlacklisted(token: string, getRedisClient: any): Promise<boolean> {
   try {
     const redis = getRedisClient();
@@ -253,7 +242,7 @@ export const config = {
     '/product/:path*',
     '/reviews/:path*',
     '/checkout/:path*',
-    '/events/:path*', 
+    '/events/:path*',
     '/api/:path*',
   ],
 };
