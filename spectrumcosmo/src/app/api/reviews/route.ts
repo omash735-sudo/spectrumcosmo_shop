@@ -203,42 +203,24 @@ export async function PATCH(req: NextRequest) {
 
     const sql = getDb();
     
-    let updates: string[] = [];
-    let values: any[] = [];
-    let paramCount = 1;
-
+    let query = sql`UPDATE reviews SET updated_at = NOW()`;
+    
     if (status !== undefined) {
-      updates.push(`status = $${paramCount++}`);
-      values.push(status);
+      query = sql`${query}, status = ${status}`;
     }
     if (review_text !== undefined) {
-      updates.push(`review_text = $${paramCount++}`);
-      values.push(sanitizeInput(review_text));
+      query = sql`${query}, review_text = ${sanitizeInput(review_text)}`;
     }
     if (rating !== undefined) {
-      updates.push(`rating = $${paramCount++}`);
-      values.push(parseInt(rating));
+      query = sql`${query}, rating = ${parseInt(rating)}`;
     }
     if (image_url !== undefined) {
-      updates.push(`image_url = $${paramCount++}`);
-      values.push(image_url ? sanitizeInput(image_url).slice(0, 500) : null);
+      query = sql`${query}, image_url = ${image_url ? sanitizeInput(image_url).slice(0, 500) : null}`;
     }
+    
+    query = sql`${query} WHERE id = ${id} RETURNING *`;
 
-    updates.push(`updated_at = NOW()`);
-
-    if (updates.length === 1) {
-      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
-    }
-
-    values.push(id);
-    const query = `
-      UPDATE reviews 
-      SET ${updates.join(', ')} 
-      WHERE id = $${paramCount} 
-      RETURNING *
-    `;
-
-    const updatedReview = await queryOne(query, ...values);
+    const updatedReview = await queryOne(query);
 
     if (!updatedReview) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
