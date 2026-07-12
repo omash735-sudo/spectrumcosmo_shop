@@ -45,25 +45,40 @@ export default function ReviewSubmitForm() {
       const match = document.cookie.match(/csrf_token=([^;]+)/);
       if (match) {
         setCsrfToken(match[1]);
+      } else {
+        fetchCsrfFromApi();
       }
     };
+
+    const fetchCsrfFromApi = async () => {
+      try {
+        const res = await fetch('/api/csrf');
+        if (res.ok) {
+          const data = await res.json();
+          setCsrfToken(data.token);
+        }
+      } catch (err) {
+        console.error('Failed to fetch CSRF token:', err);
+      }
+    };
+
     getCsrfToken();
   }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-    
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image must be less than 5MB');
       return;
     }
-    
+
     setImageFile(file);
     const preview = URL.createObjectURL(file);
     setImagePreview(preview);
@@ -79,19 +94,19 @@ export default function ReviewSubmitForm() {
 
   const uploadImage = async (): Promise<string | null> => {
     if (!imageFile) return null;
-    
+
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    
+
     if (!cloudName || !uploadPreset) {
       console.error('Cloudinary not configured');
       return null;
     }
-    
+
     const formData = new FormData();
     formData.append('file', imageFile);
     formData.append('upload_preset', uploadPreset);
-    
+
     try {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
@@ -107,7 +122,7 @@ export default function ReviewSubmitForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error('Please login to submit a review');
       setTimeout(() => {
@@ -115,25 +130,25 @@ export default function ReviewSubmitForm() {
       }, 1500);
       return;
     }
-    
+
     if (!csrfToken) {
       toast.error('Security token loading, please wait...');
       return;
     }
-    
+
     if (rating === 0) {
       setMessage({ type: 'error', text: 'Please select a rating' });
       return;
     }
-    
+
     if (!reviewText.trim() || reviewText.length < 3) {
       setMessage({ type: 'error', text: 'Please write a review (minimum 3 characters)' });
       return;
     }
-    
+
     setLoading(true);
     setMessage(null);
-    
+
     try {
       let imageUrl = null;
       if (imageFile) {
@@ -149,10 +164,10 @@ export default function ReviewSubmitForm() {
           });
         }
       }
-      
+
       const res = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
@@ -164,26 +179,26 @@ export default function ReviewSubmitForm() {
           image_url: imageUrl,
         }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to submit review');
       }
-      
+
       toast.success('Review submitted! It will appear after approval.');
       setMessage({ type: 'success', text: 'Review submitted! Thank you for your feedback.' });
-      
+
       setRating(0);
       setReviewText('');
       setCustomerName('');
       setProductId('');
       removeImage();
-      
+
       setTimeout(() => {
         router.push('/reviews');
       }, 2000);
-      
+
     } catch (err: any) {
       console.error('Submit error:', err);
       setMessage({ type: 'error', text: err.message || 'Failed to submit review. Please try again.' });
@@ -225,8 +240,8 @@ export default function ReviewSubmitForm() {
               className="focus:outline-none transition-transform hover:scale-110"
               disabled={!user}
             >
-              <Star 
-                size={32} 
+              <Star
+                size={32}
                 className={`${(hoverRating || rating) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} transition`}
               />
             </button>
@@ -315,8 +330,8 @@ export default function ReviewSubmitForm() {
 
       {message && (
         <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
-          message.type === 'success' 
-            ? 'bg-green-50 text-green-700 border border-green-200' 
+          message.type === 'success'
+            ? 'bg-green-50 text-green-700 border border-green-200'
             : 'bg-red-50 text-red-700 border border-red-200'
         }`}>
           {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
