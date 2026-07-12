@@ -6,14 +6,13 @@ export function generateCsrfToken(userId?: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2);
   const data = `${userId || 'guest'}:${timestamp}:${random}`;
-  // Simple hash - in production use crypto
   return Buffer.from(data).toString('base64');
 }
 
 export function setCsrfToken(response: NextResponse, userId?: string): NextResponse {
   const token = generateCsrfToken(userId);
   response.cookies.set('csrf_token', token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
@@ -21,9 +20,9 @@ export function setCsrfToken(response: NextResponse, userId?: string): NextRespo
   return response;
 }
 
-export function verifyCsrfToken(request: NextRequest): boolean {
-  const tokenFromCookie = request.cookies.get('csrf_token')?.value;
-  const tokenFromHeader = request.headers.get('x-csrf-token');
+export function verifyCsrfToken(req: NextRequest): boolean {
+  const tokenFromCookie = req.cookies.get('csrf_token')?.value;
+  const tokenFromHeader = req.headers.get('x-csrf-token');
   
   if (!tokenFromCookie || !tokenFromHeader) return false;
   if (tokenFromCookie !== tokenFromHeader) return false;
