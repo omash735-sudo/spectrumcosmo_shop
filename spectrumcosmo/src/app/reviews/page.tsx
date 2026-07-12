@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import LiveReviews from '@/components/storefront/LiveReviews';
@@ -83,7 +83,6 @@ export default function ReviewsPage() {
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [userLoaded, setUserLoaded] = useState(false);
-  const myReviewsFetchedRef = useRef(false);
 
   const totalReviews = allReviews.length;
   const averageRating = totalReviews > 0 
@@ -136,15 +135,11 @@ export default function ReviewsPage() {
     if (!userLoaded) return;
     if (!user) {
       setMyReviews([]);
-      myReviewsFetchedRef.current = false;
       return;
     }
     if (activeTab !== 'my') {
-      myReviewsFetchedRef.current = false;
       return;
     }
-    
-    if (myReviewsFetchedRef.current) return;
     
     const fetchMyReviews = async () => {
       setLoadingMy(true);
@@ -156,7 +151,6 @@ export default function ReviewsPage() {
         }
         const data = await res.json();
         setMyReviews(Array.isArray(data) ? data : []);
-        myReviewsFetchedRef.current = true;
       } catch (err) {
         console.error('Failed to fetch my reviews:', err);
         setMyReviews([]);
@@ -234,9 +228,6 @@ export default function ReviewsPage() {
   };
 
   const handleTabChange = (tab: 'all' | 'my') => {
-    if (tab === 'my') {
-      myReviewsFetchedRef.current = false;
-    }
     setActiveTab(tab);
   };
 
