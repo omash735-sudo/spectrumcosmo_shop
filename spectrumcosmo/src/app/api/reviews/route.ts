@@ -202,28 +202,47 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
     const sql = getDb();
+    const existingReview = await queryOne<{ id: string }>`
+      SELECT id FROM reviews WHERE id = ${id}
+    `;
     
-    let query = sql`UPDATE reviews SET updated_at = NOW()`;
-    
-    if (status !== undefined) {
-      query = sql`${query}, status = ${status}`;
+    if (!existingReview) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
-    if (review_text !== undefined) {
-      query = sql`${query}, review_text = ${sanitizeInput(review_text)}`;
-    }
-    if (rating !== undefined) {
-      query = sql`${query}, rating = ${parseInt(rating)}`;
-    }
-    if (image_url !== undefined) {
-      query = sql`${query}, image_url = ${image_url ? sanitizeInput(image_url).slice(0, 500) : null}`;
-    }
-    
-    query = sql`${query} WHERE id = ${id} RETURNING *`;
 
-    const updatedReview = await queryOne(query);
+    const updates: any = {};
+    if (status !== undefined) updates.status = status;
+    if (review_text !== undefined) updates.review_text = sanitizeInput(review_text);
+    if (rating !== undefined) updates.rating = parseInt(rating);
+    if (image_url !== undefined) updates.image_url = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
+    updates.updated_at = new Date();
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+    
+    for (const [key, value] of Object.entries(updates)) {
+      setClauses.push(`${key} = $${paramIndex}`);
+      values.push(value);
+      paramIndex++;
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE reviews 
+      SET ${setClauses.join(', ')} 
+      WHERE id = $${paramIndex} 
+      RETURNING *
+    `;
+
+    const updatedReview = await queryOne(query, ...values);
 
     if (!updatedReview) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Failed to update review' }, { status: 500 });
     }
 
     return NextResponse.json(updatedReview);
