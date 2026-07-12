@@ -35,10 +35,10 @@ export default function LiveReviews({ initialReviews }: { initialReviews: any[] 
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-        <Star size={48} className="text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500">No reviews yet. Be the first!</p>
-        <a href="/reviews/submit" className="inline-block mt-4 text-orange-500 hover:text-orange-600 text-sm font-medium">
+      <div className="text-center py-12 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+        <Star size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
+        <p className="text-[var(--foreground-muted)]">No reviews yet. Be the first!</p>
+        <a href="/reviews/submit" className="inline-block mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm font-medium transition">
           Write a Review →
         </a>
       </div>
@@ -49,24 +49,24 @@ export default function LiveReviews({ initialReviews }: { initialReviews: any[] 
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
         {visibleReviews.map((r: any) => (
-          <div key={r.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
+          <div key={r.id} className="bg-[var(--background-card)] rounded-2xl p-6 shadow-sm border border-[var(--border)] hover:shadow-md transition">
             <StarRating rating={r.rating} />
-            <p className="text-gray-700 text-sm leading-relaxed mt-4 mb-5 line-clamp-4">
+            <p className="text-[var(--foreground)] text-sm leading-relaxed mt-4 mb-5 line-clamp-4">
               "{r.review_text}"
             </p>
-            <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-3 pt-4 border-t border-[var(--border)]">
               {r.user_image ? (
                 <Image src={r.user_image} alt={r.user_name || r.customer_name} width={40} height={40} className="rounded-full object-cover w-10 h-10" />
               ) : r.image_url ? (
                 <Image src={r.image_url} alt={r.user_name || r.customer_name} width={40} height={40} className="rounded-full object-cover w-10 h-10" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <span className="text-sm font-bold text-orange-600">
+                <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+                  <span className="text-sm font-bold text-[var(--primary)]">
                     {(r.user_name || r.customer_name || 'A').charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-              <span className="font-medium text-sm text-gray-800">
+              <span className="font-medium text-sm text-[var(--foreground)]">
                 {r.user_name || r.customer_name || 'Anonymous'}
               </span>
             </div>
@@ -78,7 +78,7 @@ export default function LiveReviews({ initialReviews }: { initialReviews: any[] 
         <div className="text-center mt-2 mb-12">
           <button
             onClick={loadMore}
-            className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full font-medium hover:from-orange-600 hover:to-orange-700 transition shadow-sm"
+            className="px-6 py-2.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-full font-medium transition shadow-sm"
           >
             Load More Reviews
           </button>
@@ -87,7 +87,11 @@ export default function LiveReviews({ initialReviews }: { initialReviews: any[] 
 
       {galleryReviews.length > 0 && (
         <>
-          <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Customer Gallery</h3>
+          <div className="manga-bg cards-manga rounded-xl overflow-hidden mb-6">
+            <div className="relative z-10 px-6 py-4 bg-[var(--background-card)]/95">
+              <h3 className="text-2xl font-bold text-[var(--foreground)] text-center">Customer Gallery</h3>
+            </div>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {galleryReviews.map((r: any) => (
               <div key={r.id} className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer">
