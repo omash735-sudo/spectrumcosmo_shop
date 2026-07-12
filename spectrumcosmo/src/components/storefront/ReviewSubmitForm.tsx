@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import StarRating from '@/components/ui/StarRating';
-import { Loader2, CheckCircle, AlertCircle, Upload, X, Image as ImageIcon, Star } from 'lucide-react';
-import Image from 'next/image';
+import { Loader2, CheckCircle, AlertCircle, Upload, X, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ReviewSubmitForm() {
@@ -20,8 +18,8 @@ export default function ReviewSubmitForm() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [csrfToken, setCsrfToken] = useState('');
 
-  // Check if user is logged in
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -40,6 +38,16 @@ export default function ReviewSubmitForm() {
       }
     };
     fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const getCsrfToken = () => {
+      const match = document.cookie.match(/csrf_token=([^;]+)/);
+      if (match) {
+        setCsrfToken(match[1]);
+      }
+    };
+    getCsrfToken();
   }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,12 +108,16 @@ export default function ReviewSubmitForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if user is logged in
     if (!user) {
       toast.error('Please login to submit a review');
       setTimeout(() => {
         router.push('/login?redirect=/reviews/submit');
       }, 1500);
+      return;
+    }
+    
+    if (!csrfToken) {
+      toast.error('Security token loading, please wait...');
       return;
     }
     
@@ -123,12 +135,10 @@ export default function ReviewSubmitForm() {
     setMessage(null);
     
     try {
-      // Upload image if present
       let imageUrl = null;
       if (imageFile) {
         imageUrl = await uploadImage();
         if (imageFile && !imageUrl) {
-          // FIX: Use toast() instead of toast.warning
           toast('Image upload failed, but your review will still be submitted', {
             icon: '⚠️',
             duration: 4000,
@@ -140,10 +150,12 @@ export default function ReviewSubmitForm() {
         }
       }
       
-      // Submit review
       const res = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
         body: JSON.stringify({
           rating,
           review_text: reviewText,
@@ -162,14 +174,12 @@ export default function ReviewSubmitForm() {
       toast.success('Review submitted! It will appear after approval.');
       setMessage({ type: 'success', text: 'Review submitted! Thank you for your feedback.' });
       
-      // Reset form
       setRating(0);
       setReviewText('');
       setCustomerName('');
       setProductId('');
       removeImage();
       
-      // Redirect after 2 seconds
       setTimeout(() => {
         router.push('/reviews');
       }, 2000);
@@ -192,7 +202,6 @@ export default function ReviewSubmitForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Login Warning */}
       {!user && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <p className="text-sm text-yellow-800">
@@ -201,7 +210,6 @@ export default function ReviewSubmitForm() {
         </div>
       )}
 
-      {/* Rating Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Your Rating <span className="text-red-500">*</span>
@@ -226,7 +234,6 @@ export default function ReviewSubmitForm() {
         </div>
       </div>
 
-      {/* Product ID (Optional) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Product ID (Optional)
@@ -242,7 +249,6 @@ export default function ReviewSubmitForm() {
         <p className="text-xs text-gray-400 mt-1">Leave blank for general website review</p>
       </div>
 
-      {/* Review Text */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Your Review <span className="text-red-500">*</span>
@@ -259,7 +265,6 @@ export default function ReviewSubmitForm() {
         <p className="text-xs text-gray-400 mt-1">Minimum 3 characters</p>
       </div>
 
-      {/* Customer Name (Optional) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Your Name (Optional)
@@ -275,7 +280,6 @@ export default function ReviewSubmitForm() {
         <p className="text-xs text-gray-400 mt-1">Leave blank to remain anonymous</p>
       </div>
 
-      {/* Image Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Add Photo (Optional)
@@ -309,7 +313,6 @@ export default function ReviewSubmitForm() {
         )}
       </div>
 
-      {/* Message */}
       {message && (
         <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${
           message.type === 'success' 
@@ -321,10 +324,9 @@ export default function ReviewSubmitForm() {
         </div>
       )}
 
-      {/* Submit Button */}
       <button
         type="submit"
-        disabled={loading || !user}
+        disabled={loading || !user || !csrfToken}
         className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
