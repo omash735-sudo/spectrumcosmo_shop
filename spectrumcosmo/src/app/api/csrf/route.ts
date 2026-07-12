@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
+import { generateCsrfToken, setCsrfToken } from '@/lib/csrf';
 
 export async function GET() {
-  const token = randomBytes(32).toString('hex');
-  return NextResponse.json({ token });
+  const token = generateCsrfToken();
+  const response = NextResponse.json({ token });
+  setCsrfToken(response);
+  return response;
 }
