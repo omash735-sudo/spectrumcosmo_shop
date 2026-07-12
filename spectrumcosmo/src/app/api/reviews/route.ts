@@ -123,7 +123,9 @@ export async function GET(req: NextRequest) {
       `;
     } else if (userId) {
       const { user, error } = await getVerifiedUser(req);
-      if (error) return error;
+      if (error) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
       
       const requestedId = parseInt(userId);
       if (isNaN(requestedId)) {
@@ -200,21 +202,34 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
     const sql = getDb();
-    const sanitizedText = review_text ? sanitizeInput(review_text) : undefined;
-    const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : undefined;
-    const sanitizedRating = rating ? parseInt(rating) : undefined;
+    
+    let updateQuery = 'UPDATE reviews SET updated_at = NOW()';
+    const params: any[] = [];
+    
+    if (status) {
+      params.push(status);
+      updateQuery += `, status = $${params.length}`;
+    }
+    if (review_text !== undefined) {
+      const sanitizedText = sanitizeInput(review_text);
+      params.push(sanitizedText);
+      updateQuery += `, review_text = $${params.length}`;
+    }
+    if (rating !== undefined) {
+      const sanitizedRating = parseInt(rating);
+      params.push(sanitizedRating);
+      updateQuery += `, rating = $${params.length}`;
+    }
+    if (image_url !== undefined) {
+      const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
+      params.push(sanitizedImageUrl);
+      updateQuery += `, image_url = $${params.length}`;
+    }
+    
+    params.push(id);
+    updateQuery += ` WHERE id = $${params.length} RETURNING *`;
 
-    const updatedReview = await queryOne`
-      UPDATE reviews
-      SET
-        status = COALESCE(${status || null}, status),
-        review_text = COALESCE(${sanitizedText || null}, review_text),
-        rating = COALESCE(${sanitizedRating || null}, rating),
-        image_url = COALESCE(${sanitizedImageUrl || null}, image_url),
-        updated_at = NOW()
-      WHERE id = ${id}
-      RETURNING *
-    `;
+    const updatedReview = await queryOne(updateQuery, ...params);
 
     if (!updatedReview) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
