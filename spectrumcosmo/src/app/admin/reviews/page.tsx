@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { Loader2, Trash2, Check, X, MessageSquare, Eye, EyeOff, Clock, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Types
 type ReviewStatus = 'pending' | 'reviewing' | 'approved' | 'denied';
 
 interface Review {
@@ -22,7 +21,6 @@ interface Review {
   product_name?: string;
 }
 
-// Constants
 const statusOptions: readonly ReviewStatus[] = ['pending', 'reviewing', 'approved', 'denied'] as const;
 
 const statusLabels: Record<ReviewStatus, string> = {
@@ -52,6 +50,28 @@ function formatDate(dateString: string): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          key={star}
+          xmlns="http://www.w3.org/2000/svg"
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill={star <= rating ? '#facc15' : 'none'}
+          stroke={star <= rating ? '#facc15' : '#d1d5db'}
+          strokeWidth="1.5"
+          className="transition-colors"
+        >
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+      ))}
+    </div>
+  );
 }
 
 export default function AdminReviewsPage() {
@@ -142,7 +162,6 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -165,7 +184,6 @@ export default function AdminReviewsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{counts.total}</p>
@@ -189,7 +207,6 @@ export default function AdminReviewsPage() {
           </div>
         </div>
 
-        {/* Filter Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           {(['all', 'pending', 'reviewing', 'approved', 'denied'] as const).map((f) => {
             const isActive = filter === f;
@@ -226,7 +243,6 @@ export default function AdminReviewsPage() {
           })}
         </div>
 
-        {/* Reviews Table */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {filtered.length === 0 ? (
             <div className="text-center py-16">
@@ -360,7 +376,6 @@ export default function AdminReviewsPage() {
           )}
         </div>
 
-        {/* Bulk Actions Footer */}
         {filtered.length > 0 && (
           <div className="mt-4 flex justify-between items-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -370,41 +385,5 @@ export default function AdminReviewsPage() {
         )}
       </div>
     </div>
-  );
-}
-
-// StarRating Component (reuse or import from @/components/ui/StarRating)
-function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
-  
-  return (
-    <div className="flex items-center gap-0.5">
-      {[...Array(5)].map((_, i) => {
-        if (i < fullStars) {
-          return <StarIcon key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
-        }
-        if (i === fullStars && hasHalfStar) {
-          return <HalfStarIcon key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
-        }
-        return <StarIcon key={i} size={size} className="text-gray-300 dark:text-gray-600" />;
-      })}
-    </div>
-  );
-}
-
-function StarIcon({ size, className }: { size: number; className: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-    </svg>
-  );
-}
-
-function HalfStarIcon({ size, className }: { size: number; className: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-    </svg>
   );
 }
