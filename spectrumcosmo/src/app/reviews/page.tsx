@@ -1,7 +1,6 @@
-// app/reviews/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import LiveReviews from '@/components/storefront/LiveReviews';
@@ -10,11 +9,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Loader2, CheckCircle, Clock, XCircle, AlertCircle, Edit2, Save, X, 
-  Star, Filter, ChevronDown, ThumbsUp, Share2, Sparkles, 
-  ArrowRight, Calendar, User, ShoppingBag, Verified
+  Star, ChevronDown, Sparkles, Calendar, User, ShoppingBag
 } from 'lucide-react';
 
-// Types
 type ReviewStatus = 'pending' | 'reviewing' | 'approved' | 'denied';
 
 interface Review {
@@ -51,6 +48,26 @@ const sortOptions = [
   { value: 'lowest', label: 'Lowest Rating' },
 ];
 
+const ReviewSkeleton = () => (
+  <div className="space-y-5">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6 animate-pulse">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <div className="h-5 w-24 bg-[var(--background-secondary)] rounded"></div>
+            <div className="h-4 w-32 bg-[var(--background-secondary)] rounded mt-2"></div>
+            <div className="space-y-2 mt-3">
+              <div className="h-4 w-full bg-[var(--background-secondary)] rounded"></div>
+              <div className="h-4 w-3/4 bg-[var(--background-secondary)] rounded"></div>
+            </div>
+          </div>
+          <div className="h-6 w-20 bg-[var(--background-secondary)] rounded-full"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function ReviewsPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
   const [allReviews, setAllReviews] = useState<Review[]>([]);
@@ -63,10 +80,10 @@ export default function ReviewsPage() {
   const [editText, setEditText] = useState('');
   const [editRating, setEditRating] = useState(5);
   const [isSaving, setIsSaving] = useState(false);
-  
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('newest');
-  const [showFilters, setShowFilters] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
+  const myReviewsFetchedRef = useRef(false);
 
   const totalReviews = allReviews.length;
   const averageRating = totalReviews > 0 
@@ -82,10 +99,12 @@ export default function ReviewsPage() {
       setLoadingAll(true);
       try {
         const res = await fetch('/api/reviews');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setAllReviews(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to fetch reviews:', err);
+        setAllReviews([]);
       } finally {
         setLoadingAll(false);
       }
@@ -100,35 +119,54 @@ export default function ReviewsPage() {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user || null);
+        } else {
+          setUser(null);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Failed to fetch user:', err);
+        setUser(null);
+      } finally {
+        setUserLoaded(true);
       }
     };
     fetchUser();
   }, []);
 
   useEffect(() => {
+    if (!userLoaded) return;
+    if (!user) {
+      setMyReviews([]);
+      myReviewsFetchedRef.current = false;
+      return;
+    }
+    if (activeTab !== 'my') {
+      myReviewsFetchedRef.current = false;
+      return;
+    }
+    
+    if (myReviewsFetchedRef.current) return;
+    
     const fetchMyReviews = async () => {
-      if (!user) {
-        setMyReviews([]);
-        return;
-      }
-      if (activeTab === 'my') {
-        setLoadingMy(true);
-        try {
-          const res = await fetch(`/api/reviews?user_id=${user.id}`);
-          const data = await res.json();
-          setMyReviews(Array.isArray(data) ? data : []);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoadingMy(false);
+      setLoadingMy(true);
+      try {
+        const res = await fetch(`/api/reviews?user_id=${user.id}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || `HTTP ${res.status}`);
         }
+        const data = await res.json();
+        setMyReviews(Array.isArray(data) ? data : []);
+        myReviewsFetchedRef.current = true;
+      } catch (err) {
+        console.error('Failed to fetch my reviews:', err);
+        setMyReviews([]);
+      } finally {
+        setLoadingMy(false);
       }
     };
+    
     fetchMyReviews();
-  }, [activeTab, user]);
+  }, [activeTab, user, userLoaded]);
 
   useEffect(() => {
     let filtered = [...allReviews];
@@ -145,7 +183,7 @@ export default function ReviewsPage() {
       case 'lowest':
         filtered.sort((a, b) => a.rating - b.rating);
         break;
-      default: // newest
+      default:
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
     setFilteredReviews(filtered);
@@ -180,6 +218,9 @@ export default function ReviewsPage() {
         setMyReviews(prev => prev.map(r => 
           r.id === reviewId ? { ...r, review_text: updated.review_text, rating: updated.rating } : r
         ));
+        setAllReviews(prev => prev.map(r =>
+          r.id === reviewId ? { ...r, review_text: updated.review_text, rating: updated.rating } : r
+        ));
         handleCancelEdit();
       } else {
         const err = await res.json();
@@ -192,12 +233,11 @@ export default function ReviewsPage() {
     }
   };
 
-  const handleHelpful = async (reviewId: number) => {
-    try {
-      await fetch(`/api/reviews/${reviewId}/helpful`, { method: 'POST' });
-    } catch (err) {
-      console.error('Failed to mark as helpful');
+  const handleTabChange = (tab: 'all' | 'my') => {
+    if (tab === 'my') {
+      myReviewsFetchedRef.current = false;
     }
+    setActiveTab(tab);
   };
 
   return (
@@ -206,7 +246,6 @@ export default function ReviewsPage() {
       <main className="min-h-screen bg-[var(--background)] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Header - With Manga Panel */}
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-12">
             <div className="relative z-10 text-center p-6 sm:p-8 md:p-10 bg-[var(--background-card)]/95">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
@@ -218,8 +257,7 @@ export default function ReviewsPage() {
             </div>
           </div>
 
-          {/* Rating Summary Card */}
-          {allReviews.length > 0 && (
+          {!loadingAll && allReviews.length > 0 && (
             <div className="bg-[var(--background-card)] rounded-2xl p-6 mb-8 shadow-sm border border-[var(--border)]">
               <div className="flex flex-col md:flex-row gap-6 items-center">
                 <div className="text-center">
@@ -250,11 +288,10 @@ export default function ReviewsPage() {
             </div>
           )}
 
-          {/* Tabs */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
             <div className="inline-flex bg-[var(--background-secondary)] rounded-full p-1">
               <button
-                onClick={() => setActiveTab('all')}
+                onClick={() => handleTabChange('all')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition ${
                   activeTab === 'all'
                     ? 'bg-[var(--background-card)] text-[var(--primary)] shadow-sm'
@@ -264,7 +301,7 @@ export default function ReviewsPage() {
                 All Reviews
               </button>
               <button
-                onClick={() => setActiveTab('my')}
+                onClick={() => handleTabChange('my')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition ${
                   activeTab === 'my'
                     ? 'bg-[var(--background-card)] text-[var(--primary)] shadow-sm'
@@ -301,12 +338,9 @@ export default function ReviewsPage() {
             )}
           </div>
 
-          {/* All Reviews Tab */}
           {activeTab === 'all' && (
             loadingAll ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-[var(--primary])" size={40} />
-              </div>
+              <ReviewSkeleton />
             ) : filteredReviews.length === 0 ? (
               <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
                 <Star size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
@@ -325,9 +359,10 @@ export default function ReviewsPage() {
             )
           )}
 
-          {/* My Reviews Tab */}
           {activeTab === 'my' && (
-            !user ? (
+            !userLoaded ? (
+              <ReviewSkeleton />
+            ) : !user ? (
               <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
                 <User size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
                 <p className="text-[var(--foreground-muted)] mb-4">Please login to see your reviews</p>
@@ -336,9 +371,7 @@ export default function ReviewsPage() {
                 </a>
               </div>
             ) : loadingMy ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-[var(--primary])" size={40} />
-              </div>
+              <ReviewSkeleton />
             ) : myReviews.length === 0 ? (
               <div className="text-center py-16 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
                 <Edit2 size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
