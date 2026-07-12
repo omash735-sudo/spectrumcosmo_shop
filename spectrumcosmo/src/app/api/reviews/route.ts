@@ -1,13 +1,9 @@
-// app/api/reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { requireAdmin, getVerifiedUser } from '@/lib/auth';
 import { verifyCsrfToken } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
-// =============================================
-// INPUT SANITIZATION
-// =============================================
 function sanitizeInput(input: string): string {
   if (!input) return '';
   return input
@@ -26,9 +22,18 @@ function sanitizeProductId(productId: string | null): string | null {
   return productId.replace(/[^a-zA-Z0-9\-_]/g, '') || null;
 }
 
-// =============================================
-// POST - Create a review (with CSRF protection)
-// =============================================
+async function checkIsAdmin(userId: number): Promise<boolean> {
+  try {
+    const sql = getDb();
+    const result = await queryOne<{ role: string }>`
+      SELECT role FROM users WHERE id = ${userId}
+    `;
+    return result?.role === 'admin';
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   if (!verifyCsrfToken(req)) {
     return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
@@ -90,9 +95,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// =============================================
-// GET - Fetch reviews
-// =============================================
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
@@ -122,14 +124,24 @@ export async function GET(req: NextRequest) {
     } else if (userId) {
       const { user, error } = await getVerifiedUser(req);
       if (error) return error;
-      if (user.id !== parseInt(userId)) {
+      
+      const requestedId = parseInt(userId);
+      if (isNaN(requestedId)) {
+        return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
+      }
+      
+      const isOwnReview = user.id === requestedId;
+      const isAdminUser = await checkIsAdmin(user.id);
+      
+      if (!isOwnReview && !isAdminUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      
       data = await queryAsArray`
         SELECT r.*, p.name as product_name
         FROM reviews r
         LEFT JOIN products p ON r.product_id = p.id
-        WHERE r.user_id = ${user.id}
+        WHERE r.user_id = ${requestedId}
         ORDER BY r.created_at DESC
       `;
     } else if (isAdmin) {
@@ -149,14 +161,23 @@ export async function GET(req: NextRequest) {
       `;
     }
 
-    // Sanitize output (prevent XSS)
     const sanitizedData = (data as any[]).map((review: any) => ({
       ...review,
       review_text: sanitizeInput(review.review_text),
       customer_name: review.customer_name ? sanitizeInput(review.customer_name) : review.customer_name,
     }));
 
-    return NextResponse.json(sanitizedData);
+    const response = NextResponse.json(sanitizedData);
+    
+    if (!userId && !productId) {
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
+    } else if (productId) {
+      response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    } else {
+      response.headers.set('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    }
+
+    return response;
   } catch (err) {
     console.error('Review GET error:', err);
     const errorMessage = process.env.NODE_ENV === 'production'
@@ -166,9 +187,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// =============================================
-// PATCH - Admin update review (with CSRF)
-// =============================================
 export async function PATCH(req: NextRequest) {
   if (!verifyCsrfToken(req)) {
     return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
@@ -212,9 +230,6 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// =============================================
-// PUT - User edit their own pending review (with CSRF)
-// =============================================
 export async function PUT(req: NextRequest) {
   if (!verifyCsrfToken(req)) {
     return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
@@ -240,7 +255,6 @@ export async function PUT(req: NextRequest) {
 
     const sql = getDb();
 
-    // Check existence and ownership
     const existingReview = await queryOne<{ status: string }>`
       SELECT status FROM reviews WHERE id = ${id} AND user_id = ${user.id}
     `;
@@ -279,9 +293,6 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// =============================================
-// DELETE - Admin delete review
-// =============================================
 export async function DELETE(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
