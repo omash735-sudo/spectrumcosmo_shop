@@ -4,7 +4,7 @@ import ReviewSubmitForm from '@/components/storefront/ReviewSubmitForm';
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
-export const metadata = { 
+export const metadata = {
   title: 'Write a Review — SpectrumCosmo',
   description: 'Share your experience with SpectrumCosmo products'
 };
@@ -15,7 +15,6 @@ export default function SubmitReviewPage() {
       <Navbar />
       <main className="min-h-screen bg-[var(--background)] py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-8">
             <div className="relative z-10 text-center p-6 sm:p-8 bg-[var(--background-card)]/95">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
