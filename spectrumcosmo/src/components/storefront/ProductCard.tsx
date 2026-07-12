@@ -139,14 +139,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div 
-      className="group relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+      className="group relative bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
       onMouseEnter={() => setShowQuickView(true)}
       onMouseLeave={() => setShowQuickView(false)}
     >
       {/* Image Container */}
-      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+      <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-[var(--background-secondary)]">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          <div className={`absolute inset-0 bg-gray-100 dark:bg-gray-700 transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
+          <div className={`absolute inset-0 bg-[var(--background-secondary)] transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
           <Image
@@ -179,7 +179,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Quick View Overlay - Hide on mobile */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
           <div className="hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            <button className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-orange-500 hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <button className="bg-[var(--background-card)] text-[var(--foreground)] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-[var(--primary)] hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
               <Eye size={14} className="sm:w-4 sm:h-4" />
               Quick View
             </button>
@@ -190,17 +190,17 @@ export default function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-white dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
             size={14}
-            className={`sm:w-[18px] sm:h-[18px] ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-400'}`}
+            className={`sm:w-[18px] sm:h-[18px] ${isWishlisted ? 'fill-[var(--primary)] text-[var(--primary)]' : 'text-[var(--foreground-muted)]'}`}
           />
         </button>
 
         {/* Category Tag */}
-        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
           {categoryName}
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Info */}
       <div className="p-2.5 sm:p-4">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1 hover:text-orange-500 transition">
+          <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
             {productName}
           </h3>
         </Link>
@@ -217,26 +217,26 @@ export default function ProductCard({ product }: ProductCardProps) {
         {reviewCount > 0 ? (
           <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
             <StarRating rating={avgRating} size={12} />
-            <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">({reviewCount})</span>
+            <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">({reviewCount})</span>
           </div>
         ) : (
           <div className="flex items-center gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
-            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
-            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
-            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
-            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
-            <Star size={10} className="text-gray-300 dark:text-gray-600 sm:w-3 sm:h-3" />
-            <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 ml-0.5 sm:ml-1">No reviews</span>
+            <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
+            <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
+            <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
+            <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
+            <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
+            <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)] ml-0.5 sm:ml-1">No reviews</span>
           </div>
         )}
         
         {/* Price */}
         <div className="mt-1 sm:mt-2 flex items-baseline gap-1 sm:gap-2 flex-wrap">
-          <span className="text-base sm:text-xl font-bold text-orange-600 dark:text-orange-500">
+          <span className="text-base sm:text-xl font-bold text-[var(--primary)]">
             <CurrencyPrice amountUsd={priceMwk} />
           </span>
           {hasDiscount && product.compare_price && (
-            <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 line-through">
+            <span className="text-xs sm:text-sm text-[var(--foreground-muted)] line-through">
               <CurrencyPrice amountUsd={Number(product.compare_price)} />
             </span>
           )}
@@ -244,7 +244,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Stock Warning */}
         {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
-          <p className="text-[10px] sm:text-xs text-orange-500 dark:text-orange-400 mt-0.5 sm:mt-1">
+          <p className="text-[10px] sm:text-xs text-[var(--primary)] mt-0.5 sm:mt-1">
             Only {product.stock_quantity} left
           </p>
         )}
@@ -255,7 +255,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <>
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2"
+                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2"
               >
                 <ShoppingCart size={12} className="sm:w-4 sm:h-4" />
                 <span>Add</span>
@@ -263,18 +263,18 @@ export default function ProductCard({ product }: ProductCardProps) {
               <Link
                 href={`/products/${product.id}`}
                 onClick={handleProductClick}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 transition flex items-center justify-center"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center"
               >
                 <Eye size={12} className="sm:w-4 sm:h-4" />
               </Link>
             </>
           ) : isComingSoon ? (
-            <button className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
               <Clock size={12} className="sm:w-4 sm:h-4" />
               <span>Coming Soon</span>
             </button>
           ) : (
-            <button className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
               <Ban size={12} className="sm:w-4 sm:h-4" />
               <span>Out of Stock</span>
             </button>
