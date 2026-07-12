@@ -203,33 +203,42 @@ export async function PATCH(req: NextRequest) {
 
     const sql = getDb();
     
-    let updateQuery = 'UPDATE reviews SET updated_at = NOW()';
-    const params: any[] = [];
-    
-    if (status) {
-      params.push(status);
-      updateQuery += `, status = $${params.length}`;
+    let updates: string[] = [];
+    let values: any[] = [];
+    let paramCount = 1;
+
+    if (status !== undefined) {
+      updates.push(`status = $${paramCount++}`);
+      values.push(status);
     }
     if (review_text !== undefined) {
-      const sanitizedText = sanitizeInput(review_text);
-      params.push(sanitizedText);
-      updateQuery += `, review_text = $${params.length}`;
+      updates.push(`review_text = $${paramCount++}`);
+      values.push(sanitizeInput(review_text));
     }
     if (rating !== undefined) {
-      const sanitizedRating = parseInt(rating);
-      params.push(sanitizedRating);
-      updateQuery += `, rating = $${params.length}`;
+      updates.push(`rating = $${paramCount++}`);
+      values.push(parseInt(rating));
     }
     if (image_url !== undefined) {
-      const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
-      params.push(sanitizedImageUrl);
-      updateQuery += `, image_url = $${params.length}`;
+      updates.push(`image_url = $${paramCount++}`);
+      values.push(image_url ? sanitizeInput(image_url).slice(0, 500) : null);
     }
-    
-    params.push(id);
-    updateQuery += ` WHERE id = $${params.length} RETURNING *`;
 
-    const updatedReview = await queryOne(updateQuery, ...params);
+    updates.push(`updated_at = NOW()`);
+
+    if (updates.length === 1) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE reviews 
+      SET ${updates.join(', ')} 
+      WHERE id = $${paramCount} 
+      RETURNING *
+    `;
+
+    const updatedReview = await queryOne(query, ...values);
 
     if (!updatedReview) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
