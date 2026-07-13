@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { Pool } from 'pg';
 import { getVerifiedUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
+
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL,
+});
 
 function sanitizeInput(input: string): string {
   if (!input) return '';
@@ -74,29 +78,35 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    const sql = getDb();
+    const client = await pool.connect();
 
-    await sql`
-      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
-      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', false, ${now}, ${now})
-    `;
-
-    const newReview = await sql`
-      SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
-      FROM reviews 
-      WHERE user_id = ${user.id} 
-      ORDER BY created_at DESC 
-      LIMIT 1
-    `;
-
-    if (!newReview || newReview.length === 0) {
-      return NextResponse.json(
-        { error: 'Failed to retrieve submitted review' },
-        { status: 500 }
+    try {
+      await client.query(
+        `INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [sanitizedName, sanitizedText, r, sanitizedImageUrl, product_id || null, user.id, 'pending', false, now, now]
       );
-    }
 
-    return NextResponse.json(newReview[0], { status: 201 });
+      const result = await client.query(
+        `SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
+         FROM reviews 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [user.id]
+      );
+
+      if (result.rows.length === 0) {
+        return NextResponse.json(
+          { error: 'Failed to retrieve submitted review' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(result.rows[0], { status: 201 });
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error('Submit review error:', err);
     return NextResponse.json(
