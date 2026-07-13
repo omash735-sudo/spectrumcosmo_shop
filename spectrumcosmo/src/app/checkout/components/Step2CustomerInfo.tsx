@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, CreditCard } from 'lucide-react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, CreditCard, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CheckoutFormData, PaymentProvider } from '@/lib/types/order';
 
@@ -108,10 +108,13 @@ export default function Step2CustomerInfo({
     focus:outline-none bg-[var(--background)] text-[var(--foreground)]
   `;
 
+  // Combine all providers with proper fallback
   const allProviders = [
     ...(paymentProviders?.automatic || []),
     ...(paymentProviders?.manual || [])
   ];
+
+  const isLoadingProviders = paymentProviders === null;
 
   return (
     <div className="space-y-6">
@@ -252,7 +255,7 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
-      {/* Payment Method */}
+      {/* Payment Method - Always Visible */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -262,39 +265,51 @@ export default function Step2CustomerInfo({
           <p className="text-xs text-[var(--foreground-muted)] mt-1">Select how you want to pay</p>
         </div>
         <div className="p-4 sm:p-6">
-          <div className="grid gap-3">
-            {allProviders.map(provider => (
-              <label
-                key={provider.id}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  selectedPaymentProvider?.id === provider.id
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    checked={selectedPaymentProvider?.id === provider.id}
-                    onChange={() => onSelectPaymentProvider(provider)}
-                    className="w-5 h-5 text-[var(--primary)] shrink-0"
-                  />
-                  <div>
-                    <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">{provider.name}</p>
-                    <p className="text-xs text-[var(--foreground-muted)] capitalize">{provider.category?.replace('_', ' ')}</p>
+          {isLoadingProviders ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
+              <span className="ml-2 text-[var(--foreground-muted)]">Loading payment methods...</span>
+            </div>
+          ) : allProviders.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-[var(--foreground-muted)]">No payment methods available</p>
+              <p className="text-xs text-[var(--foreground-muted)] mt-1">Please contact support</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {allProviders.map(provider => (
+                <label
+                  key={provider.id}
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    selectedPaymentProvider?.id === provider.id
+                      ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                      : 'border-[var(--border)] hover:border-[var(--primary)]/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      checked={selectedPaymentProvider?.id === provider.id}
+                      onChange={() => onSelectPaymentProvider(provider)}
+                      className="w-5 h-5 text-[var(--primary)] shrink-0"
+                    />
+                    <div>
+                      <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">{provider.name}</p>
+                      <p className="text-xs text-[var(--foreground-muted)] capitalize">{provider.category?.replace('_', ' ')}</p>
+                    </div>
                   </div>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ml-9 sm:ml-0 ${
-                  provider.type === 'automatic' 
-                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' 
-                    : 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400'
-                }`}>
-                  {provider.type === 'automatic' ? 'Instant' : 'Manual'}
-                </span>
-              </label>
-            ))}
-          </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ml-9 sm:ml-0 ${
+                    provider.type === 'automatic' 
+                      ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' 
+                      : 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400'
+                  }`}>
+                    {provider.type === 'automatic' ? 'Instant' : 'Manual'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
