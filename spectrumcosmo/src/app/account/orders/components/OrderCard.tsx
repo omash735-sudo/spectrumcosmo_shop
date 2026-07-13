@@ -36,9 +36,10 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   const orderDisplayNumber = order.order_number || `#${order.id.slice(-8)}`;
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
-  const deliveryFeeDisplay = order.delivery_fee && order.delivery_fee > 0 
-    ? `MWK ${order.delivery_fee.toLocaleString()}`
-    : 'To be confirmed';
+  
+  // Safely format total amount
+  const totalAmount = order.total_amount ?? 0;
+  const formattedTotal = totalAmount.toLocaleString();
 
   const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
     setUploading(true);
@@ -108,8 +109,8 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
         <div className="flex flex-wrap justify-between items-start gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[var(--foreground)] text-sm sm:text-base">
-              {order.items.length > 0 ? order.items[0].product_name : 'Order'}
-              {order.items.length > 1 && ` +${order.items.length - 1} more`}
+              {order.items && order.items.length > 0 ? order.items[0].product_name : 'Order'}
+              {order.items && order.items.length > 1 && ` +${order.items.length - 1} more`}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[var(--foreground-muted)]">
               <span className="flex items-center gap-1">
@@ -125,7 +126,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
           <div className="text-right flex-shrink-0">
             <p className="text-xs text-[var(--foreground-muted)]">Total</p>
             <p className="text-base sm:text-lg font-bold text-[var(--primary)]">
-              MWK {order.total_amount.toLocaleString()}
+              MWK {formattedTotal}
             </p>
           </div>
         </div>
@@ -136,25 +137,28 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
         <div className="border-t border-[var(--border)] p-3.5 sm:p-4 md:p-5 space-y-4 bg-[var(--background)]/50">
           
           {/* Items List */}
-          {order.items.length > 0 && (
+          {order.items && order.items.length > 0 && (
             <div className="space-y-2">
               <p className="font-medium text-sm text-[var(--foreground)]">Items</p>
-              {order.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 text-sm py-1 border-b border-[var(--border)] last:border-0">
-                  <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
-                    {item.image_url && (
-                      <Image src={item.image_url} alt={item.product_name} width={40} height={40} className="w-full h-full object-cover" />
-                    )}
+              {order.items.map((item, idx) => {
+                const itemTotal = item.total_price ?? 0;
+                return (
+                  <div key={idx} className="flex items-center gap-3 text-sm py-1 border-b border-[var(--border)] last:border-0">
+                    <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
+                      {item.image_url && (
+                        <Image src={item.image_url} alt={item.product_name} width={40} height={40} className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[var(--foreground)]">{item.product_name}</p>
+                      <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-medium text-[var(--foreground)]">
+                      MWK {itemTotal.toLocaleString()}
+                    </p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-[var(--foreground)]">{item.product_name}</p>
-                    <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
-                  </div>
-                  <p className="text-sm font-medium text-[var(--foreground)]">
-                    MWK {item.total_price.toLocaleString()}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -162,9 +166,8 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-[var(--foreground-muted)] font-medium">Delivery Address</p>
-              <p className="text-[var(--foreground)]">{order.delivery_address}</p>
+              <p className="text-[var(--foreground)]">{order.delivery_address || 'N/A'}</p>
               <p className="text-xs text-[var(--foreground-muted)] mt-1">Courier: {deliveryMethod}</p>
-              <p className="text-xs text-[var(--foreground-muted)]">Fee: {deliveryFeeDisplay}</p>
             </div>
             <div>
               <p className="text-xs text-[var(--foreground-muted)] font-medium">Payment Details</p>
