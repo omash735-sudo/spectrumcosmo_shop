@@ -1,18 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, Plus, CreditCard } from 'lucide-react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { CheckoutFormData, DeliveryMethod, PaymentProvider } from '@/lib/types/order';
+import { CheckoutFormData, PaymentProvider } from '@/lib/types/order';
 
 interface Step2CustomerInfoProps {
   form: CheckoutFormData;
   onUpdateForm: (field: keyof CheckoutFormData, value: string) => void;
-  deliveryMethods: DeliveryMethod[];
-  selectedDeliveryMethodId: number | null;
-  onSelectDeliveryMethod: (id: number) => void;
-  customDeliveryMethod: string | null;
-  onCustomDeliveryMethodChange: (value: string) => void;
+  preferredCourier: string;
+  onPreferredCourierChange: (value: string) => void;
   paymentProviders: { automatic: PaymentProvider[]; manual: PaymentProvider[] } | null;
   selectedPaymentProvider: PaymentProvider | null;
   onSelectPaymentProvider: (provider: PaymentProvider) => void;
@@ -25,11 +22,8 @@ interface Step2CustomerInfoProps {
 export default function Step2CustomerInfo({
   form,
   onUpdateForm,
-  deliveryMethods,
-  selectedDeliveryMethodId,
-  onSelectDeliveryMethod,
-  customDeliveryMethod,
-  onCustomDeliveryMethodChange,
+  preferredCourier,
+  onPreferredCourierChange,
   paymentProviders,
   selectedPaymentProvider,
   onSelectPaymentProvider,
@@ -90,13 +84,8 @@ export default function Step2CustomerInfo({
       return;
     }
 
-    if (!selectedDeliveryMethodId) {
-      toast.error('Please select a delivery method');
-      return;
-    }
-
-    if (selectedDeliveryMethodId === -1 && !customDeliveryMethod?.trim()) {
-      toast.error('Please enter the courier name');
+    if (!preferredCourier.trim()) {
+      toast.error('Please enter your preferred courier');
       return;
     }
 
@@ -118,8 +107,6 @@ export default function Step2CustomerInfo({
     }
     focus:outline-none bg-[var(--background)] text-[var(--foreground)]
   `;
-
-  const isOtherSelected = selectedDeliveryMethodId === -1;
 
   const allProviders = [
     ...(paymentProviders?.automatic || []),
@@ -234,86 +221,33 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
-      {/* Delivery Method */}
+      {/* Delivery Method - Simple Text Input */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
             <Truck size={18} className="text-[var(--primary)]" />
             Delivery Method
           </h2>
-          <p className="text-xs text-[var(--foreground-muted)] mt-1">Choose how your order will be delivered</p>
+          <p className="text-xs text-[var(--foreground-muted)] mt-1">Enter your preferred courier</p>
         </div>
         <div className="p-4 sm:p-6">
-          <div className="grid gap-3">
-            {deliveryMethods.map(method => (
-              <label
-                key={method.id}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  selectedDeliveryMethodId === method.id
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <input
-                    type="radio"
-                    name="delivery_method"
-                    value={method.id}
-                    checked={selectedDeliveryMethodId === method.id}
-                    onChange={() => onSelectDeliveryMethod(method.id)}
-                    className="w-5 h-5 text-[var(--primary)] shrink-0"
-                  />
-                  <div>
-                    <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">{method.name}</p>
-                    {method.estimated_days && (
-                      <p className="text-xs text-[var(--foreground-muted)]">Est. {method.estimated_days}</p>
-                    )}
-                  </div>
-                </div>
-                <p className="font-semibold text-[var(--foreground)] ml-9 sm:ml-0">
-                  {method.price > 0 ? `${method.price.toLocaleString()} MWK` : 'Free'}
-                </p>
-              </label>
-            ))}
-
-            {/* Other Option */}
-            <label
-              className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                isOtherSelected
-                  ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                  : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <input
-                  type="radio"
-                  name="delivery_method"
-                  value="-1"
-                  checked={isOtherSelected}
-                  onChange={() => onSelectDeliveryMethod(-1)}
-                  className="w-5 h-5 text-[var(--primary)] shrink-0"
-                />
-                <div className="flex items-center gap-2">
-                  <Plus size={16} className="text-[var(--foreground-muted)]" />
-                  <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">Other Courier</p>
-                </div>
-              </div>
-              {isOtherSelected && (
-                <div className="mt-3 ml-9">
-                  <input
-                    type="text"
-                    value={customDeliveryMethod || ''}
-                    onChange={(e) => onCustomDeliveryMethodChange(e.target.value)}
-                    placeholder="Enter courier name..."
-                    className="w-full px-4 py-2.5 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
-                    autoFocus
-                  />
-                  <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                    This courier will be saved with your order only
-                  </p>
-                </div>
-              )}
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
+              Preferred Courier <span className="text-red-500">*</span>
             </label>
+            <div className="relative">
+              <Truck size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+              <input
+                type="text"
+                value={preferredCourier}
+                onChange={(e) => onPreferredCourierChange(e.target.value)}
+                className="w-full px-4 py-3 pl-10 border-2 border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition"
+                placeholder="e.g., CTS Courier, Speed Courier, DHL, etc."
+              />
+            </div>
+            <p className="text-xs text-[var(--foreground-muted)] mt-1">
+              Enter the courier you prefer for delivery
+            </p>
           </div>
         </div>
       </div>
