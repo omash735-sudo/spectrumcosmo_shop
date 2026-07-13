@@ -83,7 +83,7 @@ export default function AdminReviewsPage() {
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/reviews');
+      const res = await fetch('/api/admin/reviews');
       if (!res.ok) throw new Error('Failed to fetch reviews');
       const data = await res.json();
       setReviews(Array.isArray(data) ? data : []);
@@ -103,7 +103,7 @@ export default function AdminReviewsPage() {
   const updateReview = async (id: string, updates: Partial<Review>) => {
     setProcessingId(id);
     try {
-      const res = await fetch('/api/reviews', {
+      const res = await fetch('/api/admin/reviews', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates }),
@@ -126,7 +126,7 @@ export default function AdminReviewsPage() {
     
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/reviews?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/reviews?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete review');
       toast.success('Review deleted');
       await fetchReviews();
