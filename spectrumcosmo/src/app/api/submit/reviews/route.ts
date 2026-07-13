@@ -18,11 +18,7 @@ function sanitizeInput(input: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('=== STEP 1: Starting ===');
-    
-    console.log('=== STEP 2: Getting user from request ===');
     const payload = getUserFromRequest(req);
-    console.log('=== STEP 3: Got payload:', payload);
     
     if (!payload) {
       return NextResponse.json(
@@ -31,10 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('=== STEP 4: Rate limiting ===');
     const rateLimitResult = await rateLimit(`review:${payload.id}`, 5, 3600);
-    console.log('=== STEP 5: Rate limit passed ===');
-    
     if (!rateLimitResult.success) {
       const minutesLeft = Math.ceil(rateLimitResult.retryAfterMinutes);
       return NextResponse.json(
@@ -43,10 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('=== STEP 6: Parsing body ===');
     const body = await req.json();
-    console.log('=== STEP 7: Body parsed:', body);
-    
     const { review_text, rating, image_url, product_id } = body;
 
     if (!review_text || !rating) {
@@ -76,20 +66,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('=== STEP 8: Sanitizing ===');
     const sanitizedText = sanitizeInput(review_text);
     const sanitizedName = payload?.name ? sanitizeInput(payload.name) : 'Anonymous User';
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
     const now = new Date().toISOString();
-    console.log('=== STEP 9: Now:', now);
 
-    console.log('=== STEP 10: Connecting to PG ===');
     const client = await pgDb.connect();
-    console.log('=== STEP 11: PG connected ===');
 
     try {
-      console.log('=== STEP 12: Running INSERT ===');
       const result = await client.query(
         `INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -107,7 +92,6 @@ export async function POST(req: NextRequest) {
           now
         ]
       );
-      console.log('=== STEP 13: INSERT done ===');
 
       if (result.rows.length === 0) {
         return NextResponse.json(
@@ -116,16 +100,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      console.log('=== STEP 14: Returning result ===');
       return NextResponse.json(result.rows[0], { status: 201 });
     } finally {
       client.release();
-      console.log('=== STEP 15: PG released ===');
     }
   } catch (err) {
-    console.error('Submit review error:', err);
+    console.error('ERROR IN SUBMIT REVIEWS:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { 
+        error: err instanceof Error ? err.message : 'Internal server error',
+        type: err instanceof Error ? err.name : 'Unknown'
+      },
       { status: 500 }
     );
   }
