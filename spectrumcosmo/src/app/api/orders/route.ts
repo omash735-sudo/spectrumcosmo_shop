@@ -1,53 +1,35 @@
-// src/app/api/orders/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
-import { getDb } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb, queryOne, queryAsArray } from '@/lib/db';
+import { sendMail } from '@/lib/mailer';
+import { getVerifiedUser } from '@/lib/auth';
 
-// GET – fetch all orders (admin only)
-export async function GET(req: NextRequest) {
-  const authError = requireAdmin(req)
-  if (authError) return authError
-
-  try {
-    const sql = getDb()
-    const orders = await sql`
-      SELECT 
-        o.*,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'id', oi.id,
-              'product_id', oi.product_id,
-              'product_name', oi.product_name,
-              'quantity', oi.quantity,
-              'unit_price', oi.unit_price,
-              'total_price', oi.total_price
-            )
-          ) FILTER (WHERE oi.id IS NOT NULL), '[]'
-        ) as items,
-        pc.code as promo_code_applied,
-        pcu.discount_amount as promo_discount,
-        ur.referral_code as referral_code_used,
-        rt.status as referral_status
-      FROM orders o
-      LEFT JOIN order_items oi ON oi.order_id = o.id
-      LEFT JOIN promo_code_usage pcu ON pcu.order_id = o.id
-      LEFT JOIN promo_codes pc ON pc.id = pcu.promo_code_id
-      LEFT JOIN referral_tracking rt ON rt.order_id = o.id
-      LEFT JOIN user_referrals ur ON ur.user_id = rt.referrer_user_id
-      GROUP BY o.id, pc.code, pcu.discount_amount, ur.referral_code, rt.status
-      ORDER BY o.created_at DESC
-    `
-    return NextResponse.json(orders)
-  } catch (err: any) {
-    console.error('Orders fetch error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+function renderEmailTemplate(template: string, placeholders: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(placeholders)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
   }
+  return result;
 }
 
-// POST – create new order (customer checkout)
+async function getEmailTemplate(sql: any, name: string) {
+  const templates = await queryAsArray<{ html_template: string; subject: string }>`
+    SELECT html_template, subject FROM email_templates 
+    WHERE name = ${name} AND is_active = true 
+    LIMIT 1
+  `;
+  return templates[0] || null;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getVerifiedUser(req);
+    if (authError && authError.status === 403) {
+      return authError;
+    }
+
+    const body = await req.json();
+    console.log('Order payload:', body);
+
     const {
       customer_name,
       customer_email,
@@ -55,298 +37,311 @@ export async function POST(req: NextRequest) {
       location,
       notes,
       items,
-      subtotal,
-      delivery_fee,
-      discount_amount,
       total_amount,
-      delivery_method_id,
+      custom_delivery_method,
+      delivery_fee,
       payment_provider_id,
       payment_method,
-      promo_code_id,
+      discount_amount,
+      tax_amount,
       promo_code,
       referral_code,
-    } = await req.json()
+    } = body;
 
-    // Validation
-    if (!customer_name || !customer_email || !phone_number || !location) {
-      return NextResponse.json({ error: 'Missing required customer fields' }, { status: 400 })
-    }
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: 'No items in order' }, { status: 400 })
-    }
-    if (!delivery_method_id) {
-      return NextResponse.json({ error: 'Delivery method required' }, { status: 400 })
-    }
-    if (!payment_provider_id) {
-      return NextResponse.json({ error: 'Payment provider required' }, { status: 400 })
+    if (!customer_name || !customer_email || !phone_number || !location || !items?.length || !total_amount) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const sql = getDb()
-
-    // Begin transaction
-    await sql`BEGIN`
-
-    try {
-      // Create the order
-      const [order] = await sql`
-        INSERT INTO orders (
-          customer_name,
-          customer_email,
-          phone_number,
-          location,
-          notes,
-          subtotal,
-          delivery_fee,
-          discount_amount,
-          total_amount,
-          delivery_method_id,
-          payment_provider_id,
-          payment_method,
-          status,
-          payment_status,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          ${customer_name},
-          ${customer_email},
-          ${phone_number},
-          ${location},
-          ${notes || null},
-          ${subtotal || 0},
-          ${delivery_fee || 0},
-          ${discount_amount || 0},
-          ${total_amount},
-          ${delivery_method_id},
-          ${payment_provider_id},
-          ${payment_method},
-          'pending',
-          'pending',
-          NOW(),
-          NOW()
-        )
-        RETURNING id
-      `
-
-      const orderId = order.id
-
-      // Insert order items
-      for (const item of items) {
-        await sql`
-          INSERT INTO order_items (
-            order_id,
-            product_id,
-            product_name,
-            quantity,
-            unit_price,
-            total_price
-          )
-          VALUES (
-            ${orderId},
-            ${item.product_id},
-            ${item.product_name || item.name},
-            ${item.quantity},
-            ${item.price},
-            ${item.price * item.quantity}
-          )
-        `
-
-        // Update product stock
-        await sql`
-          UPDATE products
-          SET stock_quantity = stock_quantity - ${item.quantity},
-              updated_at = NOW()
-          WHERE id = ${item.product_id}
-        `
-      }
-
-      // Record promo code usage if applied
-      if (promo_code_id && discount_amount > 0) {
-        await sql`
-          INSERT INTO promo_code_usage (
-            promo_code_id,
-            order_id,
-            discount_amount
-          )
-          VALUES (
-            ${promo_code_id},
-            ${orderId},
-            ${discount_amount}
-          )
-        `
-        
-        // Increment promo code usage count
-        await sql`
-          UPDATE promo_codes
-          SET uses_count = uses_count + 1
-          WHERE id = ${promo_code_id}
-        `
-      }
-
-      // Track referral if code was provided
-      if (referral_code) {
-        // Find the referrer by referral code
-        const [referrer] = await sql`
-          SELECT user_id FROM user_referrals
-          WHERE referral_code = ${referral_code}
-        `
-
-        if (referrer) {
-          await sql`
-            INSERT INTO referral_tracking (
-              referrer_user_id,
-              referred_user_id,
-              order_id,
-              status,
-              created_at
-            )
-            VALUES (
-              ${referrer.user_id},
-              NULL,
-              ${orderId},
-              'pending',
-              NOW()
-            )
-          `
-        }
-      }
-
-      await sql`COMMIT`
-
-      return NextResponse.json({
-        success: true,
-        id: orderId,
-        message: 'Order created successfully',
-      }, { status: 201 })
-    } catch (err: any) {
-      await sql`ROLLBACK`
-      console.error('Transaction error:', err)
-      return NextResponse.json({ error: err.message }, { status: 500 })
-    }
-  } catch (err: any) {
-    console.error('Order creation error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
-
-// PATCH – update order status (admin only)
-export async function PATCH(req: NextRequest) {
-  const authError = requireAdmin(req)
-  if (authError) return authError
-
-  try {
-    const { id, status, payment_status } = await req.json()
-    
-    if (!id) {
-      return NextResponse.json({ error: 'id required' }, { status: 400 })
+    if (!custom_delivery_method || !custom_delivery_method.trim()) {
+      return NextResponse.json({ error: 'Preferred courier is required' }, { status: 400 });
     }
 
-    const sql = getDb()
-
-    // Build update query dynamically
-    let updateQuery = sql`UPDATE orders SET updated_at = NOW()`
-    
-    if (status) {
-      updateQuery = sql`${updateQuery}, status = ${status}`
-    }
-    
-    if (payment_status) {
-      updateQuery = sql`${updateQuery}, payment_status = ${payment_status}`
+    const safeTotal = Number(total_amount);
+    if (isNaN(safeTotal)) {
+      return NextResponse.json({ error: 'Invalid total_amount' }, { status: 400 });
     }
 
-    updateQuery = sql`${updateQuery} WHERE id = ${id} RETURNING *`
+    const sql = getDb();
 
-    const [updatedOrder] = await updateQuery
-
-    if (!updatedOrder) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-    }
-
-    // If order status changed to 'completed', update referral tracking
-    if (status === 'completed' || payment_status === 'paid') {
-      const [referral] = await sql`
-        SELECT id, referrer_user_id FROM referral_tracking
-        WHERE order_id = ${id} AND status = 'pending'
-      `
-
-      if (referral) {
-        await sql`
-          UPDATE referral_tracking
-          SET status = 'completed', completed_at = NOW()
-          WHERE id = ${referral.id}
-        `
-
-        // Increment referrer's total referrals
-        await sql`
-          UPDATE user_referrals
-          SET total_referrals = total_referrals + 1
-          WHERE user_id = ${referral.referrer_user_id}
-        `
-
-        // Check if user reached reward threshold
-        const [referrer] = await sql`
-          SELECT total_referrals, eligible_reward
-          FROM user_referrals
-          WHERE user_id = ${referral.referrer_user_id}
-        `
-
-        const rewardThresholds = [5, 10, 20]
-        const reachedThreshold = rewardThresholds.includes(referrer.total_referrals)
-
-        if (reachedThreshold && !referrer.eligible_reward) {
-          await sql`
-            UPDATE user_referrals
-            SET eligible_reward = true
-            WHERE user_id = ${referral.referrer_user_id}
-          `
-        }
+    let isAutomatic = false;
+    let paymentInstructions = '';
+    if (payment_provider_id) {
+      const provider = await queryOne<{
+        type: string;
+        instructions: string;
+        name: string;
+        account_name: string;
+        account_number: string;
+        branch: string;
+      }>`
+        SELECT type, instructions, name, account_name, account_number, branch 
+        FROM payment_providers 
+        WHERE id = ${payment_provider_id}
+      `;
+      isAutomatic = provider?.type === 'automatic';
+      paymentInstructions = provider?.instructions || '';
+      
+      if (!isAutomatic && provider) {
+        paymentInstructions = `
+          <strong>${provider.name}</strong><br/>
+          ${provider.account_name ? `Account Name: ${provider.account_name}<br/>` : ''}
+          ${provider.account_number ? `Account Number: ${provider.account_number}<br/>` : ''}
+          ${provider.branch ? `Branch: ${provider.branch}<br/>` : ''}
+          ${provider.instructions || ''}
+        `;
       }
     }
 
-    // If order status changed to 'cancelled', update referral tracking
-    if (status === 'cancelled') {
+    const settingsRows = await queryAsArray<{ setting_key: string; setting_value: string }>`
+      SELECT setting_key, setting_value FROM system_settings
+    `;
+    const settingsMap: Record<string, string> = {};
+    settingsRows.forEach((s) => {
+      settingsMap[s.setting_key] = s.setting_value;
+    });
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+    const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await sql`
+      INSERT INTO orders (
+        customer_name, 
+        customer_email, 
+        phone_number, 
+        delivery_address,
+        payment_note, 
+        payment_method, 
+        total_amount, 
+        status, 
+        user_id, 
+        created_at,
+        custom_delivery_method,
+        delivery_fee, 
+        payment_provider_id, 
+        payment_status,
+        promo_code,
+        referral_code,
+        discount_amount,
+        tax_amount,
+        expires_at,
+        order_number
+      ) VALUES (
+        ${customer_name}, 
+        ${customer_email}, 
+        ${phone_number}, 
+        ${location},
+        ${notes || ''}, 
+        ${payment_method}, 
+        ${safeTotal}, 
+        'pending',
+        ${user?.id || null}, 
+        ${now.toISOString()},
+        ${custom_delivery_method},
+        ${delivery_fee || 0},
+        ${payment_provider_id || null}, 
+        ${isAutomatic ? 'paid' : 'pending'},
+        ${promo_code || null},
+        ${referral_code || null},
+        ${discount_amount || 0},
+        ${tax_amount || 0},
+        ${expiresAt.toISOString()},
+        ${orderNumber}
+      )
+    `;
+
+    const orderResult = await queryOne<{ id: string }>`
+      SELECT id::text FROM orders 
+      WHERE order_number = ${orderNumber} 
+      LIMIT 1
+    `;
+
+    if (!orderResult || !orderResult.id) {
+      throw new Error('Failed to retrieve created order');
+    }
+
+    const orderId = orderResult.id;
+
+    for (const item of items) {
+      let unitPriceUsd = Number(item.price_usd);
+      if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
+      const quantity = Number(item.quantity);
+      if (isNaN(quantity)) continue;
+      const subtotalUsd = quantity * unitPriceUsd;
+      const productName = item.product_name || item.name || 'Product';
+      
       await sql`
-        UPDATE referral_tracking
-        SET status = 'cancelled'
-        WHERE order_id = ${id} AND status = 'pending'
-      `
+        INSERT INTO order_items (
+          order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
+        ) VALUES (
+          ${orderId}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
+          ${item.custom_details || null}
+        )
+      `;
     }
 
-    return NextResponse.json(updatedOrder)
-  } catch (err: any) {
-    console.error('Order update error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+    const orderItemsHtml = items.map((item: any) => `
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+        <span>${item.name} x ${item.quantity}</span>
+        <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
+      </div>
+    `).join('');
 
-// DELETE – delete order (admin only)
-export async function DELETE(req: NextRequest) {
-  const authError = requireAdmin(req)
-  if (authError) return authError
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${orderId}`;
+    const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
-  try {
-    const id = new URL(req.url).searchParams.get('id')
-    if (!id) {
-      return NextResponse.json({ error: 'id required' }, { status: 400 })
+    const commonPlaceholders = {
+      customer_name,
+      order_number: orderNumber,
+      total_amount: safeTotal.toLocaleString(),
+      delivery_address: location,
+      delivery_method: custom_delivery_method,
+      payment_instructions: paymentInstructions,
+      payment_url: paymentUrl,
+      tracking_url: trackingUrl,
+    };
+
+    if (isAutomatic) {
+      let emailTemplate = await getEmailTemplate(sql, 'order_confirmation_automatic');
+      
+      if (emailTemplate) {
+        const html = renderEmailTemplate(emailTemplate.html_template, commonPlaceholders);
+        await sendMail({
+          to: customer_email,
+          subject: renderEmailTemplate(emailTemplate.subject, commonPlaceholders),
+          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+          html,
+        }).catch(err => console.error('Email failed:', err));
+      } else {
+        const fallbackHtml = `
+          <div style="font-family: Arial; max-width:600px;">
+            <h2>Order Confirmed</h2>
+            <p>Hello ${customer_name},</p>
+            <p>Thank you for your order! Your payment has been processed successfully.</p>
+            <div style="background:#f9fafb; padding:20px; border-radius:12px;">
+              <h3>Order Summary</h3>
+              <p><strong>Order #:</strong> ${orderNumber}</p>
+              <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
+              <p><strong>Delivery Method:</strong> ${custom_delivery_method}</p>
+              <p><strong>Delivery Address:</strong> ${location}</p>
+            </div>
+            <a href="${trackingUrl}" style="background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px;">View Order →</a>
+          </div>
+        `;
+        await sendMail({
+          to: customer_email,
+          subject: `Order Confirmation #${orderNumber}`,
+          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+          html: fallbackHtml,
+        }).catch(err => console.error('Email failed:', err));
+      }
+    } else {
+      let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
+      
+      const activeBanner = await queryOne<{
+        title: string;
+        description: string;
+        discount_code: string;
+        button_text: string;
+        button_url: string;
+      }>`
+        SELECT title, description, discount_code, button_text, button_url 
+        FROM promotional_banners 
+        WHERE is_active = true 
+          AND (starts_at IS NULL OR starts_at <= NOW()) 
+          AND (ends_at IS NULL OR ends_at >= NOW())
+        LIMIT 1
+      `;
+
+      const discountBannerHtml = activeBanner ? `
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+          <p style="margin:0; font-size:14px; color:#92400E;">${activeBanner.title || 'Special Offer'}</p>
+          ${activeBanner.description ? `<p style="margin:5px 0 0; font-size:12px;">${activeBanner.description}</p>` : ''}
+          ${activeBanner.discount_code ? `<p style="margin:10px 0 0; font-weight:bold;">Code: ${activeBanner.discount_code}</p>` : ''}
+          ${activeBanner.button_text && activeBanner.button_url ? `<a href="${activeBanner.button_url}" style="display:inline-block; margin-top:10px; background:#F97316; color:white; padding:8px 20px; text-decoration:none; border-radius:30px;">${activeBanner.button_text}</a>` : ''}
+        </div>
+      ` : (settingsMap.discount_banner_default ? `
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+          <p style="margin:0;">${settingsMap.discount_banner_default}</p>
+        </div>
+      ` : '');
+
+      if (emailTemplate) {
+        const html = renderEmailTemplate(emailTemplate.html_template, {
+          ...commonPlaceholders,
+          discount_banner: discountBannerHtml,
+        });
+        await sendMail({
+          to: customer_email,
+          subject: renderEmailTemplate(emailTemplate.subject, commonPlaceholders),
+          text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
+          html,
+        }).catch(err => console.error('Email failed:', err));
+      } else {
+        const orderItemsTable = items.map((item: any) => `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
+          </div>
+        `).join('');
+
+        const fallbackHtml = `
+          <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:16px; overflow:hidden;">
+            <div style="background:#F97316; padding:20px; text-align:center;">
+              <img src="${settingsMap.invoice_logo_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'}" style="max-width:150px;" />
+              <h1 style="color:white; margin:10px 0 0;">Complete Your Payment</h1>
+            </div>
+            <div style="padding:24px;">
+              <p>Hello <strong>${customer_name}</strong>,</p>
+              <p>Thank you for your order! To complete your purchase, please follow the instructions below.</p>
+              
+              <div style="background:#f9fafb; padding:20px; border-radius:12px; margin:20px 0;">
+                <h3 style="margin-top:0;">Order Summary</h3>
+                ${orderItemsTable}
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 18px; color: #F97316;">
+                  <span>Total Amount</span>
+                  <span>MWK ${safeTotal.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div style="background:#fef3c7; padding:20px; border-radius:12px; margin:20px 0;">
+                <h3 style="margin-top:0;">Payment Instructions</h3>
+                <div style="font-size:14px;">${paymentInstructions}</div>
+              </div>
+
+              <div style="text-align:center;">
+                <a href="${paymentUrl}" style="display:inline-block; background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px; font-weight:bold;">Complete Payment →</a>
+              </div>
+
+              ${discountBannerHtml}
+            </div>
+            <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#6b7280; border-top:1px solid #e5e7eb;">
+              <p>${settingsMap.company_name || 'SpectrumCosmo'} – Wear your excitement with pride.</p>
+              <p>${settingsMap.company_address || 'Lilongwe, Malawi'} | <a href="mailto:${settingsMap.company_email || 'hello@spectrumcosmo.shop'}" style="color:#F97316;">${settingsMap.company_email || 'hello@spectrumcosmo.shop'}</a></p>
+              <p>© ${new Date().getFullYear()} ${settingsMap.company_name || 'SpectrumCosmo'}. ${settingsMap.footer_copyright || 'All rights reserved.'}</p>
+            </div>
+          </div>
+        `;
+        
+        await sendMail({
+          to: customer_email,
+          subject: `Complete Your Payment for Order #${orderNumber}`,
+          text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
+          html: fallbackHtml,
+        }).catch(err => console.error('Email failed:', err));
+      }
     }
 
-    const sql = getDb()
-    
-    // Delete order items first (foreign key constraint)
-    await sql`DELETE FROM order_items WHERE order_id = ${id}`
-    
-    // Delete referral tracking
-    await sql`DELETE FROM referral_tracking WHERE order_id = ${id}`
-    
-    // Delete promo code usage
-    await sql`DELETE FROM promo_code_usage WHERE order_id = ${id}`
-    
-    // Delete the order
-    await sql`DELETE FROM orders WHERE id = ${id}`
-    
-    return NextResponse.json({ success: true })
-  } catch (err: any) {
-    console.error('Order delete error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({
+      success: true,
+      id: orderId,
+      total_amount: safeTotal,
+    });
+  } catch (err) {
+    console.error('Order creation error:', err);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
