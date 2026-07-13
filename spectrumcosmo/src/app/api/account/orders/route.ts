@@ -9,17 +9,67 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
+    
+    // Get orders by user_id OR by email (including the user's email)
     const orders = await sql`
       SELECT 
-        id, order_number, customer_name, customer_email, phone_number,
-        delivery_address, total_amount, status, payment_method, payment_status,
-        proof_of_payment_url, payment_note, delivery_method_id, delivery_fee,
-        created_at, updated_at
+        id, 
+        order_number, 
+        customer_name, 
+        customer_email, 
+        phone_number,
+        delivery_address, 
+        total_amount, 
+        status, 
+        payment_method, 
+        payment_status,
+        proof_of_payment_url, 
+        payment_note, 
+        delivery_method_id, 
+        delivery_fee,
+        custom_delivery_method,
+        discount_amount,
+        promo_code,
+        referral_code,
+        tracking_number,
+        tracking_notes,
+        admin_notes,
+        created_at, 
+        updated_at,
+        delivered_at,
+        paid_at
       FROM orders
-      WHERE user_id = ${user.id} OR customer_email = ${user.email}
+      WHERE user_id = ${user.id} 
+         OR customer_email = ${user.email}
+         OR customer_email ILIKE ${user.email}
       ORDER BY created_at DESC
     `;
-    return NextResponse.json(orders);
+    
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order: any) => {
+        const items = await sql`
+          SELECT 
+            id,
+            product_name,
+            quantity,
+            unit_price_usd as unit_price,
+            subtotal_usd as total_price,
+            custom_details,
+            image_url
+          FROM order_items
+          WHERE order_id = ${order.id}::uuid
+        `;
+        return {
+          ...order,
+          items: items || [],
+          subtotal: order.total_amount || 0,
+          shipping_cost: order.delivery_fee || 0,
+        };
+      })
+    );
+
+    return NextResponse.json(ordersWithItems);
   } catch (err: any) {
     console.error('GET orders error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -45,7 +95,7 @@ export async function PATCH(req: NextRequest) {
       const sql = getDb();
       const [order] = await sql`
         SELECT status, order_number FROM orders 
-        WHERE id = ${id} AND (user_id = ${user.id} OR customer_email = ${user.email})
+        WHERE id = ${id}::uuid AND (user_id = ${user.id} OR customer_email = ${user.email})
       `;
 
       if (!order) {
@@ -58,7 +108,7 @@ export async function PATCH(req: NextRequest) {
 
       await sql`
         UPDATE orders SET status = 'cancelled', updated_at = NOW()
-        WHERE id = ${id} AND (user_id = ${user.id} OR customer_email = ${user.email})
+        WHERE id = ${id}::uuid AND (user_id = ${user.id} OR customer_email = ${user.email})
       `;
 
       return NextResponse.json({ success: true, message: 'Order cancelled successfully' });
@@ -69,7 +119,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   console.log('Invalid PATCH request - missing cancel action');
-  return NextResponse.json({ error: 'Invalid request. Use POST for proof upload or PATCH with action=cancel for cancellation.' }, { status: 400 });
+  return NextResponse.json({ 
+    error: 'Invalid request. Use POST for proof upload or PATCH with action=cancel for cancellation.' 
+  }, { status: 400 });
 }
 
 export async function POST(req: NextRequest) {
