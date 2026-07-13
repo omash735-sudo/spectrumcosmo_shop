@@ -1,4 +1,3 @@
-// app/checkout/page.tsx
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -13,6 +12,7 @@ import Step2CustomerInfo from './components/Step2CustomerInfo';
 import Step3OrderReview from './components/Step3OrderReview';
 import { useCheckout } from '@/lib/hooks/useCheckout';
 import { orderService } from '@/lib/services/orderService';
+import toast from 'react-hot-toast';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -25,24 +25,23 @@ export default function CheckoutPage() {
     paymentProviders,
     setPaymentProviders,
     deliveryFee,
-    canProceed,
-    goToStep,
     nextStep,
     prevStep,
     updateForm,
     selectDeliveryMethod,
     selectPaymentProvider,
-    checkServiceability,
     applyPromo,
     removePromo,
     saveReferral,
-    requestQuote,
     createOrder,
+    resetCheckout,
   } = useCheckout();
 
+  const [customDeliveryMethod, setCustomDeliveryMethod] = useState<string | null>(null);
   const [taxRate, setTaxRate] = useState(16.5);
   const [taxName, setTaxName] = useState('VAT');
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
@@ -98,9 +97,21 @@ export default function CheckoutPage() {
   const selectedDeliveryMethod = deliveryMethods.find(m => m.id === state.selectedDeliveryMethodId) || null;
   const selectedPaymentProvider = state.selectedPaymentProvider;
 
-  // Handle order confirmation
+  // Handle order confirmation - creates order and goes to payment page
   const handleConfirmOrder = useCallback(async () => {
-    const { form, selectedDeliveryMethodId, selectedPaymentProvider, requiresQuote, appliedPromo, savedReferral, discountAmount } = state;
+    const { form, selectedDeliveryMethodId, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
+
+    if (!selectedDeliveryMethodId) {
+      toast.error('Please select a delivery method');
+      return;
+    }
+
+    if (selectedDeliveryMethodId === -1 && !customDeliveryMethod?.trim()) {
+      toast.error('Please enter the courier name');
+      return;
+    }
+
+    setIsCreatingOrder(true);
 
     const mappedItems = items.map(item => ({
       product_id: item.id,
@@ -109,7 +120,11 @@ export default function CheckoutPage() {
       price_usd: Number(item.priceUsd ?? 0),
     }));
 
-    const basePayload = {
+    const deliveryMethodName = selectedDeliveryMethodId === -1 
+      ? customDeliveryMethod || 'Other Courier'
+      : selectedDeliveryMethod?.name || 'Standard';
+
+    const payload = {
       customer_name: form.name,
       customer_email: form.email,
       phone_number: form.phone,
@@ -117,47 +132,33 @@ export default function CheckoutPage() {
       notes: form.notes || null,
       items: mappedItems,
       subtotal: subtotal,
-      delivery_method_id: selectedDeliveryMethodId,
+      delivery_method_id: selectedDeliveryMethodId === -1 ? null : selectedDeliveryMethodId,
+      delivery_method_name: deliveryMethodName,
+      custom_delivery_method: selectedDeliveryMethodId === -1 ? customDeliveryMethod : null,
+      delivery_fee: deliveryFee,
+      tax_amount: taxAmount,
+      discount_amount: discountAmount,
+      total_amount: finalTotal,
       payment_provider_id: selectedPaymentProvider?.id || null,
       payment_method: selectedPaymentProvider?.name || 'Manual',
+      promo_code_id: appliedPromo?.id || null,
+      promo_code: appliedPromo?.code || null,
+      referral_code: savedReferral || null,
     };
 
     try {
-      if (requiresQuote) {
-        // Request quote
-        const result = await requestQuote({
-          ...basePayload,
-          delivery_method_name: selectedDeliveryMethod?.name || 'Standard',
-        });
-        if (result) {
-          clearCart();
-          router.push(`/checkout/payment?orderId=${result.orderId}&type=delivery-quote`);
-        }
-      } else {
-        // Create order
-        const result = await createOrder({
-          ...basePayload,
-          delivery_fee: deliveryFee,
-          tax_amount: taxAmount,
-          discount_amount: discountAmount,
-          total_amount: finalTotal,
-          promo_code_id: appliedPromo?.id || null,
-          promo_code: appliedPromo?.code || null,
-          referral_code: savedReferral || null,
-        });
-        if (result) {
-          clearCart();
-          if (selectedPaymentProvider?.type === 'automatic') {
-            router.push(`/account/orders?payment=pending&order=${result.id}`);
-          } else {
-            router.push(`/checkout/payment?orderId=${result.id}`);
-          }
-        }
+      const result = await createOrder(payload);
+      if (result) {
+        clearCart();
+        resetCheckout();
+        router.push(`/checkout/payment?orderId=${result.id}`);
       }
     } catch (err) {
-      console.error('Order placement error:', err);
+      console.error('Order creation error:', err);
+    } finally {
+      setIsCreatingOrder(false);
     }
-  }, [state, items, subtotal, deliveryFee, taxAmount, finalTotal, requestQuote, createOrder, clearCart, router]);
+  }, [state, items, subtotal, deliveryFee, taxAmount, finalTotal, customDeliveryMethod, selectedDeliveryMethod, createOrder, clearCart, resetCheckout, router]);
 
   if (loadingOptions) {
     return (
@@ -221,15 +222,11 @@ export default function CheckoutPage() {
                   deliveryMethods={deliveryMethods}
                   selectedDeliveryMethodId={state.selectedDeliveryMethodId}
                   onSelectDeliveryMethod={selectDeliveryMethod}
-                  serviceability={state.serviceability}
-                  isCheckingServiceability={state.isCheckingServiceability}
-                  requiresQuote={state.requiresQuote}
-                  quoteRequested={state.quoteRequested}
-                  isSubmitting={state.isSubmitting}
-                  onCheckServiceability={checkServiceability}
-                  onRequestQuote={() => handleConfirmOrder()}
+                  customDeliveryMethod={customDeliveryMethod}
+                  onCustomDeliveryMethodChange={setCustomDeliveryMethod}
                   onNext={nextStep}
                   onPrev={prevStep}
+                  isSubmitting={state.isSubmitting}
                   error={state.error}
                 />
               )}
@@ -238,6 +235,7 @@ export default function CheckoutPage() {
                 <Step3OrderReview
                   form={state.form}
                   selectedDeliveryMethod={selectedDeliveryMethod}
+                  customDeliveryMethod={customDeliveryMethod}
                   selectedPaymentProvider={selectedPaymentProvider}
                   subtotal={subtotal}
                   deliveryFee={deliveryFee}
@@ -246,10 +244,9 @@ export default function CheckoutPage() {
                   taxRate={taxRate}
                   taxName={taxName}
                   finalTotal={finalTotal}
-                  requiresQuote={state.requiresQuote}
                   onConfirm={handleConfirmOrder}
                   onBack={prevStep}
-                  isSubmitting={state.isSubmitting}
+                  isSubmitting={isCreatingOrder || state.isSubmitting}
                   error={state.error}
                 />
               )}
