@@ -1,4 +1,3 @@
-// app/account/orders/components/OrderTimeline.tsx
 'use client';
 
 import { CheckCircle2, Package, Truck, Clock, Send, AlertCircle } from 'lucide-react';
@@ -10,7 +9,6 @@ interface OrderTimelineProps {
 }
 
 export default function OrderTimeline({ order }: OrderTimelineProps) {
-  // Define timeline steps based on order status
   const getTimelineSteps = () => {
     const steps = [
       { key: 'placed', label: 'Order Placed', icon: Package, completed: true },
@@ -20,14 +18,8 @@ export default function OrderTimeline({ order }: OrderTimelineProps) {
       { key: 'delivered', label: 'Delivered', icon: CheckCircle2, completed: false },
     ];
 
-    // Mark completed based on status
     switch (order.status) {
       case 'pending':
-        steps[1].completed = false;
-        break;
-      case 'pending_quote':
-        steps[1].label = 'Delivery Quote';
-        steps[1].icon = Send;
         steps[1].completed = false;
         break;
       case 'awaiting_verification':
