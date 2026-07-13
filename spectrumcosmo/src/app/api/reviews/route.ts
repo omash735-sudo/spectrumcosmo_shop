@@ -34,34 +34,55 @@ async function checkIsAdmin(userId: number): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-
-  const rateLimitResult = await rateLimit(`review:${user.id}`, 5, 3600);
-  if (!rateLimitResult.success) {
-    const minutesLeft = Math.ceil(rateLimitResult.retryAfterMinutes);
-    return NextResponse.json(
-      { error: `Too many reviews. Please try again in ${minutesLeft} minutes.` },
-      { status: 429 }
-    );
-  }
-
   try {
-    const { review_text, rating, image_url, product_id } = await req.json();
+    const authResult = await getVerifiedUser(req);
+    
+    if (!authResult.user || authResult.error) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { user } = authResult;
+
+    const rateLimitResult = await rateLimit(`review:${user.id}`, 5, 3600);
+    if (!rateLimitResult.success) {
+      const minutesLeft = Math.ceil(rateLimitResult.retryAfterMinutes);
+      return NextResponse.json(
+        { error: `Too many reviews. Please try again in ${minutesLeft} minutes.` },
+        { status: 429 }
+      );
+    }
+
+    const body = await req.json();
+    const { review_text, rating, image_url, product_id } = body;
 
     if (!review_text || !rating) {
-      return NextResponse.json({ error: 'Review text and rating are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Review text and rating are required' },
+        { status: 400 }
+      );
     }
 
     const r = parseInt(rating);
     if (isNaN(r) || r < 1 || r > 5) {
-      return NextResponse.json({ error: 'Rating must be 1-5' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Rating must be 1-5' },
+        { status: 400 }
+      );
     }
     if (review_text.length < 3) {
-      return NextResponse.json({ error: 'Review must be at least 3 characters' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Review must be at least 3 characters' },
+        { status: 400 }
+      );
     }
     if (review_text.length > 2000) {
-      return NextResponse.json({ error: 'Review cannot exceed 2000 characters' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Review cannot exceed 2000 characters' },
+        { status: 400 }
+      );
     }
 
     const sanitizedText = sanitizeInput(review_text);
@@ -77,16 +98,19 @@ export async function POST(req: NextRequest) {
     `;
 
     if (!newReview) {
-      return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to submit review' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(newReview, { status: 201 });
   } catch (err) {
     console.error('Review POST error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -117,21 +141,31 @@ export async function GET(req: NextRequest) {
         ORDER BY r.created_at DESC
       `;
     } else if (userId) {
-      const { user, error } = await getVerifiedUser(req);
-      if (error) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      const authResult = await getVerifiedUser(req);
+      if (!authResult.user || authResult.error) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        );
       }
       
+      const { user } = authResult;
       const requestedId = parseInt(userId);
       if (isNaN(requestedId)) {
-        return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid user ID' },
+          { status: 400 }
+        );
       }
       
       const isOwnReview = user.id === requestedId;
       const isAdminUser = await checkIsAdmin(user.id);
       
       if (!isOwnReview && !isAdminUser) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
       }
       
       data = await queryAsArray`
@@ -177,10 +211,10 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (err) {
     console.error('Review GET error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -216,18 +250,26 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(updatedReview);
   } catch (err) {
     console.error('Review PATCH error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
-  if (error) return error;
-
   try {
+    const authResult = await getVerifiedUser(req);
+    
+    if (!authResult.user || authResult.error) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { user } = authResult;
+
     const { id, review_text, rating, image_url } = await req.json();
     if (!id) return NextResponse.json({ error: 'Review ID required' }, { status: 400 });
     if (!review_text || !rating) {
@@ -275,10 +317,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(updatedReview);
   } catch (err) {
     console.error('Review PUT error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -303,9 +345,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Review DELETE error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
