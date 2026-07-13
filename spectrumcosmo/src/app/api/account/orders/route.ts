@@ -10,7 +10,6 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
     
-    // Get orders by user_id OR by email (including the user's email)
     const orders = await sql`
       SELECT 
         id, 
@@ -25,7 +24,6 @@ export async function GET(req: NextRequest) {
         payment_status,
         proof_of_payment_url, 
         payment_note, 
-        delivery_method_id, 
         delivery_fee,
         custom_delivery_method,
         discount_amount,
@@ -45,7 +43,6 @@ export async function GET(req: NextRequest) {
       ORDER BY created_at DESC
     `;
     
-    // Get order items for each order
     const ordersWithItems = await Promise.all(
       orders.map(async (order: any) => {
         const items = await sql`
@@ -200,7 +197,6 @@ export async function POST(req: NextRequest) {
 
     console.log('Order updated successfully:', updatedOrder ? 'Yes' : 'No');
 
-    // Insert into payment_confirmations (required for admin verification dashboard)
     try {
       await sql`
         INSERT INTO payment_confirmations (
@@ -212,7 +208,6 @@ export async function POST(req: NextRequest) {
       console.log('Payment confirmation record inserted.');
     } catch (pcErr) {
       console.error('Failed to insert into payment_confirmations:', pcErr);
-      // Do not fail the whole request – the order is already updated.
     }
 
     const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
