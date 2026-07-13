@@ -4,12 +4,11 @@ import { CheckCircle, Truck, Package, CreditCard, Lock, Shield, User, Phone, Mai
 import { useCart } from '@/components/storefront/CartProvider';
 import { useCurrency } from '@/components/storefront/CurrencyProvider';
 import { formatCurrencyAmount } from '@/lib/currency';
-import { CheckoutFormData, PaymentProvider, DeliveryMethod } from '@/lib/types/order';
+import { CheckoutFormData, PaymentProvider } from '@/lib/types/order';
 
 interface Step3OrderReviewProps {
   form: CheckoutFormData;
-  selectedDeliveryMethod: DeliveryMethod | null;
-  customDeliveryMethod: string | null;
+  customDeliveryMethod: string;
   selectedPaymentProvider: PaymentProvider | null;
   subtotal: number;
   deliveryFee: number;
@@ -26,7 +25,6 @@ interface Step3OrderReviewProps {
 
 export default function Step3OrderReview({
   form,
-  selectedDeliveryMethod,
   customDeliveryMethod,
   selectedPaymentProvider,
   subtotal,
@@ -44,9 +42,7 @@ export default function Step3OrderReview({
   const { items } = useCart();
   const { currency, rates } = useCurrency();
 
-  const deliveryMethodName = selectedDeliveryMethod?.id === -1 
-    ? customDeliveryMethod || 'Other (Custom Courier)'
-    : selectedDeliveryMethod?.name || 'Not selected';
+  const deliveryMethodDisplay = customDeliveryMethod || 'Not specified';
 
   return (
     <div className="space-y-6">
@@ -100,7 +96,7 @@ export default function Step3OrderReview({
           <div className="space-y-1.5 text-sm">
             <p className="text-[var(--foreground)]">{form.location}</p>
             <p className="text-[var(--foreground-muted)] flex items-center gap-1">
-              <Truck size={12} className="text-[var(--foreground-muted)]" /> {deliveryMethodName}
+              <Truck size={12} className="text-[var(--foreground-muted)]" /> {deliveryMethodDisplay}
             </p>
             {form.notes && (
               <p className="text-[var(--foreground-muted)] text-xs">Note: {form.notes}</p>
@@ -126,7 +122,7 @@ export default function Step3OrderReview({
           </div>
           <div className="flex justify-between">
             <span className="text-[var(--foreground-muted)]">Delivery Fee</span>
-            <span className="text-[var(--foreground)]">{deliveryFee.toLocaleString()} MWK</span>
+            <span className="text-[var(--foreground)]">To be confirmed</span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between text-green-600 dark:text-green-500">
