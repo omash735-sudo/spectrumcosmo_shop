@@ -92,28 +92,26 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    const db = getDb();
-
-    await db`
+    await queryOne`
       INSERT INTO reviews (customer_name, user_id, review_text, rating, image_url, product_id, status, created_at, updated_at)
       VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', ${now}, ${now})
     `;
 
-    const result = await db`
+    const reviews = await queryAsArray`
       SELECT * FROM reviews 
       WHERE user_id = ${user.id} 
       ORDER BY id DESC 
       LIMIT 1
     `;
 
-    if (!result || !result[0]) {
+    if (!reviews || reviews.length === 0) {
       return NextResponse.json(
         { error: 'Failed to retrieve submitted review' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(result[0], { status: 201 });
+    return NextResponse.json(reviews[0], { status: 201 });
   } catch (err) {
     console.error('Review POST error:', err);
     return NextResponse.json(
