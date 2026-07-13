@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
     const sanitizedProductId = sanitizeProductId(product_id);
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
-    const sql = getDb();
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     await queryOne`
