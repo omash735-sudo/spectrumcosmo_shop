@@ -45,14 +45,12 @@ export default function Step2CustomerInfo({
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
   const [localSelectedId, setLocalSelectedId] = useState<number | null>(selectedDeliveryMethodId);
 
-  // Sync local state with prop
   useEffect(() => {
     if (selectedDeliveryMethodId !== null) {
       setLocalSelectedId(selectedDeliveryMethodId);
     }
   }, [selectedDeliveryMethodId]);
 
-  // Auto-select first delivery method
   useEffect(() => {
     if (deliveryMethods.length > 0 && localSelectedId === null) {
       const firstId = deliveryMethods[0].id;
@@ -325,6 +323,7 @@ export default function Step2CustomerInfo({
                   <input
                     type="radio"
                     name="delivery_method"
+                    value={method.id}
                     checked={currentMethodId === method.id}
                     onChange={() => handleMethodSelect(method.id)}
                     className="w-5 h-5 text-[var(--primary)] shrink-0"
