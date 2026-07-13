@@ -43,22 +43,23 @@ export default function Step2CustomerInfo({
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [manualCheckTriggered, setManualCheckTriggered] = useState(false);
+  const [localSelectedId, setLocalSelectedId] = useState<number | null>(selectedDeliveryMethodId);
 
+  // Sync local state with prop
   useEffect(() => {
-    if (deliveryMethods.length > 0 && selectedDeliveryMethodId === null) {
-      onSelectDeliveryMethod(deliveryMethods[0].id);
+    if (selectedDeliveryMethodId !== null) {
+      setLocalSelectedId(selectedDeliveryMethodId);
     }
-  }, [deliveryMethods, selectedDeliveryMethodId, onSelectDeliveryMethod]);
+  }, [selectedDeliveryMethodId]);
 
-  // Debug: Log state changes
+  // Auto-select first delivery method
   useEffect(() => {
-    console.log('=== DEBUG CHECKOUT STATE ===');
-    console.log('selectedDeliveryMethodId:', selectedDeliveryMethodId);
-    console.log('form.location:', form.location);
-    console.log('serviceability:', serviceability);
-    console.log('isCheckingServiceability:', isCheckingServiceability);
-  }, [selectedDeliveryMethodId, form.location, serviceability, isCheckingServiceability]);
+    if (deliveryMethods.length > 0 && localSelectedId === null) {
+      const firstId = deliveryMethods[0].id;
+      setLocalSelectedId(firstId);
+      onSelectDeliveryMethod(firstId);
+    }
+  }, [deliveryMethods, localSelectedId, onSelectDeliveryMethod]);
 
   const validateField = (field: string, value: string): string => {
     switch (field) {
@@ -86,28 +87,30 @@ export default function Step2CustomerInfo({
     onUpdateForm(field, value);
     const error = validateField(field, value);
     setFormErrors(prev => ({ ...prev, [field]: error }));
+  };
 
-    if (field === 'location' && value.length >= 3 && selectedDeliveryMethodId) {
-      if (locationTimeout) clearTimeout(locationTimeout);
-      const timeout = setTimeout(() => {
-        onCheckServiceability(value, selectedDeliveryMethodId);
-      }, 600);
-      setLocationTimeout(timeout);
+  const handleMethodSelect = (methodId: number) => {
+    setLocalSelectedId(methodId);
+    onSelectDeliveryMethod(methodId);
+    
+    if (form.location.length >= 3) {
+      setTimeout(() => {
+        onCheckServiceability(form.location, methodId);
+      }, 300);
     }
   };
 
   const handleManualCheck = () => {
-    console.log('Manual check triggered');
     if (!form.location || form.location.length < 3) {
       toast.error('Please enter your delivery location first');
       return;
     }
-    if (!selectedDeliveryMethodId) {
+    const methodId = localSelectedId || selectedDeliveryMethodId;
+    if (!methodId) {
       toast.error('Please select a delivery method first');
       return;
     }
-    setManualCheckTriggered(true);
-    onCheckServiceability(form.location, selectedDeliveryMethodId);
+    onCheckServiceability(form.location, methodId);
   };
 
   const validateForm = (): boolean => {
@@ -117,21 +120,19 @@ export default function Step2CustomerInfo({
     errors.phone = validateField('phone', form.phone);
     errors.location = validateField('location', form.location);
     setFormErrors(errors);
-    const hasErrors = Object.values(errors).some(e => e);
-    return !hasErrors;
+    return !Object.values(errors).some(e => e);
   };
 
   const isFormValid = (): boolean => {
-    const nameFilled = form.name.trim().length >= 2;
-    const emailFilled = form.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-    const phoneFilled = form.phone.trim().length > 0;
-    const locationFilled = form.location.trim().length >= 3;
-    return nameFilled && emailFilled && phoneFilled && locationFilled;
+    return form.name.trim().length >= 2 &&
+           form.email.trim().length > 0 &&
+           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+           form.phone.trim().length > 0 &&
+           form.location.trim().length >= 3;
   };
 
   const handleNext = () => {
-    const isValid = validateForm();
-    if (!isValid) {
+    if (!validateForm()) {
       toast.error('Please fill in all required fields correctly');
       const firstError = Object.keys(formErrors).find(key => formErrors[key]);
       if (firstError) {
@@ -141,7 +142,8 @@ export default function Step2CustomerInfo({
       return;
     }
 
-    if (!selectedDeliveryMethodId) {
+    const methodId = localSelectedId || selectedDeliveryMethodId;
+    if (!methodId) {
       toast.error('Please select a delivery method');
       return;
     }
@@ -165,8 +167,10 @@ export default function Step2CustomerInfo({
     focus:outline-none bg-[var(--background)] text-[var(--foreground)]
   `;
 
-  const deliveryFee = serviceability?.isServiceable && serviceability.baseFee && selectedDeliveryMethodId
-    ? serviceability.baseFee * (deliveryMethods.find(m => m.id === selectedDeliveryMethodId)?.type === 'express' 
+  const currentMethodId = localSelectedId || selectedDeliveryMethodId;
+
+  const deliveryFee = serviceability?.isServiceable && serviceability.baseFee && currentMethodId
+    ? serviceability.baseFee * (deliveryMethods.find(m => m.id === currentMethodId)?.type === 'express' 
         ? (serviceability.area?.express_multiplier || 1.5) 
         : 1)
     : 0;
@@ -180,7 +184,7 @@ export default function Step2CustomerInfo({
 
   const isReadyForReview = () => {
     if (!isFormValid()) return false;
-    if (!selectedDeliveryMethodId) return false;
+    if (!currentMethodId) return false;
     if (requiresQuote && !quoteRequested) return false;
     return true;
   };
@@ -312,7 +316,7 @@ export default function Step2CustomerInfo({
               <label
                 key={method.id}
                 className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  selectedDeliveryMethodId === method.id
+                  currentMethodId === method.id
                     ? 'border-[var(--primary)] bg-[var(--primary)]/10'
                     : 'border-[var(--border)] hover:border-[var(--primary)]/30'
                 }`}
@@ -321,11 +325,8 @@ export default function Step2CustomerInfo({
                   <input
                     type="radio"
                     name="delivery_method"
-                    checked={selectedDeliveryMethodId === method.id}
-                    onChange={() => {
-                      console.log('Method selected:', method.id, method.name);
-                      onSelectDeliveryMethod(method.id);
-                    }}
+                    checked={currentMethodId === method.id}
+                    onChange={() => handleMethodSelect(method.id)}
                     className="w-5 h-5 text-[var(--primary)] shrink-0"
                   />
                   <div>
@@ -346,17 +347,16 @@ export default function Step2CustomerInfo({
             ))}
           </div>
 
-          {/* Check Availability Button - Always shows when location is entered and no result yet */}
           {showCheckButton && (
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
               <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
-                {selectedDeliveryMethodId 
-                  ? 'Ready to check delivery availability for your location'
+                {currentMethodId 
+                  ? 'Click below to check delivery availability for your location'
                   : 'Please select a delivery method above first'}
               </p>
               <button
                 onClick={handleManualCheck}
-                disabled={!selectedDeliveryMethodId || isSubmitting}
+                disabled={!currentMethodId || isSubmitting}
                 className="px-6 py-2 bg-brand-orange text-white rounded-lg text-sm font-medium hover:bg-brand-orangeHover transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCheckingServiceability ? (
@@ -371,7 +371,6 @@ export default function Step2CustomerInfo({
             </div>
           )}
 
-          {/* Serviceability Result */}
           {serviceability && (
             <div className={`mt-4 p-4 rounded-xl border ${
               serviceability.isServiceable 
@@ -431,7 +430,6 @@ export default function Step2CustomerInfo({
             </div>
           )}
 
-          {/* Initial state - no location entered */}
           {!form.location && !serviceability && !isCheckingServiceability && (
             <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
               <p className="text-sm text-[var(--foreground-muted)]">
