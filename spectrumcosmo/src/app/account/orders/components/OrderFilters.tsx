@@ -1,4 +1,3 @@
-// app/account/orders/components/OrderFilters.tsx
 'use client';
 
 import { Search } from 'lucide-react';
@@ -14,7 +13,6 @@ interface OrderFiltersProps {
 const statusOptions: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All Orders' },
   { value: 'pending', label: 'Pending' },
-  { value: 'pending_quote', label: 'Quote' },
   { value: 'awaiting_verification', label: 'Verifying' },
   { value: 'processing', label: 'Processing' },
   { value: 'shipped', label: 'Shipped' },
