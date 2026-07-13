@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryOne } from '@/lib/db';
+import { queryOne, queryAsArray } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -74,20 +74,41 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    const newReview = await queryOne`
-      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
-      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', false, ${now}, ${now})
-      RETURNING id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
+    // Get the actual UUID from the database using the user ID from auth
+    const userResult = await queryOne<{ id: string }>`
+      SELECT id FROM users WHERE id = ${user.id}
     `;
 
-    if (!newReview) {
+    if (!userResult) {
       return NextResponse.json(
-        { error: 'Failed to submit review' },
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const userId = userResult.id;
+
+    await queryOne`
+      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
+      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${userId}, 'pending', false, ${now}, ${now})
+    `;
+
+    const reviews = await queryAsArray`
+      SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
+      FROM reviews 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    if (!reviews || reviews.length === 0) {
+      return NextResponse.json(
+        { error: 'Failed to retrieve submitted review' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(newReview, { status: 201 });
+    return NextResponse.json(reviews[0], { status: 201 });
   } catch (err) {
     console.error('Submit review error:', err);
     return NextResponse.json(
