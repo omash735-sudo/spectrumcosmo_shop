@@ -12,19 +12,29 @@ export async function PATCH(
 
   const { id: orderId } = await params;
   const body = await req.json();
-  const { status, trackingNumber, trackingNotes, adminNotes } = body;
+  const { status, trackingNumber, trackingNotes, adminNotes, deliveryFee } = body;
 
   if (!status) {
     return NextResponse.json({ error: 'Status is required' }, { status: 400 });
   }
 
-  // Validate status exists
   const statusInfo = await getStatusDisplayInfo(status);
   if (!statusInfo) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
   try {
+    const sql = getDb();
+
+    // Update order with delivery fee if provided
+    if (deliveryFee !== undefined) {
+      await sql`
+        UPDATE orders 
+        SET delivery_fee = ${deliveryFee}, updated_at = NOW()
+        WHERE id = ${orderId}::uuid
+      `;
+    }
+
     const result = await updateOrderStatus({
       orderId,
       newStatusSlug: status,
@@ -56,12 +66,14 @@ export async function GET(
   const { id: orderId } = await params;
 
   const [order] = await sql`
-    SELECT o.*, 
-           array_agg(DISTINCT oi.product_name) as items,
-           string_agg(DISTINCT CONCAT(oi.product_name, ' x', oi.quantity), ', ') as items_list
+    SELECT 
+      o.*, 
+      o.custom_delivery_method,
+      array_agg(DISTINCT oi.product_name) as items,
+      string_agg(DISTINCT CONCAT(oi.product_name, ' x', oi.quantity), ', ') as items_list
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id::uuid
-    WHERE o.id = ${orderId}
+    WHERE o.id = ${orderId}::uuid
     GROUP BY o.id
   `;
 
