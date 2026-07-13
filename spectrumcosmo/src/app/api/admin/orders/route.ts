@@ -1,22 +1,21 @@
-// app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { deductStock, releaseReservedStock, getStatusDisplayInfo, sendDynamicStatusEmail } from '@/lib/order-utils';
 
-// Types
 interface OrderUpdateBody {
   id: string;
   status: string;
   trackingNumber?: string;
   trackingNotes?: string;
   adminNotes?: string;
+  deliveryFee?: number;
 }
 
 interface OrderItem {
   id: string;
   quantity: number;
-  unit_price_usd: number;   // actual column name
+  unit_price_usd: number;
   product_name?: string;
 }
 
@@ -34,9 +33,9 @@ interface UpdatedOrder {
   payment_method: string;
   delivery_fee?: number;
   invoice_number?: string;
+  custom_delivery_method?: string | null;
 }
 
-// ========== GET – Fetch all orders ==========
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -44,23 +43,29 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
 
-    // 1. Get all orders
-    const orders = await sql`SELECT * FROM orders ORDER BY created_at DESC`;
+    const orders = await sql`
+      SELECT 
+        id, order_number, customer_name, customer_email, phone_number,
+        delivery_address as location, total_amount, status, payment_method, payment_status,
+        proof_of_payment_url, payment_note, delivery_fee, custom_delivery_method,
+        discount_amount, promo_code, referral_code, tracking_number, tracking_notes,
+        admin_notes, created_at, updated_at, delivered_at, paid_at
+      FROM orders 
+      ORDER BY created_at DESC
+    `;
 
     if (orders.length === 0) {
       return NextResponse.json({ orders: [] });
     }
 
-    // 2. Get all order items for these orders – using correct column name
     const orderIds = orders.map((o: any) => o.id);
     const items = await sql`
-      SELECT order_id, product_name, quantity, unit_price_usd
+      SELECT order_id, product_name, quantity, unit_price_usd, image_url
       FROM order_items
       WHERE order_id = ANY(${orderIds})
       ORDER BY created_at
     `;
 
-    // 3. Group items by order_id
     const itemsByOrder = new Map<string, any[]>();
     for (const item of items) {
       if (!itemsByOrder.has(item.order_id)) {
@@ -69,14 +74,16 @@ export async function GET(req: NextRequest) {
       itemsByOrder.get(item.order_id)!.push({
         product_name: item.product_name,
         quantity: Number(item.quantity),
-        unit_price: Number(item.unit_price_usd), // frontend expects unit_price
+        unit_price: Number(item.unit_price_usd),
+        image_url: item.image_url,
       });
     }
 
-    // 4. Attach items to orders
     const ordersWithItems = orders.map((order: any) => ({
       ...order,
       items: itemsByOrder.get(order.id) || [],
+      subtotal: order.total_amount || 0,
+      shipping_cost: order.delivery_fee || 0,
     }));
 
     return NextResponse.json({ orders: ordersWithItems });
@@ -87,7 +94,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ========== DELETE – Delete an order ==========
 export async function DELETE(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -100,7 +106,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const sql = getDb();
-    await sql`DELETE FROM orders WHERE id = ${id}`;
+    await sql`DELETE FROM orders WHERE id = ${id}::uuid`;
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -109,14 +115,13 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// ========== PUT – Update order (stock, status, tracking, invoice) ==========
 export async function PUT(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
 
   try {
     const body = (await req.json()) as OrderUpdateBody;
-    const { id, status, trackingNumber, trackingNotes, adminNotes } = body;
+    const { id, status, trackingNumber, trackingNotes, adminNotes, deliveryFee } = body;
 
     if (!id || !status) {
       return NextResponse.json({ error: 'ID and status required' }, { status: 400 });
@@ -125,16 +130,14 @@ export async function PUT(req: NextRequest) {
     const sql = getDb();
     const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
 
-    // Get current order status
     const [currentOrder] = await sql`
-      SELECT status, paid_at FROM orders WHERE id = ${id}
+      SELECT status, paid_at FROM orders WHERE id = ${id}::uuid
     `;
 
     if (!currentOrder) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Stock Management
     if (status === 'approved' && currentOrder.status !== 'approved') {
       const stockDeducted = await deductStock(id);
       if (!stockDeducted) {
@@ -153,7 +156,6 @@ export async function PUT(req: NextRequest) {
       await releaseReservedStock(id);
     }
 
-    // Update order
     const [updatedOrder] = (await sql`
       UPDATE orders
       SET
@@ -162,20 +164,20 @@ export async function PUT(req: NextRequest) {
         tracking_number = COALESCE(${trackingNumber || null}, tracking_number),
         tracking_notes = COALESCE(${trackingNotes || null}, tracking_notes),
         admin_notes = COALESCE(${adminNotes || null}, admin_notes),
+        delivery_fee = COALESCE(${deliveryFee || null}, delivery_fee),
         paid_at = CASE
           WHEN (${status} = 'approved' OR ${status} = 'delivered') AND paid_at IS NULL
           THEN NOW()
           ELSE paid_at
         END
-      WHERE id = ${id}
+      WHERE id = ${id}::uuid
       RETURNING *
     `) as UpdatedOrder[];
 
-    // Log status change & send email (unchanged logic)
     if (currentOrder.status !== status) {
       await sql`
         INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, ip_address, notes, changed_at)
-        VALUES (${id}, ${currentOrder.status}, ${status}, 'admin', ${ipAddress}, ${adminNotes || null}, NOW())
+        VALUES (${id}::uuid, ${currentOrder.status}, ${status}, 'admin', ${ipAddress}, ${adminNotes || null}, NOW())
       `;
 
       const statusInfo = await getStatusDisplayInfo(status);
@@ -198,7 +200,6 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Invoice Email on Delivery – using unit_price_usd
     if (status === 'delivered' && updatedOrder.payment_status === 'paid') {
       try {
         const { renderToStream } = await import('@react-pdf/renderer');
@@ -206,11 +207,10 @@ export async function PUT(req: NextRequest) {
         const QRCode = await import('qrcode');
         const nodemailer = await import('nodemailer');
 
-        // Fetch order items with correct column name
         const items = (await sql`
           SELECT product_name, quantity, unit_price_usd
           FROM order_items
-          WHERE order_id = ${id}
+          WHERE order_id = ${id}::uuid
         `) as OrderItem[];
 
         const subtotal = items.reduce(
@@ -221,7 +221,6 @@ export async function PUT(req: NextRequest) {
         const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders/${id}/tracking`;
         const qrCodeDataUrl = await QRCode.toDataURL(trackingUrl, { width: 120, margin: 1 });
 
-        // Convert items to format expected by InvoicePDF (needs unit_price field)
         const formattedItems = items.map((item) => ({
           product_name: item.product_name,
           quantity: item.quantity,
@@ -235,6 +234,7 @@ export async function PUT(req: NextRequest) {
           customerEmail: updatedOrder.customer_email,
           customerPhone: updatedOrder.phone_number,
           deliveryAddress: updatedOrder.location,
+          deliveryMethod: updatedOrder.custom_delivery_method || 'Not specified',
           paymentMethod: updatedOrder.payment_method,
           paymentStatus: updatedOrder.payment_status,
           trackingUrl,
