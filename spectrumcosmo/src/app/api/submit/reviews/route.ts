@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { queryOne } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
-
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
 
 function sanitizeInput(input: string): string {
   if (!input) return '';
@@ -81,36 +74,20 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    const client = await pool.connect();
+    const newReview = await queryOne`
+      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
+      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', false, ${now}, ${now})
+      RETURNING id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
+    `;
 
-    try {
-      const insertResult = await client.query(
-        `INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id`,
-        [sanitizedName, sanitizedText, r, sanitizedImageUrl, product_id || null, user.id, 'pending', false, now, now]
+    if (!newReview) {
+      return NextResponse.json(
+        { error: 'Failed to submit review' },
+        { status: 500 }
       );
-
-      const reviewId = insertResult.rows[0].id;
-
-      const result = await client.query(
-        `SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
-         FROM reviews 
-         WHERE id = $1`,
-        [reviewId]
-      );
-
-      if (result.rows.length === 0) {
-        return NextResponse.json(
-          { error: 'Failed to retrieve submitted review' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json(result.rows[0], { status: 201 });
-    } finally {
-      client.release();
     }
+
+    return NextResponse.json(newReview, { status: 201 });
   } catch (err) {
     console.error('Submit review error:', err);
     return NextResponse.json(
