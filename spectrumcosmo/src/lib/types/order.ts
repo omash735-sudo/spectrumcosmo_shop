@@ -94,6 +94,7 @@ export type Order = {
   delivered_at?: string | null;
   quote_requested_at?: string | null;
   items: OrderItem[];
+  custom_delivery_method?: string | null;
 };
 
 export type PromoCode = {
