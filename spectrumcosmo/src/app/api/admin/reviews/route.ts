@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryOne, queryAsArray } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
 function sanitizeInput(input: string): string {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb();
-    const data = await queryAsArray`
+    const data = await sql`
       SELECT r.*, u.name as user_name, u.email, u.profile_image as user_image
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
@@ -56,24 +56,33 @@ export async function PATCH(req: NextRequest) {
     const sanitizedText = review_text ? sanitizeInput(review_text) : undefined;
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : undefined;
     const sanitizedRating = rating ? parseInt(rating) : undefined;
+    const now = new Date().toISOString();
 
-    const updatedReview = await queryOne`
+    let approved = null;
+    if (status === 'approved') approved = true;
+    if (status === 'denied') approved = false;
+
+    await sql`
       UPDATE reviews
       SET
         status = COALESCE(${status || null}, status),
+        approved = COALESCE(${approved}, approved),
         review_text = COALESCE(${sanitizedText || null}, review_text),
         rating = COALESCE(${sanitizedRating || null}, rating),
         image_url = COALESCE(${sanitizedImageUrl || null}, image_url),
-        updated_at = NOW()
+        updated_at = ${now}
       WHERE id = ${id}
-      RETURNING *
     `;
 
-    if (!updatedReview) {
+    const updatedReview = await sql`
+      SELECT * FROM reviews WHERE id = ${id}
+    `;
+
+    if (!updatedReview || updatedReview.length === 0) {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updatedReview);
+    return NextResponse.json(updatedReview[0]);
   } catch (err) {
     console.error('Admin reviews PATCH error:', err);
     return NextResponse.json(
@@ -92,14 +101,9 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
     const sql = getDb();
-    const deleted = await queryOne<{ id: string }>`
+    await sql`
       DELETE FROM reviews WHERE id = ${id}
-      RETURNING id
     `;
-
-    if (!deleted) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
