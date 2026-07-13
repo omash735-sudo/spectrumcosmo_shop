@@ -1,9 +1,7 @@
-// app/api/admin/orders/export-pdf/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { renderToStream } from '@react-pdf/renderer';
 
-// Professional color scheme
 const COLORS = {
   primary: '#F97316',
   secondary: '#1F2937',
@@ -160,6 +158,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: 80,
   },
+  deliveryMethodRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
 });
 
 const OrderInvoicePDF = ({ order }: { order: any }) => {
@@ -174,6 +179,7 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
   };
 
   const statusStyle = getStatusColor(order.status);
+  const deliveryMethod = order.custom_delivery_method || 'Not specified';
 
   return (
     <Document>
@@ -232,6 +238,14 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
           <View style={styles.row}>
             <Text style={styles.label}>Phone Number:</Text>
             <Text style={styles.value}>{order.phone_number || 'N/A'}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Delivery Address:</Text>
+            <Text style={styles.value}>{order.delivery_address || order.location || 'N/A'}</Text>
+          </View>
+          <View style={styles.deliveryMethodRow}>
+            <Text style={styles.label}>Preferred Courier:</Text>
+            <Text style={styles.value}>{deliveryMethod}</Text>
           </View>
         </View>
 
