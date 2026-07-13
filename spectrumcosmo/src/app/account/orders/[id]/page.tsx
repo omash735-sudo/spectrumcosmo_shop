@@ -35,6 +35,8 @@ interface Order {
   delivered_at: string | null;
   promo_code: string | null;
   referral_code: string | null;
+  custom_delivery_method: string | null;
+  delivery_fee: number | null;
   items: Array<{ 
     product_name: string; 
     quantity: number; 
@@ -170,6 +172,11 @@ export default function OrderDetailPage() {
   const CurrentIcon = currentStatus.icon;
   const showConfirmButton = order.status === 'delivered' && !order.delivered_at;
   const canCancel = order.status === 'pending';
+
+  const deliveryMethod = order.custom_delivery_method || 'Not specified';
+  const deliveryFeeDisplay = order.delivery_fee && order.delivery_fee > 0 
+    ? `MWK ${order.delivery_fee.toLocaleString()}`
+    : 'To be confirmed';
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
@@ -323,6 +330,13 @@ export default function OrderDetailPage() {
               <MapPin size={12} className="text-[var(--foreground-muted)] mt-0.5 flex-shrink-0" />
               <p className="text-[var(--foreground)] break-words">{order.delivery_address}</p>
             </div>
+            <div className="flex gap-2">
+              <Truck size={12} className="text-[var(--foreground-muted)] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-[var(--foreground)]">Courier: {deliveryMethod}</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Fee: {deliveryFeeDisplay}</p>
+              </div>
+            </div>
             {order.tracking_notes && (
               <div className="mt-2 p-2 bg-[var(--background-secondary)] rounded-lg border border-[var(--border)]">
                 <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Courier Note:</p>
@@ -370,8 +384,8 @@ export default function OrderDetailPage() {
                 <span className="text-[var(--foreground)]">MWK {order.subtotal?.toLocaleString() || order.total_amount?.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm">
-                <span className="text-[var(--foreground-muted)]">Shipping</span>
-                <span className="text-[var(--foreground)]">MWK {order.shipping_cost?.toLocaleString() || '0'}</span>
+                <span className="text-[var(--foreground-muted)]">Delivery Fee</span>
+                <span className="text-[var(--foreground)]">{deliveryFeeDisplay}</span>
               </div>
               {order.discount_amount > 0 && (
                 <div className="flex justify-between text-xs sm:text-sm text-green-600 dark:text-green-400">
