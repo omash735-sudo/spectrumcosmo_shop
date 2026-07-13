@@ -5,6 +5,9 @@ import { rateLimit } from '@/lib/rate-limit';
 
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 function sanitizeInput(input: string): string {
@@ -81,19 +84,20 @@ export async function POST(req: NextRequest) {
     const client = await pool.connect();
 
     try {
-      await client.query(
+      const insertResult = await client.query(
         `INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING id`,
         [sanitizedName, sanitizedText, r, sanitizedImageUrl, product_id || null, user.id, 'pending', false, now, now]
       );
+
+      const reviewId = insertResult.rows[0].id;
 
       const result = await client.query(
         `SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
          FROM reviews 
-         WHERE user_id = $1 
-         ORDER BY created_at DESC 
-         LIMIT 1`,
-        [user.id]
+         WHERE id = $1`,
+        [reviewId]
       );
 
       if (result.rows.length === 0) {
