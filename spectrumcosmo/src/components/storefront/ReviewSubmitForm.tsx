@@ -5,9 +5,20 @@ import { useRouter } from 'next/navigation';
 import { Loader2, CheckCircle, AlertCircle, Upload, X, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface Message {
+  type: 'success' | 'error';
+  text: string;
+}
+
 export default function ReviewSubmitForm() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -17,8 +28,7 @@ export default function ReviewSubmitForm() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [csrfToken, setCsrfToken] = useState('');
+  const [message, setMessage] = useState<Message | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -38,31 +48,6 @@ export default function ReviewSubmitForm() {
       }
     };
     fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const getCsrfToken = () => {
-      const match = document.cookie.match(/csrf_token=([^;]+)/);
-      if (match) {
-        setCsrfToken(match[1]);
-      } else {
-        fetchCsrfFromApi();
-      }
-    };
-
-    const fetchCsrfFromApi = async () => {
-      try {
-        const res = await fetch('/api/csrf');
-        if (res.ok) {
-          const data = await res.json();
-          setCsrfToken(data.token);
-        }
-      } catch (err) {
-        console.error('Failed to fetch CSRF token:', err);
-      }
-    };
-
-    getCsrfToken();
   }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,11 +116,6 @@ export default function ReviewSubmitForm() {
       return;
     }
 
-    if (!csrfToken) {
-      toast.error('Security token loading, please wait...');
-      return;
-    }
-
     if (rating === 0) {
       setMessage({ type: 'error', text: 'Please select a rating' });
       return;
@@ -150,7 +130,7 @@ export default function ReviewSubmitForm() {
     setMessage(null);
 
     try {
-      let imageUrl = null;
+      let imageUrl: string | null = null;
       if (imageFile) {
         imageUrl = await uploadImage();
         if (imageFile && !imageUrl) {
@@ -169,7 +149,6 @@ export default function ReviewSubmitForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({
           rating,
@@ -341,7 +320,7 @@ export default function ReviewSubmitForm() {
 
       <button
         type="submit"
-        disabled={loading || !user || !csrfToken}
+        disabled={loading || !user}
         className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-xl font-semibold transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
