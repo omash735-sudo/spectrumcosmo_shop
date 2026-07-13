@@ -1,10 +1,8 @@
-// app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import { getVerifiedUser } from '@/lib/auth';
 
-// Helper to render email with placeholders
 function renderEmailTemplate(template: string, placeholders: Record<string, string>): string {
   let result = template;
   for (const [key, value] of Object.entries(placeholders)) {
@@ -13,7 +11,6 @@ function renderEmailTemplate(template: string, placeholders: Record<string, stri
   return result;
 }
 
-// Helper to get email template from database
 async function getEmailTemplate(sql: any, name: string) {
   const templates = await queryAsArray<{ html_template: string; subject: string }>`
     SELECT html_template, subject FROM email_templates 
@@ -31,6 +28,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    console.log('Order payload:', body);
+
     const {
       customer_name,
       customer_email,
@@ -40,9 +39,16 @@ export async function POST(req: NextRequest) {
       items,
       total_amount,
       delivery_method_id,
+      delivery_method_name,
+      custom_delivery_method,
       delivery_fee,
       payment_provider_id,
       payment_method,
+      discount_amount,
+      tax_amount,
+      promo_code_id,
+      promo_code,
+      referral_code,
     } = body;
 
     if (!customer_name || !customer_email || !phone_number || !location || !items?.length || !total_amount) {
@@ -56,7 +62,6 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Get payment provider details
     let isAutomatic = false;
     let paymentInstructions = '';
     if (payment_provider_id) {
@@ -86,7 +91,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get system settings – use queryAsArray
     const settingsRows = await queryAsArray<{ setting_key: string; setting_value: string }>`
       SELECT setting_key, setting_value FROM system_settings
     `;
@@ -95,25 +99,63 @@ export async function POST(req: NextRequest) {
       settingsMap[s.setting_key] = s.setting_value;
     });
 
-    // Insert order – use queryOne to get the created row
+    const finalDeliveryMethod = custom_delivery_method || delivery_method_name || 'Standard';
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+
     const order = await queryOne<{ id: string }>`
       INSERT INTO orders (
-        customer_name, customer_email, phone_number, delivery_address,
-        payment_note, payment_method, total_amount, status, user_id, created_at,
-        delivery_method_id, delivery_fee, payment_provider_id, payment_status
+        customer_name, 
+        customer_email, 
+        phone_number, 
+        delivery_address,
+        payment_note, 
+        payment_method, 
+        total_amount, 
+        status, 
+        user_id, 
+        created_at,
+        delivery_method_id, 
+        delivery_method_name,
+        custom_delivery_method,
+        delivery_fee, 
+        payment_provider_id, 
+        payment_status,
+        promo_code,
+        referral_code,
+        discount_amount,
+        tax_amount,
+        expires_at,
+        order_number
       ) VALUES (
-        ${customer_name}, ${customer_email}, ${phone_number}, ${location},
-        ${notes || ''}, ${payment_method}, ${safeTotal}, 'pending',
-        ${user?.id || null}, NOW(),
-        ${delivery_method_id || null}, ${delivery_fee || 0},
-        ${payment_provider_id || null}, ${isAutomatic ? 'paid' : 'pending'}
+        ${customer_name}, 
+        ${customer_email}, 
+        ${phone_number}, 
+        ${location},
+        ${notes || ''}, 
+        ${payment_method}, 
+        ${safeTotal}, 
+        'pending',
+        ${user?.id || null}, 
+        ${now.toISOString()},
+        ${delivery_method_id || null}, 
+        ${finalDeliveryMethod},
+        ${custom_delivery_method || null},
+        ${delivery_fee || 0},
+        ${payment_provider_id || null}, 
+        ${isAutomatic ? 'paid' : 'pending'},
+        ${promo_code || null},
+        ${referral_code || null},
+        ${discount_amount || 0},
+        ${tax_amount || 0},
+        ${expiresAt.toISOString()},
+        ${orderNumber}
       )
       RETURNING id::text
     `;
 
     if (!order || !order.id) throw new Error('Failed to create order');
 
-    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
@@ -132,7 +174,6 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    // Build order items HTML for email
     const orderItemsHtml = items.map((item: any) => `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
         <span>${item.name} x ${item.quantity}</span>
@@ -141,7 +182,7 @@ export async function POST(req: NextRequest) {
     `).join('');
 
     const orderNumber = order.id.slice(-8);
-    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/orders/${order.id}/payment`;
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${order.id}`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
     const commonPlaceholders = {
@@ -149,13 +190,13 @@ export async function POST(req: NextRequest) {
       order_number: orderNumber,
       total_amount: safeTotal.toLocaleString(),
       delivery_address: location,
+      delivery_method: finalDeliveryMethod,
       payment_instructions: paymentInstructions,
       payment_url: paymentUrl,
       tracking_url: trackingUrl,
     };
 
     if (isAutomatic) {
-      // AUTOMATIC PAYMENT – send order confirmation
       let emailTemplate = await getEmailTemplate(sql, 'order_confirmation_automatic');
       
       if (emailTemplate) {
@@ -176,6 +217,7 @@ export async function POST(req: NextRequest) {
               <h3>Order Summary</h3>
               <p><strong>Order #:</strong> ${orderNumber}</p>
               <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
+              <p><strong>Delivery Method:</strong> ${finalDeliveryMethod}</p>
               <p><strong>Delivery Address:</strong> ${location}</p>
             </div>
             <a href="${trackingUrl}" style="background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px;">View Order →</a>
@@ -189,10 +231,8 @@ export async function POST(req: NextRequest) {
         }).catch(err => console.error('Email failed:', err));
       }
     } else {
-      // MANUAL PAYMENT – send payment instructions email
       let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
       
-      // Get promotional banner – use queryOne
       const activeBanner = await queryOne<{
         title: string;
         description: string;
@@ -216,7 +256,7 @@ export async function POST(req: NextRequest) {
           ${activeBanner.button_text && activeBanner.button_url ? `<a href="${activeBanner.button_url}" style="display:inline-block; margin-top:10px; background:#F97316; color:white; padding:8px 20px; text-decoration:none; border-radius:30px;">${activeBanner.button_text}</a>` : ''}
         </div>
       ` : (settingsMap.discount_banner_default ? `
-        <div class="discount-banner" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
           <p style="margin:0;">${settingsMap.discount_banner_default}</p>
         </div>
       ` : '');
