@@ -37,7 +37,7 @@ export default function CheckoutPage() {
     resetCheckout,
   } = useCheckout();
 
-  const [customDeliveryMethod, setCustomDeliveryMethod] = useState<string | null>(null);
+  const [preferredCourier, setPreferredCourier] = useState('');
   const [taxRate, setTaxRate] = useState(16.5);
   const [taxName, setTaxName] = useState('VAT');
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -92,19 +92,13 @@ export default function CheckoutPage() {
     return subtotal + deliveryFee - state.discountAmount + taxAmount;
   }, [subtotal, deliveryFee, state.discountAmount, taxAmount]);
 
-  const selectedDeliveryMethod = deliveryMethods.find(m => m.id === state.selectedDeliveryMethodId) || null;
   const selectedPaymentProvider = state.selectedPaymentProvider;
 
   const handleConfirmOrder = useCallback(async () => {
-    const { form, selectedDeliveryMethodId, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
+    const { form, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
 
-    if (!selectedDeliveryMethodId) {
-      toast.error('Please select a delivery method');
-      return;
-    }
-
-    if (selectedDeliveryMethodId === -1 && !customDeliveryMethod?.trim()) {
-      toast.error('Please enter the courier name');
+    if (!preferredCourier.trim()) {
+      toast.error('Please enter your preferred courier');
       return;
     }
 
@@ -122,10 +116,6 @@ export default function CheckoutPage() {
       price_usd: Number(item.priceUsd ?? 0),
     }));
 
-    const deliveryMethodName = selectedDeliveryMethodId === -1 
-      ? customDeliveryMethod || 'Other Courier'
-      : selectedDeliveryMethod?.name || 'Standard';
-
     const payload = {
       customer_name: form.name,
       customer_email: form.email,
@@ -134,10 +124,8 @@ export default function CheckoutPage() {
       notes: form.notes || null,
       items: mappedItems,
       subtotal: subtotal,
-      delivery_method_id: selectedDeliveryMethodId === -1 ? null : selectedDeliveryMethodId,
-      delivery_method_name: deliveryMethodName,
-      custom_delivery_method: selectedDeliveryMethodId === -1 ? customDeliveryMethod : null,
-      delivery_fee: deliveryFee,
+      custom_delivery_method: preferredCourier,
+      delivery_fee: 0,
       tax_amount: taxAmount,
       discount_amount: discountAmount,
       total_amount: finalTotal,
@@ -160,7 +148,7 @@ export default function CheckoutPage() {
     } finally {
       setIsCreatingOrder(false);
     }
-  }, [state, items, subtotal, deliveryFee, taxAmount, finalTotal, customDeliveryMethod, selectedDeliveryMethod, createOrder, clearCart, resetCheckout, router]);
+  }, [state, items, subtotal, taxAmount, finalTotal, preferredCourier, createOrder, clearCart, resetCheckout, router]);
 
   if (loadingOptions) {
     return (
@@ -221,11 +209,8 @@ export default function CheckoutPage() {
                 <Step2CustomerInfo
                   form={state.form}
                   onUpdateForm={updateForm}
-                  deliveryMethods={deliveryMethods}
-                  selectedDeliveryMethodId={state.selectedDeliveryMethodId}
-                  onSelectDeliveryMethod={selectDeliveryMethod}
-                  customDeliveryMethod={customDeliveryMethod}
-                  onCustomDeliveryMethodChange={setCustomDeliveryMethod}
+                  preferredCourier={preferredCourier}
+                  onPreferredCourierChange={setPreferredCourier}
                   paymentProviders={paymentProviders}
                   selectedPaymentProvider={selectedPaymentProvider}
                   onSelectPaymentProvider={selectPaymentProvider}
@@ -239,8 +224,7 @@ export default function CheckoutPage() {
               {state.step === 3 && (
                 <Step3OrderReview
                   form={state.form}
-                  selectedDeliveryMethod={selectedDeliveryMethod}
-                  customDeliveryMethod={customDeliveryMethod}
+                  customDeliveryMethod={preferredCourier}
                   selectedPaymentProvider={selectedPaymentProvider}
                   subtotal={subtotal}
                   deliveryFee={deliveryFee}
