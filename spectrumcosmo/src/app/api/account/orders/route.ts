@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
         payment_status,
         proof_of_payment_url, 
         payment_note, 
-        delivery_fee,
+        delivery_method,
         custom_delivery_method,
         discount_amount,
         promo_code,
@@ -35,7 +35,9 @@ export async function GET(req: NextRequest) {
         created_at, 
         updated_at,
         delivered_at,
-        paid_at
+        paid_at,
+        expires_at,
+        invoice_number
       FROM orders
       WHERE user_id = ${user.id} 
          OR customer_email = ${user.email}
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
           ...order,
           items: items || [],
           subtotal: order.total_amount || 0,
-          shipping_cost: order.delivery_fee || 0,
+          shipping_cost: 0,
         };
       })
     );
