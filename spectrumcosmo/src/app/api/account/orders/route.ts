@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
             id,
             product_name,
             quantity,
-            unit_price_usd as unit_price,
-            subtotal_usd as total_price,
+            unit_price_usd,
+            subtotal_usd,
             custom_details,
-            image_url
+            created_at
           FROM order_items
           WHERE order_id = ${order.id}::uuid
         `;
