@@ -91,9 +91,11 @@ export async function POST(req: NextRequest) {
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
     const sql = getDb();
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
     const newReview = await queryOne`
       INSERT INTO reviews (customer_name, user_id, review_text, rating, image_url, product_id, status, created_at, updated_at)
-      VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', NOW(), NOW())
+      VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', ${now}, ${now})
       RETURNING *
     `;
 
@@ -108,7 +110,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Review POST error:', err);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: err instanceof Error ? err.message : 'Internal server error' },
       { status: 500 }
     );
   }
