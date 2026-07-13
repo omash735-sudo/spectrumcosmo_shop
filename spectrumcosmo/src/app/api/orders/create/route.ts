@@ -102,8 +102,10 @@ export async function POST(req: NextRequest) {
     const finalDeliveryMethod = custom_delivery_method || delivery_method_name || 'Standard';
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+    const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const order = await queryOne<{ id: string }>`
+    // Insert order without RETURNING to avoid type issues
+    await sql`
       INSERT INTO orders (
         customer_name, 
         customer_email, 
@@ -151,11 +153,22 @@ export async function POST(req: NextRequest) {
         ${expiresAt.toISOString()},
         ${orderNumber}
       )
-      RETURNING id::text
     `;
 
-    if (!order || !order.id) throw new Error('Failed to create order');
+    // Get the inserted order ID
+    const orderResult = await queryOne<{ id: string }>`
+      SELECT id::text FROM orders 
+      WHERE order_number = ${orderNumber} 
+      LIMIT 1
+    `;
 
+    if (!orderResult || !orderResult.id) {
+      throw new Error('Failed to retrieve created order');
+    }
+
+    const orderId = orderResult.id;
+
+    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
@@ -168,7 +181,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO order_items (
           order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
         ) VALUES (
-          ${order.id}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
+          ${orderId}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
           ${item.custom_details || null}
         )
       `;
@@ -181,8 +194,7 @@ export async function POST(req: NextRequest) {
       </div>
     `).join('');
 
-    const orderNumber = order.id.slice(-8);
-    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${order.id}`;
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${orderId}`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
     const commonPlaceholders = {
@@ -329,7 +341,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: order.id,
+      id: orderId,
       total_amount: safeTotal,
     });
   } catch (err) {
