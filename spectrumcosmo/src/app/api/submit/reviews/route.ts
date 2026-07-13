@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryOne, queryAsArray } from '@/lib/db';
+import { pgDb } from '@/lib/pg-db';
 import { getUserFromRequest } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -18,7 +18,6 @@ function sanitizeInput(input: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    // Get user directly from token without extra DB query
     const payload = getUserFromRequest(req);
     
     if (!payload) {
@@ -27,11 +26,6 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
-    console.log('=== PAYLOAD FROM TOKEN ===');
-    console.log('Payload:', payload);
-    console.log('Payload ID:', payload.id);
-    console.log('Payload ID type:', typeof payload.id);
 
     const rateLimitResult = await rateLimit(`review:${payload.id}`, 5, 3600);
     if (!rateLimitResult.success) {
@@ -78,33 +72,38 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // Use the ID directly from the token
-    const userId = String(payload.id);
+    const client = await pgDb.connect();
 
-    console.log('=== INSERTING REVIEW ===');
-    console.log('User ID from token:', userId);
-
-    await queryOne`
-      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
-      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${userId}, 'pending', false, ${now}, ${now})
-    `;
-
-    const reviews = await queryAsArray`
-      SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
-      FROM reviews 
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC 
-      LIMIT 1
-    `;
-
-    if (!reviews || reviews.length === 0) {
-      return NextResponse.json(
-        { error: 'Failed to retrieve submitted review' },
-        { status: 500 }
+    try {
+      const result = await client.query(
+        `INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at`,
+        [
+          sanitizedName,
+          sanitizedText,
+          r,
+          sanitizedImageUrl,
+          product_id || null,
+          String(payload.id),
+          'pending',
+          false,
+          now,
+          now
+        ]
       );
-    }
 
-    return NextResponse.json(reviews[0], { status: 201 });
+      if (result.rows.length === 0) {
+        return NextResponse.json(
+          { error: 'Failed to submit review' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(result.rows[0], { status: 201 });
+    } finally {
+      client.release();
+    }
   } catch (err) {
     console.error('Submit review error:', err);
     return NextResponse.json(
