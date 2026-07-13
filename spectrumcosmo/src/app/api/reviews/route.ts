@@ -93,21 +93,16 @@ export async function POST(req: NextRequest) {
     const sql = getDb();
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    const result = await queryOne`
+    await queryOne`
       INSERT INTO reviews (customer_name, user_id, review_text, rating, image_url, product_id, status, created_at, updated_at)
       VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', ${now}, ${now})
-      RETURNING id
     `;
 
-    if (!result || !result.id) {
-      return NextResponse.json(
-        { error: 'Failed to submit review' },
-        { status: 500 }
-      );
-    }
-
     const newReview = await queryOne`
-      SELECT * FROM reviews WHERE id = ${result.id}
+      SELECT * FROM reviews 
+      WHERE user_id = ${user.id} 
+      ORDER BY id DESC 
+      LIMIT 1
     `;
 
     if (!newReview) {
