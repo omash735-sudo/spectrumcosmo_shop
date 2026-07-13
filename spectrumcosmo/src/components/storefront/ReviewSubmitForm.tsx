@@ -145,7 +145,7 @@ export default function ReviewSubmitForm() {
         }
       }
 
-      const res = await fetch('/api/reviews', {
+      const res = await fetch('/api/submit/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
