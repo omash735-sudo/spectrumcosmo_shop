@@ -97,11 +97,19 @@ export async function POST(req: NextRequest) {
       VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', ${now}, ${now})
     `;
 
+    const idResult = await queryOne<{ id: number }>`
+      SELECT lastval() as id
+    `;
+
+    if (!idResult || !idResult.id) {
+      return NextResponse.json(
+        { error: 'Failed to get review ID' },
+        { status: 500 }
+      );
+    }
+
     const newReview = await queryOne`
-      SELECT * FROM reviews 
-      WHERE user_id = ${user.id} 
-      ORDER BY id DESC 
-      LIMIT 1
+      SELECT * FROM reviews WHERE id = ${idResult.id}
     `;
 
     if (!newReview) {
