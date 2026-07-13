@@ -159,6 +159,22 @@ export default function ReviewSubmitForm() {
         }),
       });
 
+      if (res.status === 401) {
+        toast.error('Please login to submit a review');
+        setTimeout(() => {
+          router.push('/login?redirect=/reviews/submit');
+        }, 1500);
+        setLoading(false);
+        return;
+      }
+
+      if (res.status === 429) {
+        const data = await res.json();
+        toast.error(data.error || 'Too many requests. Please try again later.');
+        setLoading(false);
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
