@@ -1,4 +1,3 @@
-// app/account/orders/components/OrderCard.tsx
 'use client';
 
 import { useState } from 'react';
@@ -32,15 +31,18 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   const StatusIcon = statusConfig.icon;
   const paymentConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
 
-  const canUploadProof = order.status === 'pending' || order.status === 'pending_quote';
+  const canUploadProof = order.status === 'pending';
   const hasProof = !!order.proof_of_payment_url;
-  const isQuoteOrder = order.status === 'pending_quote';
   const orderDisplayNumber = order.order_number || `#${order.id.slice(-8)}`;
+
+  const deliveryMethod = order.custom_delivery_method || 'Not specified';
+  const deliveryFeeDisplay = order.delivery_fee && order.delivery_fee > 0 
+    ? `MWK ${order.delivery_fee.toLocaleString()}`
+    : 'To be confirmed';
 
   const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
     setUploading(true);
     try {
-      // Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -52,7 +54,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
       const uploadData = await uploadRes.json();
       if (!uploadData.secure_url) throw new Error('Upload failed');
 
-      // Submit proof
       await orderService.uploadPaymentProof(
         order.id,
         uploadData.secure_url,
@@ -119,14 +120,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${paymentConfig.bg} ${paymentConfig.color}`}>
                 {paymentConfig.label}
               </span>
-              {isQuoteOrder && (
-                <>
-                  <span className="w-px h-3 bg-[var(--border)]" />
-                  <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                    <Send size={10} /> Quote pending
-                  </span>
-                </>
-              )}
             </div>
           </div>
           <div className="text-right flex-shrink-0">
@@ -170,12 +163,8 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             <div>
               <p className="text-xs text-[var(--foreground-muted)] font-medium">Delivery Address</p>
               <p className="text-[var(--foreground)]">{order.delivery_address}</p>
-              {order.delivery_fee > 0 && (
-                <p className="text-xs text-[var(--foreground-muted)] mt-1">Delivery Fee: MWK {order.delivery_fee.toLocaleString()}</p>
-              )}
-              {isQuoteOrder && order.quoted_delivery_fee && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Quoted Fee: MWK {order.quoted_delivery_fee.toLocaleString()}</p>
-              )}
+              <p className="text-xs text-[var(--foreground-muted)] mt-1">Courier: {deliveryMethod}</p>
+              <p className="text-xs text-[var(--foreground-muted)]">Fee: {deliveryFeeDisplay}</p>
             </div>
             <div>
               <p className="text-xs text-[var(--foreground-muted)] font-medium">Payment Details</p>
