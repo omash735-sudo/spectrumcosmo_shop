@@ -113,9 +113,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newReview = result[0];
-
-    return NextResponse.json(newReview, { status: 201 });
+    return NextResponse.json(result[0], { status: 201 });
   } catch (err) {
     console.error('Review POST error:', err);
     return NextResponse.json(
