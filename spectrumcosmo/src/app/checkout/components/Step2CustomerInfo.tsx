@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, Plus } from 'lucide-react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, Plus, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { CheckoutFormData, DeliveryMethod } from '@/lib/types/order';
+import { CheckoutFormData, DeliveryMethod, PaymentProvider } from '@/lib/types/order';
 
 interface Step2CustomerInfoProps {
   form: CheckoutFormData;
@@ -13,6 +13,9 @@ interface Step2CustomerInfoProps {
   onSelectDeliveryMethod: (id: number) => void;
   customDeliveryMethod: string | null;
   onCustomDeliveryMethodChange: (value: string) => void;
+  paymentProviders: { automatic: PaymentProvider[]; manual: PaymentProvider[] } | null;
+  selectedPaymentProvider: PaymentProvider | null;
+  onSelectPaymentProvider: (provider: PaymentProvider) => void;
   onNext: () => void;
   onPrev: () => void;
   isSubmitting: boolean;
@@ -27,6 +30,9 @@ export default function Step2CustomerInfo({
   onSelectDeliveryMethod,
   customDeliveryMethod,
   onCustomDeliveryMethodChange,
+  paymentProviders,
+  selectedPaymentProvider,
+  onSelectPaymentProvider,
   onNext,
   onPrev,
   isSubmitting,
@@ -94,6 +100,11 @@ export default function Step2CustomerInfo({
       return;
     }
 
+    if (!selectedPaymentProvider) {
+      toast.error('Please select a payment method');
+      return;
+    }
+
     onNext();
   };
 
@@ -110,8 +121,14 @@ export default function Step2CustomerInfo({
 
   const isOtherSelected = selectedDeliveryMethodId === -1;
 
+  const allProviders = [
+    ...(paymentProviders?.automatic || []),
+    ...(paymentProviders?.manual || [])
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Customer Information */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -217,6 +234,7 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
+      {/* Delivery Method */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -296,6 +314,52 @@ export default function Step2CustomerInfo({
                 </div>
               )}
             </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Method */}
+      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
+          <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
+            <CreditCard size={18} className="text-[var(--primary)]" />
+            Payment Method
+          </h2>
+          <p className="text-xs text-[var(--foreground-muted)] mt-1">Select how you want to pay</p>
+        </div>
+        <div className="p-4 sm:p-6">
+          <div className="grid gap-3">
+            {allProviders.map(provider => (
+              <label
+                key={provider.id}
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                  selectedPaymentProvider?.id === provider.id
+                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    checked={selectedPaymentProvider?.id === provider.id}
+                    onChange={() => onSelectPaymentProvider(provider)}
+                    className="w-5 h-5 text-[var(--primary)] shrink-0"
+                  />
+                  <div>
+                    <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">{provider.name}</p>
+                    <p className="text-xs text-[var(--foreground-muted)] capitalize">{provider.category?.replace('_', ' ')}</p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full ml-9 sm:ml-0 ${
+                  provider.type === 'automatic' 
+                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400' 
+                    : 'bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400'
+                }`}>
+                  {provider.type === 'automatic' ? 'Instant' : 'Manual'}
+                </span>
+              </label>
+            ))}
           </div>
         </div>
       </div>
