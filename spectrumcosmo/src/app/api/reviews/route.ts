@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { requireAdmin, getVerifiedUser } from '@/lib/auth';
-import { verifyCsrfToken } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
 function sanitizeInput(input: string): string {
@@ -35,10 +34,6 @@ async function checkIsAdmin(userId: number): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
-  if (!verifyCsrfToken(req)) {
-    return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
-  }
-
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
@@ -190,10 +185,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!verifyCsrfToken(req)) {
-    return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
-  }
-
   const authError = requireAdmin(req);
   if (authError) return authError;
 
@@ -233,10 +224,6 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  if (!verifyCsrfToken(req)) {
-    return NextResponse.json({ error: 'CSRF token missing or invalid' }, { status: 403 });
-  }
-
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
 
