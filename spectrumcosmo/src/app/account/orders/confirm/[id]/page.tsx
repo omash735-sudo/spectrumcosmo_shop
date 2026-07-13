@@ -82,6 +82,8 @@ export default function ConfirmDeliveryPage() {
 
   const statusColor = order.status === 'delivered' ? 'text-green-600 dark:text-green-400' : 'text-[var(--primary)]';
   const statusBg = order.status === 'delivered' ? 'bg-green-50 dark:bg-green-950/30' : 'bg-[var(--primary)]/10';
+  
+  const deliveryMethod = order.custom_delivery_method || 'Not specified';
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 bg-[var(--background)]">
@@ -122,6 +124,10 @@ export default function ConfirmDeliveryPage() {
             <div className="flex justify-between items-center">
               <span className="text-[var(--foreground-muted)] text-xs sm:text-sm">Order Date</span>
               <span className="text-xs sm:text-sm text-[var(--foreground)]">{new Date(order.created_at).toLocaleDateString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[var(--foreground-muted)] text-xs sm:text-sm">Delivery Method</span>
+              <span className="text-xs sm:text-sm text-[var(--foreground)]">{deliveryMethod}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[var(--foreground-muted)] text-xs sm:text-sm">Total Amount</span>
