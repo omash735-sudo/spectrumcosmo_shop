@@ -67,12 +67,18 @@ export async function getVerifiedUser(req: NextRequest): Promise<{ user: any; er
     return { user: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
+  // Ensure payload.id is a string
+  const userId = String(payload.id)
+
   const sql = getDb()
-  const [user] = await sql`
+  const users = await sql`
     SELECT id, email, account_status, deleted_at, is_admin
     FROM users
-    WHERE id = ${payload.id}
+    WHERE id = ${userId}
   `
+  
+  const user = users?.[0] || null
+
   if (!user) {
     return { user: null, error: NextResponse.json({ error: 'User not found' }, { status: 404 }) }
   }
