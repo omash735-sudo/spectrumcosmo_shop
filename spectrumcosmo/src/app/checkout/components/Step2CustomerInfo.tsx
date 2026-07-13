@@ -43,19 +43,22 @@ export default function Step2CustomerInfo({
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  // Auto-check serviceability when delivery method is selected AND location is entered
-  useEffect(() => {
-    if (selectedDeliveryMethodId && form.location.length >= 3 && !serviceability && !isCheckingServiceability) {
-      onCheckServiceability(form.location, selectedDeliveryMethodId);
-    }
-  }, [selectedDeliveryMethodId, form.location, serviceability, isCheckingServiceability, onCheckServiceability]);
+  const [manualCheckTriggered, setManualCheckTriggered] = useState(false);
 
   useEffect(() => {
     if (deliveryMethods.length > 0 && selectedDeliveryMethodId === null) {
       onSelectDeliveryMethod(deliveryMethods[0].id);
     }
   }, [deliveryMethods, selectedDeliveryMethodId, onSelectDeliveryMethod]);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('=== DEBUG CHECKOUT STATE ===');
+    console.log('selectedDeliveryMethodId:', selectedDeliveryMethodId);
+    console.log('form.location:', form.location);
+    console.log('serviceability:', serviceability);
+    console.log('isCheckingServiceability:', isCheckingServiceability);
+  }, [selectedDeliveryMethodId, form.location, serviceability, isCheckingServiceability]);
 
   const validateField = (field: string, value: string): string => {
     switch (field) {
@@ -91,6 +94,20 @@ export default function Step2CustomerInfo({
       }, 600);
       setLocationTimeout(timeout);
     }
+  };
+
+  const handleManualCheck = () => {
+    console.log('Manual check triggered');
+    if (!form.location || form.location.length < 3) {
+      toast.error('Please enter your delivery location first');
+      return;
+    }
+    if (!selectedDeliveryMethodId) {
+      toast.error('Please select a delivery method first');
+      return;
+    }
+    setManualCheckTriggered(true);
+    onCheckServiceability(form.location, selectedDeliveryMethodId);
   };
 
   const validateForm = (): boolean => {
@@ -167,6 +184,8 @@ export default function Step2CustomerInfo({
     if (requiresQuote && !quoteRequested) return false;
     return true;
   };
+
+  const showCheckButton = form.location.length >= 3 && !serviceability && !isCheckingServiceability;
 
   return (
     <div className="space-y-6">
@@ -304,10 +323,8 @@ export default function Step2CustomerInfo({
                     name="delivery_method"
                     checked={selectedDeliveryMethodId === method.id}
                     onChange={() => {
+                      console.log('Method selected:', method.id, method.name);
                       onSelectDeliveryMethod(method.id);
-                      if (form.location.length >= 3) {
-                        onCheckServiceability(form.location, method.id);
-                      }
                     }}
                     className="w-5 h-5 text-[var(--primary)] shrink-0"
                   />
@@ -329,22 +346,32 @@ export default function Step2CustomerInfo({
             ))}
           </div>
 
-          {!serviceability && !isCheckingServiceability && form.location.length < 3 && (
-            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
-              <p className="text-sm text-[var(--foreground-muted)]">
-                Enter your location to check delivery availability
+          {/* Check Availability Button - Always shows when location is entered and no result yet */}
+          {showCheckButton && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
+                {selectedDeliveryMethodId 
+                  ? 'Ready to check delivery availability for your location'
+                  : 'Please select a delivery method above first'}
               </p>
+              <button
+                onClick={handleManualCheck}
+                disabled={!selectedDeliveryMethodId || isSubmitting}
+                className="px-6 py-2 bg-brand-orange text-white rounded-lg text-sm font-medium hover:bg-brand-orangeHover transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCheckingServiceability ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    Checking...
+                  </span>
+                ) : (
+                  'Check Availability'
+                )}
+              </button>
             </div>
           )}
 
-          {!serviceability && !isCheckingServiceability && form.location.length >= 3 && (
-            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-              <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                Please select a delivery method to check availability
-              </p>
-            </div>
-          )}
-
+          {/* Serviceability Result */}
           {serviceability && (
             <div className={`mt-4 p-4 rounded-xl border ${
               serviceability.isServiceable 
@@ -401,6 +428,15 @@ export default function Step2CustomerInfo({
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Initial state - no location entered */}
+          {!form.location && !serviceability && !isCheckingServiceability && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
+              <p className="text-sm text-[var(--foreground-muted)]">
+                Enter your delivery location above to check availability
+              </p>
             </div>
           )}
         </div>
