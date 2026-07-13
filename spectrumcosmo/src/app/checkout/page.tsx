@@ -45,7 +45,6 @@ export default function CheckoutPage() {
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
-  // Load options
   useEffect(() => {
     const loadOptions = async () => {
       setLoadingOptions(true);
@@ -84,7 +83,6 @@ export default function CheckoutPage() {
     loadOptions();
   }, []);
 
-  // Tax calculations
   const taxAmount = useMemo(() => {
     const taxableAmount = subtotal + deliveryFee - state.discountAmount;
     return (taxableAmount * taxRate) / 100;
@@ -97,7 +95,6 @@ export default function CheckoutPage() {
   const selectedDeliveryMethod = deliveryMethods.find(m => m.id === state.selectedDeliveryMethodId) || null;
   const selectedPaymentProvider = state.selectedPaymentProvider;
 
-  // Handle order confirmation - creates order and goes to payment page
   const handleConfirmOrder = useCallback(async () => {
     const { form, selectedDeliveryMethodId, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
 
@@ -108,6 +105,11 @@ export default function CheckoutPage() {
 
     if (selectedDeliveryMethodId === -1 && !customDeliveryMethod?.trim()) {
       toast.error('Please enter the courier name');
+      return;
+    }
+
+    if (!selectedPaymentProvider) {
+      toast.error('Please select a payment method');
       return;
     }
 
@@ -224,6 +226,9 @@ export default function CheckoutPage() {
                   onSelectDeliveryMethod={selectDeliveryMethod}
                   customDeliveryMethod={customDeliveryMethod}
                   onCustomDeliveryMethodChange={setCustomDeliveryMethod}
+                  paymentProviders={paymentProviders}
+                  selectedPaymentProvider={selectedPaymentProvider}
+                  onSelectPaymentProvider={selectPaymentProvider}
                   onNext={nextStep}
                   onPrev={prevStep}
                   isSubmitting={state.isSubmitting}
