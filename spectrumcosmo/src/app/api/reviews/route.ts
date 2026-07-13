@@ -87,31 +87,26 @@ export async function POST(req: NextRequest) {
 
     const sanitizedText = sanitizeInput(review_text);
     const sanitizedName = user?.name ? sanitizeInput(user.name) : 'Anonymous User';
-    const sanitizedProductId = sanitizeProductId(product_id);
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    await queryOne`
-      INSERT INTO reviews (customer_name, user_id, review_text, rating, image_url, product_id, status, created_at, updated_at)
-      VALUES (${sanitizedName}, ${user.id}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${sanitizedProductId}, 'pending', ${now}, ${now})
+    const sql = getDb();
+
+    const result = await sql`
+      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, created_at, updated_at)
+      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', ${now}, ${now})
+      RETURNING id, customer_name, review_text, rating, image_url, product_id, user_id, status, created_at, updated_at
     `;
 
-    const reviews = await queryAsArray`
-      SELECT * FROM reviews 
-      WHERE user_id = ${user.id} 
-      ORDER BY id DESC 
-      LIMIT 1
-    `;
-
-    if (!reviews || reviews.length === 0) {
+    if (!result || result.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to retrieve submitted review' },
+        { error: 'Failed to submit review' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(reviews[0], { status: 201 });
+    return NextResponse.json(result[0], { status: 201 });
   } catch (err) {
     console.error('Review POST error:', err);
     return NextResponse.json(
