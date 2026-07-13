@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryAsArray } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { getDb } from '@/lib/db';
 
 function sanitizeInput(input: string): string {
   if (!input) return '';
@@ -15,30 +14,33 @@ function sanitizeInput(input: string): string {
     .slice(0, 2000);
 }
 
-function sanitizeProductId(productId: string | null): string | null {
-  if (!productId) return null;
-  return productId.replace(/[^a-zA-Z0-9\-_]/g, '') || null;
-}
-
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const productId = url.searchParams.get('product_id');
+    const userId = url.searchParams.get('user_id');
 
     const sql = getDb();
     let data;
 
     if (productId) {
-      const sanitizedProductId = sanitizeProductId(productId);
-      data = await queryAsArray`
+      data = await sql`
         SELECT r.*, u.name as user_name
         FROM reviews r
         LEFT JOIN users u ON r.user_id = u.id
-        WHERE r.product_id = ${sanitizedProductId} AND r.status = 'approved'
+        WHERE r.product_id = ${productId} AND r.status = 'approved'
+        ORDER BY r.created_at DESC
+      `;
+    } else if (userId) {
+      data = await sql`
+        SELECT r.*, u.name as user_name
+        FROM reviews r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.user_id = ${userId}
         ORDER BY r.created_at DESC
       `;
     } else {
-      data = await queryAsArray`
+      data = await sql`
         SELECT r.*, u.name as user_name
         FROM reviews r
         LEFT JOIN users u ON r.user_id = u.id
