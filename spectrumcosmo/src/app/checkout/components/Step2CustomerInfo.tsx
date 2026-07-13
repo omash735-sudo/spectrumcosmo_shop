@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, Loader2, AlertTriangle, Send, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { CheckoutFormData, ServiceabilityResponse, DeliveryMethod } from '@/lib/types/order';
+import { CheckoutFormData, DeliveryMethod } from '@/lib/types/order';
 
 interface Step2CustomerInfoProps {
   form: CheckoutFormData;
@@ -11,15 +11,11 @@ interface Step2CustomerInfoProps {
   deliveryMethods: DeliveryMethod[];
   selectedDeliveryMethodId: number | null;
   onSelectDeliveryMethod: (id: number) => void;
-  serviceability: ServiceabilityResponse | null;
-  isCheckingServiceability: boolean;
-  requiresQuote: boolean;
-  quoteRequested: boolean;
-  isSubmitting: boolean;
-  onCheckServiceability: (location: string, methodId: number) => void;
-  onRequestQuote: () => void;
+  customDeliveryMethod: string | null;
+  onCustomDeliveryMethodChange: (value: string) => void;
   onNext: () => void;
   onPrev: () => void;
+  isSubmitting: boolean;
   error: string | null;
 }
 
@@ -29,35 +25,15 @@ export default function Step2CustomerInfo({
   deliveryMethods,
   selectedDeliveryMethodId,
   onSelectDeliveryMethod,
-  serviceability,
-  isCheckingServiceability,
-  requiresQuote,
-  quoteRequested,
-  isSubmitting,
-  onCheckServiceability,
-  onRequestQuote,
+  customDeliveryMethod,
+  onCustomDeliveryMethodChange,
   onNext,
   onPrev,
+  isSubmitting,
   error,
 }: Step2CustomerInfoProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [localSelectedId, setLocalSelectedId] = useState<number | null>(selectedDeliveryMethodId);
-
-  useEffect(() => {
-    if (selectedDeliveryMethodId !== null) {
-      setLocalSelectedId(selectedDeliveryMethodId);
-    }
-  }, [selectedDeliveryMethodId]);
-
-  useEffect(() => {
-    if (deliveryMethods.length > 0 && localSelectedId === null) {
-      const firstId = deliveryMethods[0].id;
-      setLocalSelectedId(firstId);
-      onSelectDeliveryMethod(firstId);
-    }
-  }, [deliveryMethods, localSelectedId, onSelectDeliveryMethod]);
 
   const validateField = (field: string, value: string): string => {
     switch (field) {
@@ -87,30 +63,6 @@ export default function Step2CustomerInfo({
     setFormErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  const handleMethodSelect = (methodId: number) => {
-    setLocalSelectedId(methodId);
-    onSelectDeliveryMethod(methodId);
-    
-    if (form.location.length >= 3) {
-      setTimeout(() => {
-        onCheckServiceability(form.location, methodId);
-      }, 300);
-    }
-  };
-
-  const handleManualCheck = () => {
-    if (!form.location || form.location.length < 3) {
-      toast.error('Please enter your delivery location first');
-      return;
-    }
-    const methodId = localSelectedId || selectedDeliveryMethodId;
-    if (!methodId) {
-      toast.error('Please select a delivery method first');
-      return;
-    }
-    onCheckServiceability(form.location, methodId);
-  };
-
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     errors.name = validateField('name', form.name);
@@ -119,14 +71,6 @@ export default function Step2CustomerInfo({
     errors.location = validateField('location', form.location);
     setFormErrors(errors);
     return !Object.values(errors).some(e => e);
-  };
-
-  const isFormValid = (): boolean => {
-    return form.name.trim().length >= 2 &&
-           form.email.trim().length > 0 &&
-           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
-           form.phone.trim().length > 0 &&
-           form.location.trim().length >= 3;
   };
 
   const handleNext = () => {
@@ -140,14 +84,13 @@ export default function Step2CustomerInfo({
       return;
     }
 
-    const methodId = localSelectedId || selectedDeliveryMethodId;
-    if (!methodId) {
+    if (!selectedDeliveryMethodId) {
       toast.error('Please select a delivery method');
       return;
     }
 
-    if (requiresQuote && !quoteRequested) {
-      toast.error('Please request a delivery quote first');
+    if (selectedDeliveryMethodId === -1 && !customDeliveryMethod?.trim()) {
+      toast.error('Please enter the courier name');
       return;
     }
 
@@ -165,29 +108,7 @@ export default function Step2CustomerInfo({
     focus:outline-none bg-[var(--background)] text-[var(--foreground)]
   `;
 
-  const currentMethodId = localSelectedId || selectedDeliveryMethodId;
-
-  const deliveryFee = serviceability?.isServiceable && serviceability.baseFee && currentMethodId
-    ? serviceability.baseFee * (deliveryMethods.find(m => m.id === currentMethodId)?.type === 'express' 
-        ? (serviceability.area?.express_multiplier || 1.5) 
-        : 1)
-    : 0;
-
-  const showQuoteButton = () => {
-    if (!serviceability) return false;
-    if (quoteRequested) return false;
-    if (isSubmitting) return false;
-    return !serviceability.isServiceable || requiresQuote;
-  };
-
-  const isReadyForReview = () => {
-    if (!isFormValid()) return false;
-    if (!currentMethodId) return false;
-    if (requiresQuote && !quoteRequested) return false;
-    return true;
-  };
-
-  const showCheckButton = form.location.length >= 3 && !serviceability && !isCheckingServiceability;
+  const isOtherSelected = selectedDeliveryMethodId === -1;
 
   return (
     <div className="space-y-6">
@@ -197,6 +118,7 @@ export default function Step2CustomerInfo({
             <User size={18} className="text-[var(--primary)]" />
             Customer Information
           </h2>
+          <p className="text-xs text-[var(--foreground-muted)] mt-1">Fill in your details to proceed</p>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -278,12 +200,6 @@ export default function Step2CustomerInfo({
               />
             </div>
             {formErrors.location && <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>}
-            {isCheckingServiceability && (
-              <div className="mt-2 flex items-center gap-2 text-[var(--foreground-muted)]">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">Checking delivery availability...</span>
-              </div>
-            )}
           </div>
 
           <div>
@@ -307,6 +223,7 @@ export default function Step2CustomerInfo({
             <Truck size={18} className="text-[var(--primary)]" />
             Delivery Method
           </h2>
+          <p className="text-xs text-[var(--foreground-muted)] mt-1">Choose how your order will be delivered</p>
         </div>
         <div className="p-4 sm:p-6">
           <div className="grid gap-3">
@@ -314,128 +231,72 @@ export default function Step2CustomerInfo({
               <label
                 key={method.id}
                 className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  currentMethodId === method.id
+                  selectedDeliveryMethodId === method.id
                     ? 'border-[var(--primary)] bg-[var(--primary)]/10'
                     : 'border-[var(--border)] hover:border-[var(--primary)]/30'
                 }`}
               >
-                <div className="flex items-center gap-4 mb-2 sm:mb-0">
+                <div className="flex items-center gap-4">
                   <input
                     type="radio"
                     name="delivery_method"
                     value={method.id}
-                    checked={currentMethodId === method.id}
-                    onChange={() => handleMethodSelect(method.id)}
+                    checked={selectedDeliveryMethodId === method.id}
+                    onChange={() => onSelectDeliveryMethod(method.id)}
                     className="w-5 h-5 text-[var(--primary)] shrink-0"
                   />
                   <div>
                     <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">{method.name}</p>
-                    {serviceability?.estimatedDays && (
-                      <p className="text-xs text-[var(--foreground-muted)]">Estimated {serviceability.estimatedDays}</p>
+                    {method.estimated_days && (
+                      <p className="text-xs text-[var(--foreground-muted)]">Est. {method.estimated_days}</p>
                     )}
                   </div>
                 </div>
                 <p className="font-semibold text-[var(--foreground)] ml-9 sm:ml-0">
-                  {serviceability?.isServiceable && deliveryFee > 0
-                    ? `${deliveryFee.toLocaleString()} MWK`
-                    : serviceability?.isServiceable
-                    ? 'Calculated'
-                    : 'Quote pending'}
+                  {method.price > 0 ? `${method.price.toLocaleString()} MWK` : 'Free'}
                 </p>
               </label>
             ))}
-          </div>
 
-          {showCheckButton && (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <p className="text-sm text-blue-700 dark:text-blue-400 mb-2">
-                {currentMethodId 
-                  ? 'Click below to check delivery availability for your location'
-                  : 'Please select a delivery method above first'}
-              </p>
-              <button
-                onClick={handleManualCheck}
-                disabled={!currentMethodId || isSubmitting}
-                className="px-6 py-2 bg-brand-orange text-white rounded-lg text-sm font-medium hover:bg-brand-orangeHover transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCheckingServiceability ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    Checking...
-                  </span>
-                ) : (
-                  'Check Availability'
-                )}
-              </button>
-            </div>
-          )}
-
-          {serviceability && (
-            <div className={`mt-4 p-4 rounded-xl border ${
-              serviceability.isServiceable 
-                ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
-                : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
-            }`}>
-              <div className="flex items-start gap-3">
-                {serviceability.isServiceable ? (
-                  <CheckCircle size={18} className="text-green-600 dark:text-green-500 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${
-                    serviceability.isServiceable 
-                      ? 'text-green-800 dark:text-green-400'
-                      : 'text-yellow-800 dark:text-yellow-400'
-                  }`}>
-                    {serviceability.isServiceable 
-                      ? '✓ Delivery available to your area'
-                      : '⚠️ Out of Service Area'}
-                  </p>
-                  {serviceability.message && (
-                    <p className={`text-sm mt-1 ${
-                      serviceability.isServiceable 
-                        ? 'text-green-700 dark:text-green-500'
-                        : 'text-yellow-700 dark:text-yellow-500'
-                    }`}>
-                      {serviceability.message}
-                    </p>
-                  )}
-                  {serviceability.isServiceable && serviceability.estimatedDays && (
-                    <p className="text-sm text-green-700 dark:text-green-500 mt-1">
-                      Est. delivery: {serviceability.estimatedDays}
-                    </p>
-                  )}
-                  
-                  {showQuoteButton() && (
-                    <button
-                      onClick={onRequestQuote}
-                      disabled={isSubmitting}
-                      className="mt-3 flex items-center gap-2 bg-brand-orange text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-orangeHover transition disabled:opacity-50"
-                    >
-                      {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                      Request Delivery Quote
-                    </button>
-                  )}
-                  
-                  {quoteRequested && (
-                    <div className="mt-3 flex items-center gap-2 text-green-600 dark:text-green-500">
-                      <CheckCircle size={16} />
-                      <span className="text-sm">Quote request submitted. Check your email for details.</span>
-                    </div>
-                  )}
+            {/* Other Option */}
+            <label
+              className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                isOtherSelected
+                  ? 'border-[var(--primary)] bg-[var(--primary)]/10'
+                  : 'border-[var(--border)] hover:border-[var(--primary)]/30'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <input
+                  type="radio"
+                  name="delivery_method"
+                  value="-1"
+                  checked={isOtherSelected}
+                  onChange={() => onSelectDeliveryMethod(-1)}
+                  className="w-5 h-5 text-[var(--primary)] shrink-0"
+                />
+                <div className="flex items-center gap-2">
+                  <Plus size={16} className="text-[var(--foreground-muted)]" />
+                  <p className="font-medium text-[var(--foreground)] text-sm sm:text-base">Other Courier</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {!form.location && !serviceability && !isCheckingServiceability && (
-            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
-              <p className="text-sm text-[var(--foreground-muted)]">
-                Enter your delivery location above to check availability
-              </p>
-            </div>
-          )}
+              {isOtherSelected && (
+                <div className="mt-3 ml-9">
+                  <input
+                    type="text"
+                    value={customDeliveryMethod || ''}
+                    onChange={(e) => onCustomDeliveryMethodChange(e.target.value)}
+                    placeholder="Enter courier name..."
+                    className="w-full px-4 py-2.5 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+                    autoFocus
+                  />
+                  <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                    This courier will be saved with your order only
+                  </p>
+                </div>
+              )}
+            </label>
+          </div>
         </div>
       </div>
 
@@ -454,14 +315,10 @@ export default function Step2CustomerInfo({
         </button>
         <button
           onClick={handleNext}
-          disabled={!isReadyForReview()}
-          className={`flex-[2] py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20 ${
-            !isReadyForReview()
-              ? 'bg-gray-400 cursor-not-allowed text-white'
-              : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
-          }`}
+          disabled={isSubmitting}
+          className="flex-[2] bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
         >
-          {requiresQuote && !quoteRequested ? 'Request Quote First' : 'Review Order'}
+          Review Order
         </button>
       </div>
     </div>
