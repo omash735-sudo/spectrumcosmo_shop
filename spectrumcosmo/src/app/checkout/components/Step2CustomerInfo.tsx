@@ -45,7 +45,6 @@ export default function Step2CustomerInfo({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Auto-select first delivery method when they load
   useEffect(() => {
     if (deliveryMethods.length > 0 && selectedDeliveryMethodId === null) {
       onSelectDeliveryMethod(deliveryMethods[0].id);
@@ -96,22 +95,19 @@ export default function Step2CustomerInfo({
     errors.location = validateField('location', form.location);
     setFormErrors(errors);
     const hasErrors = Object.values(errors).some(e => e);
-    if (hasErrors) {
-      console.log('Validation errors:', errors);
-    }
     return !hasErrors;
   };
 
+  const isFormValid = (): boolean => {
+    const nameFilled = form.name.trim().length >= 2;
+    const emailFilled = form.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    const phoneFilled = form.phone.trim().length > 0;
+    const locationFilled = form.location.trim().length >= 3;
+    return nameFilled && emailFilled && phoneFilled && locationFilled;
+  };
+
   const handleNext = () => {
-    console.log('=== handleNext called ===');
-    console.log('Form values:', form);
-    console.log('Selected delivery method:', selectedDeliveryMethodId);
-    console.log('Requires quote:', requiresQuote);
-    console.log('Quote requested:', quoteRequested);
-
     const isValid = validateForm();
-    console.log('Form valid:', isValid);
-
     if (!isValid) {
       toast.error('Please fill in all required fields correctly');
       const firstError = Object.keys(formErrors).find(key => formErrors[key]);
@@ -128,11 +124,10 @@ export default function Step2CustomerInfo({
     }
 
     if (requiresQuote && !quoteRequested) {
-      toast('Please request a delivery quote first');
+      toast.error('Please request a delivery quote first');
       return;
     }
 
-    console.log('All valid, proceeding to next step');
     onNext();
   };
 
@@ -152,6 +147,24 @@ export default function Step2CustomerInfo({
         ? (serviceability.area?.express_multiplier || 1.5) 
         : 1)
     : 0;
+
+  const showQuoteButton = () => {
+    if (!serviceability) return false;
+    if (quoteRequested) return false;
+    if (isSubmitting) return false;
+    
+    // Show quote button if:
+    // 1. Location is not serviceable, OR
+    // 2. Parent says requiresQuote is true (for custom reasons)
+    return !serviceability.isServiceable || requiresQuote;
+  };
+
+  const isReadyForReview = () => {
+    if (!isFormValid()) return false;
+    if (!selectedDeliveryMethodId) return false;
+    if (requiresQuote && !quoteRequested) return false;
+    return true;
+  };
 
   return (
     <div className="space-y-6">
@@ -314,27 +327,59 @@ export default function Step2CustomerInfo({
             ))}
           </div>
 
-          {serviceability && !serviceability.isServiceable && (
-            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+          {serviceability && (
+            <div className={`mt-4 p-4 rounded-xl border ${
+              serviceability.isServiceable 
+                ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+                : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
+            }`}>
               <div className="flex items-start gap-3">
-                <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Out of Service Area</p>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-1">{serviceability.message}</p>
-                  {!quoteRequested && (
+                {serviceability.isServiceable ? (
+                  <CheckCircle size={18} className="text-green-600 dark:text-green-500 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${
+                    serviceability.isServiceable 
+                      ? 'text-green-800 dark:text-green-400'
+                      : 'text-yellow-800 dark:text-yellow-400'
+                  }`}>
+                    {serviceability.isServiceable 
+                      ? '✓ Delivery available to your area'
+                      : '⚠️ Out of Service Area'}
+                  </p>
+                  {serviceability.message && (
+                    <p className={`text-sm mt-1 ${
+                      serviceability.isServiceable 
+                        ? 'text-green-700 dark:text-green-500'
+                        : 'text-yellow-700 dark:text-yellow-500'
+                    }`}>
+                      {serviceability.message}
+                    </p>
+                  )}
+                  {serviceability.isServiceable && serviceability.estimatedDays && (
+                    <p className="text-sm text-green-700 dark:text-green-500 mt-1">
+                      Est. delivery: {serviceability.estimatedDays}
+                    </p>
+                  )}
+                  
+                  {/* Quote Request Button - Shows in BOTH scenarios when needed */}
+                  {showQuoteButton() && (
                     <button
                       onClick={onRequestQuote}
                       disabled={isSubmitting}
-                      className="mt-3 flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-700 transition disabled:opacity-50"
+                      className="mt-3 flex items-center gap-2 bg-brand-orange text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-orangeHover transition disabled:opacity-50"
                     >
                       {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                       Request Delivery Quote
                     </button>
                   )}
+                  
                   {quoteRequested && (
                     <div className="mt-3 flex items-center gap-2 text-green-600 dark:text-green-500">
                       <CheckCircle size={16} />
-                      <span className="text-sm">Quote request submitted. Check your email.</span>
+                      <span className="text-sm">Quote request submitted. Check your email for details.</span>
                     </div>
                   )}
                 </div>
@@ -342,12 +387,10 @@ export default function Step2CustomerInfo({
             </div>
           )}
 
-          {serviceability?.isServiceable && serviceability.baseFee && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
-              <p className="text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
-                <CheckCircle size={16} />
-                Delivery available to your area
-                {serviceability.estimatedDays && ` • Est. ${serviceability.estimatedDays}`}
+          {!serviceability && !isCheckingServiceability && form.location.length >= 3 && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
+              <p className="text-sm text-[var(--foreground-muted)]">
+                Enter your location to check delivery availability
               </p>
             </div>
           )}
@@ -369,9 +412,9 @@ export default function Step2CustomerInfo({
         </button>
         <button
           onClick={handleNext}
-          disabled={isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)}
+          disabled={!isReadyForReview()}
           className={`flex-[2] py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20 ${
-            isSubmitting || !selectedDeliveryMethodId || (requiresQuote && !quoteRequested)
+            !isReadyForReview()
               ? 'bg-gray-400 cursor-not-allowed text-white'
               : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
           }`}
