@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, queryAsArray } from '@/lib/db';
-import { getVerifiedUser } from '@/lib/auth';
+import { getUserFromRequest } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 
 function sanitizeInput(input: string): string {
@@ -18,18 +18,22 @@ function sanitizeInput(input: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await getVerifiedUser(req);
+    // Get user directly from token without extra DB query
+    const payload = getUserFromRequest(req);
     
-    if (!authResult.user || authResult.error) {
+    if (!payload) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const { user } = authResult;
+    console.log('=== PAYLOAD FROM TOKEN ===');
+    console.log('Payload:', payload);
+    console.log('Payload ID:', payload.id);
+    console.log('Payload ID type:', typeof payload.id);
 
-    const rateLimitResult = await rateLimit(`review:${user.id}`, 5, 3600);
+    const rateLimitResult = await rateLimit(`review:${payload.id}`, 5, 3600);
     if (!rateLimitResult.success) {
       const minutesLeft = Math.ceil(rateLimitResult.retryAfterMinutes);
       return NextResponse.json(
@@ -69,24 +73,16 @@ export async function POST(req: NextRequest) {
     }
 
     const sanitizedText = sanitizeInput(review_text);
-    const sanitizedName = user?.name ? sanitizeInput(user.name) : 'Anonymous User';
+    const sanitizedName = payload?.name ? sanitizeInput(payload.name) : 'Anonymous User';
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
     const now = new Date().toISOString();
 
-    // Get the actual UUID from the database using the user ID from auth
-    const userResult = await queryOne<{ id: string }>`
-      SELECT id FROM users WHERE id = ${user.id}
-    `;
+    // Use the ID directly from the token
+    const userId = String(payload.id);
 
-    if (!userResult) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const userId = userResult.id;
+    console.log('=== INSERTING REVIEW ===');
+    console.log('User ID from token:', userId);
 
     await queryOne`
       INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
