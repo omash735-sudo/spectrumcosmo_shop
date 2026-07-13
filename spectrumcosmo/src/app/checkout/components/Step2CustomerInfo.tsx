@@ -1,4 +1,3 @@
-// app/checkout/components/Step2CustomerInfo.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,6 +43,13 @@ export default function Step2CustomerInfo({
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [locationTimeout, setLocationTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Auto-check serviceability when delivery method is selected AND location is entered
+  useEffect(() => {
+    if (selectedDeliveryMethodId && form.location.length >= 3 && !serviceability && !isCheckingServiceability) {
+      onCheckServiceability(form.location, selectedDeliveryMethodId);
+    }
+  }, [selectedDeliveryMethodId, form.location, serviceability, isCheckingServiceability, onCheckServiceability]);
 
   useEffect(() => {
     if (deliveryMethods.length > 0 && selectedDeliveryMethodId === null) {
@@ -152,10 +158,6 @@ export default function Step2CustomerInfo({
     if (!serviceability) return false;
     if (quoteRequested) return false;
     if (isSubmitting) return false;
-    
-    // Show quote button if:
-    // 1. Location is not serviceable, OR
-    // 2. Parent says requiresQuote is true (for custom reasons)
     return !serviceability.isServiceable || requiresQuote;
   };
 
@@ -327,6 +329,22 @@ export default function Step2CustomerInfo({
             ))}
           </div>
 
+          {!serviceability && !isCheckingServiceability && form.location.length < 3 && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
+              <p className="text-sm text-[var(--foreground-muted)]">
+                Enter your location to check delivery availability
+              </p>
+            </div>
+          )}
+
+          {!serviceability && !isCheckingServiceability && form.location.length >= 3 && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                Please select a delivery method to check availability
+              </p>
+            </div>
+          )}
+
           {serviceability && (
             <div className={`mt-4 p-4 rounded-xl border ${
               serviceability.isServiceable 
@@ -364,7 +382,6 @@ export default function Step2CustomerInfo({
                     </p>
                   )}
                   
-                  {/* Quote Request Button - Shows in BOTH scenarios when needed */}
                   {showQuoteButton() && (
                     <button
                       onClick={onRequestQuote}
@@ -384,14 +401,6 @@ export default function Step2CustomerInfo({
                   )}
                 </div>
               </div>
-            </div>
-          )}
-
-          {!serviceability && !isCheckingServiceability && form.location.length >= 3 && (
-            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/30 border border-[var(--border]) rounded-xl">
-              <p className="text-sm text-[var(--foreground-muted)]">
-                Enter your location to check delivery availability
-              </p>
             </div>
           )}
         </div>
