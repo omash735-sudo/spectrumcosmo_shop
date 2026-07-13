@@ -72,24 +72,31 @@ export async function POST(req: NextRequest) {
     const sanitizedName = user?.name ? sanitizeInput(user.name) : 'Anonymous User';
     const sanitizedImageUrl = image_url ? sanitizeInput(image_url).slice(0, 500) : null;
 
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const now = new Date().toISOString();
 
     const sql = getDb();
 
-    const result = await sql`
-      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, created_at, updated_at)
-      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', ${now}, ${now})
-      RETURNING id, customer_name, review_text, rating, image_url, product_id, user_id, status, created_at, updated_at
+    await sql`
+      INSERT INTO reviews (customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at)
+      VALUES (${sanitizedName}, ${sanitizedText}, ${r}, ${sanitizedImageUrl}, ${product_id || null}, ${user.id}, 'pending', false, ${now}, ${now})
     `;
 
-    if (!result || result.length === 0) {
+    const newReview = await sql`
+      SELECT id, customer_name, review_text, rating, image_url, product_id, user_id, status, approved, created_at, updated_at
+      FROM reviews 
+      WHERE user_id = ${user.id} 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    if (!newReview || newReview.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to submit review' },
+        { error: 'Failed to retrieve submitted review' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(result[0], { status: 201 });
+    return NextResponse.json(newReview[0], { status: 201 });
   } catch (err) {
     console.error('Submit review error:', err);
     return NextResponse.json(
