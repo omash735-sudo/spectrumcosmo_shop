@@ -1,4 +1,3 @@
-// app/checkout/components/Step3OrderReview.tsx
 'use client';
 
 import { CheckCircle, Truck, Package, CreditCard, Lock, Shield, User, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
@@ -10,6 +9,7 @@ import { CheckoutFormData, PaymentProvider, DeliveryMethod } from '@/lib/types/o
 interface Step3OrderReviewProps {
   form: CheckoutFormData;
   selectedDeliveryMethod: DeliveryMethod | null;
+  customDeliveryMethod: string | null;
   selectedPaymentProvider: PaymentProvider | null;
   subtotal: number;
   deliveryFee: number;
@@ -18,7 +18,6 @@ interface Step3OrderReviewProps {
   taxRate: number;
   taxName: string;
   finalTotal: number;
-  requiresQuote: boolean;
   onConfirm: () => void;
   onBack: () => void;
   isSubmitting: boolean;
@@ -28,6 +27,7 @@ interface Step3OrderReviewProps {
 export default function Step3OrderReview({
   form,
   selectedDeliveryMethod,
+  customDeliveryMethod,
   selectedPaymentProvider,
   subtotal,
   deliveryFee,
@@ -36,7 +36,6 @@ export default function Step3OrderReview({
   taxRate,
   taxName,
   finalTotal,
-  requiresQuote,
   onConfirm,
   onBack,
   isSubmitting,
@@ -44,6 +43,10 @@ export default function Step3OrderReview({
 }: Step3OrderReviewProps) {
   const { items } = useCart();
   const { currency, rates } = useCurrency();
+
+  const deliveryMethodName = selectedDeliveryMethod?.id === -1 
+    ? customDeliveryMethod || 'Other (Custom Courier)'
+    : selectedDeliveryMethod?.name || 'Not selected';
 
   return (
     <div className="space-y-6">
@@ -97,7 +100,7 @@ export default function Step3OrderReview({
           <div className="space-y-1.5 text-sm">
             <p className="text-[var(--foreground)]">{form.location}</p>
             <p className="text-[var(--foreground-muted)] flex items-center gap-1">
-              <Truck size={12} className="text-[var(--foreground-muted)]" /> {selectedDeliveryMethod?.name || 'Not selected'}
+              <Truck size={12} className="text-[var(--foreground-muted)]" /> {deliveryMethodName}
             </p>
             {form.notes && (
               <p className="text-[var(--foreground-muted)] text-xs">Note: {form.notes}</p>
@@ -123,9 +126,7 @@ export default function Step3OrderReview({
           </div>
           <div className="flex justify-between">
             <span className="text-[var(--foreground-muted)]">Delivery Fee</span>
-            <span className="text-[var(--foreground)]">
-              {requiresQuote ? 'Pending quote' : `${deliveryFee.toLocaleString()} MWK`}
-            </span>
+            <span className="text-[var(--foreground)]">{deliveryFee.toLocaleString()} MWK</span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between text-green-600 dark:text-green-500">
@@ -140,7 +141,7 @@ export default function Step3OrderReview({
           <div className="border-t border-[var(--border)] pt-3 flex justify-between font-bold">
             <span className="text-[var(--foreground)]">Total</span>
             <span className="text-[var(--primary)] text-lg">
-              {requiresQuote ? 'Pending quote' : formatCurrencyAmount(finalTotal, currency)}
+              {formatCurrencyAmount(finalTotal, currency)}
             </span>
           </div>
         </div>
@@ -182,7 +183,7 @@ export default function Step3OrderReview({
           className="flex-[2] bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
         >
           {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
-          {isSubmitting ? 'Placing Order...' : requiresQuote ? 'Request Quote' : 'Place Order'}
+          {isSubmitting ? 'Processing...' : 'Proceed to Payment'}
         </button>
       </div>
     </div>
