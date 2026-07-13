@@ -38,15 +38,11 @@ export async function POST(req: NextRequest) {
       notes,
       items,
       total_amount,
-      delivery_method_id,
-      delivery_method_name,
       custom_delivery_method,
-      delivery_fee,
       payment_provider_id,
       payment_method,
       discount_amount,
       tax_amount,
-      promo_code_id,
       promo_code,
       referral_code,
     } = body;
@@ -99,12 +95,11 @@ export async function POST(req: NextRequest) {
       settingsMap[s.setting_key] = s.setting_value;
     });
 
-    const finalDeliveryMethod = custom_delivery_method || delivery_method_name || 'Standard';
+    const finalDeliveryMethod = custom_delivery_method || 'Not specified';
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
     const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Insert order without RETURNING to avoid type issues
     await sql`
       INSERT INTO orders (
         customer_name, 
@@ -117,10 +112,8 @@ export async function POST(req: NextRequest) {
         status, 
         user_id, 
         created_at,
-        delivery_method_id, 
-        delivery_method_name,
+        delivery_method,
         custom_delivery_method,
-        delivery_fee, 
         payment_provider_id, 
         payment_status,
         promo_code,
@@ -140,10 +133,8 @@ export async function POST(req: NextRequest) {
         'pending',
         ${user?.id || null}, 
         ${now.toISOString()},
-        ${delivery_method_id || null}, 
         ${finalDeliveryMethod},
         ${custom_delivery_method || null},
-        ${delivery_fee || 0},
         ${payment_provider_id || null}, 
         ${isAutomatic ? 'paid' : 'pending'},
         ${promo_code || null},
@@ -155,7 +146,6 @@ export async function POST(req: NextRequest) {
       )
     `;
 
-    // Get the inserted order ID
     const orderResult = await queryOne<{ id: string }>`
       SELECT id::text FROM orders 
       WHERE order_number = ${orderNumber} 
@@ -168,7 +158,6 @@ export async function POST(req: NextRequest) {
 
     const orderId = orderResult.id;
 
-    // Insert order items
     for (const item of items) {
       let unitPriceUsd = Number(item.price_usd);
       if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
