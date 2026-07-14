@@ -38,40 +38,6 @@ export async function middleware(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
 
-    let csp: string;
-
-    if (isAdminRoute(pathname)) {
-      csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:; connect-src 'self' https://api.upstash.com https://api.cloudinary.com;";
-    } else if (isCarouselRoute(pathname)) {
-      csp = [
-        "default-src 'self'",
-        `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:`,
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data: blob:",
-        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:",
-        "connect-src 'self' https://api.upstash.com https://api.cloudinary.com https://*.cloudinary.com",
-        "frame-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join('; ');
-    } else {
-      csp = [
-        "default-src 'self'",
-        `script-src 'self' https://vercel.live https://vercel.com 'unsafe-inline' 'nonce-${nonce}'`,
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data: blob:",
-        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
-        "connect-src 'self' https://api.upstash.com https://api.cloudinary.com",
-        "frame-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join('; ');
-    }
-
-    response.headers.set('Content-Security-Policy', csp);
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -89,7 +55,6 @@ export async function middleware(request: NextRequest) {
       if (isBlacklisted) {
         const redirectResponse = NextResponse.redirect(new URL('/auth/login', request.url));
         redirectResponse.cookies.delete('user_token');
-        copySecurityHeaders(redirectResponse, csp);
         return redirectResponse;
       }
     }
@@ -106,11 +71,9 @@ export async function middleware(request: NextRequest) {
       if (!isLoginPage && !isAuthApi && !isAsset && !adminToken) {
         if (pathname.startsWith('/api/')) {
           const apiResponse = NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-          apiResponse.headers.set('Content-Security-Policy', csp);
           return apiResponse;
         }
         const redirectResponse = NextResponse.redirect(new URL('/admin/login', request.url));
-        redirectResponse.headers.set('Content-Security-Policy', csp);
         return redirectResponse;
       }
       return response;
@@ -121,7 +84,6 @@ export async function middleware(request: NextRequest) {
         { error: 'Test account is currently in read-only mode. Write actions are disabled.' },
         { status: 403 }
       );
-      blockResponse.headers.set('Content-Security-Policy', csp);
       return blockResponse;
     }
 
@@ -132,7 +94,6 @@ export async function middleware(request: NextRequest) {
           { error: 'Your IP has been blocked due to suspicious activity. Please contact support.' },
           { status: 403 }
         );
-        blockResponse.headers.set('Content-Security-Policy', csp);
         return blockResponse;
       }
 
@@ -146,7 +107,6 @@ export async function middleware(request: NextRequest) {
         if (isLimited) {
           await logSecurityEvent(baseUrl, { type: 'rate_limit_exceeded', severity: 'medium', ip, userAgent, endpoint: pathname });
           const limitResponse = NextResponse.json({ error: 'Rate limit exceeded. Please slow down.' }, { status: 429 });
-          limitResponse.headers.set('Content-Security-Policy', csp);
           return limitResponse;
         }
       }
@@ -165,7 +125,6 @@ export async function middleware(request: NextRequest) {
           }
           await logSecurityEvent(baseUrl, { type: 'bot_detected', severity: 'high', ip, userAgent, endpoint: pathname });
           const suspiciousResponse = NextResponse.json({ error: 'Suspicious activity detected. Access blocked.' }, { status: 403 });
-          suspiciousResponse.headers.set('Content-Security-Policy', csp);
           return suspiciousResponse;
         }
       }
@@ -182,7 +141,6 @@ export async function middleware(request: NextRequest) {
           if (isAbusing) {
             await logSecurityEvent(baseUrl, { type: 'checkout_abuse', severity: 'high', ip, userAgent, endpoint: pathname });
             const abuseResponse = NextResponse.json({ error: 'Too many checkout attempts. Please try again later.' }, { status: 429 });
-            abuseResponse.headers.set('Content-Security-Policy', csp);
             return abuseResponse;
           }
         }
@@ -191,7 +149,6 @@ export async function middleware(request: NextRequest) {
 
     if (pathname.startsWith('/account') && !userToken) {
       const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
-      redirectResponse.headers.set('Content-Security-Policy', csp);
       return redirectResponse;
     }
 
@@ -199,14 +156,11 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('Middleware fatal error (fallback activated):', error);
     const fallbackResponse = NextResponse.next();
-    const nonce = generateNonce();
-    fallbackResponse.headers.set('Content-Security-Policy', `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com blob:;`);
     return fallbackResponse;
   }
 }
 
 function copySecurityHeaders(response: NextResponse, csp: string) {
-  response.headers.set('Content-Security-Policy', csp);
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
