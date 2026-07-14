@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 
-// Types for query results
 interface CountResult {
   count: string | number;
 }
@@ -34,31 +33,72 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
 
+    // Statuses considered "completed" for reporting
+    const completedStatuses = ['delivered', 'processing', 'shipped'];
+    const completedStatusesPlaceholder = completedStatuses.map(() => '?').join(',');
+
     const [ordersCount, revenue, confirmed, pending, declined, monthlyResult, productsResult, repeatResult] = await Promise.all([
-      sql`SELECT COUNT(*) as count FROM orders`,
-      sql`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status = 'completed'`,
-      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'completed'`,
-      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'pending'`,
-      sql`SELECT COUNT(*) as count FROM orders WHERE status = 'declined'`,
+      // Total orders (all except cancelled)
+      sql`
+        SELECT COUNT(*) as count 
+        FROM orders 
+        WHERE status != 'cancelled'
+      `,
+      
+      // Total revenue (delivered + processing orders)
+      sql`
+        SELECT COALESCE(SUM(total_amount), 0) as total 
+        FROM orders 
+        WHERE status IN (${completedStatuses.join(', ')})
+      `,
+      
+      // Confirmed orders (delivered)
+      sql`
+        SELECT COUNT(*) as count 
+        FROM orders 
+        WHERE status = 'delivered'
+      `,
+      
+      // Pending orders (pending + awaiting_verification)
+      sql`
+        SELECT COUNT(*) as count 
+        FROM orders 
+        WHERE status IN ('pending', 'awaiting_verification')
+      `,
+      
+      // Declined/Cancelled orders
+      sql`
+        SELECT COUNT(*) as count 
+        FROM orders 
+        WHERE status = 'cancelled'
+      `,
+      
+      // Monthly revenue data (delivered + processing orders)
       sql`
         SELECT
           DATE_TRUNC('month', COALESCE(paid_at, created_at)) as month,
           COALESCE(SUM(total_amount), 0) as revenue
         FROM orders
-        WHERE status = 'completed'
+        WHERE status IN (${completedStatuses.join(', ')})
           AND COALESCE(paid_at, created_at) >= NOW() - INTERVAL '12 months'
         GROUP BY month
         ORDER BY month ASC
       `,
+      
+      // Top products (delivered + processing orders)
       sql`
-        SELECT product_name, SUM(quantity) as sold
+        SELECT 
+          oi.product_name, 
+          SUM(oi.quantity) as sold
         FROM order_items oi
         JOIN orders o ON o.id = oi.order_id
-        WHERE o.status = 'completed'
-        GROUP BY product_name
+        WHERE o.status IN (${completedStatuses.join(', ')})
+        GROUP BY oi.product_name
         ORDER BY sold DESC
         LIMIT 5
       `,
+      
+      // Customer stats (all orders except cancelled)
       sql`
         SELECT
           COUNT(CASE WHEN order_count > 1 THEN 1 END) as repeat,
@@ -66,13 +106,12 @@ export async function GET(req: NextRequest) {
         FROM (
           SELECT user_id, COUNT(*) as order_count
           FROM orders
-          WHERE user_id IS NOT NULL AND status = 'completed'
+          WHERE user_id IS NOT NULL AND status != 'cancelled'
           GROUP BY user_id
         ) t
       `
     ]);
 
-    // Cast results to arrays (the Neon client returns arrays)
     const ordersCountArray = ordersCount as CountResult[];
     const revenueArray = revenue as RevenueResult[];
     const confirmedArray = confirmed as CountResult[];
