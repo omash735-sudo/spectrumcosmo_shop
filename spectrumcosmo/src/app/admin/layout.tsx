@@ -49,7 +49,7 @@ import {
   RefreshCw,
   CalendarDays,
   UserPlus,
-  Megaphone, // 👈 Added for Banner
+  Megaphone,
 } from 'lucide-react';
 
 const navItems = [
@@ -65,15 +65,11 @@ const navItems = [
   { name: 'Hero Slides', href: '/admin/hero-slides', icon: Layout, section: 'CORE' },
   { name: 'Inspiration Gallery', href: '/admin/inspiration', icon: ImageIcon, section: 'CORE' },
   { name: 'Notifications', href: '/admin/notifications', icon: Bell, section: 'CORE' },
-  
-  // TOP BANNER - NEW
   { name: 'Top Banner', href: '/admin/banner', icon: Megaphone, section: 'CORE' },
-  
   { name: 'Events', href: '/admin/events', icon: CalendarDays, section: 'CORE' },
   
   { name: 'Delivery Areas', href: '/admin/delivery-areas', icon: MapPin, section: 'DELIVERY' },
   { name: 'Delivery Quotes', href: '/admin/delivery-quotes', icon: Send, section: 'DELIVERY' },
-  { name: 'Delivery Methods', href: '/admin/delivery', icon: Truck, section: 'DELIVERY' },
   
   { name: 'Security Dashboard', href: '/admin/security/dashboard', icon: Activity, section: 'SECURITY' },
   { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'SECURITY' },
@@ -82,11 +78,9 @@ const navItems = [
   { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'SECURITY' },
   { name: '2FA Settings', href: '/admin/security/2fa', icon: Key, section: 'SECURITY' },
   
-  { name: 'Payments', href: '/admin/payments', icon: CreditCard, section: 'OPERATIONS' },
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
   { name: 'Payment Providers', href: '/admin/payment-providers', icon: Database, section: 'OPERATIONS' },
-  { name: 'Order Statuses', href: '/admin/order-statuses', icon: Tag, section: 'OPERATIONS' },
   { name: 'Customers', href: '/admin/customers', icon: Users, section: 'OPERATIONS' },
   
   { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp, section: 'GROWTH' },
@@ -333,6 +327,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const showSecurityAlert = item.name === 'Security Center';
                 const showQuoteAlert = item.name === 'Delivery Quotes';
                 const showNotificationAlert = item.name === 'Notifications';
+                const isDeliverySection = item.section === 'DELIVERY';
                 const isEvents = item.name === 'Events';
                 const isSubscribers = item.name === 'Subscribers';
                 const isBanner = item.name === 'Top Banner';
@@ -344,10 +339,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     className={`flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 mb-0.5 sm:mb-1 ${
                       isActive(item.href)
                         ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
+                        : isDeliverySection && !isActive(item.href)
+                        ? 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--foreground)] opacity-50 cursor-not-allowed'
                         : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--foreground)]'
                     }`}
+                    {...(isDeliverySection && !isActive(item.href) ? { onClick: (e) => e.preventDefault() } : {})}
                   >
-                    <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents || isSubscribers || isBanner ? 'text-[var(--primary)]' : ''}`} />
+                    {isDeliverySection && !isActive(item.href) ? (
+                      <Lock size={14} className="sm:w-[18px] sm:h-[18px]" />
+                    ) : (
+                      <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents || isSubscribers || isBanner ? 'text-[var(--primary)]' : ''}`} />
+                    )}
                     {item.name}
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
