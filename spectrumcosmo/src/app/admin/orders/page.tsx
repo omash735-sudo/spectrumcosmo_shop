@@ -74,7 +74,10 @@ export default function AdminOrdersPage() {
     try {
       const res = await fetch('/api/admin/orders');
       const data = await res.json();
-      setOrders(data.orders || data || []);
+      
+      // Handle both response formats: { orders: [...] } or just [...]
+      const ordersData = data.orders || data || [];
+      setOrders(ordersData);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
       toast.error('Failed to load orders');
