@@ -15,6 +15,7 @@ import { WishlistProvider } from '@/components/storefront/WishlistProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
+import TrackVisits from '@/components/TrackVisits';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <CartProvider>
                     <WishlistProvider>
                       <NotificationProvider>
+                        <TrackVisits />
                         <Suspense fallback={<LoadingSpinner />}>
                           {children}
                         </Suspense>
