@@ -22,6 +22,19 @@ export default function AdminReceiptUploadPage() {
   const [useManual, setUseManual] = useState(false);
   const [order, setOrder] = useState<any>(null);
 
+  const [manualData, setManualData] = useState({
+    parcelId: '',
+    receiverName: '',
+    receiverPhone: '',
+    receiverCity: '',
+    totalAmount: '',
+    paymentStatus: 'cod_unpaid',
+    truckNumber: '',
+    deliveryCounter: '',
+    senderName: '',
+    dateTime: '',
+  });
+
   useEffect(() => {
     fetchOrder();
   }, [orderId]);
@@ -81,7 +94,7 @@ export default function AdminReceiptUploadPage() {
     e.preventDefault();
     setLoading(true);
 
-    const payload: any = {};
+    let payload: any = {};
 
     if (imageUrl) {
       payload.imageUrl = imageUrl;
@@ -89,6 +102,10 @@ export default function AdminReceiptUploadPage() {
 
     if (!useManual && receiptText) {
       payload.receiptText = receiptText;
+    }
+
+    if (useManual) {
+      payload.manualData = manualData;
     }
 
     try {
@@ -123,8 +140,7 @@ export default function AdminReceiptUploadPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="mb-6">
         <Link
           href={`/admin/orders/${orderId}`}
@@ -173,7 +189,6 @@ export default function AdminReceiptUploadPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Image Upload Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Receipt Image
@@ -245,7 +260,7 @@ export default function AdminReceiptUploadPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Parcel ID *</label>
                   <input
