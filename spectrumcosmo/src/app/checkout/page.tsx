@@ -40,47 +40,70 @@ export default function CheckoutPage() {
   const [preferredCourier, setPreferredCourier] = useState('');
   const [taxRate, setTaxRate] = useState(16.5);
   const [taxName, setTaxName] = useState('VAT');
-  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [loadingDeliveryMethods, setLoadingDeliveryMethods] = useState(true);
+  const [loadingPaymentProviders, setLoadingPaymentProviders] = useState(true);
+  const [loadingTax, setLoadingTax] = useState(true);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
+  // Load delivery methods independently
   useEffect(() => {
-    const loadOptions = async () => {
-      setLoadingOptions(true);
+    const loadDeliveryMethods = async () => {
       try {
-        const [methods, providers, taxRes] = await Promise.all([
-          orderService.fetchDeliveryMethods(),
-          orderService.fetchPaymentProviders(),
-          fetch('/api/tax'),
-        ]);
-
+        const methods = await orderService.fetchDeliveryMethods();
         if (methods.length > 0) {
           setDeliveryMethods(methods);
           selectDeliveryMethod(methods[0].id);
         }
+      } catch (err) {
+        console.error('Failed to load delivery methods:', err);
+      } finally {
+        setLoadingDeliveryMethods(false);
+      }
+    };
+    loadDeliveryMethods();
+  }, []);
 
+  // Load payment providers independently
+  useEffect(() => {
+    const loadPaymentProviders = async () => {
+      try {
+        const providers = await orderService.fetchPaymentProviders();
         if (providers) {
           setPaymentProviders(providers);
-          if (providers.automatic.length > 0) {
+          if (providers.automatic?.length > 0) {
             selectPaymentProvider(providers.automatic[0]);
-          } else if (providers.manual.length > 0) {
+          } else if (providers.manual?.length > 0) {
             selectPaymentProvider(providers.manual[0]);
           }
         }
+      } catch (err) {
+        console.error('Failed to load payment providers:', err);
+      } finally {
+        setLoadingPaymentProviders(false);
+      }
+    };
+    loadPaymentProviders();
+  }, []);
 
+  // Load tax rate independently
+  useEffect(() => {
+    const loadTax = async () => {
+      try {
+        const taxRes = await fetch('/api/tax');
         if (taxRes.ok) {
           const tax = await taxRes.json();
           setTaxRate(tax.rate);
           setTaxName(tax.name);
         }
       } catch (err) {
-        console.error('Failed to load checkout options:', err);
+        console.error('Failed to load tax rate:', err);
       } finally {
-        setLoadingOptions(false);
+        setLoadingTax(false);
       }
     };
-    loadOptions();
+    loadTax();
   }, []);
 
   const taxAmount = useMemo(() => {
@@ -150,22 +173,10 @@ export default function CheckoutPage() {
     }
   }, [state, items, subtotal, taxAmount, finalTotal, preferredCourier, createOrder, clearCart, resetCheckout, router]);
 
-  if (loadingOptions) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[var(--foreground-muted)]">Loading checkout...</p>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
-
   const isEmpty = items.length === 0;
+
+  // Show delivery methods as empty array while loading
+  const displayDeliveryMethods = deliveryMethods.length > 0 ? deliveryMethods : [];
 
   return (
     <>
