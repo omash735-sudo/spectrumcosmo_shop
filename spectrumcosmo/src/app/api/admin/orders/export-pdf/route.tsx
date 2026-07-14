@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { renderToStream } from '@react-pdf/renderer';
 
 const COLORS = {
@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: COLORS.background,
     padding: 8,
-    borderRadius: 4,
   },
   row: {
     flexDirection: 'row',
@@ -78,7 +77,6 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: COLORS.background,
     padding: 10,
-    borderRadius: 8,
     marginRight: '4%',
     marginBottom: 10,
   },
@@ -90,7 +88,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.secondary,
     padding: 10,
-    borderRadius: 4,
   },
   tableHeaderText: {
     color: '#FFFFFF',
@@ -152,7 +149,6 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     padding: '4 8',
-    borderRadius: 12,
     fontSize: 8,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -180,6 +176,8 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
 
   const statusStyle = getStatusColor(order.status);
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
+  const deliveryAddress = order.delivery_address || order.location || 'N/A';
+  const subtotal = order.subtotal || order.total_amount || 0;
 
   return (
     <Document>
@@ -204,10 +202,6 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
             <View style={styles.row}>
               <Text style={styles.label}>Date:</Text>
               <Text style={styles.value}>{new Date(order.created_at).toLocaleDateString()}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Due Date:</Text>
-              <Text style={styles.value}>{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</Text>
             </View>
           </View>
           <View style={styles.card}>
@@ -241,7 +235,7 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Delivery Address:</Text>
-            <Text style={styles.value}>{order.delivery_address || order.location || 'N/A'}</Text>
+            <Text style={styles.value}>{deliveryAddress}</Text>
           </View>
           <View style={styles.deliveryMethodRow}>
             <Text style={styles.label}>Preferred Courier:</Text>
@@ -274,11 +268,7 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
         <View style={styles.totals}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal:</Text>
-            <Text style={styles.totalValue}>MWK {order.subtotal?.toLocaleString()}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Delivery Fee:</Text>
-            <Text style={styles.totalValue}>MWK {order.delivery_fee?.toLocaleString() || 0}</Text>
+            <Text style={styles.totalValue}>MWK {subtotal.toLocaleString()}</Text>
           </View>
           {order.discount_amount > 0 && (
             <View style={styles.totalRow}>
@@ -297,7 +287,7 @@ const OrderInvoicePDF = ({ order }: { order: any }) => {
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text>Thank you for shopping with Spectrum Cosmo!</Text>
-          <Text>For inquiries: support@spectrumcosmo.com | +265 893 160 202</Text>
+          <Text>For inquiries: spectrumcosmo01@gmail.com | +265 893 160 202</Text>
           <Text>This is a computer-generated invoice. No signature required.</Text>
         </View>
       </Page>
