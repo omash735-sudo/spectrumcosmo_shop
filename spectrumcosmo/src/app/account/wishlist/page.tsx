@@ -88,7 +88,8 @@ export default function WishlistPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
           {wishlist.map((item) => {
-            const hasRating = (item.rating ?? 0) > 0;
+            // Check if rating exists and has value
+            const hasRating = item.rating && item.rating > 0;
             
             return (
               <div
@@ -128,7 +129,7 @@ export default function WishlistPage() {
                     </h3>
                   </Link>
 
-                  {/* Rating */}
+                  {/* Rating - Only show if rating exists */}
                   {hasRating && (
                     <div className="flex items-center gap-1 mt-1.5 sm:mt-2">
                       <div className="flex">
