@@ -1,4 +1,3 @@
-// app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -10,7 +9,6 @@ interface OrderUpdateBody {
   trackingNumber?: string;
   trackingNotes?: string;
   adminNotes?: string;
-  deliveryFee?: number;
 }
 
 interface OrderItem {
@@ -32,7 +30,6 @@ interface UpdatedOrder {
   phone_number: string;
   location: string;
   payment_method: string;
-  delivery_fee?: number;
   invoice_number?: string;
   custom_delivery_method?: string | null;
 }
@@ -58,7 +55,6 @@ export async function GET(req: NextRequest) {
         payment_status,
         proof_of_payment_url, 
         payment_note, 
-        delivery_fee, 
         custom_delivery_method,
         discount_amount, 
         promo_code, 
@@ -105,7 +101,6 @@ export async function GET(req: NextRequest) {
       ...order,
       items: itemsByOrder.get(order.id) || [],
       subtotal: order.total_amount || 0,
-      shipping_cost: order.delivery_fee || 0,
     }));
 
     return NextResponse.json({ orders: ordersWithItems });
@@ -143,7 +138,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, trackingNumber, trackingNotes, adminNotes, deliveryFee } = body;
+    const { id, status, trackingNumber, trackingNotes, adminNotes } = body;
 
     if (!id || !status) {
       return NextResponse.json({ error: 'ID and status required' }, { status: 400 });
@@ -186,7 +181,6 @@ export async function PATCH(req: NextRequest) {
         tracking_number = COALESCE(${trackingNumber || null}, tracking_number),
         tracking_notes = COALESCE(${trackingNotes || null}, tracking_notes),
         admin_notes = COALESCE(${adminNotes || null}, admin_notes),
-        delivery_fee = COALESCE(${deliveryFee || null}, delivery_fee),
         paid_at = CASE
           WHEN (${status} = 'approved' OR ${status} = 'delivered') AND paid_at IS NULL
           THEN NOW()
