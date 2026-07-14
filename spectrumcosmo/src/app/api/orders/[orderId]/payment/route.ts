@@ -1,4 +1,3 @@
-// app/api/orders/[orderId]/payment-status/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 
