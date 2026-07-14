@@ -12,7 +12,7 @@ export async function PATCH(
 
   const { id: orderId } = await params;
   const body = await req.json();
-  const { status, trackingNumber, trackingNotes, adminNotes, deliveryFee } = body;
+  const { status, trackingNumber, trackingNotes, adminNotes } = body;
 
   if (!status) {
     return NextResponse.json({ error: 'Status is required' }, { status: 400 });
@@ -24,17 +24,6 @@ export async function PATCH(
   }
 
   try {
-    const sql = getDb();
-
-    // Update order with delivery fee if provided
-    if (deliveryFee !== undefined) {
-      await sql`
-        UPDATE orders 
-        SET delivery_fee = ${deliveryFee}, updated_at = NOW()
-        WHERE id = ${orderId}::uuid
-      `;
-    }
-
     const result = await updateOrderStatus({
       orderId,
       newStatusSlug: status,
