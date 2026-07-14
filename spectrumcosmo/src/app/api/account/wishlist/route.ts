@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
         w.product_id,
         p.name,
         p.price,
-        p.rating,
         p.image_url AS image,
         p.stock_quantity > 0 AS in_stock
       FROM wishlist w
