@@ -100,6 +100,8 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
     const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
 
+    console.log('Attempting to insert order with order_number:', orderNumber);
+
     await sql`
       INSERT INTO orders (
         customer_name, 
@@ -146,11 +148,15 @@ export async function POST(req: NextRequest) {
       )
     `;
 
+    console.log('Order INSERT completed for order_number:', orderNumber);
+
     const orderResult = await queryOne<{ id: string }>`
       SELECT id::text FROM orders 
       WHERE order_number = ${orderNumber} 
       LIMIT 1
     `;
+
+    console.log('Order retrieved with ID:', orderResult?.id);
 
     if (!orderResult || !orderResult.id) {
       throw new Error('Failed to retrieve created order');
@@ -334,10 +340,18 @@ export async function POST(req: NextRequest) {
       total_amount: safeTotal,
     });
   } catch (err) {
-    console.error('Order creation error:', err);
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error('=== ORDER CREATION ERROR ===');
+    console.error('Error name:', err instanceof Error ? err.name : 'Unknown');
+    console.error('Error message:', err instanceof Error ? err.message : 'Unknown');
+    console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
+    console.error('=== END ERROR ===');
+    
+    const errorMessage = err instanceof Error ? err.message : 'Internal server error';
+    const errorStack = err instanceof Error ? err.stack : undefined;
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+    }, { status: 500 });
   }
 }
