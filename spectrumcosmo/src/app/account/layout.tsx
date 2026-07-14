@@ -63,7 +63,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { name: 'Wishlist', href: '/account/wishlist', icon: Heart },
     { name: 'Notifications', href: '/account/notifications', icon: Bell },
     { name: 'Profile', href: '/account/profile', icon: User },
-    { name: 'Payments', href: '/account/payments', icon: CreditCard },
     { name: 'Addresses', href: '/account/addresses', icon: MapPin },
     { name: 'Tracking', href: '/account/tracking', icon: Truck },
     { name: 'Support', href: '/account/support', icon: HelpCircle },
