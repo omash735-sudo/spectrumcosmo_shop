@@ -9,6 +9,7 @@ import {
   Search, RefreshCw, Sparkles, Banknote
 } from 'lucide-react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 interface Order {
   id: string;
@@ -76,6 +77,7 @@ export default function AdminOrdersPage() {
       setOrders(data.orders || data || []);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
@@ -121,7 +123,7 @@ export default function AdminOrdersPage() {
       setTrackingNumber('');
       setTrackingNotes('');
       setAdminNotes('');
-      toast.success('Tracking updated');
+      toast.success('Tracking updated successfully');
     } catch (err) {
       console.error('Failed to update tracking:', err);
       toast.error('Failed to update tracking');
@@ -134,7 +136,7 @@ export default function AdminOrdersPage() {
     if (!confirm('Delete this order permanently?')) return;
     try {
       await fetch(`/api/admin/orders?id=${id}`, { method: 'DELETE' });
-      fetchOrders();
+      await fetchOrders();
       toast.success('Order deleted');
     } catch (err) {
       console.error('Failed to delete order:', err);
@@ -218,13 +220,6 @@ export default function AdminOrdersPage() {
     delivered: orders.filter(o => o.status === 'delivered').length,
     awaitingVerification: orders.filter(o => o.payment_status === 'awaiting_verification').length,
     paid: orders.filter(o => o.payment_status === 'paid').length,
-  };
-
-  const paymentStats = {
-    pending: orders.filter(o => o.payment_status === 'pending').length,
-    awaitingVerification: orders.filter(o => o.payment_status === 'awaiting_verification').length,
-    paid: orders.filter(o => o.payment_status === 'paid').length,
-    failed: orders.filter(o => o.payment_status === 'failed').length,
   };
 
   const statusOptions = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
