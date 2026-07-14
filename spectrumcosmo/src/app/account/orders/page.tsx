@@ -1,4 +1,3 @@
-// app/account/orders/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -70,7 +69,6 @@ export default function OrdersPage() {
   const stats = {
     total: orders.length,
     pending: orders.filter(o => o.status === 'pending').length,
-    pendingQuote: orders.filter(o => o.status === 'pending_quote').length,
     awaitingVerification: orders.filter(o => o.status === 'awaiting_verification').length,
     processing: orders.filter(o => o.status === 'processing').length,
     shipped: orders.filter(o => o.status === 'shipped').length,
@@ -123,10 +121,9 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
         <StatCard label="Total" value={stats.total} color="bg-[var(--background-card)] border-[var(--border)] text-[var(--foreground)]" />
         <StatCard label="Pending" value={stats.pending} color="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-100 dark:border-yellow-900 text-yellow-700 dark:text-yellow-400" />
-        <StatCard label="Quote" value={stats.pendingQuote} color="bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-400" />
         <StatCard label="Verifying" value={stats.awaitingVerification} color="bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-900 text-orange-700 dark:text-orange-400" />
         <StatCard label="Processing" value={stats.processing} color="bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-900 text-purple-700 dark:text-purple-400" />
         <StatCard label="Delivered" value={stats.delivered} color="bg-green-50 dark:bg-green-950/30 border-green-100 dark:border-green-900 text-green-700 dark:text-green-400" />
