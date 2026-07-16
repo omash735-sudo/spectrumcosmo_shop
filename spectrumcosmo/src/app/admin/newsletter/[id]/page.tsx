@@ -6,7 +6,23 @@ import { redirect } from 'next/navigation';
 import { verifyToken } from '@/lib/auth';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Send, Clock, Users, Eye, MousePointer } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Send, 
+  Clock, 
+  Users, 
+  Eye, 
+  MousePointer,
+  Calendar,
+  User,
+  Tag,
+  AlertCircle,
+  ChevronRight,
+  Mail,
+  CheckCircle,
+  Sparkles,
+  Info
+} from 'lucide-react';
 import { format } from 'date-fns';
 
 export default async function NewsletterPreviewPage({
@@ -47,13 +63,18 @@ export default async function NewsletterPreviewPage({
 
   if (!newsletter) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Newsletter Not Found</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">The newsletter you are looking for does not exist or has been deleted.</p>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+        <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6 sm:p-8 text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">Newsletter Not Found</h2>
+          <p className="text-sm text-[var(--foreground-muted)] mb-6">
+            The newsletter you are looking for does not exist or has been deleted.
+          </p>
           <Link
             href="/admin/newsletter"
-            className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 font-medium"
+            className="inline-flex items-center gap-2 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition"
           >
             <ArrowLeft size={18} />
             Back to Newsletter Hub
@@ -64,16 +85,36 @@ export default async function NewsletterPreviewPage({
   }
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; color: string }> = {
-      draft: { label: 'Draft', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400' },
-      scheduled: { label: 'Scheduled', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
-      sending: { label: 'Sending...', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      sent: { label: 'Sent', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
-      failed: { label: 'Failed', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+    const config: Record<string, { label: string; color: string; bg: string }> = {
+      draft: { 
+        label: 'Draft', 
+        color: 'text-gray-700 dark:text-gray-300', 
+        bg: 'bg-gray-100 dark:bg-gray-800' 
+      },
+      scheduled: { 
+        label: 'Scheduled', 
+        color: 'text-blue-700 dark:text-blue-400', 
+        bg: 'bg-blue-100 dark:bg-blue-950/30' 
+      },
+      sending: { 
+        label: 'Sending...', 
+        color: 'text-yellow-700 dark:text-yellow-400', 
+        bg: 'bg-yellow-100 dark:bg-yellow-950/30' 
+      },
+      sent: { 
+        label: 'Sent', 
+        color: 'text-green-700 dark:text-green-400', 
+        bg: 'bg-green-100 dark:bg-green-950/30' 
+      },
+      failed: { 
+        label: 'Failed', 
+        color: 'text-red-700 dark:text-red-400', 
+        bg: 'bg-red-100 dark:bg-red-950/30' 
+      },
     };
     const c = config[status] || config.draft;
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${c.color}`}>
+      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs sm:text-sm font-medium ${c.bg} ${c.color}`}>
         {c.label}
       </span>
     );
@@ -89,173 +130,184 @@ export default async function NewsletterPreviewPage({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <div className="mb-4">
-        <Link
-          href="/admin/newsletter"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-sm"
-        >
-          <ArrowLeft size={16} />
-          Back to Newsletter Hub
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-4xl mx-auto">
+        {/* Back Link */}
+        <div className="mb-4">
+          <Link
+            href="/admin/newsletter"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+          >
+            <ArrowLeft size={16} />
+            Back to Newsletter Hub
+          </Link>
+        </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {newsletter.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 mt-2">
-                {getStatusBadge(newsletter.status)}
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {getAudienceLabel(newsletter.audience)}
-                </span>
-                {newsletter.segment_name && (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Segment: {newsletter.segment_name}
+        <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
+          {/* Header */}
+          <div className="p-4 sm:p-6 border-b border-[var(--border)]">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)] flex-shrink-0" />
+                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] truncate">
+                    {newsletter.title}
+                  </h1>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
+                  {getStatusBadge(newsletter.status)}
+                  <span className="text-xs sm:text-sm text-[var(--foreground-muted)] flex items-center gap-1">
+                    <Users size={12} className="sm:w-3.5 sm:h-3.5" />
+                    {getAudienceLabel(newsletter.audience)}
                   </span>
+                  {newsletter.segment_name && (
+                    <span className="text-xs sm:text-sm text-[var(--foreground-muted)] flex items-center gap-1">
+                      <Tag size={12} className="sm:w-3.5 sm:h-3.5" />
+                      {newsletter.segment_name}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 flex-shrink-0">
+                {newsletter.status === 'draft' && (
+                  <form
+                    action={async () => {
+                      'use server';
+                      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/newsletter/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          id: newsletter.id,
+                          send_now: true 
+                        }),
+                      });
+                      redirect('/admin/newsletter');
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm min-h-[44px]"
+                    >
+                      <Send size={16} />
+                      Send Now
+                    </button>
+                  </form>
+                )}
+                {newsletter.status === 'draft' && (
+                  <Link
+                    href={`/admin/newsletter/${newsletter.id}/edit`}
+                    className="px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--background-secondary)] transition flex items-center gap-2 text-sm min-h-[44px] text-[var(--foreground)]"
+                  >
+                    Edit
+                  </Link>
                 )}
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {newsletter.status === 'draft' && (
-                <form
-                  action={async () => {
-                    'use server';
-                    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/newsletter/send`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        id: newsletter.id,
-                        send_now: true 
-                      }),
-                    });
-                    redirect('/admin/newsletter');
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition flex items-center gap-2"
-                  >
-                    <Send size={16} />
-                    Send Now
-                  </button>
-                </form>
-              )}
-              {newsletter.status === 'draft' && (
-                <Link
-                  href={`/admin/newsletter/${newsletter.id}/edit`}
-                  className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
-                >
-                  Edit
-                </Link>
-              )}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {format(new Date(newsletter.created_at), 'MMM d, yyyy h:mm a')}
-              </p>
-            </div>
-            {newsletter.sent_at && (
+            {/* Meta Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 pt-4 border-t border-[var(--border)]">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Sent</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {format(new Date(newsletter.sent_at), 'MMM d, yyyy h:mm a')}
+                <p className="text-[10px] text-[var(--foreground-muted)]">Created</p>
+                <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">
+                  {format(new Date(newsletter.created_at), 'MMM d, yyyy h:mm a')}
                 </p>
               </div>
-            )}
-            {newsletter.scheduled_for && (
+              {newsletter.sent_at && (
+                <div>
+                  <p className="text-[10px] text-[var(--foreground-muted)]">Sent</p>
+                  <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">
+                    {format(new Date(newsletter.sent_at), 'MMM d, yyyy h:mm a')}
+                  </p>
+                </div>
+              )}
+              {newsletter.scheduled_for && (
+                <div>
+                  <p className="text-[10px] text-[var(--foreground-muted)]">Scheduled For</p>
+                  <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">
+                    {format(new Date(newsletter.scheduled_for), 'MMM d, yyyy h:mm a')}
+                  </p>
+                </div>
+              )}
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Scheduled For</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {format(new Date(newsletter.scheduled_for), 'MMM d, yyyy h:mm a')}
+                <p className="text-[10px] text-[var(--foreground-muted)]">Recipients</p>
+                <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">
+                  {newsletter.total_subscribers.toLocaleString()}
                 </p>
               </div>
-            )}
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Recipients</p>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {newsletter.total_subscribers.toLocaleString()}
-              </p>
             </div>
           </div>
-        </div>
 
-        {newsletter.status === 'sent' && (
-          <div className="grid grid-cols-3 gap-4 p-6 bg-gray-50 dark:bg-gray-800/50">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
-                <Eye size={16} />
-                <span className="text-sm">Opens</span>
+          {/* Analytics Stats (if sent) */}
+          {newsletter.status === 'sent' && (
+            <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 bg-orange-50 dark:bg-orange-950/20 border-b border-[var(--border)]">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 text-[var(--foreground-muted)]">
+                  <Eye size={14} className="sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">Opens</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
+                  {newsletter.open_count}
+                </p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
+                  {newsletter.total_subscribers > 0 
+                    ? Math.round((newsletter.open_count / newsletter.total_subscribers) * 100) 
+                    : 0}% rate
+                </p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {newsletter.open_count}
-              </p>
-              <p className="text-xs text-gray-400">
-                {newsletter.total_subscribers > 0 
-                  ? Math.round((newsletter.open_count / newsletter.total_subscribers) * 100) 
-                  : 0}% rate
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
-                <MousePointer size={16} />
-                <span className="text-sm">Clicks</span>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 text-[var(--foreground-muted)]">
+                  <MousePointer size={14} className="sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">Clicks</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
+                  {newsletter.click_count}
+                </p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
+                  {newsletter.open_count > 0 
+                    ? Math.round((newsletter.click_count / newsletter.open_count) * 100) 
+                    : 0}% CTR
+                </p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {newsletter.click_count}
-              </p>
-              <p className="text-xs text-gray-400">
-                {newsletter.open_count > 0 
-                  ? Math.round((newsletter.click_count / newsletter.open_count) * 100) 
-                  : 0}% CTR
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
-                <Users size={16} />
-                <span className="text-sm">Unsubscribes</span>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 text-[var(--foreground-muted)]">
+                  <Users size={14} className="sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">Unsubscribes</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">
+                  {newsletter.unsubscribe_count || 0}
+                </p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
+                  {newsletter.total_subscribers > 0 
+                    ? Math.round(((newsletter.unsubscribe_count || 0) / newsletter.total_subscribers) * 100) 
+                    : 0}% rate
+                </p>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {newsletter.unsubscribe_count || 0}
-              </p>
-              <p className="text-xs text-gray-400">
-                {newsletter.total_subscribers > 0 
-                  ? Math.round(((newsletter.unsubscribe_count || 0) / newsletter.total_subscribers) * 100) 
-                  : 0}% rate
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="p-6">
-          {newsletter.image_url && (
-            <div className="relative w-full h-64 mb-6 rounded-xl overflow-hidden bg-gray-100">
-              <Image
-                src={newsletter.image_url}
-                alt={newsletter.title}
-                fill
-                className="object-cover"
-              />
             </div>
           )}
 
-          <div
-            className="prose max-w-none dark:prose-invert prose-orange"
-            dangerouslySetInnerHTML={{ __html: newsletter.content }}
-          />
-        </div>
+          {/* Content */}
+          <div className="p-4 sm:p-6">
+            {newsletter.image_url && (
+              <div className="relative w-full h-48 sm:h-64 mb-4 sm:mb-6 rounded-xl overflow-hidden bg-[var(--background-secondary)]">
+                <Image
+                  src={newsletter.image_url}
+                  alt={newsletter.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
 
-        <div className="p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Newsletter ID: {newsletter.id}
+            <div
+              className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:text-[var(--foreground)] prose-p:text-[var(--foreground-muted)] prose-a:text-[var(--primary)] prose-strong:text-[var(--foreground)] prose-ul:text-[var(--foreground-muted)] prose-ol:text-[var(--foreground-muted)]"
+              dangerouslySetInnerHTML={{ __html: newsletter.content }}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--background-secondary)] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] font-mono">
+              ID: {newsletter.id}
             </p>
             {newsletter.status === 'draft' && (
               <form
@@ -274,7 +326,7 @@ export default async function NewsletterPreviewPage({
               >
                 <button
                   type="submit"
-                  className="bg-orange-500 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-600 transition flex items-center gap-2"
+                  className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition flex items-center gap-2 text-sm min-h-[44px] w-full sm:w-auto justify-center"
                 >
                   <Send size={16} />
                   Send Now
@@ -283,6 +335,40 @@ export default async function NewsletterPreviewPage({
             )}
           </div>
         </div>
+
+        {/* Pro Tip - Draft State */}
+        {newsletter.status === 'draft' && (
+          <div className="mt-4 sm:mt-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
+            <div className="flex items-start gap-2">
+              <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400">
+                  <strong>Ready to send?</strong> Preview your newsletter content above, then click "Send Now" to deliver it to your audience.
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 opacity-70">
+                  Once sent, you cannot edit this newsletter. Make sure everything looks perfect.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pro Tip - Sent State */}
+        {newsletter.status === 'sent' && (
+          <div className="mt-4 sm:mt-6 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800 p-3 sm:p-4">
+            <div className="flex items-start gap-2">
+              <CheckCircle size={16} className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs sm:text-sm text-green-700 dark:text-green-400">
+                  <strong>Newsletter sent!</strong> Track engagement metrics above including opens, clicks, and unsubscribe rates.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1 opacity-70">
+                  Performance data updates in real-time as subscribers interact with your email.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
