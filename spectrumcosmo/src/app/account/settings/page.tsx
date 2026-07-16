@@ -333,7 +333,7 @@ export default function SettingsPage() {
             <p className="text-[var(--foreground-muted)] text-xs sm:text-sm ml-8 sm:ml-10 md:ml-14">Manage your account preferences and security</p>
           </div>
 
-          {/* User Banner - WITH MANGA PANEL preserved */}
+          {/* User Banner */}
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg mb-4 sm:mb-6 md:mb-8">
             <div className="relative z-10 bg-[var(--primary)] p-3 sm:p-4 md:p-6">
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
@@ -347,7 +347,7 @@ export default function SettingsPage() {
                       className="w-full h-full object-cover" 
                     />
                   ) : (
-                    <User size={24} className="text-white sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    <User size={24} className="text-white sm:w-7 sm:h-7 md:w-8 sm:h-8" />
                   )}
                 </div>
                 <div className="flex-1 text-center sm:text-left min-w-0">
