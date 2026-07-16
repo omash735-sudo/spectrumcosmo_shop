@@ -161,7 +161,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Sale Badge */}
         {hasDiscount && !isOutOfStock && !isComingSoon && (
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 shadow-md">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 shadow-md">
             -{discountPercent}%
           </div>
         )}
@@ -169,9 +169,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Status Badge */}
         {statusBadge && StatusIcon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
-            <span className={`${statusBadge.color} text-xs font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-1`}>
+            <span className={`${statusBadge.color} text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-1`}>
               <StatusIcon size={10} className="sm:w-3 sm:h-3" />
-              <span className="text-[10px] sm:text-xs">{statusBadge.text}</span>
+              <span>{statusBadge.text}</span>
             </span>
           </div>
         )}
@@ -190,7 +190,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20 min-h-[32px] min-w-[32px] flex items-center justify-center"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
@@ -200,7 +200,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
 
         {/* Category Tag */}
-        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 max-w-[80px] sm:max-w-[120px] truncate">
           {categoryName}
         </div>
       </div>
@@ -255,26 +255,27 @@ export default function ProductCard({ product }: ProductCardProps) {
             <>
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2"
+                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]"
               >
                 <ShoppingCart size={12} className="sm:w-4 sm:h-4" />
-                <span>Add</span>
+                <span className="hidden xs:inline">Add to Cart</span>
+                <span className="xs:hidden">Add</span>
               </button>
               <Link
                 href={`/products/${product.id}`}
                 onClick={handleProductClick}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
               >
                 <Eye size={12} className="sm:w-4 sm:h-4" />
               </Link>
             </>
           ) : isComingSoon ? (
-            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
               <Clock size={12} className="sm:w-4 sm:h-4" />
               <span>Coming Soon</span>
             </button>
           ) : (
-            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
               <Ban size={12} className="sm:w-4 sm:h-4" />
               <span>Out of Stock</span>
             </button>
