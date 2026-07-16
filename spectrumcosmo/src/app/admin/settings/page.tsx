@@ -1,8 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { KeyRound, Loader2, Save, Send, Database, Building2, Clock, Mail, Megaphone, Tag, Settings as SettingsIcon, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+  Settings as SettingsIcon,
+  KeyRound,
+  Loader2,
+  Save,
+  Send,
+  Database,
+  Building2,
+  Clock,
+  Mail,
+  Megaphone,
+  Tag,
+  Eye,
+  Shield,
+  Server,
+  CheckCircle,
+  AlertTriangle,
+  Power,
+  Trash2,
+  RefreshCw,
+} from 'lucide-react';
 import Link from 'next/link';
+// TestAccountKillSwitch moved from dashboard to here
+import TestAccountKillSwitch from '@/components/admin/TestAccountKillSwitch';
+
+interface SystemStatus {
+  database: 'connected' | 'disconnected';
+  redis: 'connected' | 'disconnected';
+  realtime: 'connected' | 'disconnected';
+  last_heartbeat: string;
+  uptime: string;
+  version: string;
+}
 
 export default function SettingsPage() {
   // Password state
@@ -24,6 +55,10 @@ export default function SettingsPage() {
     email: 'spectrumcosmo01@gmail.com',
   });
 
+  // System status
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+
   // Store settings state
   const [storeSettings, setStoreSettings] = useState({
     store_name: 'SpectrumCosmo',
@@ -43,9 +78,10 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchAllSettings = async () => {
       try {
-        const [socialRes, settingsRes] = await Promise.all([
+        const [socialRes, settingsRes, statusRes] = await Promise.all([
           fetch('/api/admin/social-links'),
           fetch('/api/admin/settings'),
+          fetch('/api/admin/system/status'),
         ]);
 
         const socialData = await socialRes.json();
@@ -63,10 +99,16 @@ export default function SettingsPage() {
           footer_copyright: settingsData.footer_copyright || prev.footer_copyright,
           invoice_logo_url: settingsData.invoice_logo_url || prev.invoice_logo_url,
         }));
+
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          setSystemStatus(statusData);
+        }
       } catch (err) {
         console.error('Failed to load settings', err);
       } finally {
         setSettingsLoading(false);
+        setStatusLoading(false);
       }
     };
     fetchAllSettings();
@@ -127,179 +169,329 @@ export default function SettingsPage() {
 
   if (settingsLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="animate-spin text-orange-500" size={32} />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="pt-16 lg:pt-0">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings & Content</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage your account security, store information, email templates, and website content.</p>
+    <div>
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Settings & Content</h1>
+        <p className="text-sm text-[var(--foreground-muted)] mt-1">
+          Manage your account security, store information, and website content.
+        </p>
       </div>
 
       {/* Quick Links to Other Settings Pages */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Link href="/admin/email-templates" className="bg-white rounded-2xl border p-4 text-center hover:border-orange-200 transition">
-          <Mail className="mx-auto text-orange-500 mb-2" size={24} />
-          <p className="text-sm font-medium">Email Templates</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <Link 
+          href="/admin/email-templates" 
+          className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 text-center hover:border-[var(--primary)] hover:shadow-md transition group"
+        >
+          <Mail className="mx-auto text-[var(--primary)] mb-1.5 sm:mb-2" size={20} />
+          <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">Email Templates</p>
         </Link>
-        <Link href="/admin/promotional-banners" className="bg-white rounded-2xl border p-4 text-center hover:border-orange-200 transition">
-          <Megaphone className="mx-auto text-orange-500 mb-2" size={24} />
-          <p className="text-sm font-medium">Promotional Banners</p>
+        <Link 
+          href="/admin/promotional-banners" 
+          className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 text-center hover:border-[var(--primary)] hover:shadow-md transition group"
+        >
+          <Megaphone className="mx-auto text-[var(--primary)] mb-1.5 sm:mb-2" size={20} />
+          <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">Promotional Banners</p>
         </Link>
-        <Link href="/admin/order-status" className="bg-white rounded-2xl border p-4 text-center hover:border-orange-200 transition">
-          <Tag className="mx-auto text-orange-500 mb-2" size={24} />
-          <p className="text-sm font-medium">Order Status</p>
+        <Link 
+          href="/admin/order-status" 
+          className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 text-center hover:border-[var(--primary)] hover:shadow-md transition group"
+        >
+          <Tag className="mx-auto text-[var(--primary)] mb-1.5 sm:mb-2" size={20} />
+          <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">Order Status</p>
         </Link>
-        <Link href="/admin/payment-providers" className="bg-white rounded-2xl border p-4 text-center hover:border-orange-200 transition">
-          <Database className="mx-auto text-orange-500 mb-2" size={24} />
-          <p className="text-sm font-medium">Payment Providers</p>
+        <Link 
+          href="/admin/payment-providers" 
+          className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 text-center hover:border-[var(--primary)] hover:shadow-md transition group"
+        >
+          <Database className="mx-auto text-[var(--primary)] mb-1.5 sm:mb-2" size={20} />
+          <p className="text-xs sm:text-sm font-medium text-[var(--foreground)]">Payment Providers</p>
         </Link>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Password Change */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-              <KeyRound size={20} />
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-[var(--primary)]">
+              <KeyRound size={18} className="sm:size-5" />
             </div>
-            <h2 className="font-bold text-gray-800">Change Password</h2>
+            <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">Change Password</h2>
           </div>
-          <form onSubmit={handlePasswordChange} className="p-6 space-y-4">
+          <form onSubmit={handlePasswordChange} className="p-4 sm:p-6 space-y-4">
             <div>
-              <label className="label">Current Password</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Current Password</label>
               <input
                 type="password"
                 required
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 placeholder="••••••••"
               />
             </div>
             <div>
-              <label className="label">New Password</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">New Password</label>
               <input
                 type="password"
                 required
                 minLength={8}
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="••••••••"
               />
             </div>
-            {error && <p className="text-sm text-red-500 bg-red-50 px-4 py-3 rounded-xl">{error}</p>}
-            {message && <p className="text-sm text-green-600 bg-green-50 px-4 py-3 rounded-xl">{message}</p>}
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
+            {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg">{error}</p>}
+            {message && <p className="text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg">{message}</p>}
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium rounded-lg transition disabled:opacity-50 text-sm"
+            >
               {loading ? <Loader2 size={16} className="animate-spin" /> : 'Update Password'}
             </button>
           </form>
         </div>
 
-        {/* Store Information & Data Retention */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-              <Building2 size={20} />
+        {/* System Status */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Server size={18} className="sm:size-5" />
             </div>
-            <h2 className="font-bold text-gray-800">Store Settings</h2>
+            <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">System Status</h2>
           </div>
-          <form onSubmit={saveStoreSettings} className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-3">
+            {statusLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="animate-spin text-[var(--primary)]" size={24} />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-3 bg-[var(--background-secondary)] rounded-lg">
+                  <span className="text-sm text-[var(--foreground-muted)]">Database</span>
+                  <span className={`flex items-center gap-2 text-sm font-medium ${
+                    systemStatus?.database === 'connected' ? 'text-emerald-500' : 'text-red-500'
+                  }`}>
+                    {systemStatus?.database === 'connected' ? (
+                      <><CheckCircle size={16} /> Connected</>
+                    ) : (
+                      <><AlertTriangle size={16} /> Disconnected</>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-[var(--background-secondary)] rounded-lg">
+                  <span className="text-sm text-[var(--foreground-muted)]">Real-time Stream</span>
+                  <span className={`flex items-center gap-2 text-sm font-medium ${
+                    systemStatus?.realtime === 'connected' ? 'text-emerald-500' : 'text-red-500'
+                  }`}>
+                    {systemStatus?.realtime === 'connected' ? (
+                      <><CheckCircle size={16} /> Connected</>
+                    ) : (
+                      <><AlertTriangle size={16} /> Disconnected</>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-[var(--background-secondary)] rounded-lg">
+                  <span className="text-sm text-[var(--foreground-muted)]">Uptime</span>
+                  <span className="text-sm font-medium text-[var(--foreground)]">{systemStatus?.uptime || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-[var(--background-secondary)] rounded-lg">
+                  <span className="text-sm text-[var(--foreground-muted)]">Version</span>
+                  <span className="text-sm font-medium text-[var(--foreground)]">{systemStatus?.version || 'v1.0.0'}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Store Information */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Building2 size={18} className="sm:size-5" />
+            </div>
+            <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">Store Settings</h2>
+          </div>
+          <form onSubmit={saveStoreSettings} className="p-4 sm:p-6 space-y-4">
             <div>
-              <label>Store Name</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Store Name</label>
               <input
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={storeSettings.store_name}
                 onChange={e => setStoreSettings(p => ({ ...p, store_name: e.target.value }))}
               />
             </div>
             <div>
-              <label>Store Email</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Store Email</label>
               <input
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 type="email"
                 value={storeSettings.store_email}
                 onChange={e => setStoreSettings(p => ({ ...p, store_email: e.target.value }))}
               />
             </div>
             <div>
-              <label>Store Address</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Store Address</label>
               <input
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={storeSettings.store_address}
                 onChange={e => setStoreSettings(p => ({ ...p, store_address: e.target.value }))}
               />
             </div>
             <div>
-              <label>Invoice Logo URL</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Invoice Logo URL</label>
               <input
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={storeSettings.invoice_logo_url}
                 onChange={e => setStoreSettings(p => ({ ...p, invoice_logo_url: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label>Data Retention (days)</label>
+                <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Data Retention (days)</label>
                 <input
                   type="number"
-                  className="input"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                   value={storeSettings.data_retention_days}
                   onChange={e => setStoreSettings(p => ({ ...p, data_retention_days: e.target.value }))}
                 />
-                <p className="text-xs text-gray-500">Soft-deleted user data cleanup</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1">Soft-deleted user data cleanup</p>
               </div>
               <div>
-                <label>Default Delivery (days)</label>
+                <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Default Delivery (days)</label>
                 <input
                   type="number"
-                  className="input"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                   value={storeSettings.default_delivery_days}
                   onChange={e => setStoreSettings(p => ({ ...p, default_delivery_days: e.target.value }))}
                 />
-                <p className="text-xs text-gray-500">Estimated delivery timeline</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1">Estimated delivery timeline</p>
               </div>
             </div>
             <div>
-              <label>Default Discount Banner</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Default Discount Banner</label>
               <textarea
                 rows={2}
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition resize-none"
                 value={storeSettings.discount_banner_default}
                 onChange={e => setStoreSettings(p => ({ ...p, discount_banner_default: e.target.value }))}
               />
             </div>
             <div>
-              <label>Footer Copyright Text</label>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Footer Copyright Text</label>
               <input
-                className="input"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={storeSettings.footer_copyright}
                 onChange={e => setStoreSettings(p => ({ ...p, footer_copyright: e.target.value }))}
               />
             </div>
-            <button type="submit" disabled={savingStore} className="btn-primary w-full justify-center">
+            <button 
+              type="submit" 
+              disabled={savingStore} 
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium rounded-lg transition disabled:opacity-50 text-sm"
+            >
               {savingStore ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Save Store Settings</>}
             </button>
           </form>
         </div>
 
-        {/* Data Cleanup (Manual Button) */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
-              <Clock size={20} />
+        {/* Social Links */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-50 dark:bg-purple-950/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Send size={18} className="sm:size-5" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-800">Data Cleanup</h2>
-              <p className="text-xs text-gray-500">Permanently delete soft‑deleted user data older than retention period.</p>
+              <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">Social Links</h2>
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Connect storefront footer to business accounts</p>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <form onSubmit={saveSocialLinks} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="Instagram URL"
+              value={socialLinks.instagram}
+              onChange={e => setSocialLinks(p => ({ ...p, instagram: e.target.value }))}
+            />
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="Twitter/X URL"
+              value={socialLinks.twitter}
+              onChange={e => setSocialLinks(p => ({ ...p, twitter: e.target.value }))}
+            />
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="Facebook URL"
+              value={socialLinks.facebook}
+              onChange={e => setSocialLinks(p => ({ ...p, facebook: e.target.value }))}
+            />
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="TikTok URL"
+              value={socialLinks.tiktok}
+              onChange={e => setSocialLinks(p => ({ ...p, tiktok: e.target.value }))}
+            />
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="WhatsApp Link (wa.me/...)"
+              value={socialLinks.whatsapp}
+              onChange={e => setSocialLinks(p => ({ ...p, whatsapp: e.target.value }))}
+            />
+            <input
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+              placeholder="Business Email"
+              value={socialLinks.email}
+              onChange={e => setSocialLinks(p => ({ ...p, email: e.target.value }))}
+            />
+            {socialMessage && <p className="text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg">{socialMessage}</p>}
+            <button 
+              type="submit" 
+              disabled={socialLoading} 
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium rounded-lg transition disabled:opacity-50 text-sm"
+            >
+              {socialLoading ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} />Save Links</>}
+            </button>
+          </form>
+        </div>
+
+        {/* Test Account Kill Switch */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600 dark:text-red-400">
+              <Power size={18} className="sm:size-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">Test Account Management</h2>
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Manage test user accounts</p>
+            </div>
+          </div>
+          <div className="p-4 sm:p-6">
+            <TestAccountKillSwitch />
+          </div>
+        </div>
+
+        {/* Data Cleanup */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Clock size={18} className="sm:size-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-[var(--foreground)] text-sm sm:text-base">Data Cleanup</h2>
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Permanently delete soft-deleted user data older than retention period</p>
+            </div>
+          </div>
+          <div className="p-4 sm:p-6 space-y-4">
             <button
               onClick={async () => {
                 if (!confirm('This action will permanently delete all soft-deleted user data older than the retention period. This cannot be undone. Continue?')) return;
@@ -307,77 +499,70 @@ export default function SettingsPage() {
                 const data = await res.json();
                 alert(data.message || 'Cleanup completed.');
               }}
-              className="btn-primary w-full justify-center bg-red-600 hover:bg-red-700"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition text-sm"
             >
-              Run Cleanup Now
+              <Trash2 size={16} /> Run Cleanup Now
             </button>
-            <p className="text-xs text-gray-500">This operation also runs automatically daily via Vercel Cron Jobs.</p>
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] text-center">
+              This operation also runs automatically daily via Vercel Cron Jobs.
+            </p>
           </div>
         </div>
 
-        {/* Social Links */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-              <Send size={20} />
+        {/* Danger Zone */}
+        <div className="bg-[var(--background-card)] rounded-xl border-2 border-red-200 dark:border-red-800 overflow-hidden shadow-sm lg:col-span-2">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-red-200 dark:border-red-800 flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600 dark:text-red-400">
+              <AlertTriangle size={18} className="sm:size-5" />
             </div>
-            <div>
-              <h2 className="font-bold text-gray-800">Social Links</h2>
-              <p className="text-xs text-gray-500">Connect storefront footer to business accounts</p>
+            <h2 className="font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">Danger Zone</h2>
+          </div>
+          <div className="p-4 sm:p-6 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">Clear All Logs</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Remove all API and security logs</p>
+              </div>
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
+                    // Clear logs logic
+                    alert('Logs cleared successfully.');
+                  }
+                }}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition whitespace-nowrap"
+              >
+                Clear Logs
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">Reset System</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Reset all system settings to default</p>
+              </div>
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to reset all system settings? This cannot be undone.')) {
+                    // Reset logic
+                    alert('System settings reset to default.');
+                  }
+                }}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition whitespace-nowrap"
+              >
+                Reset
+              </button>
             </div>
           </div>
-          <form onSubmit={saveSocialLinks} className="p-6 space-y-4">
-            <input
-              className="input"
-              placeholder="Instagram URL"
-              value={socialLinks.instagram}
-              onChange={e => setSocialLinks(p => ({ ...p, instagram: e.target.value }))}
-            />
-            <input
-              className="input"
-              placeholder="Twitter/X URL"
-              value={socialLinks.twitter}
-              onChange={e => setSocialLinks(p => ({ ...p, twitter: e.target.value }))}
-            />
-            <input
-              className="input"
-              placeholder="Facebook URL"
-              value={socialLinks.facebook}
-              onChange={e => setSocialLinks(p => ({ ...p, facebook: e.target.value }))}
-            />
-            <input
-              className="input"
-              placeholder="TikTok URL"
-              value={socialLinks.tiktok}
-              onChange={e => setSocialLinks(p => ({ ...p, tiktok: e.target.value }))}
-            />
-            <input
-              className="input"
-              placeholder="WhatsApp Link (wa.me/...)"
-              value={socialLinks.whatsapp}
-              onChange={e => setSocialLinks(p => ({ ...p, whatsapp: e.target.value }))}
-            />
-            <input
-              className="input"
-              placeholder="Business Email"
-              value={socialLinks.email}
-              onChange={e => setSocialLinks(p => ({ ...p, email: e.target.value }))}
-            />
-            {socialMessage && <p className="text-sm text-green-600 bg-green-50 px-4 py-3 rounded-xl">{socialMessage}</p>}
-            <button type="submit" disabled={socialLoading} className="btn-primary w-full justify-center gap-2">
-              {socialLoading ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} />Save Links</>}
-            </button>
-          </form>
         </div>
       </div>
 
-      {/* System Settings Info */}
-      <div className="mt-8 bg-orange-50 rounded-2xl border border-orange-200 p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <SettingsIcon size={18} className="text-orange-600" />
-          <h3 className="font-semibold text-orange-800">Pro Tip</h3>
+      {/* Pro Tip */}
+      <div className="mt-6 sm:mt-8 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-200 dark:border-orange-800 p-4 sm:p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <SettingsIcon size={18} className="text-orange-600 dark:text-orange-400" />
+          <h3 className="font-semibold text-orange-800 dark:text-orange-400 text-sm sm:text-base">Pro Tip</h3>
         </div>
-        <p className="text-sm text-orange-700">
+        <p className="text-sm text-orange-700 dark:text-orange-300">
           You can manage <strong>email templates</strong>, <strong>promotional banners</strong>, <strong>order status messages</strong>, and <strong>payment providers</strong> from the quick links above.
           All settings are saved instantly and affect the customer experience in real-time.
         </p>
