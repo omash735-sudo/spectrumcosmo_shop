@@ -17,8 +17,9 @@ import {
   Shield,
   Truck,
   CreditCard,
-  Apple,
-  Smartphone
+  Smartphone,
+  Handshake,  // Cash payment icon
+  AlertCircle
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
@@ -161,10 +162,11 @@ export default function Footer() {
     { key: 'whatsapp', icon: MessageCircle, color: 'hover:bg-green-500' },
   ]
 
+  // Updated payment icons - Cash instead of Apple Pay
   const paymentIcons = [
     { icon: CreditCard, name: 'Card' },
     { icon: Smartphone, name: 'Mobile Money' },
-    { icon: Apple, name: 'Apple Pay' },
+    { icon: Handshake, name: 'Cash' },  // Handshake icon for cash payments
   ]
 
   const trustFeatures = [
@@ -178,18 +180,18 @@ export default function Footer() {
       <footer className="bg-[var(--background-secondary)] dark:bg-[var(--background-secondary)] text-[var(--foreground)] mt-20 border-t border-[var(--border)]">
         {/* Newsletter Section */}
         <div className="border-b border-[var(--border)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
               <div className="text-center md:text-left">
-                <div className="inline-flex items-center gap-2 bg-[var(--primary)]/20 px-3 py-1 rounded-full mb-3">
-                  <Sparkles size={14} className="text-[var(--primary)]" />
-                  <span className="text-xs font-medium text-[var(--primary)]">Get 10% off</span>
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[var(--primary)]/20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2 sm:mb-3">
+                  <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--primary)]" />
+                  <span className="text-[10px] sm:text-xs font-medium text-[var(--primary)]">Get 10% off</span>
                 </div>
-                <h3 className="text-xl font-bold text-[var(--foreground)]">Subscribe for exclusive offers</h3>
-                <p className="text-[var(--foreground-muted)] text-sm mt-1">Anime news, drops & 10% off your first order</p>
+                <h3 className="text-base sm:text-xl font-bold text-[var(--foreground)]">Subscribe for exclusive offers</h3>
+                <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Anime news, drops & 10% off your first order</p>
               </div>
               
-              <form onSubmit={handleSubscribe} className="w-full md:w-80">
+              <form onSubmit={handleSubscribe} className="w-full sm:w-80 md:w-72 lg:w-80">
                 <div className="flex">
                   <input
                     type="email"
@@ -197,23 +199,23 @@ export default function Footer() {
                     onChange={(e) => setEmailSub(e.target.value)}
                     onBlur={() => checkSubscriptionStatus(emailSub)}
                     placeholder="Your email address"
-                    className="flex-1 px-4 py-3 rounded-l-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-[var(--foreground-muted)]"
+                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-l-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-[var(--foreground-muted)] min-h-[44px]"
                     required
                     disabled={submitting}
                   />
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] px-5 rounded-r-xl transition disabled:opacity-50 text-white"
+                    className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] px-4 sm:px-5 rounded-r-xl transition disabled:opacity-50 text-white min-h-[44px] flex items-center justify-center"
                   >
-                    {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {submitting ? <Loader2 size={16} className="sm:w-[18px] sm:h-[18px] animate-spin" /> : <Send size={16} className="sm:w-[18px] sm:h-[18px]" />}
                   </button>
                 </div>
                 {(checking || submitting) && !subStatus && (
-                  <p className="text-xs text-[var(--foreground-muted)] mt-2">Checking...</p>
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1.5">Checking...</p>
                 )}
                 {subStatus && (
-                  <p className={`text-xs mt-2 ${subStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className={`text-[10px] sm:text-xs mt-1.5 ${subStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
                     {subStatus.msg}
                   </p>
                 )}
@@ -223,11 +225,11 @@ export default function Footer() {
         </div>
 
         {/* Main Footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
             {/* Brand - 4 columns */}
-            <div className="lg:col-span-4 space-y-4">
+            <div className="lg:col-span-4 space-y-3 sm:space-y-4">
               <Image
                 src={logoSrc}
                 alt="SpectrumCosmo"
@@ -236,10 +238,10 @@ export default function Footer() {
                 className="object-contain"
                 priority
               />
-              <p className="text-[var(--foreground-muted)] text-sm leading-relaxed">
+              <p className="text-xs sm:text-sm text-[var(--foreground-muted)] leading-relaxed">
                 Wear your excitement with pride. Premium custom apparel and anime merchandise for those who live boldly.
               </p>
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                 {socialLinks.map((social) => {
                   const url = links[social.key as keyof SocialLinks]
                   if (!url) return null
@@ -250,30 +252,30 @@ export default function Footer() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-9 h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white ${social.color}`}
+                      className={`w-8 h-8 sm:w-9 sm:h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white ${social.color}`}
                       aria-label={social.key}
                     >
-                      <Icon size={16} />
+                      <Icon size={14} className="sm:w-4 sm:h-4" />
                     </a>
                   )
                 })}
                 <a
                   href={`mailto:${links.email}`}
-                  className="w-9 h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--primary)]"
+                  className="w-8 h-8 sm:w-9 sm:h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--primary)]"
                   aria-label="Email"
                 >
-                  <Mail size={16} />
+                  <Mail size={14} className="sm:w-4 sm:h-4" />
                 </a>
               </div>
             </div>
 
             {/* Quick Links - 2 columns */}
             <div className="lg:col-span-2">
-              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Shop</h3>
-              <ul className="space-y-2">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Shop</h3>
+              <ul className="space-y-1.5 sm:space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                    <Link href={link.href} className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                       {link.label}
                     </Link>
                   </li>
@@ -283,30 +285,30 @@ export default function Footer() {
 
             {/* Support - 3 columns */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Support</h3>
-              <ul className="space-y-2">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Support</h3>
+              <ul className="space-y-1.5 sm:space-y-2">
                 <li>
-                  <Link href="/shipping" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/shipping" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Shipping Info
                   </Link>
                 </li>
                 <li>
-                  <Link href="/returns" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/returns" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Returns & Exchanges
                   </Link>
                 </li>
                 <li>
-                  <Link href="/size-guide" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/size-guide" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Size Guide
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/terms" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/privacy" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Privacy Policy
                   </Link>
                 </li>
@@ -315,25 +317,25 @@ export default function Footer() {
 
             {/* Trust & Payment - 3 columns */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-sm uppercase text-[var(--foreground-muted)] mb-4">Why Shop With Us</h3>
-              <ul className="space-y-2 mb-4">
+              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Why Shop With Us</h3>
+              <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                 {trustFeatures.map((feature, idx) => {
                   const Icon = feature.icon
                   return (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
-                      <Icon size={14} className="text-[var(--primary)]" />
+                    <li key={idx} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                      <Icon size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--primary)]" />
                       {feature.text}
                     </li>
                   )
                 })}
               </ul>
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                 {paymentIcons.map((payment, idx) => {
                   const Icon = payment.icon
                   return (
-                    <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--background)] rounded-lg border border-[var(--border)]">
-                      <Icon size={14} className="text-[var(--foreground-muted)]" />
-                      <span className="text-xs text-[var(--foreground-muted)]">{payment.name}</span>
+                    <div key={idx} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-[var(--background)] rounded-lg border border-[var(--border)]">
+                      <Icon size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--foreground-muted)]" />
+                      <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">{payment.name}</span>
                     </div>
                   )
                 })}
@@ -342,16 +344,16 @@ export default function Footer() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-[var(--border)] mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-[var(--foreground-muted)]">
+          <div className="border-t border-[var(--border)] mt-6 sm:mt-8 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] text-center sm:text-left">
               © {new Date().getFullYear()} SpectrumCosmo. All rights reserved.
             </p>
-            <div className="flex gap-5 text-xs">
+            <div className="flex gap-3 sm:gap-5 text-[10px] sm:text-xs">
               <Link href="/terms" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Terms</Link>
               <Link href="/privacy" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Privacy</Link>
               <Link href="/shipping" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Shipping</Link>
             </div>
-            <p className="text-xs text-[var(--foreground-muted)] italic">
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] italic text-center sm:text-left">
               "Wear your excitement with pride"
             </p>
           </div>
@@ -362,10 +364,10 @@ export default function Footer() {
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 bg-[var(--primary)] text-white p-3 rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition-all hover:scale-110"
+          className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 bg-[var(--primary)] text-white p-2.5 sm:p-3 rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2"
           aria-label="Back to top"
         >
-          <ArrowUp size={20} />
+          <ArrowUp size={16} className="sm:w-5 sm:h-5" />
         </button>
       )}
     </>
