@@ -4,10 +4,40 @@ import { useEffect, useState } from 'react';
 import { 
   Loader2, Save, ArrowUp, ArrowDown, Upload, Trash2, Plus, 
   ShoppingBag, Clock, CheckCircle, X, Package, Star, 
-  Settings, Bell, FolderTree, Eye, EyeOff 
+  Settings, Bell, FolderTree, Eye, EyeOff, AlertCircle,
+  ChevronRight, HelpCircle
 } from 'lucide-react';
 import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
+
+// ===== SKELETON =====
+function HomepageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+          <div className="h-4 bg-[var(--background-secondary)] rounded w-64 mt-1" />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-10 bg-[var(--background-secondary)] rounded w-24" />
+        ))}
+      </div>
+      <div className="bg-[var(--background-card)] rounded-lg border border-[var(--border)] p-6">
+        <div className="space-y-4">
+          <div className="h-6 bg-[var(--background-secondary)] rounded w-32" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 bg-[var(--background-secondary)] rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminHomepage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -72,8 +102,6 @@ export default function AdminHomepage() {
       setProducts(productsData);
       setCategories(categoriesData);
       setPopup({ ...popup, ...popupData });
-      
-      console.log('Categories loaded:', categoriesData.length);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load homepage data');
@@ -290,28 +318,34 @@ export default function AdminHomepage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <Loader2 className="animate-spin mx-auto mb-4 text-orange-500" size={48} />
-          <p className="text-gray-600 dark:text-gray-400">Loading editor...</p>
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
+          <HomepageSkeleton />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[var(--background)]">
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Homepage Editor</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">Manage categories, featured products, popups, and customer features</p>
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Homepage Editor</h1>
+          </div>
+          <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
+            Manage categories, featured products, popups, and customer features
+          </p>
         </div>
 
-        {/* Tab Navigation - Mobile Friendly */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-2">
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6 border-b border-[var(--border)] pb-2">
           {[
             { id: 'categories', label: 'Categories', icon: FolderTree },
             { id: 'products', label: 'Featured Products', icon: Star },
@@ -323,14 +357,15 @@ export default function AdminHomepage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition whitespace-nowrap ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition min-h-[36px] sm:min-h-[40px] ${
                   activeTab === tab.id
-                    ? 'bg-orange-500 text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-[var(--primary)] text-white shadow-sm'
+                    : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)]'
                 }`}
               >
-                <Icon size={16} />
-                {tab.label}
+                <Icon size={14} className="sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">{tab.label}</span>
+                <span className="xs:hidden">{tab.id.charAt(0).toUpperCase()}</span>
               </button>
             );
           })}
@@ -338,18 +373,18 @@ export default function AdminHomepage() {
 
         {/* Categories Section */}
         {activeTab === 'categories' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-t-lg">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)] rounded-t-xl">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <FolderTree size={20} className="text-gray-700 dark:text-gray-300" />
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Categories</h2>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                    <FolderTree size={18} className="sm:w-5 sm:h-5 text-[var(--foreground-muted)]" />
+                    <h2 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">Categories</h2>
+                    <span className="text-[10px] text-[var(--foreground-muted)] bg-[var(--background)] px-2 py-0.5 rounded-full">
                       {categories.length} total
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage homepage categories – upload images, reorder, or delete</p>
+                  <p className="text-xs text-[var(--foreground-muted)] mt-0.5">Manage homepage categories – upload images, reorder, or delete</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <input
@@ -357,12 +392,12 @@ export default function AdminHomepage() {
                     placeholder="New category name"
                     value={newCategoryName}
                     onChange={e => setNewCategoryName(e.target.value)}
-                    className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px]"
                     onKeyPress={e => e.key === 'Enter' && addCategory()}
                   />
                   <button 
                     onClick={addCategory} 
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm flex items-center justify-center gap-2 transition"
+                    className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-2 transition min-h-[40px]"
                   >
                     <Plus size={16} /> Add Category
                   </button>
@@ -370,31 +405,31 @@ export default function AdminHomepage() {
               </div>
             </div>
             
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-4 lg:p-6">
               {categories.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-                  <FolderTree size={48} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                  <p>No categories found</p>
-                  <p className="text-sm mt-1">Add your first category using the form above</p>
+                <div className="text-center py-8 sm:py-12 text-[var(--foreground-muted)] border-2 border-dashed border-[var(--border)] rounded-xl">
+                  <FolderTree size={40} className="sm:size-12 mx-auto mb-3 text-[var(--foreground-muted)] opacity-30" />
+                  <p className="text-sm">No categories found</p>
+                  <p className="text-xs mt-1 opacity-70">Add your first category using the form above</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {categories.map(cat => (
-                    <div key={cat.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-sm transition gap-3">
-                      <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
+                    <div key={cat.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)] hover:shadow-sm transition gap-3">
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto min-w-0">
                         {/* Image Area */}
                         <div className="relative flex-shrink-0">
-                          <div className="relative w-16 h-16 bg-white dark:bg-gray-800 rounded-md overflow-hidden border border-gray-200 dark:border-gray-600">
+                          <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-[var(--background)] rounded-lg overflow-hidden border border-[var(--border)]">
                             {cat.image_url ? (
                               <Image src={cat.image_url} alt={cat.name} fill className="object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs bg-gray-100 dark:bg-gray-800">
+                              <div className="w-full h-full flex items-center justify-center text-[var(--foreground-muted)] text-[10px]">
                                 No image
                               </div>
                             )}
                             
                             <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 hover:opacity-100 cursor-pointer transition">
-                              <Upload size={16} className="text-white" />
+                              <Upload size={14} className="text-white" />
                               <input
                                 type="file"
                                 accept="image/*"
@@ -408,23 +443,23 @@ export default function AdminHomepage() {
                             
                             {uploadingCatImage === cat.id && (
                               <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                                <Loader2 className="animate-spin text-white" size={20} />
+                                <Loader2 className="animate-spin text-white" size={18} />
                               </div>
                             )}
                           </div>
                           
                           {savedCategoryId === cat.id && (
-                            <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 shadow-lg animate-bounce">
-                              <CheckCircle size={12} />
+                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-lg">
+                              <CheckCircle size={10} />
                             </div>
                           )}
                         </div>
                         
                         {/* Category Info */}
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-gray-900 dark:text-white">{cat.name}</span>
+                          <span className="font-medium text-sm text-[var(--foreground)] truncate block">{cat.name}</span>
                           {cat.image_url && (
-                            <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
                               <CheckCircle size={10} /> Image saved
                             </p>
                           )}
@@ -432,27 +467,27 @@ export default function AdminHomepage() {
                       </div>
                       
                       {/* Actions */}
-                      <div className="flex gap-1 w-full sm:w-auto justify-end">
+                      <div className="flex gap-0.5 w-full sm:w-auto justify-end">
                         <button 
                           onClick={() => updateCategoryOrder(cat.id, 'up')} 
-                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition"
+                          className="p-1.5 sm:p-2 hover:bg-[var(--background)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                           title="Move up"
                         >
-                          <ArrowUp size={16} />
+                          <ArrowUp size={14} className="text-[var(--foreground-muted)]" />
                         </button>
                         <button 
                           onClick={() => updateCategoryOrder(cat.id, 'down')} 
-                          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition"
+                          className="p-1.5 sm:p-2 hover:bg-[var(--background)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                           title="Move down"
                         >
-                          <ArrowDown size={16} />
+                          <ArrowDown size={14} className="text-[var(--foreground-muted)]" />
                         </button>
                         <button 
                           onClick={() => deleteCategory(cat.id)} 
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-md text-red-500 transition"
+                          className="p-1.5 sm:p-2 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition text-red-500 min-h-[32px] min-w-[32px] flex items-center justify-center"
                           title="Delete"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -465,42 +500,43 @@ export default function AdminHomepage() {
 
         {/* Featured Products Section */}
         {activeTab === 'products' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-t-lg">
+          <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)] rounded-t-xl">
               <div className="flex items-center gap-2">
-                <Star size={20} className="text-gray-700 dark:text-gray-300" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Featured Products</h2>
+                <Star size={18} className="sm:w-5 sm:h-5 text-[var(--foreground-muted)]" />
+                <h2 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">Featured Products</h2>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Toggle which products appear in the featured section on your homepage</p>
+              <p className="text-xs text-[var(--foreground-muted)] mt-0.5">Toggle which products appear in the featured section on your homepage</p>
             </div>
-            <div className="p-4 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {products.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md hover:shadow-sm transition">
-                    <div className="w-12 h-12 relative bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
-                      {p.image_url && <Image src={p.image_url} alt={p.name} fill className="object-cover" />}
+            <div className="p-3 sm:p-4 lg:p-6">
+              {products.length === 0 ? (
+                <div className="text-center py-8 sm:py-12 text-[var(--foreground-muted)] border-2 border-dashed border-[var(--border)] rounded-xl">
+                  <Package size={40} className="sm:size-12 mx-auto mb-3 text-[var(--foreground-muted)] opacity-30" />
+                  <p className="text-sm">No products found</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                  {products.map(p => (
+                    <div key={p.id} className="flex items-center gap-3 p-3 bg-[var(--background-secondary)] rounded-lg border border-[var(--border)] hover:shadow-sm transition">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 relative bg-[var(--background)] rounded-lg overflow-hidden flex-shrink-0">
+                        {p.image_url && <Image src={p.image_url} alt={p.name} fill className="object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm text-[var(--foreground)] truncate">{p.name}</p>
+                        <p className="text-[10px] text-[var(--foreground-muted)] truncate">{p.category_name}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleFeatured(p.id, p.is_featured)}
+                        className={`px-2 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition whitespace-nowrap min-h-[32px] ${
+                          p.is_featured 
+                            ? 'bg-orange-100 dark:bg-orange-900/30 text-[var(--primary)] hover:bg-orange-200 dark:hover:bg-orange-900/50' 
+                            : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)]'
+                        }`}
+                      >
+                        {p.is_featured ? 'Featured' : 'Not featured'}
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{p.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{p.category_name}</p>
-                    </div>
-                    <button
-                      onClick={() => toggleFeatured(p.id, p.is_featured)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition whitespace-nowrap ${
-                        p.is_featured 
-                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50' 
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {p.is_featured ? 'Featured' : 'Not featured'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-              {products.length === 0 && (
-                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-                  <Package size={48} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                  <p>No products found</p>
+                  ))}
                 </div>
               )}
             </div>
@@ -509,20 +545,20 @@ export default function AdminHomepage() {
 
         {/* Smart Features Section */}
         {activeTab === 'features' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-t-lg">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)] rounded-t-xl">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Settings size={20} className="text-gray-700 dark:text-gray-300" />
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Smart Features</h2>
+                    <Settings size={18} className="sm:w-5 sm:h-5 text-[var(--foreground-muted)]" />
+                    <h2 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">Smart Features</h2>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control recently viewed and continue shopping features</p>
+                  <p className="text-xs text-[var(--foreground-muted)] mt-0.5">Control recently viewed and continue shopping features</p>
                 </div>
                 <button 
                   onClick={saveFeatures} 
                   disabled={saving} 
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 transition disabled:opacity-50 w-full sm:w-auto justify-center"
+                  className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition disabled:opacity-50 w-full sm:w-auto justify-center min-h-[40px]"
                 >
                   {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} 
                   Save Changes
@@ -530,13 +566,13 @@ export default function AdminHomepage() {
               </div>
             </div>
             
-            <div className="p-4 sm:p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
               {/* Recently Viewed */}
-              <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+              <div className="border-b border-[var(--border)] pb-5 sm:pb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
                   <div className="flex items-center gap-2">
-                    <Clock size={18} className="text-gray-600 dark:text-gray-400" />
-                    <h3 className="font-medium text-gray-900 dark:text-white">Recently Viewed</h3>
+                    <Clock size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--foreground-muted)]" />
+                    <h3 className="font-medium text-sm text-[var(--foreground)]">Recently Viewed</h3>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -548,21 +584,21 @@ export default function AdminHomepage() {
                       })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-200 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-200 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--primary)]"></div>
                   </label>
                 </div>
                 
                 {features.recentlyViewed.enabled && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ml-0 sm:ml-6 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 ml-0 sm:ml-6 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-[var(--border)]">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Items</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1">Max Items</label>
                       <select
                         value={features.recentlyViewed.maxItems}
                         onChange={(e) => setFeatures({
                           ...features,
                           recentlyViewed: { ...features.recentlyViewed, maxItems: parseInt(e.target.value) }
                         })}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--background-secondary)] text-[var(--foreground)] min-h-[40px]"
                       >
                         <option value={3}>3 items</option>
                         <option value={4}>4 items</option>
@@ -571,7 +607,7 @@ export default function AdminHomepage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Section Title</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1">Section Title</label>
                       <input
                         type="text"
                         value={features.recentlyViewed.title}
@@ -579,11 +615,11 @@ export default function AdminHomepage() {
                           ...features,
                           recentlyViewed: { ...features.recentlyViewed, title: e.target.value }
                         })}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px]"
                       />
                     </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <div className="flex items-center">
+                      <label className="flex items-center gap-2 text-xs sm:text-sm text-[var(--foreground)]">
                         <input
                           type="checkbox"
                           checked={features.recentlyViewed.showClearButton}
@@ -591,7 +627,7 @@ export default function AdminHomepage() {
                             ...features,
                             recentlyViewed: { ...features.recentlyViewed, showClearButton: e.target.checked }
                           })}
-                          className="rounded"
+                          className="rounded text-[var(--primary)] focus:ring-[var(--primary)]"
                         />
                         Show "Clear History" button
                       </label>
@@ -602,10 +638,10 @@ export default function AdminHomepage() {
 
               {/* Continue Shopping */}
               <div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag size={18} className="text-gray-600 dark:text-gray-400" />
-                    <h3 className="font-medium text-gray-900 dark:text-white">Continue Shopping</h3>
+                    <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--foreground-muted)]" />
+                    <h3 className="font-medium text-sm text-[var(--foreground)]">Continue Shopping</h3>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -617,35 +653,35 @@ export default function AdminHomepage() {
                       })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-200 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                    <div className="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-200 dark:peer-focus:ring-orange-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--primary)]"></div>
                   </label>
                 </div>
                 
                 {features.continueShopping.enabled && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ml-0 sm:ml-6 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 ml-0 sm:ml-6 pl-0 sm:pl-4 border-l-0 sm:border-l-2 border-[var(--border)]">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1">Position</label>
                       <select
                         value={features.continueShopping.position}
                         onChange={(e) => setFeatures({
                           ...features,
                           continueShopping: { ...features.continueShopping, position: e.target.value }
                         })}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--background-secondary)] text-[var(--foreground)] min-h-[40px]"
                       >
                         <option value="bottom-right">Bottom Right</option>
                         <option value="bottom-left">Bottom Left</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expiry (days)</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1">Expiry (days)</label>
                       <select
                         value={features.continueShopping.expiryDays}
                         onChange={(e) => setFeatures({
                           ...features,
                           continueShopping: { ...features.continueShopping, expiryDays: parseInt(e.target.value) }
                         })}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--background-secondary)] text-[var(--foreground)] min-h-[40px]"
                       >
                         <option value={1}>1 day</option>
                         <option value={3}>3 days</option>
@@ -655,7 +691,7 @@ export default function AdminHomepage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Button Text</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1">Button Text</label>
                       <input
                         type="text"
                         value={features.continueShopping.buttonText}
@@ -663,7 +699,7 @@ export default function AdminHomepage() {
                           ...features,
                           continueShopping: { ...features.continueShopping, buttonText: e.target.value }
                         })}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px]"
                       />
                     </div>
                   </div>
@@ -675,30 +711,30 @@ export default function AdminHomepage() {
 
         {/* Popup Settings Section */}
         {activeTab === 'popup' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-t-lg">
+          <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)] rounded-t-xl">
               <div className="flex items-center gap-2">
-                <Bell size={20} className="text-gray-700 dark:text-gray-300" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Popup Modal</h2>
+                <Bell size={18} className="sm:w-5 sm:h-5 text-[var(--foreground-muted)]" />
+                <h2 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">Popup Modal</h2>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure the announcement popup that appears to visitors</p>
+              <p className="text-xs text-[var(--foreground-muted)] mt-0.5">Configure the announcement popup that appears to visitors</p>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="space-y-5 max-w-2xl">
-                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+              <div className="space-y-4 sm:space-y-5 max-w-2xl">
+                <label className="flex items-center gap-3 p-3 bg-[var(--background-secondary)] rounded-lg">
                   <input 
                     type="checkbox" 
                     checked={popup.enabled} 
                     onChange={e => setPopup({ ...popup, enabled: e.target.checked })} 
-                    className="w-4 h-4 text-orange-500"
+                    className="w-4 h-4 text-[var(--primary)] focus:ring-[var(--primary)] rounded"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Enable popup on homepage</span>
+                  <span className="text-sm text-[var(--foreground)]">Enable popup on homepage</span>
                 </label>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Title</label>
                   <input 
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                    className="w-full border border-[var(--border)] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px] text-sm" 
                     value={popup.title} 
                     onChange={e => setPopup({ ...popup, title: e.target.value })} 
                     placeholder="Special Offer!"
@@ -706,9 +742,9 @@ export default function AdminHomepage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Message</label>
                   <textarea 
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                    className="w-full border border-[var(--border)] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] resize-none text-sm" 
                     rows={3} 
                     value={popup.message} 
                     onChange={e => setPopup({ ...popup, message: e.target.value })} 
@@ -717,51 +753,51 @@ export default function AdminHomepage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Popup Image</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Popup Image</label>
                   <div className="flex flex-col sm:flex-row gap-4 items-start">
                     {popup.image_url && (
-                      <div className="relative w-24 h-24 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 border flex-shrink-0">
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-[var(--background-secondary)] border border-[var(--border)] flex-shrink-0">
                         <Image src={popup.image_url} alt="Popup" fill className="object-cover" />
                         <button
                           type="button"
                           onClick={() => setPopup({ ...popup, image_url: '' })}
-                          className="absolute top-1 right-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow"
+                          className="absolute top-1 right-1 bg-[var(--background-card)] rounded-full p-1 shadow"
                         >
                           <X size={12} className="text-red-500" />
                         </button>
                       </div>
                     )}
                     <label className="cursor-pointer">
-                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-4 text-center hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition">
-                        <Upload size={20} className="mx-auto text-gray-400 dark:text-gray-500 mb-1" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Upload image</span>
+                      <div className="border-2 border-dashed border-[var(--border)] rounded-lg p-4 text-center hover:border-[var(--primary)] hover:bg-orange-50 dark:hover:bg-orange-950/20 transition min-w-[120px]">
+                        <Upload size={18} className="mx-auto text-[var(--foreground-muted)] mb-1" />
+                        <span className="text-xs text-[var(--foreground-muted)]">Upload image</span>
                       </div>
                       <input type="file" accept="image/*" className="hidden" onChange={handlePopupImageUpload} />
                     </label>
-                    {uploadingImage && <Loader2 className="animate-spin text-orange-500" size={24} />}
+                    {uploadingImage && <Loader2 className="animate-spin text-[var(--primary)]" size={24} />}
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Recommended: 400x400px, max 2MB</p>
+                  <p className="text-[10px] text-[var(--foreground-muted)] mt-1 opacity-70">Recommended: 400x400px, max 2MB</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Show after (seconds)</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Show after (seconds)</label>
                     <input 
                       type="number" 
                       min="0" 
                       max="10"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                      className="w-full border border-[var(--border)] rounded-lg px-3 py-2 bg-[var(--background-secondary)] text-[var(--foreground)] min-h-[40px] text-sm" 
                       value={popup.delaySeconds} 
                       onChange={e => setPopup({ ...popup, delaySeconds: parseInt(e.target.value) })} 
                     />
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Delay before popup appears</p>
+                    <p className="text-[10px] text-[var(--foreground-muted)] mt-1 opacity-70">Delay before popup appears</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Don't show for (days)</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Don't show for (days)</label>
                     <select
                       value={popup.dismissDays}
                       onChange={e => setPopup({ ...popup, dismissDays: parseInt(e.target.value) })}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full border border-[var(--border)] rounded-lg px-3 py-2 bg-[var(--background-secondary)] text-[var(--foreground)] min-h-[40px] text-sm"
                     >
                       <option value={0}>Every visit</option>
                       <option value={1}>1 day</option>
@@ -772,20 +808,20 @@ export default function AdminHomepage() {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <label className="flex items-center gap-2 text-xs sm:text-sm text-[var(--foreground)]">
                   <input 
                     type="checkbox" 
                     checked={popup.showDismissOption} 
                     onChange={e => setPopup({ ...popup, showDismissOption: e.target.checked })} 
-                    className="rounded"
+                    className="rounded text-[var(--primary)] focus:ring-[var(--primary)]"
                   />
                   Show "No, thanks" option
                 </label>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Button Text</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Button Text</label>
                   <input 
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                    className="w-full border border-[var(--border)] rounded-lg px-3 py-2 bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px] text-sm" 
                     value={popup.button_text} 
                     onChange={e => setPopup({ ...popup, button_text: e.target.value })} 
                     placeholder="Shop Now"
@@ -793,9 +829,9 @@ export default function AdminHomepage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Button Link</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Button Link</label>
                   <input 
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                    className="w-full border border-[var(--border)] rounded-lg px-3 py-2 bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px] text-sm" 
                     value={popup.button_link} 
                     onChange={e => setPopup({ ...popup, button_link: e.target.value })} 
                     placeholder="/products"
@@ -805,7 +841,7 @@ export default function AdminHomepage() {
                 <button 
                   onClick={savePopup} 
                   disabled={saving} 
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md flex items-center gap-2 transition disabled:opacity-50"
+                  className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50 min-h-[44px] text-sm"
                 >
                   {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} 
                   Save Popup Settings
