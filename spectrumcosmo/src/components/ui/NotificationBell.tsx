@@ -23,7 +23,7 @@ interface Notification {
   action_label: string;
   is_read: boolean;
   created_at: string;
-  icon_name?: string; // Add icon_name field
+  icon_name?: string;
 }
 
 // Dynamic icon mapper - matches admin panel icons
@@ -145,7 +145,6 @@ export default function NotificationBell() {
     }
   };
 
-  // Group notifications by date
   const getDateGroup = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -174,7 +173,6 @@ export default function NotificationBell() {
     return `${diffDays}d ago`;
   };
 
-  // Group notifications
   const groupedNotifications = notifications.reduce((groups, notif) => {
     const group = getDateGroup(notif.created_at);
     if (!groups[group]) groups[group] = [];
@@ -188,48 +186,49 @@ export default function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+        className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
       >
         {unreadCount > 0 ? (
           <>
-            <Bell size={20} className="text-orange-500 dark:text-orange-400" />
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm">
+            <Bell size={20} className="text-[var(--primary)]" />
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           </>
         ) : (
-          <Bell size={20} className="text-gray-500 dark:text-gray-400" />
+          <Bell size={20} className="text-[var(--foreground-muted)]" />
         )}
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-[320px] sm:w-[420px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 sm:mt-3 w-[95vw] sm:w-[380px] md:w-[420px] max-w-[420px] bg-[var(--background-card)] rounded-2xl shadow-2xl border border-[var(--border)] z-50 overflow-hidden">
             
             {/* Header with Trash Icon */}
-            <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notification Centre</h3>
+            <div className="flex justify-between items-center px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--border)]">
+              <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Notification Centre</h3>
               {notifications.length > 0 && (
                 <button
                   onClick={clearAllNotifications}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
+                  className="p-1.5 rounded-lg text-[var(--foreground-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 min-h-[32px] min-w-[32px] flex items-center justify-center"
                   title="Clear all notifications"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                 </button>
               )}
             </div>
 
             {/* Notifications List with Groups */}
-            <div className="overflow-y-auto max-h-[550px]">
+            <div className="overflow-y-auto max-h-[450px] sm:max-h-[500px] md:max-h-[550px]">
               {notifications.length === 0 ? (
-                <div className="py-12 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <BellOff size={24} className="text-gray-400 dark:text-gray-500" />
+                <div className="py-10 sm:py-12 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-[var(--background-secondary)] rounded-full flex items-center justify-center">
+                    <BellOff size={24} className="text-[var(--foreground-muted)] opacity-50" />
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">We'll notify you when something arrives</p>
+                  <p className="text-sm text-[var(--foreground-muted)]">No notifications yet</p>
+                  <p className="text-xs text-[var(--foreground-muted)] opacity-70 mt-1">We'll notify you when something arrives</p>
                 </div>
               ) : (
                 groupOrder.map(groupName => {
@@ -239,39 +238,38 @@ export default function NotificationBell() {
                   return (
                     <div key={groupName}>
                       {/* Group Header */}
-                      <div className="px-5 pt-4 pb-2 bg-gray-50/50 dark:bg-gray-800/30">
-                        <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-1.5 sm:pb-2 bg-[var(--background-secondary)]/50">
+                        <h4 className="text-[10px] sm:text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">
                           {groupName}
                         </h4>
                       </div>
 
                       {/* Group Notifications */}
                       {groupNotifs.map((notif) => {
-                        // Use dynamic icon from admin, fallback to Sparkles
                         const Icon = getIconComponent(notif.icon_name);
                         const timeAgo = getTimeAgo(notif.created_at);
 
                         return (
                           <div
                             key={notif.id}
-                            className={`group px-5 py-4 transition-all duration-200 border-b border-gray-50 dark:border-gray-800 ${
+                            className={`group px-4 sm:px-5 py-3 sm:py-4 transition-all duration-200 border-b border-[var(--border)] ${
                               !notif.is_read 
-                                ? 'bg-orange-50/20 dark:bg-orange-950/5' 
-                                : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
+                                ? 'bg-[var(--primary)]/5' 
+                                : 'hover:bg-[var(--background-secondary)]'
                             }`}
                           >
-                            <div className="flex gap-3">
+                            <div className="flex gap-2.5 sm:gap-3">
                               {/* Icon */}
                               <div className="flex-shrink-0">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${
                                   !notif.is_read 
-                                    ? 'bg-orange-100 dark:bg-orange-900/30' 
-                                    : 'bg-gray-100 dark:bg-gray-800'
+                                    ? 'bg-[var(--primary)]/20' 
+                                    : 'bg-[var(--background-secondary)]'
                                 }`}>
-                                  <Icon size={18} className={`${
+                                  <Icon size={16} className={`sm:w-[18px] sm:h-[18px] ${
                                     !notif.is_read 
-                                      ? 'text-orange-600 dark:text-orange-400' 
-                                      : 'text-gray-500 dark:text-gray-400'
+                                      ? 'text-[var(--primary)]' 
+                                      : 'text-[var(--foreground-muted)]'
                                   }`} />
                                 </div>
                               </div>
@@ -279,21 +277,21 @@ export default function NotificationBell() {
                               {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                  <p className="font-medium text-sm text-[var(--foreground)]">
                                     {notif.title}
                                   </p>
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                  <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)] flex-shrink-0">
                                     {timeAgo}
                                   </span>
                                 </div>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                                <p className="text-xs text-[var(--foreground-muted)] mt-0.5 sm:mt-1 leading-relaxed">
                                   {notif.message}
                                 </p>
                                 {notif.action_url && (
                                   <Link
                                     href={notif.action_url}
                                     onClick={() => markAsRead(notif.id)}
-                                    className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                                    className="inline-flex items-center gap-1 mt-1.5 sm:mt-2 text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
                                   >
                                     {notif.action_label || 'Learn More'}
                                     <ChevronRight size={12} />
