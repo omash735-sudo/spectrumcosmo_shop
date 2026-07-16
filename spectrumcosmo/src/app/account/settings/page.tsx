@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import {
   User, MapPin, DollarSign, Globe, Bell, Mail, Star, Shield, FileText, Trash2,
@@ -50,9 +49,11 @@ export default function SettingsPage() {
   const { currency } = useCurrency();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
+
+  // Modal states
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -72,9 +73,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
+    loadUser();
   }, []);
 
-  const loadUser = useCallback(async () => {
+  const loadUser = async () => {
     try {
       const res = await fetch('/api/auth/me');
       if (!res.ok) {
@@ -95,11 +97,7 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+  };
 
   const handleRatingSubmit = async () => {
     if (rating === 0) {
@@ -292,7 +290,7 @@ export default function SettingsPage() {
               <p className="text-[var(--foreground-muted)] mb-4">Please log in again to access your settings.</p>
               <button
                 onClick={() => router.push('/login')}
-                className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-2 rounded-xl transition w-full sm:w-auto"
+                className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-2 rounded-xl transition"
               >
                 Go to Login
               </button>
@@ -312,13 +310,13 @@ export default function SettingsPage() {
           {/* Header */}
           <div className="mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-1 sm:mb-2">
-              <Link href="/account" className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-full transition min-h-[36px] min-w-[36px] flex items-center justify-center">
-                <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-[var(--foreground-muted)]" />
+              <Link href="/account" className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-full transition">
+                <ArrowLeft size={18} className="text-[var(--foreground-muted)]" />
               </Link>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div className="w-1 h-4 sm:h-5 md:h-6 bg-[var(--primary)] rounded-full"></div>
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)]">Settings</h1>
-                <Sparkles size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5 text-[var(--primary)]" />
+                <Sparkles size={14} className="text-[var(--primary)]" />
               </div>
             </div>
             <p className="text-[var(--foreground-muted)] text-xs sm:text-sm ml-8 sm:ml-10 md:ml-14">Manage your account preferences and security</p>
@@ -338,7 +336,7 @@ export default function SettingsPage() {
                       className="w-full h-full object-cover" 
                     />
                   ) : (
-                    <User size={24} className="text-white sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    <User size={24} className="text-white" />
                   )}
                 </div>
                 <div className="flex-1 text-center sm:text-left min-w-0">
@@ -347,9 +345,9 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition text-xs sm:text-sm min-h-[36px] sm:min-h-[40px] flex-shrink-0"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition text-xs sm:text-sm"
                 >
-                  <LogOut size={14} className="sm:w-4 sm:h-4" />
+                  <LogOut size={14} />
                   <span>Sign Out</span>
                 </button>
               </div>
@@ -361,7 +359,7 @@ export default function SettingsPage() {
             {settingsSections.map((section, sectionIdx) => (
               <div key={sectionIdx}>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 md:mb-4">
-                  <section.icon size={14} className="sm:w-[16px] sm:h-[16px] md:w-[18px] md:h-[18px] text-[var(--primary)]" />
+                  <section.icon size={14} className="text-[var(--primary)]" />
                   <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base md:text-lg">{section.title}</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
@@ -383,7 +381,7 @@ export default function SettingsPage() {
                             ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' 
                             : 'bg-[var(--primary)]/10 text-[var(--primary)]'
                         }`}>
-                          <Icon size={16} className="sm:w-[18px] sm:h-[18px] md:w-[22px] md:h-[22px]" />
+                          <Icon size={16} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className={`font-semibold text-xs sm:text-sm md:text-base truncate ${isDanger ? 'text-red-600 dark:text-red-400' : 'text-[var(--foreground)]'}`}>
@@ -391,9 +389,7 @@ export default function SettingsPage() {
                           </h4>
                           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] line-clamp-1 sm:line-clamp-2">{item.description}</p>
                         </div>
-                        <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 ${
-                          isDanger ? 'group-hover:text-red-500' : 'group-hover:text-[var(--primary)]'
-                        }`} />
+                        <ChevronRight size={12} className="text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0" />
                       </div>
                     );
                   })}
@@ -408,263 +404,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-
-      {/* Theme Modal */}
-      {showThemeModal && mounted && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowThemeModal(false)}>
-          <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-3 sm:p-4 md:p-6 border-b border-[var(--border)]">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[var(--foreground)]">Choose your theme</h3>
-                  <p className="text-[10px] sm:text-xs md:text-sm text-[var(--foreground-muted)] mt-0.5">
-                    {theme === 'system' ? 'Currently following your device preference' : `Currently in ${theme} mode`}
-                  </p>
-                </div>
-                <button onClick={() => setShowThemeModal(false)} className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center self-end sm:self-center">
-                  <X size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-[var(--foreground-muted)]" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3">
-              <button
-                onClick={() => { setTheme('light'); setShowThemeModal(false); }}
-                className={`w-full p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-2.5 sm:gap-3 md:gap-4 ${
-                  theme === 'light'
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-                }`}
-              >
-                <div className="p-1.5 sm:p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex-shrink-0">
-                  <Sun size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-semibold text-[var(--foreground)] text-xs sm:text-sm md:text-base">Light Mode</h4>
-                  <p className="text-[10px] text-[var(--foreground-muted)]">Bright and clean interface</p>
-                </div>
-                {theme === 'light' && <CheckCircle size={16} className="text-[var(--primary)] flex-shrink-0" />}
-              </button>
-
-              <button
-                onClick={() => { setTheme('dark'); setShowThemeModal(false); }}
-                className={`w-full p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-2.5 sm:gap-3 md:gap-4 ${
-                  theme === 'dark'
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-                }`}
-              >
-                <div className="p-1.5 sm:p-2 rounded-full bg-gray-800 dark:bg-gray-700 flex-shrink-0">
-                  <Moon size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-white" />
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-semibold text-[var(--foreground)] text-xs sm:text-sm md:text-base">Dark Mode</h4>
-                  <p className="text-[10px] text-[var(--foreground-muted)]">Easy on the eyes at night</p>
-                </div>
-                {theme === 'dark' && <CheckCircle size={16} className="text-[var(--primary)] flex-shrink-0" />}
-              </button>
-
-              <button
-                onClick={() => { setTheme('system'); setShowThemeModal(false); }}
-                className={`w-full p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 transition-all flex items-center gap-2.5 sm:gap-3 md:gap-4 ${
-                  theme === 'system'
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--primary)]/30'
-                }`}
-              >
-                <div className="p-1.5 sm:p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                  <Monitor size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-left flex-1">
-                  <h4 className="font-semibold text-[var(--foreground)] text-xs sm:text-sm md:text-base">System Default</h4>
-                  <p className="text-[10px] text-[var(--foreground-muted)]">Follow your device settings</p>
-                </div>
-                {theme === 'system' && <CheckCircle size={16} className="text-[var(--primary)] flex-shrink-0" />}
-              </button>
-            </div>
-
-            <div className="p-3 sm:p-4 md:p-6 border-t border-[var(--border)] bg-[var(--background-secondary)] rounded-b-xl sm:rounded-b-2xl">
-              <p className="text-[10px] sm:text-xs text-center text-[var(--foreground-muted)]">
-                Your preference is saved automatically
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Rating Modal */}
-      {showRatingModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowRatingModal(false)}>
-          <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-3 sm:p-4 md:p-6 border-b border-[var(--border)]">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[var(--foreground)]">Rate SpectrumCosmo</h3>
-                  <p className="text-[10px] sm:text-xs md:text-sm text-[var(--foreground-muted)] mt-0.5">Your feedback helps us improve</p>
-                </div>
-                <button onClick={() => setShowRatingModal(false)} className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center self-end sm:self-center">
-                  <X size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-[var(--foreground-muted)]" />
-                </button>
-              </div>
-            </div>
-            <div className="p-3 sm:p-4 md:p-6">
-              <div className="flex justify-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setRating(star)}
-                    className="focus:outline-none transition-transform hover:scale-110 min-h-[36px] min-w-[36px] flex items-center justify-center"
-                  >
-                    <StarIcon size={24} className={`sm:w-7 sm:h-7 md:w-9 md:h-9 ${(hoverRating || rating) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-[var(--border)]'} transition`} />
-                  </button>
-                ))}
-              </div>
-              <textarea
-                className="w-full border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg sm:rounded-xl px-3 py-2 sm:px-4 sm:py-3 mb-3 sm:mb-4 text-xs sm:text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] resize-none min-h-[80px]"
-                rows={3}
-                placeholder="Share your experience (optional)..."
-                value={ratingComment}
-                onChange={e => setRatingComment(e.target.value)}
-              />
-              <button
-                onClick={handleRatingSubmit}
-                disabled={rating === 0 || ratingSubmitting}
-                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-medium transition disabled:opacity-50 text-xs sm:text-sm md:text-base min-h-[44px]"
-              >
-                {ratingSubmitting ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Submit Rating'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowDeleteModal(false)}>
-          <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-3 sm:p-4 md:p-6 border-b bg-red-50 dark:bg-red-950/30 rounded-t-xl sm:rounded-t-2xl border-red-200 dark:border-red-800">
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-red-600 dark:text-red-400">Delete Account</h3>
-              <p className="text-[10px] sm:text-xs md:text-sm text-red-500 dark:text-red-500 mt-0.5">This action cannot be undone</p>
-            </div>
-            <div className="p-3 sm:p-4 md:p-6">
-              <p className="text-xs sm:text-sm md:text-base text-[var(--foreground-muted)] mb-3 sm:mb-4">All your data, orders, wishlist, and profile information will be permanently deleted.</p>
-              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2.5 sm:p-3 mb-3 sm:mb-4">
-                <p className="text-[10px] sm:text-xs md:text-sm text-yellow-800 dark:text-yellow-400 flex items-center gap-1.5 sm:gap-2">
-                  <AlertCircle size={12} className="sm:w-3.5 sm:h-3.5" />
-                  Type <code className="font-mono bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold">DELETE</code> to confirm
-                </p>
-              </div>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={e => setDeleteConfirmText(e.target.value)}
-                className="w-full border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg px-3 py-2 sm:px-4 sm:py-3 mb-3 sm:mb-4 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 min-h-[44px]"
-                placeholder="Type DELETE here"
-              />
-              <div className="flex gap-2 sm:gap-3">
-                <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-3 py-2 sm:px-4 sm:py-2.5 border border-[var(--border)] rounded-lg text-xs sm:text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== DELETE_CONFIRM_TEXT || deleting}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 sm:py-2.5 rounded-lg font-medium transition disabled:opacity-50 text-xs sm:text-sm min-h-[44px]"
-                >
-                  {deleting ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Permanently Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Password Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowPasswordModal(false)}>
-          <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-3 sm:p-4 md:p-6 border-b border-[var(--border)]">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-[var(--foreground)]">Change Password</h3>
-                  <p className="text-[10px] sm:text-xs md:text-sm text-[var(--foreground-muted)] mt-0.5">Create a strong password for your account</p>
-                </div>
-                <button onClick={() => setShowPasswordModal(false)} className="p-1.5 sm:p-2 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center self-end sm:self-center">
-                  <X size={16} className="sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 text-[var(--foreground-muted)]" />
-                </button>
-              </div>
-            </div>
-            <form onSubmit={handleChangePassword} className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1">Current Password</label>
-                <div className="relative">
-                  <Lock size={14} className="sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
-                  <input
-                    type="password"
-                    required
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                    className="w-full pl-8 sm:pl-9 pr-3 py-2 text-xs sm:text-sm border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] min-h-[44px]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1">New Password</label>
-                <div className="relative">
-                  <KeyRound size={14} className="sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
-                  <input
-                    type="password"
-                    required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    className="w-full pl-8 sm:pl-9 pr-3 py-2 text-xs sm:text-sm border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] min-h-[44px]"
-                  />
-                </div>
-                <p className="text-[10px] text-[var(--foreground-muted)] mt-1">Minimum {MIN_PASSWORD_LENGTH} characters</p>
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground)] mb-1">Confirm New Password</label>
-                <div className="relative">
-                  <KeyRound size={14} className="sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    className="w-full pl-8 sm:pl-9 pr-3 py-2 text-xs sm:text-sm border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] min-h-[44px]"
-                  />
-                </div>
-              </div>
-              {passwordError && (
-                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-2 sm:p-2.5 flex items-center gap-1.5 sm:gap-2">
-                  <AlertCircle size={12} className="sm:w-3.5 sm:h-3.5 text-red-500" />
-                  <p className="text-[10px] sm:text-xs text-red-600 dark:text-red-400">{passwordError}</p>
-                </div>
-              )}
-              {passwordSuccess && (
-                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-2 sm:p-2.5 flex items-center gap-1.5 sm:gap-2">
-                  <CheckCircle size={12} className="sm:w-3.5 sm:h-3.5 text-green-500" />
-                  <p className="text-[10px] sm:text-xs text-green-600 dark:text-green-400">{passwordSuccess}</p>
-                </div>
-              )}
-              <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
-                <button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]">
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={changingPassword}
-                  className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2 sm:py-2.5 rounded-lg font-medium transition disabled:opacity-50 text-xs sm:text-sm min-h-[44px]"
-                >
-                  {changingPassword ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Change Password'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </>
