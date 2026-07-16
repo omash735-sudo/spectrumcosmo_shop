@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, AlertCircle } from 'lucide-react';
 
 interface PopupSettings {
   enabled: boolean;
@@ -21,6 +21,7 @@ export default function HomepagePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [showDelay, setShowDelay] = useState(true);
 
   // Check if user has dismissed the popup within the configured time
   const checkDismissal = useCallback((dismissDays: number = 1): boolean => {
@@ -87,9 +88,13 @@ export default function HomepagePopup() {
           // Show after configured delay
           const delay = (data.delaySeconds || 2) * 1000;
           const timer = setTimeout(() => {
+            setShowDelay(false);
             setIsOpen(true);
           }, delay);
-          return () => clearTimeout(timer);
+          return () => {
+            clearTimeout(timer);
+            setShowDelay(true);
+          };
         }
       })
       .catch(console.error);
@@ -99,7 +104,7 @@ export default function HomepagePopup() {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm transition-all duration-200"
       style={{ animation: 'fadeIn 0.2s ease-out' }}
       role="dialog"
       aria-modal="true"
@@ -107,7 +112,7 @@ export default function HomepagePopup() {
     >
       <div 
         ref={modalRef}
-        className={`relative bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden transition-all duration-200 ${
+        className={`relative bg-[var(--background-card)] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden transition-all duration-200 ${
           isAnimating ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
         style={{ animation: 'slideUp 0.3s ease-out' }}
@@ -115,15 +120,15 @@ export default function HomepagePopup() {
         {/* Close button */}
         <button
           onClick={() => dismissPopup(settings.dismissDays || 1)}
-          className="absolute top-3 right-3 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 p-1.5 sm:p-2 bg-[var(--background-card)]/90 hover:bg-[var(--background-card)] rounded-full shadow-md transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-h-[36px] min-w-[36px] flex items-center justify-center"
           aria-label="Close popup"
         >
-          <X size={18} className="text-gray-600" />
+          <X size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--foreground-muted)]" />
         </button>
 
         {/* Image */}
         {settings.image_url && (
-          <div className="relative h-48 w-full bg-gray-100">
+          <div className="relative h-40 sm:h-48 w-full bg-[var(--background-secondary)]">
             <Image 
               src={settings.image_url} 
               alt={settings.title || 'Promotion'} 
@@ -135,12 +140,12 @@ export default function HomepagePopup() {
         )}
 
         {/* Content */}
-        <div className="p-6 text-center">
-          <h3 id="popup-title" className="text-2xl font-bold text-gray-900 mb-3">
+        <div className="p-4 sm:p-6 text-center">
+          <h3 id="popup-title" className="text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-2 sm:mb-3">
             {settings.title || 'Special Offer'}
           </h3>
           
-          <p className="text-gray-600 leading-relaxed mb-6">
+          <p className="text-sm sm:text-base text-[var(--foreground-muted)] leading-relaxed mb-4 sm:mb-6">
             {settings.message || ''}
           </p>
 
@@ -149,7 +154,7 @@ export default function HomepagePopup() {
             <a
               href={settings.button_link}
               onClick={() => dismissPopup(settings.dismissDays || 1)}
-              className="inline-flex items-center justify-center w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              className="inline-flex items-center justify-center w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 text-sm sm:text-base min-h-[48px]"
             >
               {settings.button_text}
             </a>
@@ -159,7 +164,7 @@ export default function HomepagePopup() {
           {settings.showDismissOption !== false && (
             <button
               onClick={() => dismissPopup(settings.dismissDays || 1)}
-              className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors w-full py-2"
+              className="mt-3 sm:mt-4 text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors w-full py-2 min-h-[36px]"
             >
               No, thanks
             </button>
@@ -167,9 +172,9 @@ export default function HomepagePopup() {
 
           {/* Persistent dismissal indicator */}
           {(settings.dismissDays || 1) > 0 && (
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
-                <Clock size={10} />
+            <div className="mt-3 sm:mt-4 pt-3 border-t border-[var(--border)]">
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] flex items-center justify-center gap-1">
+                <Clock size={10} className="sm:w-3 sm:h-3" />
                 Won't show again for {settings.dismissDays || 1} day{settings.dismissDays !== 1 ? 's' : ''}
               </p>
             </div>
