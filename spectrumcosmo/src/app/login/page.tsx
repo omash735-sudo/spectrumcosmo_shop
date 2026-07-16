@@ -295,14 +295,14 @@ export default function LoginPage() {
                   <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
                   <span className="text-2xl font-bold tracking-tight">
                     <span className="text-white">SPECTRUM</span>
-                    <span className="text-orange-400">COSMO</span>
+                    <span className="text-[var(--primary)]">COSMO</span>
                   </span>
                 </div>
                 
                 <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Welcome back to the
                   <br />
-                  <span className="text-orange-400">anime marketplace</span>
+                  <span className="text-[var(--primary)]">anime marketplace</span>
                 </h1>
                 
                 <p className="text-gray-300 text-base mb-6 max-w-md leading-relaxed">
@@ -320,8 +320,8 @@ export default function LoginPage() {
                         transition={{ delay: 0.2 + i * 0.1 }}
                         className="flex items-center gap-2"
                       >
-                        <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
-                          <Icon size={13} className="text-orange-400" />
+                        <div className="w-7 h-7 rounded-full bg-[var(--primary)]/20 flex items-center justify-center">
+                          <Icon size={13} className="text-[var(--primary)]" />
                         </div>
                         <span className="text-xs text-gray-300">{badge.label}</span>
                       </motion.div>
@@ -340,8 +340,8 @@ export default function LoginPage() {
             >
               <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl">
                 <div className="text-center mb-5">
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-3">
-                    <Lock size={20} className="text-orange-400" />
+                  <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/20 flex items-center justify-center mx-auto mb-3">
+                    <Lock size={20} className="text-[var(--primary)]" />
                   </div>
                   <h2 className="text-white text-xl font-bold">Sign In</h2>
                   <p className="text-gray-400 text-xs mt-0.5">Access your SpectrumCosmo account</p>
@@ -394,7 +394,7 @@ export default function LoginPage() {
                           emailError
                             ? 'border-red-500 ring-2 ring-red-500/20'
                             : focusedField === 'email'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -427,7 +427,7 @@ export default function LoginPage() {
                         onBlur={() => setFocusedField(null)}
                         className={`w-full pl-9 pr-10 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'password'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -443,7 +443,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Link href="/auth/forgot-password" className="text-xs text-gray-400 hover:text-orange-400 transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5">
+                    <Link href="/auth/forgot-password" className="text-xs text-gray-400 hover:text-[var(--primary)] transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5">
                       Forgot password?
                       <ChevronRight size={12} />
                     </Link>
@@ -454,7 +454,7 @@ export default function LoginPage() {
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+                    className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--primary)]/20 text-sm"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -472,7 +472,7 @@ export default function LoginPage() {
                     <button
                       onClick={handleResendVerification}
                       disabled={resending}
-                      className="text-orange-400 hover:text-orange-300 text-xs transition-colors disabled:opacity-50"
+                      className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-xs transition-colors disabled:opacity-50"
                     >
                       {resending ? 'Sending...' : 'Resend verification email'}
                     </button>
@@ -482,7 +482,7 @@ export default function LoginPage() {
                 <div className="mt-4 pt-4 border-t border-white/10 text-center">
                   <p className="text-gray-400 text-xs">
                     Don't have an account?{' '}
-                    <Link href="/auth/register" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5 text-xs">
+                    <Link href="/auth/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5 text-xs">
                       Create one
                       <ChevronRight size={12} />
                     </Link>
@@ -507,7 +507,7 @@ export default function LoginPage() {
                 onClick={() => setIndex(i)}
                 className={`h-1 rounded-full transition-all duration-300 ${
                   i === index
-                    ? 'w-6 bg-orange-500'
+                    ? 'w-6 bg-[var(--primary)]'
                     : 'w-1.5 bg-white/30 hover:bg-white/50'
                 }`}
               />
@@ -534,9 +534,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      <div className={`min-h-screen flex items-center justify-center px-4 py-8 ${
-        isDark ? 'bg-black' : 'bg-white'
-      }`}>
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[var(--background)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -553,23 +551,19 @@ export default function LoginPage() {
               <img src={logoSrc} alt="SpectrumCosmo" className="h-20 mx-auto mb-4" />
             </motion.div>
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
-              <span className="text-orange-500">COSMO</span>
+              <span className="text-[var(--foreground)]">SPECTRUM</span>
+              <span className="text-[var(--primary)]">COSMO</span>
             </h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
               Sign in to your account
             </p>
           </div>
 
-          <div className={`rounded-2xl p-6 shadow-xl ${
-            isDark 
-              ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
-              : 'bg-white border border-gray-100'
-          }`}>
-            <h2 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <div className="rounded-2xl p-6 shadow-xl border border-[var(--border)] bg-[var(--background-card)]">
+            <h2 className="text-lg font-semibold mb-1 text-[var(--foreground)]">
               Welcome back
             </h2>
-            <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-sm mb-6 text-[var(--foreground-muted)]">
               Sign in to manage your account and orders
             </p>
 
@@ -581,12 +575,8 @@ export default function LoginPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className={`text-sm rounded-xl px-4 py-3 mb-4 ${
                     needsVerification
-                      ? isDark 
-                        ? 'bg-yellow-900/30 border border-yellow-800 text-yellow-400'
-                        : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
-                      : isDark
-                        ? 'bg-red-900/30 border border-red-800 text-red-400'
-                        : 'bg-red-50 border border-red-200 text-red-600'
+                      ? 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
+                      : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
                   }`}
                 >
                   {error}
@@ -598,11 +588,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={`text-sm rounded-xl px-4 py-3 mb-4 ${
-                    isDark
-                      ? 'bg-green-900/30 border border-green-800 text-green-400'
-                      : 'bg-green-50 border border-green-200 text-green-700'
-                  }`}
+                  className="text-sm rounded-xl px-4 py-3 mb-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
                 >
                   {success}
                 </motion.div>
@@ -611,17 +597,13 @@ export default function LoginPage() {
 
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Email
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'email' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     ref={emailInputRef}
                     type="email"
@@ -630,15 +612,13 @@ export default function LoginPage() {
                     onChange={handleEmailChange}
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       emailError
                         ? 'border-red-500 ring-2 ring-red-500/20'
                         : focusedField === 'email'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                 </div>
@@ -654,17 +634,13 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'password' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     ref={passwordInputRef}
                     type={showPassword ? 'text' : 'password'}
@@ -673,21 +649,17 @@ export default function LoginPage() {
                     onChange={e => setForm({ ...form, password: e.target.value })}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'password'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -695,9 +667,7 @@ export default function LoginPage() {
               </div>
 
               <div className="flex justify-end">
-                <Link href="/auth/forgot-password" className={`text-sm ${
-                  isDark ? 'text-gray-400 hover:text-orange-400' : 'text-gray-500 hover:text-orange-500'
-                } transition-colors`}>
+                <Link href="/auth/forgot-password" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors">
                   Forgot password?
                 </Link>
               </div>
@@ -706,7 +676,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--primary)]/20"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -724,28 +694,24 @@ export default function LoginPage() {
                 <button
                   onClick={handleResendVerification}
                   disabled={resending}
-                  className="text-orange-500 hover:text-orange-600 text-sm transition-colors disabled:opacity-50"
+                  className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm transition-colors disabled:opacity-50"
                 >
                   {resending ? 'Sending...' : 'Resend verification email'}
                 </button>
               </div>
             )}
 
-            <div className={`mt-6 pt-6 border-t text-center ${
-              isDark ? 'border-gray-800' : 'border-gray-200'
-            }`}>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className="mt-6 pt-6 border-t border-[var(--border)] text-center">
+              <p className="text-sm text-[var(--foreground-muted)]">
                 Don't have an account?{' '}
-                <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
+                <Link href="/auth/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
                   Create one
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className={`text-sm ${
-                isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
-              } transition-colors inline-flex items-center gap-1`}>
+              <Link href="/" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1">
                 <ArrowLeft size={14} />
                 Back to Shop
               </Link>
