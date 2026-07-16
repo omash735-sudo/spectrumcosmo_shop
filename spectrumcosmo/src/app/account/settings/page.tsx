@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import {
   User, Lock, Moon, Bell, Mail,
   HelpCircle, MessageCircle, Shield, FileText,
   Trash2, ArrowLeft, Sparkles, LogOut, Settings,
-  ChevronRight
+  ChevronRight, Sun, Monitor
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 
 type User = {
   id: string;
@@ -22,9 +23,10 @@ type User = {
 type SettingsItem = {
   icon: any;
   label: string;
-  href: string;
+  href?: string;
   desc: string;
   danger?: boolean;
+  action?: 'theme' | 'logout';
 };
 
 type SettingsSection = {
@@ -35,10 +37,13 @@ type SettingsSection = {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
     loadUser();
   }, []);
 
@@ -61,6 +66,20 @@ export default function SettingsPage() {
     router.push('/');
   };
 
+  const getThemeIcon = () => {
+    if (!mounted) return Monitor;
+    if (theme === 'dark') return Moon;
+    if (theme === 'light') return Sun;
+    return Monitor;
+  };
+
+  const getThemeLabel = () => {
+    if (!mounted) return 'Loading...';
+    if (theme === 'dark') return 'Dark';
+    if (theme === 'light') return 'Light';
+    return 'System';
+  };
+
   if (loading) {
     return (
       <>
@@ -68,7 +87,6 @@ export default function SettingsPage() {
         <main className="min-h-screen flex items-center justify-center bg-[var(--background)]">
           <div className="animate-pulse text-[var(--foreground-muted)]">Loading...</div>
         </main>
-        <Footer />
       </>
     );
   }
@@ -86,7 +104,12 @@ export default function SettingsPage() {
       title: 'Preferences',
       icon: Settings,
       items: [
-        { icon: Moon, label: 'Theme', href: '/account/theme', desc: 'Choose your preferred theme' },
+        { 
+          icon: getThemeIcon(), 
+          label: 'Theme', 
+          desc: `Current: ${getThemeLabel()}`,
+          action: 'theme'
+        },
         { icon: Bell, label: 'Notifications', href: '/notification', desc: 'Manage your alerts' },
         { icon: Mail, label: 'Newsletter', href: '/newsletter', desc: 'Email preferences' },
       ]
@@ -109,6 +132,16 @@ export default function SettingsPage() {
       ]
     },
   ];
+
+  const handleItemClick = (item: SettingsItem) => {
+    if (item.action === 'theme') {
+      // Open the ThemeSwitcher modal
+      const themeBtn = document.querySelector('[aria-label="Change theme"]') as HTMLButtonElement;
+      if (themeBtn) themeBtn.click();
+    } else if (item.href) {
+      router.push(item.href);
+    }
+  };
 
   return (
     <>
@@ -166,10 +199,32 @@ export default function SettingsPage() {
                   {section.items.map((item, idx) => {
                     const Icon = item.icon;
                     const isDanger = item.danger || false;
+                    
+                    if (item.action === 'theme') {
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleItemClick(item)}
+                          className={`bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 flex items-center gap-2.5 sm:gap-3 md:gap-4 cursor-pointer hover:shadow-md transition-all duration-200 group hover:border-[var(--primary)]/30`}
+                        >
+                          <div className="p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl flex-shrink-0 transition group-hover:scale-105 bg-[var(--primary)]/10 text-[var(--primary)]">
+                            <Icon size={16} className="sm:w-[18px] sm:h-[18px] md:w-[22px] md:h-[22px]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-xs sm:text-sm md:text-base truncate text-[var(--foreground)]">
+                              {item.label}
+                            </h4>
+                            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">{item.desc}</p>
+                          </div>
+                          <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-[var(--primary)]" />
+                        </div>
+                      );
+                    }
+                    
                     return (
                       <Link
                         key={idx}
-                        href={item.href}
+                        href={item.href || '#'}
                         className={`bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 flex items-center gap-2.5 sm:gap-3 md:gap-4 hover:shadow-md transition-all duration-200 group ${
                           isDanger 
                             ? 'hover:border-red-300 dark:hover:border-red-700' 
@@ -227,7 +282,10 @@ export default function SettingsPage() {
         </div>
       </main>
 
-      <Footer />
+      {/* ThemeSwitcher component - hidden trigger */}
+      <div className="hidden">
+        <ThemeSwitcher />
+      </div>
     </>
   );
 }
