@@ -30,7 +30,7 @@ export default function StarRating({
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
@@ -38,7 +38,7 @@ export default function StarRating({
           onClick={() => handleClick(star)}
           onMouseEnter={() => handleMouseEnter(star)}
           onMouseLeave={handleMouseLeave}
-          className={`focus:outline-none transition-transform ${
+          className={`focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-1 rounded-sm transition-all ${
             interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'
           }`}
           aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
@@ -48,9 +48,9 @@ export default function StarRating({
             size={size}
             className={`${
               star <= displayRating
-                ? 'text-[#F97316] fill-[#F97316]'
-                : 'text-gray-300 fill-gray-300'
-            } transition-colors`}
+                ? 'text-[var(--primary)] fill-[var(--primary)]'
+                : 'text-[var(--border)] fill-[var(--border)]'
+            } transition-colors duration-150`}
           />
         </button>
       ))}
