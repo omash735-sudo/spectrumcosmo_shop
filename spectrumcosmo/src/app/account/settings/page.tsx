@@ -211,7 +211,7 @@ export default function SettingsPage() {
                             </h4>
                             <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">{item.desc}</p>
                           </div>
-                          <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-[var(--primary)]" />
+                          <ChevronRight size={12} className={`sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-[var(--primary)]`} />
                         </div>
                       );
                     }
@@ -239,7 +239,7 @@ export default function SettingsPage() {
                           </h4>
                           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] line-clamp-1 sm:line-clamp-2">{item.desc}</p>
                         </div>
-                        <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 ${
+                        <ChevronRight size={12} className={`sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 ${
                           isDanger ? 'group-hover:text-red-500' : 'group-hover:text-[var(--primary)]'
                         }`} />
                       </Link>
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                     </h4>
                     <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Sign out of your account</p>
                   </div>
-                  <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-red-500" />
+                  <ChevronRight size={12} className={`sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-red-500`} />
                 </div>
               </div>
             </div>
