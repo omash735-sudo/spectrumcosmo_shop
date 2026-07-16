@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Eye, EyeOff, Loader2, ArrowLeft, Check, Mail, Lock, User,
-  ChevronRight
+  ChevronRight, Shield
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
@@ -200,14 +200,14 @@ export default function SignupPage() {
                   <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
                   <span className="text-2xl font-bold tracking-tight">
                     <span className="text-white">SPECTRUM</span>
-                    <span className="text-orange-400">COSMO</span>
+                    <span className="text-[var(--primary)]">COSMO</span>
                   </span>
                 </div>
                 
                 <h1 className="text-5xl font-bold mb-4 leading-tight">
                   Join the
                   <br />
-                  <span className="text-orange-400">anime community</span>
+                  <span className="text-[var(--primary)]">anime community</span>
                 </h1>
                 
                 <p className="text-gray-300 text-lg mb-8 max-w-md leading-relaxed">
@@ -224,8 +224,8 @@ export default function SignupPage() {
             >
               <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center mx-auto mb-4">
-                    <User size={24} className="text-orange-400" />
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--primary)]/20 flex items-center justify-center mx-auto mb-4">
+                    <User size={24} className="text-[var(--primary)]" />
                   </div>
                   <h2 className="text-white text-2xl font-bold">Create Account</h2>
                   <p className="text-gray-400 text-sm mt-1">Join the SpectrumCosmo community</p>
@@ -271,7 +271,7 @@ export default function SignupPage() {
                         onBlur={() => setFocusedField(null)}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'name'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -294,7 +294,7 @@ export default function SignupPage() {
                         onBlur={() => setFocusedField(null)}
                         className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'email'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -317,7 +317,7 @@ export default function SignupPage() {
                         onBlur={() => setFocusedField(null)}
                         className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'password'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -347,7 +347,7 @@ export default function SignupPage() {
                         onBlur={() => setFocusedField(null)}
                         className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
                           focusedField === 'confirm'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
                             : 'border-white/10'
                         } focus:outline-none`}
                         required
@@ -368,15 +368,15 @@ export default function SignupPage() {
                       id="terms"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded border-gray-600 text-orange-500 focus:ring-orange-500 bg-white/10"
+                      className="mt-1 w-4 h-4 rounded border-gray-600 text-[var(--primary)] focus:ring-[var(--primary)] bg-white/10"
                     />
                     <label htmlFor="terms" className="text-gray-400 text-sm leading-relaxed">
                       I agree to the{' '}
-                      <Link href="/terms" className="text-orange-400 hover:text-orange-300 transition-colors">
+                      <Link href="/terms" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
                         Terms & Conditions
                       </Link>
                       {' '}and{' '}
-                      <Link href="/privacy" className="text-orange-400 hover:text-orange-300 transition-colors">
+                      <Link href="/privacy" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
                         Privacy Policy
                       </Link>
                     </label>
@@ -387,7 +387,7 @@ export default function SignupPage() {
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                    className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--primary)]/20"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -403,7 +403,7 @@ export default function SignupPage() {
                 <div className="mt-6 pt-6 border-t border-white/10 text-center">
                   <p className="text-gray-400 text-sm">
                     Already have an account?{' '}
-                    <Link href="/auth/login" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-1">
+                    <Link href="/auth/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-1">
                       Sign in
                       <ChevronRight size={14} />
                     </Link>
@@ -427,7 +427,7 @@ export default function SignupPage() {
                 onClick={() => setIndex(i)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   i === index
-                    ? 'w-8 bg-orange-500'
+                    ? 'w-8 bg-[var(--primary)]'
                     : 'bg-white/30 hover:bg-white/50'
                 }`}
               />
@@ -446,9 +446,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <div className={`min-h-screen flex items-center justify-center px-4 py-8 ${
-        isDark ? 'bg-black' : 'bg-white'
-      }`}>
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[var(--background)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -465,23 +463,19 @@ export default function SignupPage() {
               <img src={logoSrc} alt="SpectrumCosmo" className="h-20 mx-auto mb-4" />
             </motion.div>
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
-              <span className="text-orange-500">COSMO</span>
+              <span className="text-[var(--foreground)]">SPECTRUM</span>
+              <span className="text-[var(--primary)]">COSMO</span>
             </h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
               Create your account
             </p>
           </div>
 
-          <div className={`rounded-2xl p-6 shadow-xl ${
-            isDark 
-              ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
-              : 'bg-white border border-gray-100'
-          }`}>
-            <h2 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <div className="rounded-2xl p-6 shadow-xl border border-[var(--border)] bg-[var(--background-card)]">
+            <h2 className="text-lg font-semibold mb-1 text-[var(--foreground)]">
               Create Account
             </h2>
-            <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-sm mb-6 text-[var(--foreground-muted)]">
               Enter your details to get started
             </p>
 
@@ -491,11 +485,7 @@ export default function SignupPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={`text-sm rounded-xl px-4 py-3 mb-4 ${
-                    isDark
-                      ? 'bg-red-900/30 border border-red-800 text-red-400'
-                      : 'bg-red-50 border border-red-200 text-red-600'
-                  }`}
+                  className="text-sm rounded-xl px-4 py-3 mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
                 >
                   {error}
                 </motion.div>
@@ -506,11 +496,7 @@ export default function SignupPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={`text-sm rounded-xl px-4 py-3 mb-4 ${
-                    isDark
-                      ? 'bg-green-900/30 border border-green-800 text-green-400'
-                      : 'bg-green-50 border border-green-200 text-green-700'
-                  }`}
+                  className="text-sm rounded-xl px-4 py-3 mb-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
                 >
                   {success}
                 </motion.div>
@@ -519,17 +505,13 @@ export default function SignupPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Name
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'name' ? 'scale-[1.02]' : ''
                 }`}>
-                  <User size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     type="text"
                     placeholder="Enter your name"
@@ -537,30 +519,24 @@ export default function SignupPage() {
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'name'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Email
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'email' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     type="email"
                     placeholder="Enter your email"
@@ -568,30 +544,24 @@ export default function SignupPage() {
                     onChange={e => setForm({ ...form, email: e.target.value })}
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'email'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'password' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Min. 8 characters"
@@ -599,21 +569,17 @@ export default function SignupPage() {
                     onChange={e => setForm({ ...form, password: e.target.value })}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'password'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -621,17 +587,13 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
                   Confirm Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'confirm' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Repeat your password"
@@ -639,21 +601,17 @@ export default function SignupPage() {
                     onChange={e => setForm({ ...form, confirm: e.target.value })}
                     onFocus={() => setFocusedField('confirm')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'confirm'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    } focus:outline-none`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
                   >
                     {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -666,17 +624,15 @@ export default function SignupPage() {
                   id="terms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  className="mt-1 w-4 h-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 />
-                <label htmlFor="terms" className={`text-sm leading-relaxed ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}>
+                <label htmlFor="terms" className="text-sm leading-relaxed text-[var(--foreground-muted)]">
                   I agree to the{' '}
-                  <Link href="/terms" className="text-orange-500 hover:text-orange-600 transition-colors">
+                  <Link href="/terms" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
                     Terms & Conditions
                   </Link>
                   {' '}and{' '}
-                  <Link href="/privacy" className="text-orange-500 hover:text-orange-600 transition-colors">
+                  <Link href="/privacy" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
                     Privacy Policy
                   </Link>
                 </label>
@@ -686,7 +642,7 @@ export default function SignupPage() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--primary)]/20"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -699,21 +655,17 @@ export default function SignupPage() {
               </motion.button>
             </form>
 
-            <div className={`mt-6 pt-6 border-t text-center ${
-              isDark ? 'border-gray-800' : 'border-gray-200'
-            }`}>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className="mt-6 pt-6 border-t border-[var(--border)] text-center">
+              <p className="text-sm text-[var(--foreground-muted)]">
                 Already have an account?{' '}
-                <Link href="/auth/login" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
+                <Link href="/auth/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
                   Sign in
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className={`text-sm ${
-                isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
-              } transition-colors inline-flex items-center gap-1`}>
+              <Link href="/" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1">
                 <ArrowLeft size={14} />
                 Back to Shop
               </Link>
