@@ -133,14 +133,9 @@ export default function SettingsPage() {
     },
   ];
 
-  const handleItemClick = (item: SettingsItem) => {
-    if (item.action === 'theme') {
-      // Open the ThemeSwitcher modal
-      const themeBtn = document.querySelector('[aria-label="Change theme"]') as HTMLButtonElement;
-      if (themeBtn) themeBtn.click();
-    } else if (item.href) {
-      router.push(item.href);
-    }
+  const handleThemeClick = () => {
+    const themeBtn = document.querySelector('[aria-label="Change theme"]') as HTMLButtonElement;
+    if (themeBtn) themeBtn.click();
   };
 
   return (
@@ -204,7 +199,7 @@ export default function SettingsPage() {
                       return (
                         <div
                           key={idx}
-                          onClick={() => handleItemClick(item)}
+                          onClick={handleThemeClick}
                           className={`bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 flex items-center gap-2.5 sm:gap-3 md:gap-4 cursor-pointer hover:shadow-md transition-all duration-200 group hover:border-[var(--primary)]/30`}
                         >
                           <div className="p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl flex-shrink-0 transition group-hover:scale-105 bg-[var(--primary)]/10 text-[var(--primary)]">
