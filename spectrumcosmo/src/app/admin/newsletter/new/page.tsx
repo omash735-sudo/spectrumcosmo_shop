@@ -6,9 +6,11 @@ import Image from 'next/image';
 import {
   Loader2, Upload, X, Users, Target, Settings,
   Send, Clock, CheckCircle, Sparkles,
-  Zap, Bell, Tag, Star, Mail
+  Zap, Bell, Tag, Star, Mail, ArrowLeft,
+  AlertCircle, Check, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 interface Segment {
   id: string;
@@ -20,6 +22,34 @@ interface Segment {
 interface SubscriberCount {
   count: number;
   total: number;
+}
+
+// ===== SKELETON =====
+function CreateNewsletterSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-center gap-4">
+        <div className="h-4 bg-[var(--background-secondary)] rounded w-24" />
+        <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+      </div>
+      <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6">
+        <div className="space-y-6">
+          <div className="h-12 bg-[var(--background-secondary)] rounded" />
+          <div className="h-40 bg-[var(--background-secondary)] rounded" />
+          <div className="h-12 bg-[var(--background-secondary)] rounded" />
+          <div className="grid grid-cols-3 gap-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 bg-[var(--background-secondary)] rounded-xl" />
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1 h-12 bg-[var(--background-secondary)] rounded" />
+            <div className="flex-1 h-12 bg-[var(--background-secondary)] rounded" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function NewNewsletterPage() {
@@ -192,346 +222,404 @@ export default function NewNewsletterPage() {
 
   const frequencyOptions = ['daily', 'weekly', 'biweekly', 'monthly'];
 
+  if (loading && !title) {
+    return (
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-4xl mx-auto">
+          <CreateNewsletterSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <Mail size={24} className="text-orange-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Newsletter</h1>
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <Link
+            href="/admin/newsletter"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition mb-2"
+          >
+            <ArrowLeft size={16} />
+            Back to Newsletter Hub
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
+              <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Create Newsletter</h1>
+          </div>
+          <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
+            Craft engaging emails and target the right audience
+          </p>
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Campaign Title *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Summer Anime Collection Drop"
-                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Content *
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={8}
-                placeholder="Write your newsletter content here... (HTML supported)"
-                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none font-mono text-sm"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Supports HTML: &lt;strong&gt;, &lt;em&gt;, &lt;a href=&quot;...&quot;&gt;, &lt;img&gt;, etc.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Header Image (optional)
-              </label>
-              <div className="flex gap-2">
+        <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
+          <div className="space-y-5 sm:space-y-6">
+            {/* Campaign Details */}
+            <div className="space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                  Campaign Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={imageUrl}
-                  onChange={(e) => {
-                    setImageUrl(e.target.value);
-                    setImagePreview(e.target.value);
-                  }}
-                  placeholder="https://example.com/image.jpg"
-                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g., Summer Anime Collection Drop"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)]"
                 />
-                <label className="cursor-pointer">
-                  <div className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2">
-                    <Upload size={18} className="text-gray-500" />
-                    <span className="text-sm hidden sm:inline">Upload</span>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              {uploadingImage && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
-                  <Loader2 className="animate-spin" size={16} />
-                  Uploading to Cloudinary...
+                <div className="flex justify-end mt-1">
+                  <span className="text-[10px] text-[var(--foreground-muted)]">{title.length} characters</span>
                 </div>
-              )}
-              {imagePreview && (
-                <div className="mt-3 relative w-48 h-48 rounded-lg overflow-hidden bg-gray-100 border">
-                  <Image
-                    src={imagePreview}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                  Content <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={8}
+                  placeholder="Write your newsletter content here... (HTML supported)"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition resize-none font-mono text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)]"
+                />
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-[10px] text-[var(--foreground-muted)]">
+                    Supports HTML: <code className="bg-[var(--background)] px-1.5 py-0.5 rounded text-[10px]">&lt;strong&gt;</code>, <code className="bg-[var(--background)] px-1.5 py-0.5 rounded text-[10px]">&lt;em&gt;</code>, <code className="bg-[var(--background)] px-1.5 py-0.5 rounded text-[10px]">&lt;a&gt;</code>
+                  </p>
+                  <span className="text-[10px] text-[var(--foreground-muted)]">{content.length} characters</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                  Header Image (optional)
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={(e) => {
+                      setImageUrl(e.target.value);
+                      setImagePreview(e.target.value);
+                    }}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)]"
                   />
+                  <label className="cursor-pointer">
+                    <div className="flex items-center justify-center gap-2 px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl hover:bg-[var(--background)] transition min-h-[44px] sm:min-h-[42px]">
+                      <Upload size={16} className="text-[var(--foreground-muted)]" />
+                      <span className="text-sm hidden xs:inline">Upload</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                </div>
+                {uploadingImage && (
+                  <div className="flex items-center gap-2 text-xs text-[var(--foreground-muted)] mt-2">
+                    <Loader2 className="animate-spin" size={14} />
+                    Uploading to Cloudinary...
+                  </div>
+                )}
+                {imagePreview && (
+                  <div className="mt-3 relative w-32 h-32 sm:w-48 sm:h-48 rounded-lg overflow-hidden bg-[var(--background-secondary)] border border-[var(--border)]">
+                    <Image
+                      src={imagePreview}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                    />
+                    <button
+                      onClick={() => {
+                        setImagePreview('');
+                        setImageUrl('');
+                      }}
+                      className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 rounded-full p-1 text-white transition"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Audience Targeting */}
+            <div className="border-t border-[var(--border)] pt-4 sm:pt-6">
+              <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)] flex items-center gap-2 mb-3 sm:mb-4">
+                <Target size={18} className="sm:w-5 sm:h-5 text-[var(--primary)]" />
+                Audience Targeting
+              </h3>
+
+              <div className="mb-3 sm:mb-4">
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
+                  Who should receive this?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                   <button
                     onClick={() => {
-                      setImagePreview('');
-                      setImageUrl('');
+                      setAudience('all');
+                      setSelectedSegment(null);
                     }}
-                    className="absolute top-1 right-1 bg-black/60 rounded-full p-1 text-white hover:bg-black/80 transition"
+                    className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition text-center min-h-[60px] sm:min-h-[72px] ${
+                      audience === 'all'
+                        ? 'border-[var(--primary)] bg-orange-50 dark:bg-orange-950/30 text-[var(--primary)]'
+                        : 'border-[var(--border)] hover:border-[var(--primary)]/50 text-[var(--foreground-muted)]'
+                    }`}
                   >
-                    <X size={14} />
+                    <Users size={16} className="inline mr-1.5" />
+                    All Subscribers
+                    <p className="text-[10px] text-[var(--foreground-muted)] font-normal mt-1">
+                      {previewCount?.total || 0} subscribers
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAudience('active');
+                      setSelectedSegment(null);
+                    }}
+                    className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition text-center min-h-[60px] sm:min-h-[72px] ${
+                      audience === 'active'
+                        ? 'border-[var(--primary)] bg-orange-50 dark:bg-orange-950/30 text-[var(--primary)]'
+                        : 'border-[var(--border)] hover:border-[var(--primary)]/50 text-[var(--foreground-muted)]'
+                    }`}
+                  >
+                    <CheckCircle size={16} className="inline mr-1.5" />
+                    Active Subscribers
+                    <p className="text-[10px] text-[var(--foreground-muted)] font-normal mt-1">
+                      Opened in last 90 days
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setAudience('segment')}
+                    className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition text-center min-h-[60px] sm:min-h-[72px] ${
+                      audience === 'segment'
+                        ? 'border-[var(--primary)] bg-orange-50 dark:bg-orange-950/30 text-[var(--primary)]'
+                        : 'border-[var(--border)] hover:border-[var(--primary)]/50 text-[var(--foreground-muted)]'
+                    }`}
+                  >
+                    <Settings size={16} className="inline mr-1.5" />
+                    Custom Segment
+                    <p className="text-[10px] text-[var(--foreground-muted)] font-normal mt-1">
+                      {loadingCount ? '...' : `${previewCount?.count || 0} subscribers match`}
+                    </p>
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Target size={20} className="text-orange-500" />
-              Audience Targeting
-            </h3>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Who should receive this?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button
-                  onClick={() => {
-                    setAudience('all');
-                    setSelectedSegment(null);
-                  }}
-                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition text-center ${
-                    audience === 'all'
-                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
-                  }`}
-                >
-                  <Users size={16} className="inline mr-2" />
-                  All Subscribers
-                  <p className="text-xs text-gray-400 font-normal mt-1">
-                    {previewCount?.total || 0} subscribers
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setAudience('active');
-                    setSelectedSegment(null);
-                  }}
-                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition text-center ${
-                    audience === 'active'
-                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
-                  }`}
-                >
-                  <CheckCircle size={16} className="inline mr-2" />
-                  Active Subscribers
-                  <p className="text-xs text-gray-400 font-normal mt-1">
-                    Opened in last 90 days
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => setAudience('segment')}
-                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition text-center ${
-                    audience === 'segment'
-                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
-                  }`}
-                >
-                  <Settings size={16} className="inline mr-2" />
-                  Custom Segment
-                  <p className="text-xs text-gray-400 font-normal mt-1">
-                    {loadingCount ? '...' : `${previewCount?.count || 0} subscribers match`}
-                  </p>
-                </button>
               </div>
-            </div>
 
-            {audience === 'segment' && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Topics
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {topicOptions.map((topic) => {
-                      const Icon = topic.icon;
-                      const isSelected = topicFilters.includes(topic.id);
-                      return (
+              {audience === 'segment' && (
+                <div className="bg-[var(--background-secondary)] rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
+                      Topics
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                      {topicOptions.map((topic) => {
+                        const Icon = topic.icon;
+                        const isSelected = topicFilters.includes(topic.id);
+                        return (
+                          <button
+                            key={topic.id}
+                            onClick={() => {
+                              setTopicFilters(prev =>
+                                prev.includes(topic.id)
+                                  ? prev.filter(t => t !== topic.id)
+                                  : [...prev, topic.id]
+                              );
+                            }}
+                            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 min-h-[32px] ${
+                              isSelected
+                                ? 'bg-[var(--primary)] text-white'
+                                : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                            }`}
+                          >
+                            <Icon size={12} className={isSelected ? 'text-white' : topic.color} />
+                            {topic.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
+                      Frequency Preference
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                      {frequencyOptions.map((freq) => (
                         <button
-                          key={topic.id}
-                          onClick={() => {
-                            setTopicFilters(prev =>
-                              prev.includes(topic.id)
-                                ? prev.filter(t => t !== topic.id)
-                                : [...prev, topic.id]
-                            );
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'bg-orange-500 text-white'
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          key={freq}
+                          onClick={() => setFrequencyFilter(freq === frequencyFilter ? '' : freq)}
+                          className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition capitalize min-h-[32px] ${
+                            frequencyFilter === freq
+                              ? 'bg-[var(--primary)] text-white'
+                              : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
                           }`}
                         >
-                          <Icon size={14} className={isSelected ? 'text-white' : topic.color} />
-                          {topic.label}
+                          {freq}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Frequency Preference
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {frequencyOptions.map((freq) => (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
+                      Promotions & Offers
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       <button
-                        key={freq}
-                        onClick={() => setFrequencyFilter(freq === frequencyFilter ? '' : freq)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition capitalize ${
-                          frequencyFilter === freq
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        onClick={() => setPromotionsFilter(true)}
+                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition min-h-[32px] ${
+                          promotionsFilter === true
+                            ? 'bg-[var(--primary)] text-white'
+                            : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
                         }`}
                       >
-                        {freq}
+                        Yes
                       </button>
-                    ))}
+                      <button
+                        onClick={() => setPromotionsFilter(false)}
+                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition min-h-[32px] ${
+                          promotionsFilter === false
+                            ? 'bg-[var(--primary)] text-white'
+                            : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                        }`}
+                      >
+                        No
+                      </button>
+                      <button
+                        onClick={() => setPromotionsFilter(null)}
+                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition min-h-[32px] ${
+                          promotionsFilter === null
+                            ? 'bg-[var(--foreground-muted)] text-white'
+                            : 'bg-[var(--background)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                        }`}
+                      >
+                        All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--background-card)] rounded-xl p-3 text-center border border-[var(--border)]">
+                    <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
+                      <span className="font-bold text-xl sm:text-2xl text-[var(--primary)]">
+                        {previewCount?.count || 0}
+                      </span>
+                      {' '}subscribers will receive this email
+                    </p>
+                    {loadingCount && (
+                      <Loader2 size={14} className="animate-spin inline ml-2 text-[var(--primary)]" />
+                    )}
                   </div>
                 </div>
+              )}
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Promotions & Offers
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setPromotionsFilter(true)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                        promotionsFilter === true
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => setPromotionsFilter(false)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                        promotionsFilter === false
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      No
-                    </button>
-                    <button
-                      onClick={() => setPromotionsFilter(null)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                        promotionsFilter === null
-                          ? 'bg-gray-500 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      All
-                    </button>
-                  </div>
-                </div>
+            {/* Schedule */}
+            <div className="border-t border-[var(--border)] pt-4 sm:pt-6">
+              <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)] flex items-center gap-2 mb-3 sm:mb-4">
+                <Clock size={18} className="sm:w-5 sm:h-5 text-[var(--primary)]" />
+                Schedule
+              </h3>
 
-                <div className="bg-white dark:bg-gray-900 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-bold text-2xl text-orange-500">{previewCount?.count || 0}</span>
-                    {' '}subscribers will receive this email
-                  </p>
-                  {loadingCount && (
-                    <Loader2 size={16} className="animate-spin inline ml-2 text-orange-500" />
-                  )}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <button
+                  onClick={() => setSendNow(true)}
+                  className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition text-center min-h-[48px] ${
+                    sendNow
+                      ? 'border-[var(--primary)] bg-orange-50 dark:bg-orange-950/30 text-[var(--primary)]'
+                      : 'border-[var(--border)] hover:border-[var(--primary)]/50 text-[var(--foreground-muted)]'
+                  }`}
+                >
+                  <Send size={16} className="inline mr-1.5" />
+                  Send Now
+                </button>
+
+                <button
+                  onClick={() => setSendNow(false)}
+                  className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-xs sm:text-sm font-medium transition text-center min-h-[48px] ${
+                    !sendNow
+                      ? 'border-[var(--primary)] bg-orange-50 dark:bg-orange-950/30 text-[var(--primary)]'
+                      : 'border-[var(--border)] hover:border-[var(--primary)]/50 text-[var(--foreground-muted)]'
+                  }`}
+                >
+                  <Clock size={16} className="inline mr-1.5" />
+                  Schedule Later
+                </button>
               </div>
-            )}
-          </div>
 
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Clock size={20} className="text-orange-500" />
-              Schedule
-            </h3>
+              {!sendNow && (
+                <div className="mt-3">
+                  <input
+                    type="datetime-local"
+                    value={scheduleFor}
+                    onChange={(e) => setScheduleFor(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm text-[var(--foreground)]"
+                  />
+                </div>
+              )}
+            </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-[var(--border)]">
               <button
-                onClick={() => setSendNow(true)}
-                className={`flex-1 px-4 py-3 rounded-xl border text-sm font-medium transition text-center ${
-                  sendNow
-                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
-                }`}
+                onClick={() => router.back()}
+                className="px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition text-sm min-h-[44px]"
               >
-                <Send size={16} className="inline mr-2" />
-                Send Now
+                Cancel
               </button>
-
               <button
-                onClick={() => setSendNow(false)}
-                className={`flex-1 px-4 py-3 rounded-xl border text-sm font-medium transition text-center ${
-                  !sendNow
-                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800'
-                }`}
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2.5 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm min-h-[44px]"
               >
-                <Clock size={16} className="inline mr-2" />
-                Schedule Later
+                {loading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : sendNow ? (
+                  <>
+                    <Send size={18} />
+                    Send Newsletter
+                  </>
+                ) : (
+                  <>
+                    <Clock size={18} />
+                    Schedule Newsletter
+                  </>
+                )}
               </button>
             </div>
 
-            {!sendNow && (
-              <div className="mt-3">
-                <input
-                  type="datetime-local"
-                  value={scheduleFor}
-                  onChange={(e) => setScheduleFor(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                />
-              </div>
-            )}
+            <p className="text-center text-[10px] sm:text-xs text-[var(--foreground-muted)]">
+              {sendNow ? 'This will send immediately to the selected audience' : 'This will be queued for the selected time'}
+            </p>
           </div>
+        </div>
 
-          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => router.back()}
-              className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="flex-1 bg-orange-500 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : sendNow ? (
-                <>
-                  <Send size={18} />
-                  Send Newsletter
-                </>
-              ) : (
-                <>
-                  <Clock size={18} />
-                  Schedule Newsletter
-                </>
-              )}
-            </button>
+        {/* Pro Tips */}
+        <div className="mt-4 sm:mt-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400">
+                <strong>💡 Pro Tips:</strong>
+              </p>
+              <ul className="text-xs sm:text-sm text-blue-700 dark:text-blue-400 mt-1 space-y-0.5 list-disc list-inside">
+                <li>Keep subject lines under 50 characters for better open rates</li>
+                <li>Use personalization tags like {'{{customer_name}}'} in content</li>
+                <li>Test your email on different devices before sending</li>
+                <li>Schedule campaigns for Tuesday-Thursday mornings for best engagement</li>
+              </ul>
+            </div>
           </div>
-
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-            {sendNow ? 'This will send immediately to the selected audience' : 'This will be queued for the selected time'}
-          </p>
         </div>
       </div>
     </div>
