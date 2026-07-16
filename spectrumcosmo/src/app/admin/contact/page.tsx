@@ -1,7 +1,23 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Loader2, Plus, Trash2, Upload, X, ChevronUp, ChevronDown, Save, Image as ImageIcon, Mail, Phone, MapPin, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { 
+  Loader2, 
+  Plus, 
+  Trash2, 
+  Upload, 
+  X, 
+  ChevronUp, 
+  ChevronDown, 
+  Save, 
+  Image as ImageIcon, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Link as LinkIcon, 
+  MessageCircle,
+  AlertCircle,
+} from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -51,7 +67,7 @@ const defaultContent: ContactContent = {
     carousel_images: [],
     title: 'Get in Touch',
     subtitle: "We'd love to hear from you",
-    text_color: '#F97316',
+    text_color: '#C96712',
   },
   form_title: 'Send us a Message',
   form_subtitle: "We'll get back to you within 24 hours",
@@ -68,6 +84,82 @@ const defaultContent: ContactContent = {
   community_link: '',
 };
 
+// ===== SKELETON =====
+function ContactSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+      <div className="h-4 bg-[var(--background-secondary)] rounded w-64" />
+      <div className="flex gap-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-10 bg-[var(--background-secondary)] rounded flex-1" />
+        ))}
+      </div>
+      <div className="h-96 bg-[var(--background-secondary)] rounded" />
+    </div>
+  );
+}
+
+// ===== IMAGE UPLOAD COMPONENT =====
+function ImageUploadArea({
+  label,
+  imageUrl,
+  onUpload,
+  onRemove,
+  uploading,
+  className = '',
+}: {
+  label: string;
+  imageUrl: string;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+  uploading: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+        {label}
+      </label>
+      <div className="relative w-full max-w-md h-40 sm:h-48 rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--background-secondary)]">
+        {imageUrl ? (
+          <>
+            <Image src={imageUrl} alt={label} fill className="object-cover" />
+            <button
+              onClick={onRemove}
+              className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full transition shadow-lg min-h-[32px] min-w-[32px] flex items-center justify-center"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--foreground-muted)] opacity-30" />
+          </div>
+        )}
+      </div>
+      <label className="cursor-pointer inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[var(--background-secondary)] hover:bg-[var(--background)] border border-[var(--border)] rounded-lg text-xs sm:text-sm font-medium text-[var(--foreground)] transition min-h-[40px]">
+        <Upload className="w-3.5 h-3.5" />
+        {imageUrl ? 'Replace Image' : 'Upload Image'}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onUpload}
+          disabled={uploading}
+        />
+      </label>
+      {uploading && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-[var(--foreground-muted)]">
+          <Loader2 className="animate-spin w-3.5 h-3.5" />
+          Uploading...
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===== MAIN COMPONENT =====
 export default function AdminContactPage() {
   const [content, setContent] = useState<ContactContent>(defaultContent);
   const [loading, setLoading] = useState(true);
@@ -208,10 +300,10 @@ export default function AdminContactPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin text-orange-500 w-8 h-8 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Loading contact page content...</p>
+          <Loader2 className="animate-spin text-[var(--primary)] w-8 h-8 mx-auto mb-3" />
+          <p className="text-[var(--foreground-muted)]">Loading contact page content...</p>
         </div>
       </div>
     );
@@ -225,21 +317,21 @@ export default function AdminContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--background)]">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contact Page Editor</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Contact Page Editor</h1>
+              <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
                 Manage your contact page content and settings
               </p>
             </div>
             <button
               onClick={save}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition disabled:opacity-50 shadow-sm"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg font-medium transition disabled:opacity-50 shadow-sm text-sm sm:text-base min-h-[44px]"
             >
               {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saving ? 'Saving...' : 'Save Changes'}
@@ -248,46 +340,47 @@ export default function AdminContactPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Navigation - Shopify Style */}
-        <div className="flex gap-1 mb-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-1">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-1 mb-4 sm:mb-6 bg-[var(--background-card)] rounded-lg border border-[var(--border)] p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition ${
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md font-medium text-xs sm:text-sm transition min-h-[40px] ${
                   activeTab === tab.id
-                    ? 'bg-orange-500 text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-[var(--primary)] text-white shadow-sm'
+                    : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)]'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">{tab.label}</span>
+                <span className="xs:hidden">{tab.id.charAt(0).toUpperCase()}</span>
               </button>
             );
           })}
         </div>
 
         {/* Content Card */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
           {/* Hero Tab */}
           {activeTab === 'hero' && (
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Mode Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
                   Hero Display Mode
                 </label>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       value="single"
                       checked={content.hero?.mode === 'single'}
                       onChange={() => updateField(['hero', 'mode'], 'single')}
-                      className="w-4 h-4 text-orange-500"
+                      className="w-4 h-4 text-[var(--primary)] focus:ring-[var(--primary)]"
                     />
                     <span className="text-sm">Single Image</span>
                   </label>
@@ -297,7 +390,7 @@ export default function AdminContactPage() {
                       value="carousel"
                       checked={content.hero?.mode === 'carousel'}
                       onChange={() => updateField(['hero', 'mode'], 'carousel')}
-                      className="w-4 h-4 text-orange-500"
+                      className="w-4 h-4 text-[var(--primary)] focus:ring-[var(--primary)]"
                     />
                     <span className="text-sm">Carousel / Slider</span>
                   </label>
@@ -306,99 +399,55 @@ export default function AdminContactPage() {
 
               {/* Single Image Upload */}
               {content.hero?.mode === 'single' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Hero Image
-                  </label>
-                  <div className="relative w-full max-w-md h-48 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
-                    {content.hero?.single_image ? (
-                      <>
-                        <Image
-                          src={content.hero.single_image}
-                          alt="Hero"
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          onClick={removeSingleImage}
-                          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full transition"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-8 h-8 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  <label className="cursor-pointer inline-flex items-center gap-2 mt-3 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition">
-                    <Upload className="w-4 h-4" />
-                    {content.hero?.single_image ? 'Replace Image' : 'Upload Image'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleSingleUpload}
-                      disabled={uploadingImg}
-                    />
-                  </label>
-                  {uploadingImg && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                      <Loader2 className="animate-spin w-4 h-4" />
-                      Uploading...
-                    </div>
-                  )}
-                </div>
+                <ImageUploadArea
+                  label="Hero Image"
+                  imageUrl={content.hero?.single_image || ''}
+                  onUpload={handleSingleUpload}
+                  onRemove={removeSingleImage}
+                  uploading={uploadingImg}
+                />
               )}
 
               {/* Carousel Images */}
               {content.hero?.mode === 'carousel' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-2">
                     Carousel Images
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                     {content.hero?.carousel_images?.map((url: string, idx: number) => (
                       <div
                         key={idx}
-                        className="relative group border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800"
+                        className="relative group border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--background-secondary)] aspect-square"
                       >
-                        <div className="relative h-32 w-full">
-                          <Image
-                            src={url}
-                            alt={`Slide ${idx + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <Image src={url} alt={`Slide ${idx + 1}`} fill className="object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
                           <button
                             onClick={() => moveCarouselImage(idx, 'up')}
-                            className="bg-black/60 hover:bg-black/80 p-1 rounded text-white transition"
+                            className="bg-black/60 hover:bg-black/80 p-1.5 rounded text-white transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                             disabled={idx === 0}
                           >
                             <ChevronUp className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => moveCarouselImage(idx, 'down')}
-                            className="bg-black/60 hover:bg-black/80 p-1 rounded text-white transition"
+                            className="bg-black/60 hover:bg-black/80 p-1.5 rounded text-white transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                             disabled={idx === (content.hero?.carousel_images?.length || 0) - 1}
                           >
                             <ChevronDown className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => removeCarouselImage(idx)}
-                            className="bg-red-600 hover:bg-red-700 p-1 rounded text-white transition"
+                            className="bg-red-600 hover:bg-red-700 p-1.5 rounded text-white transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                           >
                             <X className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
                     ))}
-                    <label className="h-32 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                      <Plus className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add Image</span>
+                    <label className="aspect-square border-2 border-dashed border-[var(--border)] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[var(--background-secondary)] transition">
+                      <Plus className="w-6 h-6 text-[var(--foreground-muted)]" />
+                      <span className="text-xs text-[var(--foreground-muted)] mt-1">Add Image</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -409,54 +458,54 @@ export default function AdminContactPage() {
                     </label>
                   </div>
                   {uploadingImg && (
-                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                    <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
                       <Loader2 className="animate-spin w-4 h-4" />
                       Uploading image...
                     </div>
                   )}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    Recommended image size: 1200x600px. Use the arrow buttons to reorder.
+                  <p className="text-xs text-[var(--foreground-muted)] mt-4 opacity-70">
+                    Recommended image size: 1200x600px. Use arrow buttons to reorder.
                   </p>
                 </div>
               )}
 
               {/* Text Content */}
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4 pt-4 border-t border-[var(--border)]">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Hero Title
                   </label>
                   <input
                     value={content.hero?.title || ''}
                     onChange={(e) => updateField(['hero', 'title'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="Main heading text"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Hero Subtitle
                   </label>
                   <input
                     value={content.hero?.subtitle || ''}
                     onChange={(e) => updateField(['hero', 'subtitle'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="Secondary text"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Text Color
                   </label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={content.hero?.text_color || '#F97316'}
+                      value={content.hero?.text_color || '#C96712'}
                       onChange={(e) => updateField(['hero', 'text_color'], e.target.value)}
-                      className="w-12 h-10 rounded border border-gray-300 dark:border-gray-700 cursor-pointer"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded border border-[var(--border)] cursor-pointer bg-[var(--background-secondary)]"
                     />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {content.hero?.text_color || '#F97316'}
+                    <span className="text-xs sm:text-sm text-[var(--foreground-muted)] font-mono">
+                      {content.hero?.text_color || '#C96712'}
                     </span>
                   </div>
                 </div>
@@ -466,26 +515,26 @@ export default function AdminContactPage() {
 
           {/* Form Tab */}
           {activeTab === 'form' && (
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                   Form Title
                 </label>
                 <input
                   value={content.form_title || ''}
                   onChange={(e) => updateField(['form_title'], e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                   placeholder="Send us a Message"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                   Form Subtitle
                 </label>
                 <input
                   value={content.form_subtitle || ''}
                   onChange={(e) => updateField(['form_subtitle'], e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                   placeholder="We'll get back to you within 24 hours"
                 />
               </div>
@@ -494,31 +543,31 @@ export default function AdminContactPage() {
 
           {/* Feature Grid Tab */}
           {activeTab === 'grid' && (
-            <div className="p-6">
-              <div className="space-y-4">
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 {content.feature_grid?.map((item: FeatureGridItem, idx: number) => (
-                  <div key={idx} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-3">
+                  <div key={idx} className="border border-[var(--border)] rounded-lg p-3 sm:p-4 space-y-3">
                     <input
                       placeholder="Feature Title"
                       value={item.title}
                       onChange={(e) => updateGridItem(idx, 'title', e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     />
                     <input
                       placeholder="Feature Description"
                       value={item.description}
                       onChange={(e) => updateGridItem(idx, 'description', e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     />
                     <input
                       placeholder="Link URL (e.g., /products)"
                       value={item.link}
                       onChange={(e) => updateGridItem(idx, 'link', e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     />
                     <button
                       onClick={() => removeGridItem(idx)}
-                      className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
+                      className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1 transition"
                     >
                       <Trash2 className="w-3 h-3" /> Remove Feature
                     </button>
@@ -526,12 +575,12 @@ export default function AdminContactPage() {
                 ))}
                 <button
                   onClick={addGridItem}
-                  className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:text-orange-700 text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm font-medium transition"
                 >
                   <Plus className="w-4 h-4" /> Add Feature
                 </button>
                 {(!content.feature_grid || content.feature_grid.length === 0) && (
-                  <p className="text-sm text-gray-400 text-center py-4">
+                  <p className="text-sm text-[var(--foreground-muted)] text-center py-4">
                     No features added. Click "Add Feature" to start.
                   </p>
                 )}
@@ -541,102 +590,118 @@ export default function AdminContactPage() {
 
           {/* Contact Details Tab */}
           {activeTab === 'details' && (
-            <div className="p-6 space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     <Mail className="inline w-3 h-3 mr-1" /> Email
                   </label>
                   <input
                     type="email"
                     value={content.contact_details?.email || ''}
                     onChange={(e) => updateField(['contact_details', 'email'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+                    placeholder="contact@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     <Phone className="inline w-3 h-3 mr-1" /> Phone
                   </label>
                   <input
                     value={content.contact_details?.phone || ''}
                     onChange={(e) => updateField(['contact_details', 'phone'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+                    placeholder="+265 123 456 789"
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     <MapPin className="inline w-3 h-3 mr-1" /> Address
                   </label>
                   <input
                     value={content.contact_details?.address || ''}
                     onChange={(e) => updateField(['contact_details', 'address'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+                    placeholder="123 Main St, City, Country"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     <MessageCircle className="inline w-3 h-3 mr-1" /> WhatsApp Link
                   </label>
                   <input
                     value={content.contact_details?.whatsapp_link || ''}
                     onChange={(e) => updateField(['contact_details', 'whatsapp_link'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="https://wa.me/123456789"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Instagram URL
                   </label>
                   <input
                     value={content.contact_details?.instagram || ''}
                     onChange={(e) => updateField(['contact_details', 'instagram'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="https://instagram.com/..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Facebook URL
                   </label>
                   <input
                     value={content.contact_details?.facebook || ''}
                     onChange={(e) => updateField(['contact_details', 'facebook'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="https://facebook.com/..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                     Twitter URL
                   </label>
                   <input
                     value={content.contact_details?.twitter || ''}
                     onChange={(e) => updateField(['contact_details', 'twitter'], e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                    className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                     placeholder="https://twitter.com/..."
                   />
                 </div>
               </div>
 
               {/* Community Link */}
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <div className="pt-4 border-t border-[var(--border)]">
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
                   <LinkIcon className="inline w-3 h-3 mr-1" /> Community Link
                 </label>
                 <input
                   value={content.community_link || ''}
                   onChange={(e) => updateField(['community_link'], e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-2 text-sm"
+                  className="w-full px-3 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                   placeholder="https://chat.whatsapp.com/your-invite-link"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-[var(--foreground-muted)] mt-1.5 opacity-70">
                   This link will be used for the "Join Our Community" button across the site.
                 </p>
               </div>
             </div>
           )}
+        </div>
+
+        {/* Quick Tips */}
+        <div className="mt-4 sm:mt-6 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800 p-3 sm:p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">
+                <strong>Pro Tip:</strong> The hero section supports both single images and carousels. 
+                Use carousel mode to showcase multiple images or promotions. Recommended size: 1200x600px.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
