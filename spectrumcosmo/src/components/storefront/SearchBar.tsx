@@ -122,7 +122,7 @@ export default function SearchBar() {
     if (value.length >= 2) {
       debounceTimer.current = setTimeout(() => {
         performSearch(value);
-      }, 400); // 400ms debounce
+      }, 400);
     } else {
       setResults([]);
       if (value.length === 0 && isOpen) {
@@ -191,50 +191,53 @@ export default function SearchBar() {
       {/* Search button */}
       <button
         onClick={openSearch}
-        className="p-2 hover:bg-gray-100 rounded-full transition"
+        className="p-2 hover:bg-[var(--background-secondary)] rounded-full transition min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Search"
       >
-        <Search size={20} />
+        <Search size={20} className="text-[var(--foreground)]" />
       </button>
 
       {/* Search modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="fixed inset-0 bg-[var(--background-card)] z-50 flex flex-col">
           {/* Header */}
-          <div className="flex items-center gap-4 p-4 border-b">
+          <div className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-b border-[var(--border)]">
             <form onSubmit={handleSubmit} className="flex-1 relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={handleInputChange}
                 placeholder="Search products..."
-                className="w-full p-3 pr-10 text-base border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F97316]"
+                className="w-full pl-10 pr-10 py-2.5 sm:py-3 text-sm sm:text-base bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[44px]"
               />
               {loading && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-[#F97316] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </form>
             <button
               onClick={closeSearch}
-              className="p-2 hover:bg-gray-100 rounded-full"
+              className="p-2 hover:bg-[var(--background-secondary)] rounded-full transition min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close"
             >
-              <X size={20} />
+              <X size={20} className="text-[var(--foreground-muted)]" />
             </button>
           </div>
 
           {/* Results body */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
             {/* Show search results when query exists */}
             {query.length >= 2 && (
               <>
                 {results.length === 0 && !loading && (
-                  <p className="text-center text-gray-500 mt-8">
-                    No products found. Try "hoodie" or "bracelet"
-                  </p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Search size={32} className="mx-auto text-[var(--foreground-muted)] opacity-30 mb-3" />
+                    <p className="text-[var(--foreground-muted)] text-sm">No products found</p>
+                    <p className="text-xs text-[var(--foreground-muted)] opacity-70 mt-1">Try "hoodie" or "bracelet"</p>
+                  </div>
                 )}
 
                 {results.length > 0 && (
@@ -243,21 +246,27 @@ export default function SearchBar() {
                       <button
                         key={product.id}
                         onClick={() => handleProductClick(product.id, product.name)}
-                        className="w-full flex items-center gap-3 p-3 border rounded-xl hover:bg-gray-50 transition text-left"
+                        className="w-full flex items-center gap-3 p-2 sm:p-3 border border-[var(--border)] rounded-xl hover:bg-[var(--background-secondary)] transition text-left min-h-[60px]"
                       >
-                        <div className="w-12 h-12 relative bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          {product.image_url && (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 relative bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
+                          {product.image_url ? (
                             <Image
                               src={product.image_url}
                               alt={product.name}
                               fill
                               className="object-cover"
                             />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Search size={16} className="text-[var(--foreground-muted)] opacity-30" />
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium line-clamp-1">{product.name}</p>
-                          <p className="text-sm text-[#F97316] font-semibold">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm sm:text-base text-[var(--foreground)] line-clamp-1">
+                            {product.name}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[var(--primary)] font-semibold">
                             {product.currency || 'MWK'} {product.price?.toLocaleString()}
                           </p>
                         </div>
@@ -266,9 +275,9 @@ export default function SearchBar() {
 
                     <button
                       onClick={handleSubmit}
-                      className="w-full mt-4 p-3 bg-gray-100 rounded-xl text-center text-gray-700 hover:bg-gray-200 transition"
+                      className="w-full mt-3 sm:mt-4 p-3 bg-[var(--background-secondary)] rounded-xl text-center text-[var(--foreground)] hover:bg-[var(--background)] transition text-sm sm:text-base min-h-[44px]"
                     >
-                      See all results for "{query}" →
+                      See all results for "<span className="font-medium">{query}</span>" →
                     </button>
                   </div>
                 )}
@@ -281,35 +290,35 @@ export default function SearchBar() {
                 {/* Recent Searches */}
                 {recentSearches.length > 0 && (
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Clock size={16} />
-                        <span className="text-sm font-medium">Recent searches</span>
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)]">
+                        <Clock size={14} className="sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-sm font-medium">Recent searches</span>
                       </div>
                       <button
                         onClick={clearRecentSearches}
-                        className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1"
+                        className="text-[10px] sm:text-xs text-[var(--foreground-muted)] hover:text-red-500 flex items-center gap-1 transition min-h-[32px]"
                       >
-                        <Trash2 size={12} /> Clear all
+                        <Trash2 size={10} className="sm:w-3 sm:h-3" /> Clear all
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {recentSearches.map((term, index) => (
                         <button
                           key={index}
                           onClick={() => handleRecentSearchClick(term)}
-                          className="group flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition"
+                          className="group flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-[var(--background-secondary)] hover:bg-[var(--background)] rounded-full text-xs sm:text-sm transition min-h-[32px]"
                         >
-                          <Clock size={12} className="text-gray-400" />
-                          <span>{term}</span>
+                          <Clock size={10} className="sm:w-3 sm:h-3 text-[var(--foreground-muted)]" />
+                          <span className="text-[var(--foreground)]">{term}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               removeRecentSearch(term);
                             }}
-                            className="ml-1 opacity-0 group-hover:opacity-100 transition"
+                            className="ml-0.5 opacity-0 group-hover:opacity-100 transition"
                           >
-                            <X size={12} className="text-gray-400 hover:text-red-500" />
+                            <X size={10} className="sm:w-3 sm:h-3 text-[var(--foreground-muted)] hover:text-red-500" />
                           </button>
                         </button>
                       ))}
@@ -320,29 +329,35 @@ export default function SearchBar() {
                 {/* Trending Products */}
                 {trendingProducts.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3 text-gray-500">
-                      <Flame size={16} className="text-orange-500" />
-                      <span className="text-sm font-medium">Trending Products</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 text-[var(--foreground-muted)]">
+                      <Flame size={14} className="sm:w-4 sm:h-4 text-[var(--primary)]" />
+                      <span className="text-xs sm:text-sm font-medium">Trending Products</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                       {trendingProducts.map((product) => (
                         <button
                           key={product.id}
                           onClick={() => handleProductClick(product.id, product.name)}
-                          className="text-left"
+                          className="text-left group"
                         >
-                          <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
-                            {product.image_url && (
+                          <div className="relative w-full aspect-square bg-[var(--background-secondary)] rounded-lg overflow-hidden mb-1.5 sm:mb-2 group-hover:shadow-md transition">
+                            {product.image_url ? (
                               <Image
                                 src={product.image_url}
                                 alt={product.name}
                                 fill
-                                className="object-cover"
+                                className="object-cover group-hover:scale-105 transition duration-300"
                               />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Search size={20} className="text-[var(--foreground-muted)] opacity-30" />
+                              </div>
                             )}
                           </div>
-                          <p className="text-sm font-medium line-clamp-1">{product.name}</p>
-                          <p className="text-xs text-[#F97316] font-semibold">
+                          <p className="text-xs sm:text-sm font-medium text-[var(--foreground)] line-clamp-1">
+                            {product.name}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-[var(--primary)] font-semibold">
                             {product.currency || 'MWK'} {product.price?.toLocaleString()}
                           </p>
                         </button>
