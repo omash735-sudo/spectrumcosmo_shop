@@ -48,23 +48,20 @@ const MIN_PASSWORD_LENGTH = 8;
 export default function SettingsPage() {
   const router = useRouter();
   const { currency } = useCurrency();
-  const { theme, setTheme, systemTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
-
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -196,20 +193,15 @@ export default function SettingsPage() {
   const handleItemClick = (item: SettingsItem) => {
     if (item.href) {
       router.push(item.href);
-    }
-    if (item.action === 'rating') {
+    } else if (item.action === 'rating') {
       setShowRatingModal(true);
-    }
-    if (item.action === 'delete') {
+    } else if (item.action === 'delete') {
       setShowDeleteModal(true);
-    }
-    if (item.action === 'currency') {
+    } else if (item.action === 'currency') {
       document.getElementById('currency-selector-trigger')?.click();
-    }
-    if (item.action === 'password') {
+    } else if (item.action === 'password') {
       setShowPasswordModal(true);
-    }
-    if (item.action === 'theme') {
+    } else if (item.action === 'theme') {
       setShowThemeModal(true);
     }
   };
@@ -317,7 +309,6 @@ export default function SettingsPage() {
       <Navbar />
       <main className="min-h-screen bg-[var(--background)] py-4 sm:py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
-          
           {/* Header */}
           <div className="mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-1 sm:mb-2">
@@ -347,7 +338,7 @@ export default function SettingsPage() {
                       className="w-full h-full object-cover" 
                     />
                   ) : (
-                    <User size={24} className="text-white sm:w-7 sm:h-7 md:w-8 sm:h-8" />
+                    <User size={24} className="text-white sm:w-7 sm:h-7 md:w-8 md:h-8" />
                   )}
                 </div>
                 <div className="flex-1 text-center sm:text-left min-w-0">
