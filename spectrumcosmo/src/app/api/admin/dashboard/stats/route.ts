@@ -1,4 +1,3 @@
-// app/api/admin/dashboard/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -23,7 +22,7 @@ export async function GET(req: NextRequest) {
         AND status NOT IN ('cancelled', 'declined')
     `;
 
-    // Yesterday's stats
+    // Yesterday's stats for growth
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
@@ -35,6 +34,24 @@ export async function GET(req: NextRequest) {
       WHERE created_at >= ${yesterday.toISOString()} 
         AND created_at < ${today.toISOString()}
         AND status NOT IN ('cancelled', 'declined')
+    `;
+
+    // Lifetime stats (NEW)
+    const [lifetimeStats] = await sql`
+      SELECT 
+        COALESCE(SUM(total_amount), 0) as revenue,
+        COUNT(*) as orders,
+        COALESCE(AVG(total_amount), 0) as avg_order
+      FROM orders 
+      WHERE status NOT IN ('cancelled', 'declined')
+    `;
+
+    // Unique visitors today (NEW)
+    const [uniqueVisitors] = await sql`
+      SELECT COUNT(DISTINCT session_id) as count
+      FROM analytics_events
+      WHERE event_type = 'page_view'
+        AND created_at >= ${today.toISOString()}
     `;
 
     // Active users today
@@ -72,6 +89,7 @@ export async function GET(req: NextRequest) {
         AND response_time_ms IS NOT NULL
     `;
 
+    // Calculate growth rates
     const revenueGrowth = yesterdayStats?.revenue > 0 
       ? Number(((todayStats.revenue - yesterdayStats.revenue) / yesterdayStats.revenue * 100).toFixed(1))
       : 0;
@@ -80,22 +98,45 @@ export async function GET(req: NextRequest) {
       ? Number(((todayStats.orders - yesterdayStats.orders) / yesterdayStats.orders * 100).toFixed(1))
       : 0;
 
-    const totalSessions = Number(activeCarts?.count || 0);
+    // Calculate conversion rate (NEW)
+    const totalSessions = Number(uniqueVisitors?.count || 0);
     const totalOrders = Number(todayStats?.orders || 0);
+    const conversionRate = totalSessions > 0 
+      ? Number((totalOrders / totalSessions).toFixed(4))
+      : 0;
+
+    // Cart abandonment
+    const totalActiveCarts = Number(activeCarts?.count || 0);
+    const abandonmentRate = totalActiveCarts > 0 && totalOrders > 0 
+      ? Math.round(((totalActiveCarts - totalOrders) / totalActiveCarts) * 100)
+      : 0;
 
     return NextResponse.json({
+      // Today's stats
       revenue_today: Number(todayStats?.revenue || 0),
       orders_today: Number(todayStats?.orders || 0),
       active_users_today: Number(activeUsers?.count || 0),
-      abandoned_carts: totalSessions > 0 && totalOrders > 0 
-        ? Math.round(((totalSessions - totalOrders) / totalSessions) * 100)
-        : 0,
-      active_carts: totalSessions,
-      failed_payments: 0,
+      
+      // Cart stats
+      abandoned_carts: abandonmentRate,
+      active_carts: totalActiveCarts,
+      
+      // System stats
       avg_api_response_ms: Math.round(avgResponse?.avg_ms || 0),
       failed_logins_last_hour: Number(failedLogins?.count || 0),
+      
+      // Growth
       revenue_growth: revenueGrowth,
       orders_growth: ordersGrowth,
+      
+      // NEW: Lifetime stats
+      total_revenue_lifetime: Number(lifetimeStats?.revenue || 0),
+      total_orders_lifetime: Number(lifetimeStats?.orders || 0),
+      avg_order_value_lifetime: Number(lifetimeStats?.avg_order || 0),
+      
+      // NEW: Conversion stats
+      unique_visitors_today: Number(uniqueVisitors?.count || 0),
+      conversion_rate: conversionRate,
     });
   } catch (err) {
     console.error('Dashboard stats error:', err);
@@ -110,6 +151,11 @@ export async function GET(req: NextRequest) {
       failed_logins_last_hour: 0,
       revenue_growth: 0,
       orders_growth: 0,
+      total_revenue_lifetime: 0,
+      total_orders_lifetime: 0,
+      avg_order_value_lifetime: 0,
+      unique_visitors_today: 0,
+      conversion_rate: 0,
     });
   }
 }
