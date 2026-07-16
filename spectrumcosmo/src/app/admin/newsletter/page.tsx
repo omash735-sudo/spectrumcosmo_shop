@@ -7,7 +7,7 @@ import { Metadata } from 'next';
 import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import NewsletterClient from '@/components/admin/NewsletterClient';
-import { AlertCircle, RefreshCw, Plus, Mail } from 'lucide-react';
+import { AlertCircle, RefreshCw, Plus, Mail, Package } from 'lucide-react';
 import Link from 'next/link';
 
 type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
@@ -62,6 +62,33 @@ export const metadata: Metadata = {
   description: 'Manage email campaigns, track subscriber engagement, and view newsletter analytics.',
   robots: 'noindex, nofollow',
 };
+
+// ===== SKELETON =====
+function NewsletterSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+          <div className="h-4 bg-[var(--background-secondary)] rounded w-64 mt-1" />
+        </div>
+        <div className="h-10 bg-[var(--background-secondary)] rounded w-40" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 bg-[var(--background-secondary)] rounded-xl" />
+        ))}
+      </div>
+      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4">
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 bg-[var(--background-secondary)] rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 async function getNewsletterStats(sql: any): Promise<StatData> {
   try {
@@ -239,66 +266,70 @@ export default async function AdminNewsletterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--background)]">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Mail className="w-7 h-7 text-orange-500" />
-                Newsletter Hub
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Newsletter Hub</h1>
+              </div>
+              <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
                 Manage campaigns, target audiences, and track subscriber engagement.
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <Link
-                href="/admin/newsletter/new"
-                className="bg-orange-500 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-orange-600 transition shadow-md text-sm"
-              >
-                <Plus size={18} />
-                Create Newsletter
-              </Link>
-            </div>
+            <Link
+              href="/admin/newsletter/new"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl font-medium transition shadow-sm text-sm sm:text-base min-h-[44px]"
+            >
+              <Plus size={18} />
+              Create Newsletter
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error ? (
-          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
+          /* Error State */
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 sm:p-8 text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
               Unable to Load Newsletter Data
             </h3>
             <p className="text-sm text-red-600 dark:text-red-300 max-w-md mx-auto">
               {error}
             </p>
-            <div className="flex items-center justify-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               <Link
                 href="/admin"
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition text-sm"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition text-sm min-h-[44px] flex items-center"
               >
                 Return to Dashboard
               </Link>
               <button
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm min-h-[44px]"
               >
                 <RefreshCw size={14} />
                 Try Again
               </button>
             </div>
           </div>
-        ) : (
+        ) : stats ? (
           <NewsletterClient
             initialCampaigns={campaigns}
             initialStats={stats}
           />
+        ) : (
+          <NewsletterSkeleton />
         )}
       </div>
     </div>
