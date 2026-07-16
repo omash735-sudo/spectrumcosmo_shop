@@ -14,8 +14,10 @@ import {
   Users,
   Package,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  AlertCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 
 // Types
 interface Stats {
@@ -36,6 +38,7 @@ interface TopProduct {
   product_name: string;
   sold: number;
   revenue?: number;
+  image?: string;
 }
 
 interface CustomerStats {
@@ -60,7 +63,7 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// Stat Card Component
+// ===== STAT CARD COMPONENT =====
 function StatCard({ 
   title, 
   value, 
@@ -91,16 +94,44 @@ function StatCard({
   };
 
   return (
-    <div className={`rounded-xl border p-5 ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between mb-3">
-        <Icon className={`w-5 h-5 ${iconColorClasses[color]}`} />
+    <div className={`rounded-xl border p-4 sm:p-5 ${colorClasses[color]}`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColorClasses[color]}`} />
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{title}</p>
+      <p className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">{value}</p>
+      <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5 sm:mt-1">{title}</p>
     </div>
   );
 }
 
+// ===== SKELETON =====
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Header skeleton */}
+      <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+      <div className="h-4 bg-[var(--background-secondary)] rounded w-64" />
+      
+      {/* Stats skeleton */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-[var(--background-secondary)] rounded-xl h-24" />
+        ))}
+      </div>
+      
+      {/* Two column skeleton */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 bg-[var(--background-secondary)] rounded-xl h-64" />
+        <div className="lg:col-span-2 bg-[var(--background-secondary)] rounded-xl h-64" />
+      </div>
+      
+      {/* Table skeleton */}
+      <div className="bg-[var(--background-secondary)] rounded-xl h-64" />
+    </div>
+  );
+}
+
+// ===== MAIN PAGE =====
 export default async function AnalyticsPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
@@ -155,40 +186,36 @@ export default async function AnalyticsPage() {
   const topProducts = data.topProducts;
   const customerStats = data.customerStats;
 
-  // Calculate trends (mock - replace with actual trend data from API if available)
-  const revenueTrend = stats.totalRevenue > 0 ? '+12%' : '0%';
-  const ordersTrend = stats.totalOrders > 0 ? '+8%' : '0%';
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Shopify-style Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-[var(--background)]">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Analytics</h1>
+            <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
               Overview of your business performance
             </p>
           </div>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error ? (
           /* Error State */
-          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
-            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 sm:p-8 text-center">
+            <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
               Failed to Load Analytics
             </h3>
-            <p className="text-red-600 dark:text-red-300">
+            <p className="text-sm sm:text-base text-red-600 dark:text-red-300">
               There was an error loading your analytics data. Please try again later.
             </p>
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            {/* Stats Grid - Responsive */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <StatCard
                 title="Total Orders"
                 value={stats.totalOrders}
@@ -222,45 +249,45 @@ export default async function AnalyticsPage() {
             </div>
 
             {/* Two Column Layout */}
-            <div className="grid lg:grid-cols-3 gap-8 mb-8">
-              {/* Customer Retention - Left Column */}
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {/* Customer Retention */}
               <div className="lg:col-span-1">
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-                    <Users className="w-5 h-5 text-orange-500" />
-                    <h2 className="font-semibold text-gray-900 dark:text-white">Customer Retention</h2>
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                    <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Customer Retention</h2>
                   </div>
                   
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
                       <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Repeat Customers</p>
-                        <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                        <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">Repeat Customers</p>
+                        <p className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                           {customerStats.repeatCustomers}
                         </p>
                       </div>
-                      <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
                       <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">New Customers</p>
-                        <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+                        <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">New Customers</p>
+                        <p className="text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-400">
                           {customerStats.newCustomers}
                         </p>
                       </div>
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                       </div>
                     </div>
 
                     {customerStats.repeatCustomers + customerStats.newCustomers > 0 && (
-                      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-3 sm:mt-4 pt-3 border-t border-[var(--border)]">
+                        <p className="text-xs text-[var(--foreground-muted)]">
                           Retention Rate: {' '}
-                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                          <span className="font-medium text-[var(--foreground)]">
                             {Math.round((customerStats.repeatCustomers / (customerStats.repeatCustomers + customerStats.newCustomers)) * 100)}%
                           </span>
                         </p>
@@ -270,17 +297,17 @@ export default async function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Monthly Sales Chart - Right Column */}
+              {/* Monthly Sales Chart */}
               <div className="lg:col-span-2">
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-orange-500" />
-                      <h2 className="font-semibold text-gray-900 dark:text-white">Monthly Sales Trend</h2>
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                      <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Monthly Sales Trend</h2>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 text-[10px] sm:text-xs text-[var(--foreground-muted)]">
                       <span className="flex items-center gap-1">
-                        <ArrowUp className="w-3 h-3 text-green-500" />
+                        <ArrowUp className="w-3 h-3 text-emerald-500" />
                         Revenue
                       </span>
                       <span className="flex items-center gap-1">
@@ -291,78 +318,91 @@ export default async function AnalyticsPage() {
                   </div>
                   
                   {monthlyData.length === 0 ? (
-                    <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-600">
+                    <div className="h-48 sm:h-64 flex items-center justify-center text-[var(--foreground-muted)]">
                       <div className="text-center">
-                        <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm">No sales data available</p>
+                        <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-xs sm:text-sm">No sales data available</p>
                       </div>
                     </div>
                   ) : (
-                    <MonthlySalesChart data={monthlyData} />
+                    <div className="h-48 sm:h-64">
+                      <MonthlySalesChart data={monthlyData} />
+                    </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Top Products Table */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+            {/* Top Products Table - Responsive */}
+            <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-orange-500" />
-                  <h2 className="font-semibold text-gray-900 dark:text-white">Top Selling Products</h2>
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                  <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Top Selling Products</h2>
                 </div>
               </div>
               
               {topProducts.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Package className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">No product sales data available</p>
+                <div className="p-8 sm:p-12 text-center">
+                  <Package className="w-10 h-10 sm:w-12 sm:h-12 text-[var(--foreground-muted)] opacity-30 mx-auto mb-3" />
+                  <p className="text-sm text-[var(--foreground-muted)]">No product sales data available</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
+                  <table className="w-full min-w-[500px]">
+                    <thead className="bg-[var(--background-secondary)]">
                       <tr>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="text-left px-4 sm:px-6 py-3 text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">
                           Rank
                         </th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="text-left px-4 sm:px-6 py-3 text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">
                           Product
                         </th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="text-left px-4 sm:px-6 py-3 text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">
                           Units Sold
                         </th>
-                        <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th className="text-left px-4 sm:px-6 py-3 text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">
                           Revenue
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tbody className="divide-y divide-[var(--border)]">
                       {topProducts.map((product: TopProduct, index: number) => (
-                        <tr key={product.product_name} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                          <td className="px-6 py-4">
+                        <tr key={product.product_name} className="hover:bg-[var(--background-secondary)] transition">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
                             <span className={`
                               inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
                               ${index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400' :
                                 index === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' :
                                 index === 2 ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400' :
-                                'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500'}
+                                'bg-[var(--background-secondary)] text-[var(--foreground-muted)]'}
                             `}>
                               {index + 1}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {product.product_name}
-                            </span>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <div className="flex items-center gap-3">
+                              {product.image && (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden bg-[var(--background-secondary)] border border-[var(--border)] flex-shrink-0">
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.product_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <span className="text-xs sm:text-sm font-medium text-[var(--foreground)] truncate max-w-[120px] sm:max-w-[200px]">
+                                {product.product_name}
+                              </span>
+                            </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <span className="text-xs sm:text-sm text-[var(--foreground-muted)]">
                               {product.sold} units
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          <td className="px-4 sm:px-6 py-3 sm:py-4">
+                            <span className="text-xs sm:text-sm font-medium text-[var(--foreground)]">
                               {formatCurrency(product.revenue || product.sold * 10000)}
                             </span>
                           </td>
@@ -376,7 +416,7 @@ export default async function AnalyticsPage() {
 
             {/* Summary Footer */}
             <div className="mt-6 text-center">
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
                 Data updates in real-time. Last sync: {new Date().toLocaleString()}
               </p>
             </div>
