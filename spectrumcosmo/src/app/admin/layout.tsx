@@ -91,6 +91,9 @@ const navItems = [
   { name: 'SMS Templates', href: '/admin/sms-templates', icon: Smartphone, section: 'GROWTH' },
   { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },
   
+  // ORDER STATUSES - REMOVED
+  // { name: 'Order Statuses', href: '/admin/order-statuses', icon: Tag, section: 'SYSTEM' },
+  
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Alert Settings', href: '/admin/alert-settings', icon: Bell, section: 'SYSTEM' },
   { name: 'Hero', href: '/admin/hero', icon: Layout, section: 'SYSTEM' },
