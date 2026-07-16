@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Loader2, Trash2, Check, X, MessageSquare, Eye, EyeOff, Clock, RefreshCw } from 'lucide-react';
+import { Loader2, Trash2, Check, X, MessageSquare, Eye, EyeOff, Clock, RefreshCw, AlertCircle, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type ReviewStatus = 'pending' | 'reviewing' | 'approved' | 'denied';
@@ -44,6 +44,45 @@ const statusIcons: Record<ReviewStatus, any> = {
   denied: X,
 };
 
+// ===== SKELETON =====
+function ReviewsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+          <div className="h-4 bg-[var(--background-secondary)] rounded w-64 mt-1" />
+        </div>
+        <div className="h-10 bg-[var(--background-secondary)] rounded w-24" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-20 bg-[var(--background-secondary)] rounded-xl" />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-10 bg-[var(--background-secondary)] rounded w-20" />
+        ))}
+      </div>
+      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
+        <div className="p-4 space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[var(--background-secondary)] rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-[var(--background-secondary)] rounded w-1/4" />
+                <div className="h-3 bg-[var(--background-secondary)] rounded w-3/4" />
+              </div>
+              <div className="h-8 bg-[var(--background-secondary)] rounded w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -63,7 +102,7 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
           height={size}
           viewBox="0 0 24 24"
           fill={star <= rating ? '#facc15' : 'none'}
-          stroke={star <= rating ? '#facc15' : '#d1d5db'}
+          stroke={star <= rating ? '#facc15' : 'var(--border)'}
           strokeWidth="1.5"
           className="transition-colors"
         >
@@ -79,6 +118,7 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ReviewStatus | 'all'>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);
@@ -139,7 +179,15 @@ export default function AdminReviewsPage() {
     }
   };
 
-  const filtered = reviews.filter(r => filter === 'all' ? true : r.status === filter);
+  const filtered = reviews.filter(r => {
+    const matchesStatus = filter === 'all' ? true : r.status === filter;
+    const matchesSearch = searchTerm === '' || 
+      (r.user_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.review_text?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.product_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesStatus && matchesSearch;
+  });
   
   const counts = {
     total: reviews.length,
@@ -151,30 +199,35 @@ export default function AdminReviewsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="animate-spin text-orange-500 w-8 h-8 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Loading reviews...</p>
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
+          <ReviewsSkeleton />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--background)]">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customer Reviews</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Customer Reviews</h1>
+              </div>
+              <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5">
                 Manage and moderate customer feedback
               </p>
             </div>
             <button
               onClick={fetchReviews}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[var(--background-card)] border border-[var(--border)] rounded-lg text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] transition min-h-[40px] text-sm"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               Refresh
@@ -183,80 +236,97 @@ export default function AdminReviewsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{counts.total}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total Reviews</p>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
+          <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-[var(--foreground)]">{counts.total}</p>
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Total Reviews</p>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 p-4 shadow-sm">
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{counts.pending}</p>
-            <p className="text-xs text-amber-600 dark:text-amber-500">Pending</p>
+          <div className="bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-400">{counts.pending}</p>
+            <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-500">Pending</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800 p-4 shadow-sm">
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{counts.reviewing}</p>
-            <p className="text-xs text-blue-600 dark:text-blue-500">Reviewing</p>
+          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-400">{counts.reviewing}</p>
+            <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-500">Reviewing</p>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 p-4 shadow-sm">
-            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{counts.approved}</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500">Approved</p>
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-emerald-700 dark:text-emerald-400">{counts.approved}</p>
+            <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-500">Approved</p>
           </div>
-          <div className="bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-800 p-4 shadow-sm">
-            <p className="text-2xl font-bold text-rose-700 dark:text-rose-400">{counts.denied}</p>
-            <p className="text-xs text-rose-600 dark:text-rose-500">Denied</p>
+          <div className="bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-rose-700 dark:text-rose-400">{counts.denied}</p>
+            <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-500">Denied</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {(['all', 'pending', 'reviewing', 'approved', 'denied'] as const).map((f) => {
-            const isActive = filter === f;
-            const count = f === 'all' ? counts.total : counts[f];
-            
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? f === 'pending'
-                      ? 'bg-amber-500 text-white shadow-md'
-                      : f === 'reviewing'
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : f === 'approved'
-                          ? 'bg-emerald-500 text-white shadow-md'
-                          : f === 'denied'
-                            ? 'bg-rose-500 text-white shadow-md'
-                            : 'bg-orange-500 text-white shadow-md'
-                    : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-orange-200 dark:hover:border-orange-800'
-                }`}
-              >
-                {f === 'all' ? 'All' : statusLabels[f]}
-                {count > 0 && f !== 'all' && (
-                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/30 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* Filters & Search */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {(['all', 'pending', 'reviewing', 'approved', 'denied'] as const).map((f) => {
+              const isActive = filter === f;
+              const count = f === 'all' ? counts.total : counts[f];
+              const colorMap = {
+                all: 'bg-[var(--primary)] text-white',
+                pending: 'bg-amber-500 text-white',
+                reviewing: 'bg-blue-500 text-white',
+                approved: 'bg-emerald-500 text-white',
+                denied: 'bg-rose-500 text-white',
+              };
+              
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all min-h-[36px] sm:min-h-[40px] ${
+                    isActive
+                      ? colorMap[f] + ' shadow-sm'
+                      : 'bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground-muted)] hover:border-[var(--primary)]/50'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : statusLabels[f]}
+                  {count > 0 && f !== 'all' && (
+                    <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/30 text-white' : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)]'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="relative w-full sm:w-56">
+            <input
+              type="text"
+              placeholder="Search reviews..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] min-h-[40px]"
+            />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--foreground-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        {/* Reviews Table */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare size={28} className="text-gray-400 dark:text-gray-600" />
+            <div className="text-center py-12 sm:py-16">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageSquare size={24} className="sm:w-7 sm:h-7 text-[var(--foreground-muted)] opacity-50" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No reviews found</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base sm:text-lg font-medium text-[var(--foreground)] mb-1">No reviews found</h3>
+              <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
                 {filter === 'all' ? 'No reviews have been submitted yet.' : `No ${filter} reviews match your filter.`}
               </p>
               {filter !== 'all' && (
                 <button
                   onClick={() => setFilter('all')}
-                  className="mt-4 text-orange-500 hover:text-orange-600 text-sm"
+                  className="mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm font-medium"
                 >
                   Clear filter
                 </button>
@@ -264,18 +334,18 @@ export default function AdminReviewsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    <th className="text-left px-6 py-3">Customer</th>
-                    <th className="text-left px-6 py-3">Rating</th>
-                    <th className="text-left px-6 py-3">Review</th>
-                    <th className="text-left px-6 py-3">Status</th>
-                    <th className="text-left px-6 py-3">Date</th>
-                    <th className="text-right px-6 py-3">Actions</th>
+              <table className="w-full min-w-[800px]">
+                <thead className="bg-[var(--background-secondary)]">
+                  <tr className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase tracking-wider">
+                    <th className="text-left px-3 sm:px-6 py-2 sm:py-3">Customer</th>
+                    <th className="text-left px-3 sm:px-6 py-2 sm:py-3">Rating</th>
+                    <th className="text-left px-3 sm:px-6 py-2 sm:py-3 hidden sm:table-cell">Review</th>
+                    <th className="text-left px-3 sm:px-6 py-2 sm:py-3">Status</th>
+                    <th className="text-left px-3 sm:px-6 py-2 sm:py-3 hidden md:table-cell">Date</th>
+                    <th className="text-right px-3 sm:px-6 py-2 sm:py-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {filtered.map((review) => {
                     const userName = review.user_name || review.customer_name || 'Anonymous';
                     const userImage = review.user_image || review.image_url;
@@ -285,14 +355,14 @@ export default function AdminReviewsPage() {
                     return (
                       <tr 
                         key={review.id} 
-                        className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition ${
+                        className={`hover:bg-[var(--background-secondary)] transition ${
                           review.status !== 'approved' ? 'bg-amber-50/30 dark:bg-amber-950/10' : ''
                         }`}
                       >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                             {userImage ? (
-                              <div className="relative w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+                              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden flex-shrink-0">
                                 <Image 
                                   src={userImage} 
                                   alt={userName} 
@@ -301,26 +371,26 @@ export default function AdminReviewsPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="w-9 h-9 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px] sm:text-xs font-bold text-[var(--primary)]">
                                   {userName.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             )}
-                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                            <span className="text-xs sm:text-sm font-medium text-[var(--foreground)] truncate max-w-[80px] sm:max-w-[120px]">
                               {userName}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <StarRating rating={review.rating} size={14} />
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
+                          <StarRating rating={review.rating} size={12} />
                         </td>
-                        <td className="px-6 py-4 max-w-xs">
-                          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 max-w-[120px] sm:max-w-[200px] hidden sm:table-cell">
+                          <p className="text-xs text-[var(--foreground-muted)] line-clamp-2">
                             {review.review_text || 'No review text provided.'}
                           </p>
                           {review.image_url && (
-                            <div className="relative w-10 h-10 mt-2 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                            <div className="relative w-8 h-8 sm:w-10 sm:h-10 mt-1 sm:mt-2 rounded-md overflow-hidden border border-[var(--border)]">
                               <Image 
                                 src={review.image_url} 
                                 alt="Review attachment" 
@@ -330,13 +400,13 @@ export default function AdminReviewsPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
                           <div className="relative">
                             <select
                               value={review.status}
                               onChange={(e) => updateReview(review.id, { status: e.target.value as ReviewStatus })}
                               disabled={processingId === review.id}
-                              className={`text-xs rounded-lg px-3 py-1.5 pr-8 appearance-none cursor-pointer focus:ring-2 focus:ring-orange-500 ${statusColor} border-0`}
+                              className={`text-[10px] sm:text-xs rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 pr-6 sm:pr-8 appearance-none cursor-pointer focus:ring-2 focus:ring-[var(--primary)] ${statusColor} border-0 min-h-[32px] max-w-[100px] sm:max-w-[120px]`}
                             >
                               {statusOptions.map((status) => (
                                 <option key={status} value={status}>
@@ -344,25 +414,25 @@ export default function AdminReviewsPage() {
                                 </option>
                               ))}
                             </select>
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                              {StatusIcon && <StatusIcon size={10} className="opacity-70" />}
+                            <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                              {StatusIcon && <StatusIcon size={8} className="sm:w-2.5 sm:h-2.5 opacity-70" />}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-[10px] text-[var(--foreground-muted)] whitespace-nowrap hidden md:table-cell">
                           {formatDate(review.created_at)}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
                           <div className="flex items-center justify-end gap-1">
                             {processingId === review.id ? (
-                              <Loader2 size={16} className="animate-spin text-orange-500" />
+                              <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin text-[var(--primary)]" />
                             ) : (
                               <button
                                 onClick={() => deleteReview(review.id)}
-                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-500 dark:text-red-400 transition"
+                                className="p-1.5 sm:p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                                 title="Delete review"
                               >
-                                <Trash2 size={15} />
+                                <Trash2 size={14} className="sm:w-[15px] sm:h-[15px]" />
                               </button>
                             )}
                           </div>
@@ -376,11 +446,20 @@ export default function AdminReviewsPage() {
           )}
         </div>
 
+        {/* Footer */}
         {filtered.length > 0 && (
-          <div className="mt-4 flex justify-between items-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-xs text-[var(--foreground-muted)]">
               Showing {filtered.length} of {reviews.length} reviews
             </p>
+            {filter !== 'all' && (
+              <button
+                onClick={() => setFilter('all')}
+                className="text-xs text-[var(--primary)] hover:text-[var(--primary-hover)] transition"
+              >
+                Show all reviews
+              </button>
+            )}
           </div>
         )}
       </div>
