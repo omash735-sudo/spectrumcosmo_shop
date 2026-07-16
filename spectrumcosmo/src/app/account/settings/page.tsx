@@ -8,11 +8,34 @@ import {
   User, MapPin, Lock, Moon, Bell, Mail,
   HelpCircle, MessageCircle, Shield, FileText,
   Trash2, ArrowLeft, Sparkles, LogOut, Settings,
-  Sun, Monitor, X, Loader2, AlertCircle, CheckCircle
+  Sun, Monitor, X, Loader2, AlertCircle, CheckCircle,
+  ChevronRight
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import toast from 'react-hot-toast';
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+};
+
+type SettingsItem = {
+  icon: any;
+  label: string;
+  href?: string;
+  desc: string;
+  danger?: boolean;
+  action?: 'theme' | 'delete' | 'logout';
+};
+
+type SettingsSection = {
+  title: string;
+  icon: any;
+  items: SettingsItem[];
+};
 
 const DELETE_CONFIRM_TEXT = 'DELETE';
 
@@ -20,15 +43,11 @@ export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
-
-  // Theme Modal State
   const [showThemeModal, setShowThemeModal] = useState(false);
 
   useEffect(() => {
@@ -48,11 +67,6 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
   };
 
   const handleDeleteAccount = async () => {
@@ -91,28 +105,41 @@ export default function SettingsPage() {
     return 'System';
   };
 
+  const handleItemClick = (item: SettingsItem) => {
+    if (item.action === 'theme') {
+      setShowThemeModal(true);
+    } else if (item.action === 'delete') {
+      setShowDeleteModal(true);
+    } else if (item.action === 'logout') {
+      handleLogout();
+    } else if (item.href) {
+      router.push(item.href);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+  };
+
   if (loading) {
     return (
       <>
         <Navbar />
         <main className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-          <div className="text-center">
-            <div className="w-10 h-10 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-3"></div>
-            <p className="text-[var(--foreground-muted)] text-sm">Loading settings...</p>
-          </div>
+          <div className="animate-pulse text-[var(--foreground-muted)]">Loading...</div>
         </main>
         <Footer />
       </>
     );
   }
 
-  const sections = [
+  const sections: SettingsSection[] = [
     {
-      title: 'Account',
+      title: 'My Profile',
       icon: User,
       items: [
-        { icon: User, label: 'Profile', href: '/account/profile', desc: 'Manage your personal details' },
-        { icon: MapPin, label: 'Addresses', href: '/account/addresses', desc: 'Manage your shipping addresses' },
+        { icon: User, label: 'My Profile', href: '/account/profile', desc: 'Manage your personal details' },
         { icon: Lock, label: 'Security', href: '/account/security', desc: 'Change your password' },
       ]
     },
@@ -120,12 +147,7 @@ export default function SettingsPage() {
       title: 'Preferences',
       icon: Settings,
       items: [
-        { 
-          icon: getThemeIcon(), 
-          label: 'Theme', 
-          desc: `Current: ${getThemeLabel()}`,
-          action: 'theme'
-        },
+        { icon: getThemeIcon(), label: 'Theme', desc: `Current: ${getThemeLabel()}`, action: 'theme' },
         { icon: Bell, label: 'Notifications', href: '/notification', desc: 'Manage your alerts' },
         { icon: Mail, label: 'Newsletter', href: '/newsletter', desc: 'Email preferences' },
       ]
@@ -144,26 +166,10 @@ export default function SettingsPage() {
       items: [
         { icon: Shield, label: 'Privacy Policy', href: '/privacy', desc: 'Read our privacy policy' },
         { icon: FileText, label: 'Terms & Conditions', href: '/terms', desc: 'Terms of service' },
-        { 
-          icon: Trash2, 
-          label: 'Delete Account', 
-          desc: 'Permanently delete your account',
-          danger: true,
-          action: 'delete'
-        },
+        { icon: Trash2, label: 'Delete Account', desc: 'Permanently delete your account', danger: true, action: 'delete' },
       ]
     },
   ];
-
-  const handleItemClick = (item: any) => {
-    if (item.action === 'theme') {
-      setShowThemeModal(true);
-    } else if (item.action === 'delete') {
-      setShowDeleteModal(true);
-    } else if (item.href) {
-      router.push(item.href);
-    }
-  };
 
   return (
     <>
@@ -182,9 +188,9 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* User Banner */}
+          {/* User Banner - Manga Style */}
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg mb-4 sm:mb-6 md:mb-8">
-            <div className="relative z-10 bg-[var(--primary)] p-3 sm:p-4 md:p-6">
+            <div className="relative z-10 bg-[var(--primary)]/90 backdrop-blur-sm p-3 sm:p-4 md:p-6">
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0 ring-2 ring-white/30">
                   {user?.profileImage ? (
@@ -205,13 +211,6 @@ export default function SettingsPage() {
                   </h2>
                   <p className="text-orange-100 text-xs sm:text-sm truncate">{user?.email}</p>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white hover:bg-white/30 transition text-xs sm:text-sm min-h-[36px] sm:min-h-[40px] flex-shrink-0"
-                >
-                  <LogOut size={14} className="sm:w-4 sm:h-4" />
-                  <span>Sign Out</span>
-                </button>
               </div>
             </div>
           </div>
@@ -260,6 +259,31 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+
+            {/* Sign Out Card - Last Item */}
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 md:mb-4">
+                <LogOut size={14} className="sm:w-[16px] sm:h-[16px] md:w-[18px] md:h-[18px] text-[var(--foreground-muted)]" />
+                <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base md:text-lg">Account</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+                <div
+                  onClick={handleLogout}
+                  className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 flex items-center gap-2.5 sm:gap-3 md:gap-4 cursor-pointer hover:shadow-md hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 group"
+                >
+                  <div className="p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl flex-shrink-0 transition group-hover:scale-105 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400">
+                    <LogOut size={16} className="sm:w-[18px] sm:h-[18px] md:w-[22px] md:h-[22px]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-xs sm:text-sm md:text-base truncate text-red-600 dark:text-red-400">
+                      Sign Out
+                    </h4>
+                    <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Sign out of your account</p>
+                  </div>
+                  <ChevronRight size={12} className="sm:w-[14px] sm:h-[14px] text-[var(--foreground-muted)] group-hover:translate-x-1 transition flex-shrink-0 group-hover:text-red-500" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -399,6 +423,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-// Import missing icons
-import { ChevronRight } from 'lucide-react';
