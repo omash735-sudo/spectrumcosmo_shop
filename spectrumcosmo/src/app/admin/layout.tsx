@@ -281,29 +281,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const NavContent = () => (
     <>
       <div className="flex items-center gap-3 mb-6 sm:mb-8 px-2">
-        <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+        <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
           <img
             src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
             alt="SpectrumCosmo"
             className="w-full h-full object-contain"
           />
         </div>
-        <div>
-          <h1 className="font-bold text-[var(--foreground)] text-base sm:text-lg">SpectrumCosmo</h1>
+        <div className="min-w-0">
+          <h1 className="font-bold text-[var(--foreground)] text-base sm:text-lg truncate">SpectrumCosmo</h1>
           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Admin Panel</p>
         </div>
       </div>
 
       <div className="mb-5 sm:mb-6 p-2.5 sm:p-3 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center flex-shrink-0">
             <Users size={12} className="text-[var(--primary)] sm:w-3.5 sm:h-3.5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs sm:text-sm font-medium text-[var(--foreground)] truncate">{adminName || 'Admin User'}</p>
             <div className="flex items-center gap-1">
-              <Lock size={8} className={twoFactorEnabled ? 'text-green-500' : 'text-[var(--foreground-muted)]'} />
-              <span className={`text-[9px] sm:text-xs ${twoFactorEnabled ? 'text-green-600 dark:text-green-400' : 'text-[var(--foreground-muted)]'}`}>
+              <Lock size={8} className={twoFactorEnabled ? 'text-emerald-500' : 'text-[var(--foreground-muted)]'} />
+              <span className={`text-[9px] sm:text-xs ${twoFactorEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--foreground-muted)]'}`}>
                 2FA {twoFactorEnabled ? 'Enabled' : 'Disabled'}
               </span>
             </div>
@@ -311,7 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      <nav className="flex-1">
+      <nav className="flex-1 overflow-y-auto">
         {['CORE', 'DELIVERY', 'SECURITY', 'OPERATIONS', 'GROWTH', 'SYSTEM'].map((section) => {
           const sectionItems = navItems.filter((item) => item.section === section);
           if (sectionItems.length === 0) return null;
@@ -346,17 +346,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {...(isDeliverySection && !isActive(item.href) ? { onClick: (e) => e.preventDefault() } : {})}
                   >
                     {isDeliverySection && !isActive(item.href) ? (
-                      <Lock size={14} className="sm:w-[18px] sm:h-[18px]" />
+                      <Lock size={14} className="sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     ) : (
-                      <Icon size={14} className={`sm:w-[18px] sm:h-[18px] ${isEvents || isSubscribers || isBanner ? 'text-[var(--primary)]' : ''}`} />
+                      <Icon size={14} className={`sm:w-[18px] sm:h-[18px] flex-shrink-0 ${isEvents || isSubscribers || isBanner ? 'text-[var(--primary)]' : ''}`} />
                     )}
-                    {item.name}
+                    <span className="truncate">{item.name}</span>
                     {showStockAlert && <StockAlertBadge />}
                     {showSecurityAlert && <SecurityAlertBadge />}
                     {showQuoteAlert && <DeliveryQuoteBadge />}
                     {showNotificationAlert && <NotificationBadge />}
                     {isActive(item.href) && (
-                      <span className="ml-auto w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/70"></span>
+                      <span className="ml-auto w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/70 flex-shrink-0"></span>
                     )}
                   </Link>
                 );
@@ -374,7 +374,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }}
           className="flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition w-full"
         >
-          <LogOut size={14} className="sm:w-[18px] sm:h-[18px]" />
+          <LogOut size={14} className="sm:w-[18px] sm:h-[18px] flex-shrink-0" />
           Logout
         </button>
       </div>
@@ -385,22 +385,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[var(--background)]">
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-[var(--background-card)] border-b border-[var(--border)] z-50 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <img
             src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
             alt="Logo"
-            className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
           />
-          <span className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Admin</span>
+          <span className="font-semibold text-[var(--foreground)] text-sm sm:text-base truncate">Admin</span>
           {!twoFactorEnabled && (
-            <span className="text-[8px] sm:text-[10px] bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-1 sm:px-1.5 py-0.5 rounded-full ml-0.5 sm:ml-1">
+            <span className="text-[8px] sm:text-[10px] bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0">
               No 2FA
             </span>
           )}
         </div>
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--background-secondary)] transition"
+          className="p-1.5 sm:p-2 rounded-lg hover:bg-[var(--background-secondary)] transition flex-shrink-0"
         >
           <Menu size={18} className="text-[var(--foreground-muted)] sm:w-5 sm:h-5" />
         </button>
@@ -435,7 +435,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <NavContent />
         </aside>
 
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto min-h-screen">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
