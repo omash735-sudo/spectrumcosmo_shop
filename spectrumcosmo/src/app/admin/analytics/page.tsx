@@ -17,7 +17,6 @@ import {
   ArrowDown,
   AlertCircle,
 } from 'lucide-react';
-import Link from 'next/link';
 
 // Types
 interface Stats {
@@ -108,24 +107,17 @@ function StatCard({
 function AnalyticsSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Header skeleton */}
       <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
       <div className="h-4 bg-[var(--background-secondary)] rounded w-64" />
-      
-      {/* Stats skeleton */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="bg-[var(--background-secondary)] rounded-xl h-24" />
         ))}
       </div>
-      
-      {/* Two column skeleton */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 bg-[var(--background-secondary)] rounded-xl h-64" />
         <div className="lg:col-span-2 bg-[var(--background-secondary)] rounded-xl h-64" />
       </div>
-      
-      {/* Table skeleton */}
       <div className="bg-[var(--background-secondary)] rounded-xl h-64" />
     </div>
   );
@@ -140,7 +132,6 @@ export default async function AnalyticsPage() {
     redirect('/admin/login');
   }
 
-  // Fetch data from the realtime endpoint
   let data: AnalyticsData = {
     stats: {
       totalOrders: 0,
@@ -158,28 +149,33 @@ export default async function AnalyticsPage() {
   };
 
   let error = false;
+  let errorMessage = '';
 
   try {
-    // FIXED: Use relative URL like the working FAQ page
-    // Removed: ${process.env.NEXT_PUBLIC_APP_URL} and Cookie header
-    const res = await fetch('/api/admin/analytics/realtime', {
+    const res = await fetch('https://spectrumcosmo.vercel.app/api/admin/analytics/realtime', {
       cache: 'no-store',
     });
     
+    console.log('📊 Response status:', res.status);
+    
     if (!res.ok) {
-      throw new Error(`Failed to fetch analytics: ${res.status}`);
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
     
     const fetchedData = await res.json();
+    console.log('📊 Fetched data:', JSON.stringify(fetchedData, null, 2));
+    
+    // Ensure data structure is correct
     data = {
       stats: fetchedData.stats || data.stats,
-      monthlyData: fetchedData.monthlyData || [],
-      topProducts: fetchedData.topProducts || [],
+      monthlyData: Array.isArray(fetchedData.monthlyData) ? fetchedData.monthlyData : [],
+      topProducts: Array.isArray(fetchedData.topProducts) ? fetchedData.topProducts : [],
       customerStats: fetchedData.customerStats || data.customerStats,
     };
   } catch (err) {
-    console.error('Analytics fetch error:', err);
+    console.error('❌ Analytics fetch error:', err);
     error = true;
+    errorMessage = err instanceof Error ? err.message : 'Unknown error';
   }
 
   const stats = data.stats;
@@ -189,7 +185,6 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div>
@@ -203,19 +198,17 @@ export default async function AnalyticsPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error ? (
-          /* Error State */
           <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 sm:p-8 text-center">
             <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
               Failed to Load Analytics
             </h3>
             <p className="text-sm sm:text-base text-red-600 dark:text-red-300">
-              There was an error loading your analytics data. Please try again later.
+              Error: {errorMessage || 'Please try again later.'}
             </p>
           </div>
         ) : (
           <>
-            {/* Stats Grid - Responsive */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <StatCard
                 title="Total Orders"
@@ -249,9 +242,7 @@ export default async function AnalyticsPage() {
               />
             </div>
 
-            {/* Two Column Layout */}
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {/* Customer Retention */}
               <div className="lg:col-span-1">
                 <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
@@ -298,7 +289,6 @@ export default async function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Monthly Sales Chart */}
               <div className="lg:col-span-2">
                 <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
@@ -334,7 +324,6 @@ export default async function AnalyticsPage() {
               </div>
             </div>
 
-            {/* Top Products Table - Responsive */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
@@ -415,7 +404,6 @@ export default async function AnalyticsPage() {
               )}
             </div>
 
-            {/* Summary Footer */}
             <div className="mt-6 text-center">
               <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">
                 Data updates in real-time. Last sync: {new Date().toLocaleString()}
