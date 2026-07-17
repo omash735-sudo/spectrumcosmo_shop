@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
       query += ` LIMIT ${limit}`;
     }
 
-    const blockedIPs = await queryMany(query);
+    // Use queryMany with template literal - IMPORTANT FIX
+    const blockedIPs = await queryMany`${query}`;
     return NextResponse.json(blockedIPs);
   } catch (err) {
     console.error('Failed to fetch blocked IPs:', err);
