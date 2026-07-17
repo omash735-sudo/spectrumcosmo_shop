@@ -52,7 +52,6 @@ interface AnalyticsData {
   customerStats: CustomerStats;
 }
 
-// Helper function to format currency
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -62,7 +61,6 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// ===== STAT CARD COMPONENT =====
 function StatCard({ 
   title, 
   value, 
@@ -103,7 +101,6 @@ function StatCard({
   );
 }
 
-// ===== SKELETON =====
 function AnalyticsSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -123,7 +120,6 @@ function AnalyticsSkeleton() {
   );
 }
 
-// ===== MAIN PAGE =====
 export default async function AnalyticsPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
@@ -154,18 +150,17 @@ export default async function AnalyticsPage() {
   try {
     const res = await fetch('https://spectrumcosmo.vercel.app/api/admin/analytics/realtime', {
       cache: 'no-store',
+      headers: {
+        Cookie: cookieStore.toString(),
+      },
     });
-    
-    console.log('📊 Response status:', res.status);
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
     
     const fetchedData = await res.json();
-    console.log('📊 Fetched data:', JSON.stringify(fetchedData, null, 2));
     
-    // Ensure data structure is correct
     data = {
       stats: fetchedData.stats || data.stats,
       monthlyData: Array.isArray(fetchedData.monthlyData) ? fetchedData.monthlyData : [],
@@ -173,7 +168,7 @@ export default async function AnalyticsPage() {
       customerStats: fetchedData.customerStats || data.customerStats,
     };
   } catch (err) {
-    console.error('❌ Analytics fetch error:', err);
+    console.error('Analytics fetch error:', err);
     error = true;
     errorMessage = err instanceof Error ? err.message : 'Unknown error';
   }
