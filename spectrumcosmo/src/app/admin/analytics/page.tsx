@@ -160,9 +160,10 @@ export default async function AnalyticsPage() {
   let error = false;
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/admin/analytics/realtime`, {
+    // FIXED: Use relative URL like the working FAQ page
+    // Removed: ${process.env.NEXT_PUBLIC_APP_URL} and Cookie header
+    const res = await fetch('/api/admin/analytics/realtime', {
       cache: 'no-store',
-      headers: { Cookie: cookieStore.toString() }
     });
     
     if (!res.ok) {
