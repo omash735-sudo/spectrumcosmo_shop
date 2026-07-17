@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
 
-    const monthlyData = monthlyRows.map((row: any) => ({
+    const monthlyData = (monthlyRows || []).map((row: any) => ({
       month: row.month,
       revenue: row.revenue,
       orders: row.orders,
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       LIMIT 5
     `;
 
-    const topProducts = topProductRows.map((row: any) => ({
+    const topProducts = (topProductRows || []).map((row: any) => ({
       product_name: row.product_name,
       sold: row.sold,
       revenue: row.revenue,
@@ -83,15 +83,15 @@ export async function GET(req: NextRequest) {
     `;
 
     const customerStats = {
-      repeatCustomers: customerRows[0]?.repeat_customers || 0,
-      newCustomers: customerRows[0]?.new_customers || 0,
+      repeatCustomers: customerRows?.[0]?.repeat_customers || 0,
+      newCustomers: customerRows?.[0]?.new_customers || 0,
     };
 
     return NextResponse.json({
       stats,
-      monthlyData,
-      topProducts,
-      customerStats,
+      monthlyData: monthlyData || [],
+      topProducts: topProducts || [],
+      customerStats: customerStats || { repeatCustomers: 0, newCustomers: 0 },
     });
   } catch (error) {
     console.error('Failed to fetch analytics:', error);
