@@ -4,6 +4,18 @@ import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+interface MonthlyData {
+  month: string;
+  revenue: number;
+  orders: number;
+}
+
+interface TopProduct {
+  product_name: string;
+  sold: number;
+  revenue: number;
+}
+
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -43,7 +55,7 @@ export async function GET(req: NextRequest) {
     `;
 
     // Ensure monthlyData is always an array
-    let monthlyData = [];
+    let monthlyData: MonthlyData[] = [];
     if (monthlyRows && Array.isArray(monthlyRows)) {
       monthlyData = monthlyRows.map((row: any) => ({
         month: row.month,
@@ -66,7 +78,7 @@ export async function GET(req: NextRequest) {
       LIMIT 5
     `;
 
-    let topProducts = [];
+    let topProducts: TopProduct[] = [];
     if (topProductRows && Array.isArray(topProductRows)) {
       topProducts = topProductRows.map((row: any) => ({
         product_name: row.product_name,
