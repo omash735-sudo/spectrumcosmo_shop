@@ -12,8 +12,6 @@ export async function GET(req: NextRequest) {
     const sql = getDb();
 
     // ----- Order status counts + revenue -----
-    // NOTE: revenue counted from 'approved' + 'delivered' orders only.
-    // Adjust status strings below if your enum differs.
     const [statsRow] = await sql`
       SELECT
         COUNT(*)::int AS total_orders,
@@ -35,20 +33,24 @@ export async function GET(req: NextRequest) {
     // ----- Monthly revenue/orders trend (last 6 months) -----
     const monthlyRows = await sql`
       SELECT
-        TO_CHAR(created_at, 'Mon YYYY') AS month,
+        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month,
         COALESCE(SUM(total_amount) FILTER (WHERE status IN ('approved', 'delivered')), 0)::float AS revenue,
         COUNT(*)::int AS orders
       FROM orders
       WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY DATE_TRUNC('month', created_at), TO_CHAR(created_at, 'Mon YYYY')
+      GROUP BY DATE_TRUNC('month', created_at)
       ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
 
-    const monthlyData = (monthlyRows || []).map((row: any) => ({
-      month: row.month,
-      revenue: row.revenue,
-      orders: row.orders,
-    }));
+    // Ensure monthlyData is always an array
+    let monthlyData = [];
+    if (monthlyRows && Array.isArray(monthlyRows)) {
+      monthlyData = monthlyRows.map((row: any) => ({
+        month: row.month,
+        revenue: Number(row.revenue) || 0,
+        orders: Number(row.orders) || 0,
+      }));
+    }
 
     // ----- Top selling products -----
     const topProductRows = await sql`
@@ -64,11 +66,14 @@ export async function GET(req: NextRequest) {
       LIMIT 5
     `;
 
-    const topProducts = (topProductRows || []).map((row: any) => ({
-      product_name: row.product_name,
-      sold: row.sold,
-      revenue: row.revenue,
-    }));
+    let topProducts = [];
+    if (topProductRows && Array.isArray(topProductRows)) {
+      topProducts = topProductRows.map((row: any) => ({
+        product_name: row.product_name,
+        sold: Number(row.sold) || 0,
+        revenue: Number(row.revenue) || 0,
+      }));
+    }
 
     // ----- Customer retention: repeat vs new -----
     const customerRows = await sql`
@@ -89,9 +94,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       stats,
-      monthlyData: monthlyData || [],
-      topProducts: topProducts || [],
-      customerStats: customerStats || { repeatCustomers: 0, newCustomers: 0 },
+      monthlyData,
+      topProducts,
+      customerStats,
     });
   } catch (error) {
     console.error('Failed to fetch analytics:', error);
