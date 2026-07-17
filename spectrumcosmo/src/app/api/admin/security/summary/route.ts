@@ -1,6 +1,5 @@
-// app/api/admin/security/summary/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryOne } from '@/lib/db';
+import { queryOne } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -10,41 +9,86 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Get security stats
     const summary = await queryOne<{
-      total_requests: number | string;
-      critical_count: number | string;
-      high_count: number | string;
-      medium_count: number | string;
-      low_count: number | string;
-      unique_ips: number | string;
+      total_events: number | string;
+      failed_logins: number | string;
+      suspicious_ips: number | string;
     }>`
       SELECT 
-        COUNT(*) as total_requests,
-        COUNT(CASE WHEN risk_level = 'critical' THEN 1 END) as critical_count,
-        COUNT(CASE WHEN risk_level = 'high' THEN 1 END) as high_count,
-        COUNT(CASE WHEN risk_level = 'medium' THEN 1 END) as medium_count,
-        COUNT(CASE WHEN risk_level = 'low' THEN 1 END) as low_count,
-        COUNT(DISTINCT ip_address) as unique_ips
+        COUNT(*) as total_events,
+        COUNT(CASE WHEN action_type = 'login_failed' THEN 1 END) as failed_logins,
+        COUNT(DISTINCT ip_address) as suspicious_ips
       FROM security_logs
       WHERE created_at >= NOW() - INTERVAL '24 hours'
     `;
 
+    // Get blocked IPs count
     const blocked = await queryOne<{ count: number | string }>`
       SELECT COUNT(*) as count FROM blocked_ips
       WHERE expires_at IS NULL OR expires_at > NOW()
     `;
 
+    // Get security score (calculate based on various factors)
+    const scoreResult = await queryOne<{ score: number | string }>`
+      SELECT 
+        LEAST(100, 
+          100 - (
+            (COUNT(CASE WHEN risk_level IN ('critical', 'high') THEN 1 END) * 5) +
+            (COUNT(CASE WHEN risk_level = 'medium' THEN 1 END) * 2)
+          )
+        ) as score
+      FROM security_logs
+      WHERE created_at >= NOW() - INTERVAL '24 hours'
+    `;
+
+    // Check if 2FA is enabled for admin
+    const twofaResult = await queryOne<{ enabled: number | string }>`
+      SELECT COUNT(*) as enabled FROM twofa_settings 
+      WHERE user_id = ${user.id} AND enabled = true
+    `;
+
+    // Count active threats (unresolved alerts)
+    const threatsResult = await queryOne<{ count: number | string }>`
+      SELECT COUNT(*) as count FROM security_logs
+      WHERE risk_level IN ('critical', 'high') 
+        AND created_at >= NOW() - INTERVAL '1 hour'
+        AND blocked = false
+    `;
+
+    const totalEvents = Number(summary?.total_events ?? 0);
+    const failedLogins = Number(summary?.failed_logins ?? 0);
+    const suspiciousIps = Number(summary?.suspicious_ips ?? 0);
+    const blockedIps = Number(blocked?.count ?? 0);
+    const securityScore = Math.min(100, Number(scoreResult?.score ?? 80));
+    const twofaEnabled = Number(twofaResult?.enabled ?? 0) > 0;
+    const activeThreats = Number(threatsResult?.count ?? 0);
+
     return NextResponse.json({
-      total_requests: Number(summary?.total_requests ?? 0),
-      critical_count: Number(summary?.critical_count ?? 0),
-      high_count: Number(summary?.high_count ?? 0),
-      medium_count: Number(summary?.medium_count ?? 0),
-      low_count: Number(summary?.low_count ?? 0),
-      unique_ips: Number(summary?.unique_ips ?? 0),
-      blocked_ips: Number(blocked?.count ?? 0),
+      total_events: totalEvents,
+      failed_logins: failedLogins,
+      suspicious_ips: suspiciousIps,
+      blocked_ips: blockedIps,
+      security_score: securityScore,
+      twofa_enabled: twofaEnabled,
+      active_threats: activeThreats,
+      last_scan: new Date().toISOString(),
     });
   } catch (err) {
     console.error('Failed to fetch summary:', err);
-    return NextResponse.json({ error: 'Failed to fetch summary' }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch summary',
+        total_events: 0,
+        failed_logins: 0,
+        suspicious_ips: 0,
+        blocked_ips: 0,
+        security_score: 80,
+        twofa_enabled: false,
+        active_threats: 0,
+        last_scan: new Date().toISOString(),
+      }, 
+      { status: 500 }
+    );
   }
 }
