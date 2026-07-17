@@ -71,12 +71,12 @@ const navItems = [
   { name: 'Delivery Areas', href: '/admin/delivery-areas', icon: MapPin, section: 'DELIVERY' },
   { name: 'Delivery Quotes', href: '/admin/delivery-quotes', icon: Send, section: 'DELIVERY' },
   
-  { name: 'Security Dashboard', href: '/admin/security/dashboard', icon: Activity, section: 'SECURITY' },
-  { name: 'Security Center', href: '/admin/security', icon: Shield, section: 'SECURITY' },
-  { name: 'Threat Logs', href: '/admin/security/logs', icon: Eye, section: 'SECURITY' },
-  { name: 'Blocked IPs', href: '/admin/security/blocked-ips', icon: Ban, section: 'SECURITY' },
-  { name: 'Protection Rules', href: '/admin/security/rules', icon: Sliders, section: 'SECURITY' },
-  { name: '2FA Settings', href: '/admin/security/2fa', icon: Key, section: 'SECURITY' },
+  // ===== UPDATED SECURITY SECTION =====
+  { name: 'Security Overview', href: '/admin/security', icon: Shield, section: 'SECURITY' },
+  { name: 'Security Logs', href: '/admin/security/logs', icon: Eye, section: 'SECURITY' },
+  { name: 'Blocked IPs', href: '/admin/security/blocked', icon: Ban, section: 'SECURITY' },
+  { name: 'Protection', href: '/admin/security/protection', icon: Lock, section: 'SECURITY' },
+  // REMOVED: Security Dashboard, Security Center, Threat Logs, Protection Rules, 2FA Settings
   
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
@@ -90,9 +90,6 @@ const navItems = [
   { name: 'Customer Messages', href: '/admin/customer-messages', icon: MessageSquare, section: 'GROWTH' },
   { name: 'SMS Templates', href: '/admin/sms-templates', icon: Smartphone, section: 'GROWTH' },
   { name: 'FAQ', href: '/admin/faqs', icon: HelpCircle, section: 'GROWTH' },
-  
-  // ORDER STATUSES - REMOVED
-  // { name: 'Order Statuses', href: '/admin/order-statuses', icon: Tag, section: 'SYSTEM' },
   
   { name: 'Settings', href: '/admin/settings', icon: Settings, section: 'SYSTEM' },
   { name: 'Alert Settings', href: '/admin/alert-settings', icon: Bell, section: 'SYSTEM' },
@@ -327,7 +324,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {sectionItems.map((item) => {
                 const Icon = item.icon;
                 const showStockAlert = item.name === 'Inventory';
-                const showSecurityAlert = item.name === 'Security Center';
+                const showSecurityAlert = item.name === 'Security Overview';
                 const showQuoteAlert = item.name === 'Delivery Quotes';
                 const showNotificationAlert = item.name === 'Notifications';
                 const isDeliverySection = item.section === 'DELIVERY';
