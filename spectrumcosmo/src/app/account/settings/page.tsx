@@ -291,47 +291,91 @@ export default function SettingsPage() {
         </div>
       </main>
 
-      {/* Delete Account Modal */}
+      {/* Delete Account Modal - Clean Design */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowDeleteModal(false)}>
-          <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)] mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-3 sm:p-4 md:p-6 border-b bg-red-50 dark:bg-red-950/30 rounded-t-xl sm:rounded-t-2xl border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-2">
-                <AlertCircle size={18} className="text-red-600 dark:text-red-400" />
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-red-600 dark:text-red-400">Delete Account</h3>
+        <div 
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4"
+          onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+        >
+          <div 
+            className="bg-[var(--background-card)] rounded-2xl max-w-md w-full shadow-2xl border border-[var(--border)] mx-2 sm:mx-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }} 
+              className="absolute top-4 right-4 p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[32px] min-w-[32px] flex items-center justify-center z-10"
+            >
+              <X size={18} className="text-[var(--foreground-muted)]" />
+            </button>
+
+            {/* Header */}
+            <div className="p-5 sm:p-6 border-b border-[var(--border)] pr-12">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle size={20} className="text-[var(--primary)]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--foreground)]">Delete Account</h3>
+                  <p className="text-sm text-[var(--foreground-muted)]">This action cannot be undone</p>
+                </div>
               </div>
-              <p className="text-[10px] sm:text-xs md:text-sm text-red-500 dark:text-red-500 mt-0.5">This action cannot be undone</p>
             </div>
-            <div className="p-3 sm:p-4 md:p-6">
-              <p className="text-xs sm:text-sm md:text-base text-[var(--foreground-muted)] mb-3 sm:mb-4">
-                All your data, orders, wishlist, and profile information will be permanently deleted.
-              </p>
-              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-2.5 sm:p-3 mb-3 sm:mb-4">
-                <p className="text-[10px] sm:text-xs md:text-sm text-yellow-800 dark:text-yellow-400 flex items-center gap-1.5 sm:gap-2">
-                  <AlertCircle size={12} className="sm:w-3.5 sm:h-3.5" />
-                  Type <code className="font-mono bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-bold">DELETE</code> to confirm
+
+            {/* Body */}
+            <div className="p-5 sm:p-6">
+              <div className="bg-[var(--background-secondary)] rounded-xl p-4 mb-5">
+                <p className="text-sm text-[var(--foreground)] font-medium mb-2">What will be deleted:</p>
+                <ul className="text-sm text-[var(--foreground-muted)] space-y-1 list-disc list-inside">
+                  <li>Your profile information</li>
+                  <li>Order history</li>
+                  <li>Wishlist items</li>
+                  <li>Saved addresses</li>
+                  <li>All associated data</li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                  <AlertCircle size={16} className="flex-shrink-0" />
+                  Type <code className="font-mono bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-bold">DELETE</code> to confirm
                 </p>
               </div>
+
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="w-full border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-lg px-3 py-2 sm:px-4 sm:py-3 mb-3 sm:mb-4 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 min-h-[44px]"
+                className="w-full border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] rounded-xl px-4 py-3 mb-5 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all min-h-[48px]"
                 placeholder="Type DELETE here"
+                autoFocus
               />
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button 
                   onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }} 
-                  className="flex-1 px-3 py-2 sm:px-4 sm:py-2.5 border border-[var(--border)] rounded-lg text-xs sm:text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                  className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-sm font-medium text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleteConfirmText !== DELETE_CONFIRM_TEXT || deleting}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 sm:py-2.5 rounded-lg font-medium transition disabled:opacity-50 text-xs sm:text-sm min-h-[44px]"
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition min-h-[44px] flex items-center justify-center gap-2 ${
+                    deleteConfirmText === DELETE_CONFIRM_TEXT && !deleting
+                      ? 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white shadow-sm'
+                      : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] cursor-not-allowed'
+                  }`}
                 >
-                  {deleting ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Permanently Delete'}
+                  {deleting ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      Delete Account
+                    </>
+                  )}
                 </button>
               </div>
             </div>
