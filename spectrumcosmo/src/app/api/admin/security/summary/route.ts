@@ -4,7 +4,7 @@ import { getVerifiedAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedAdmin(req);
-  
+
   if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         COUNT(CASE WHEN action_type = 'login_failed' THEN 1 END) as failed_logins,
         COUNT(DISTINCT ip_address) as suspicious_ips
       FROM security_logs
-      WHERE created_at >= NOW() - INTERVAL '24 hours'
+      WHERE created_at >= NOW() - INTERVAL '7 days'
     `;
 
     const blocked = await queryOne<{ count: number | string }>`
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           )
         ) as score
       FROM security_logs
-      WHERE created_at >= NOW() - INTERVAL '24 hours'
+      WHERE created_at >= NOW() - INTERVAL '7 days'
     `;
 
     const twofaResult = await queryOne<{ enabled: number | string }>`
@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
       twofa_enabled: twofaEnabled,
       active_threats: activeThreats,
       last_scan: new Date().toISOString(),
+      window: '7d',
     });
   } catch (err) {
     console.error('Failed to fetch summary:', err);
