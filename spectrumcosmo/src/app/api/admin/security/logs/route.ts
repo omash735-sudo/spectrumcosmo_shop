@@ -18,6 +18,14 @@ export async function GET(req: NextRequest) {
   const blocked = searchParams.get('blocked') || 'all';
   const exportLogs = searchParams.get('export') === 'true';
 
+  // Precompute the LIKE pattern as a plain JS string.
+  // IMPORTANT: never wrap a tagged-template interpolation like ${search} in
+  // manual quotes inside the SQL template (e.g. '${search}' or '%${search}%').
+  // The sql tag turns ${...} into a parameterized placeholder ($1, $2, ...);
+  // adding literal quotes around it breaks the placeholder and Postgres will
+  // read it as a literal string like '$1' instead of substituting the value.
+  const searchPattern = `%${search}%`;
+
   try {
     // --------------------------------------------
     // COUNT QUERY - Hardcoded with conditions
@@ -28,42 +36,42 @@ export async function GET(req: NextRequest) {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-          AND l.risk_level = '${risk}'
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+          AND l.risk_level = ${risk}
           AND l.blocked = ${blocked === 'true'}
       `;
     } else if (search && risk !== 'all') {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-          AND l.risk_level = '${risk}'
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+          AND l.risk_level = ${risk}
       `;
     } else if (search && blocked !== 'all') {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
           AND l.blocked = ${blocked === 'true'}
       `;
     } else if (risk !== 'all' && blocked !== 'all') {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE l.risk_level = '${risk}'
+        WHERE l.risk_level = ${risk}
           AND l.blocked = ${blocked === 'true'}
       `;
     } else if (search) {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%'
+        WHERE l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern}
       `;
     } else if (risk !== 'all') {
       countResult = await queryMany`
         SELECT COUNT(*) as count
         FROM security_logs l
-        WHERE l.risk_level = '${risk}'
+        WHERE l.risk_level = ${risk}
       `;
     } else if (blocked !== 'all') {
       countResult = await queryMany`
@@ -104,8 +112,8 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-            AND l.risk_level = '${risk}'
+          WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+            AND l.risk_level = ${risk}
             AND l.blocked = ${blocked === 'true'}
           ORDER BY l.created_at DESC
         `;
@@ -125,8 +133,8 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-            AND l.risk_level = '${risk}'
+          WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+            AND l.risk_level = ${risk}
           ORDER BY l.created_at DESC
         `;
       } else if (search && blocked !== 'all') {
@@ -145,7 +153,7 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
+          WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
             AND l.blocked = ${blocked === 'true'}
           ORDER BY l.created_at DESC
         `;
@@ -165,7 +173,7 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE l.risk_level = '${risk}'
+          WHERE l.risk_level = ${risk}
             AND l.blocked = ${blocked === 'true'}
           ORDER BY l.created_at DESC
         `;
@@ -185,7 +193,7 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%'
+          WHERE l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern}
           ORDER BY l.created_at DESC
         `;
       } else if (risk !== 'all') {
@@ -204,7 +212,7 @@ export async function GET(req: NextRequest) {
             l.created_at
           FROM security_logs l
           LEFT JOIN users u ON l.user_id::text = u.id::text
-          WHERE l.risk_level = '${risk}'
+          WHERE l.risk_level = ${risk}
           ORDER BY l.created_at DESC
         `;
       } else if (blocked !== 'all') {
@@ -268,8 +276,8 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-          AND l.risk_level = '${risk}'
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+          AND l.risk_level = ${risk}
           AND l.blocked = ${blocked === 'true'}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -290,8 +298,8 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
-          AND l.risk_level = '${risk}'
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
+          AND l.risk_level = ${risk}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
@@ -311,7 +319,7 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')
+        WHERE (l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern})
           AND l.blocked = ${blocked === 'true'}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -332,7 +340,7 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE l.risk_level = '${risk}'
+        WHERE l.risk_level = ${risk}
           AND l.blocked = ${blocked === 'true'}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -353,7 +361,7 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%'
+        WHERE l.ip_address ILIKE ${searchPattern} OR l.action_type ILIKE ${searchPattern} OR l.endpoint ILIKE ${searchPattern}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
@@ -373,7 +381,7 @@ export async function GET(req: NextRequest) {
           l.created_at
         FROM security_logs l
         LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE l.risk_level = '${risk}'
+        WHERE l.risk_level = ${risk}
         ORDER BY l.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
@@ -440,5 +448,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
- 
