@@ -4,7 +4,9 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  
+  // FIXED: Check is_admin instead of role
+  if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -15,13 +17,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'IP address required' }, { status: 400 });
     }
 
-    // Delete the blocked IP entry
     await queryMany`
       DELETE FROM blocked_ips
       WHERE ip_address = ${ipAddress}
     `;
 
-    // Log the unblock action
     await queryMany`
       INSERT INTO security_logs (action_type, endpoint, ip_address, risk_level, blocked, user_id)
       VALUES ('unblock_ip', '/api/admin/security/unblock', ${ipAddress}, 'low', false, ${user.id})
