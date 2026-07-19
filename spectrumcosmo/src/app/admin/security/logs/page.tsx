@@ -24,6 +24,8 @@ interface SecurityLog {
   risk_level: string;
   blocked: boolean;
   user_id: number | null;
+  admin_email: string | null;
+  admin_name: string | null;
   user_agent: string | null;
   created_at: string;
 }
@@ -89,8 +91,7 @@ export default function SecurityLogsPage() {
         setTotalPages(data.totalPages || 1);
         setTotalItems(data.total || 0);
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to load security logs');
+        toast.error('Failed to load security logs');
       }
     } catch (err) {
       console.error('Failed to fetch logs:', err);
@@ -115,7 +116,7 @@ export default function SecurityLogsPage() {
       const res = await fetch(`/api/admin/security/logs?${params}`);
       if (res.ok) {
         const data = await res.json();
-        const csv = convertToCSV(data.items || []);
+        const csv = convertToCSV(data);
         downloadCSV(csv, `security-logs-${new Date().toISOString().split('T')[0]}.csv`);
         toast.success('Logs exported successfully');
       } else {
@@ -129,15 +130,15 @@ export default function SecurityLogsPage() {
 
   const convertToCSV = (data: any[]) => {
     if (!data || data.length === 0) return 'No data';
-    const headers = ['Time', 'IP', 'Action', 'Endpoint', 'Risk', 'Blocked', 'User ID'];
+    const headers = ['Time', 'IP', 'Action', 'Endpoint', 'Risk', 'Blocked', 'Admin'];
     const rows = data.map(item => [
       new Date(item.created_at).toLocaleString(),
-      item.ip_address || 'N/A',
-      item.action_type || 'N/A',
-      item.endpoint || 'N/A',
-      item.risk_level || 'low',
+      item.ip_address,
+      item.action_type,
+      item.endpoint,
+      item.risk_level,
       item.blocked ? 'Yes' : 'No',
-      item.user_id || 'System',
+      item.admin_name || item.admin_email || 'System',
     ]);
     return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
   };
@@ -303,7 +304,7 @@ export default function SecurityLogsPage() {
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Time</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden sm:table-cell">IP Address</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Action</th>
-                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden md:table-cell">User ID</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden md:table-cell">Admin</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden lg:table-cell">Endpoint</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Risk</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden xl:table-cell">Status</th>
@@ -316,26 +317,19 @@ export default function SecurityLogsPage() {
                       {new Date(log.created_at).toLocaleString()}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-[10px] sm:text-xs text-[var(--foreground)] hidden sm:table-cell">
-                      {log.ip_address || 'N/A'}
+                      {log.ip_address}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground)]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span>{log.action_type}</span>
-                        {log.user_agent && (
-                          <span className="text-[10px] text-[var(--foreground-muted)] hidden lg:inline">
-                            ({log.user_agent.split(' ').slice(0, 2).join(' ')})
-                          </span>
-                        )}
-                      </span>
+                      {log.action_type}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground)] hidden md:table-cell">
                       <div className="flex items-center gap-1.5">
                         <User size={12} className="text-[var(--foreground-muted)]" />
-                        <span className="font-mono text-xs">{log.user_id || 'System'}</span>
+                        <span>{log.admin_name || log.admin_email || 'System'}</span>
                       </div>
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground-muted)] truncate max-w-[100px] sm:max-w-[150px] hidden lg:table-cell">
-                      {log.endpoint || 'N/A'}
+                      {log.endpoint}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3">
                       {getRiskBadge(log.risk_level)}
@@ -396,4 +390,93 @@ export default function SecurityLogsPage() {
       </div>
     </div>
   );
+}
+
+update it to match my API
+
+import { NextRequest, NextResponse } from 'next/server';
+import { queryMany } from '@/lib/db';
+import { getVerifiedAdmin } from '@/lib/auth';
+
+export async function GET(req: NextRequest) {
+  const { user, error } = await getVerifiedAdmin(req);
+  
+  if (error || !user || !user.is_admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 500);
+    const offset = (page - 1) * limit;
+    const search = searchParams.get('search') || '';
+    const risk = searchParams.get('risk') || 'all';
+    const blocked = searchParams.get('blocked') || 'all';
+
+    let conditions = [];
+    
+    if (search) {
+      conditions.push(`(ip_address ILIKE '%${search}%' OR action_type ILIKE '%${search}%' OR endpoint ILIKE '%${search}%')`);
+    }
+    if (risk !== 'all') {
+      conditions.push(`risk_level = '${risk}'`);
+    }
+    if (blocked !== 'all') {
+      conditions.push(`blocked = ${blocked === 'true'}`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Count query
+    const countQuery = `
+      SELECT COUNT(*) as count
+      FROM security_logs
+      ${whereClause}
+    `;
+    const countResult = await queryMany`${countQuery}`;
+    const totalItems = Number(countResult?.[0]?.count ?? 0);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // Main query - NO JOIN
+    const mainQuery = `
+      SELECT 
+        id,
+        action_type,
+        endpoint,
+        ip_address,
+        risk_level,
+        blocked,
+        user_id,
+        user_agent,
+        created_at
+      FROM security_logs
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const logs = await queryMany`${mainQuery}`;
+
+    return NextResponse.json({
+      items: logs || [],
+      total: totalItems,
+      totalPages: totalPages,
+      currentPage: page,
+      limit: limit,
+    });
+  } catch (err) {
+    console.error('Failed to fetch security logs:', err);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch logs', 
+        items: [], 
+        total: 0, 
+        totalPages: 0, 
+        currentPage: 1, 
+        limit: 50 
+      },
+      { status: 500 }
+    );
+  }
 }
