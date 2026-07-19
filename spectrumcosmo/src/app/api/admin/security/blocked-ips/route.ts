@@ -46,10 +46,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(blockedIPs);
   } catch (err) {
     console.error('Failed to fetch blocked IPs:', err);
-    const detail = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { error: 'Failed to fetch blocked IPs', detail },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch blocked IPs' }, { status: 500 });
   }
 }
