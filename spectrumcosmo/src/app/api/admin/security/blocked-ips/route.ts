@@ -4,7 +4,9 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  
+  // FIXED: Check is_admin instead of role
+  if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -30,8 +32,7 @@ export async function GET(req: NextRequest) {
       query += ` LIMIT ${limit}`;
     }
 
-    // Use queryMany with template literal - IMPORTANT FIX
-    const blockedIPs = await queryMany`${query}`;
+    const blockedIPs = await queryMany(query);
     return NextResponse.json(blockedIPs);
   } catch (err) {
     console.error('Failed to fetch blocked IPs:', err);
