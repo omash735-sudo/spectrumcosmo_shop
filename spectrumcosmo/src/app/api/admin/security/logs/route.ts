@@ -5,7 +5,6 @@ import { getVerifiedUser } from '@/lib/auth';
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
   
-  // FIXED: Check is_admin instead of role
   if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -59,9 +58,12 @@ export async function GET(req: NextRequest) {
           l.risk_level,
           l.blocked,
           l.user_id,
+          u.email as admin_email,
+          u.name as admin_name,
           l.user_agent,
           l.created_at
         FROM security_logs l
+        LEFT JOIN users u ON l.user_id::text = u.id::text
         WHERE ${whereClause}
         ORDER BY l.created_at DESC
       `;
@@ -77,9 +79,12 @@ export async function GET(req: NextRequest) {
         l.risk_level,
         l.blocked,
         l.user_id,
+        u.email as admin_email,
+        u.name as admin_name,
         l.user_agent,
         l.created_at
       FROM security_logs l
+      LEFT JOIN users u ON l.user_id::text = u.id::text
       WHERE ${whereClause}
       ORDER BY l.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
