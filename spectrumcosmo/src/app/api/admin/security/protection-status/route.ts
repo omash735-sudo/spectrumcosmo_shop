@@ -3,12 +3,12 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  
+  // FIXED: Check is_admin instead of role
+  if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // All protections are enabled by default
-  // These would normally be checked against database settings or environment variables
   return NextResponse.json({
     rate_limiting: true,
     sql_injection: true,
