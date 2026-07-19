@@ -19,34 +19,20 @@ export async function GET(req: NextRequest) {
   const exportLogs = searchParams.get('export') === 'true';
 
   try {
-    // Build where conditions with simple string concatenation
-    let whereClause = '1=1';
-    const params: any[] = [];
-
-    if (search) {
-      whereClause += ` AND (ip_address ILIKE $${params.length + 1} OR action_type ILIKE $${params.length + 1} OR endpoint ILIKE $${params.length + 1})`;
-      params.push(`%${search}%`);
-    }
-
-    if (risk !== 'all') {
-      whereClause += ` AND risk_level = $${params.length + 1}`;
-      params.push(risk);
-    }
-
-    if (blocked !== 'all') {
-      whereClause += ` AND blocked = $${params.length + 1}`;
-      params.push(blocked === 'true');
-    }
-
-    // Get total count - using simple query
-    const countQuery = `
-      SELECT COUNT(*) as count
-      FROM security_logs
-      WHERE ${whereClause}
-    `;
+    // Count query
+    let countQuery = `SELECT COUNT(*) as count FROM security_logs WHERE 1=1`;
     
-    // Use queryOne for count
-    const countResult = await queryOne(countQuery, params);
+    if (search) {
+      countQuery += ` AND (ip_address ILIKE '%${search}%' OR action_type ILIKE '%${search}%' OR endpoint ILIKE '%${search}%')`;
+    }
+    if (risk !== 'all') {
+      countQuery += ` AND risk_level = '${risk}'`;
+    }
+    if (blocked !== 'all') {
+      countQuery += ` AND blocked = ${blocked === 'true'}`;
+    }
+
+    const countResult = await queryOne`${countQuery}`;
     const totalItems = Number(countResult?.count ?? 0);
     const totalPages = Math.ceil(totalItems / limit);
 
@@ -66,13 +52,22 @@ export async function GET(req: NextRequest) {
         l.created_at
       FROM security_logs l
       LEFT JOIN users u ON l.user_id::text = u.id::text
-      WHERE ${whereClause}
-      ORDER BY l.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+      WHERE 1=1
     `;
+    
+    if (search) {
+      mainQuery += ` AND (l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')`;
+    }
+    if (risk !== 'all') {
+      mainQuery += ` AND l.risk_level = '${risk}'`;
+    }
+    if (blocked !== 'all') {
+      mainQuery += ` AND l.blocked = ${blocked === 'true'}`;
+    }
+    
+    mainQuery += ` ORDER BY l.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
-    // Use queryMany with the query string
-    const logs = await queryMany(mainQuery, params);
+    const logs = await queryMany`${mainQuery}`;
 
     return NextResponse.json({
       items: logs || [],
