@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getVerifiedUser } from '@/lib/auth';
+import { getVerifiedAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  const { user, error } = await getVerifiedUser(req);
+  const { user, error } = await getVerifiedAdmin(req);
   
-  // FIXED: Check is_admin instead of role
   if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
