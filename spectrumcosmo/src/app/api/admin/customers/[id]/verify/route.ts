@@ -11,7 +11,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const sql = getDb()
     const { id } = await params
 
-    // Check if user exists
     const [user] = await sql`
       SELECT id, email_verified
       FROM users 
@@ -23,22 +22,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     if (user.email_verified) {
-      return NextResponse.json({ 
-        error: 'User is already verified' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'User is already verified' }, { status: 400 })
     }
 
-    // Manually verify the user
     await sql`
       UPDATE users 
-      SET 
-        email_verified = TRUE,
-        email_verified_at = NOW(),
-        email_verification_token = NULL,
-        email_verification_expiry = NULL,
-        updated_at = NOW()
+      SET email_verified = TRUE, email_verified_at = NOW()
       WHERE id = ${id}
     `
+
+    await sql`DELETE FROM email_verifications WHERE user_id = ${id}`
 
     return NextResponse.json({ 
       success: true, 
