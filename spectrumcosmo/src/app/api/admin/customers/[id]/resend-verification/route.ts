@@ -2,8 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getDb } from '@/lib/db'
-import { sendVerificationEmail } from '@/lib/email'
 import crypto from 'crypto'
+import nodemailer from 'nodemailer'
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -31,55 +41,52 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }, { status: 400 })
     }
 
-    // Generate new verification token
+    // Delete any existing verification tokens for this user
+    await sql`DELETE FROM email_verifications WHERE user_id = ${user.id}`
+
+    // Generate a new token
     const token = crypto.randomBytes(32).toString('hex')
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
 
-    // Check if email_verification_token column exists, if not add it
-    try {
-      // Update user with new token
-      await sql`
-        UPDATE users 
-        SET 
-          email_verification_token = ${token},
-          email_verification_expiry = ${expiry.toISOString()},
-          updated_at = NOW()
-        WHERE id = ${id}
-      `
-    } catch (error) {
-      // If columns don't exist, add them
-      console.log('Adding missing verification columns...')
-      await sql`
-        ALTER TABLE users 
-        ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255) NULL,
-        ADD COLUMN IF NOT EXISTS email_verification_expiry TIMESTAMP NULL
-      `
-      // Retry the update
-      await sql`
-        UPDATE users 
-        SET 
-          email_verification_token = ${token},
-          email_verification_expiry = ${expiry.toISOString()},
-          updated_at = NOW()
-        WHERE id = ${id}
-      `
-    }
+    // Save token to email_verifications table
+    await sql`
+      INSERT INTO email_verifications (user_id, token, expires_at)
+      VALUES (${user.id}, ${token}, ${expiresAt})
+    `
 
-    // Send verification email using your existing function
-    try {
-      await sendVerificationEmail(user.email, user.name, token)
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Verification email sent successfully' 
-      })
-    } catch (error) {
-      console.error('Failed to send verification email:', error)
-      return NextResponse.json({ 
-        error: 'Failed to send verification email. Please check email configuration.' 
-      }, { status: 500 })
-    }
-    
+    // Send verification email
+    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`
+
+    await transporter.sendMail({
+      from: `"SpectrumCosmo" <${process.env.SMTP_USER}>`,
+      to: user.email,
+      subject: 'Verify your email address - SpectrumCosmo',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+          <h2 style="color: #C96712; margin-bottom: 20px;">Welcome to SpectrumCosmo!</h2>
+          <p style="font-size: 16px; color: #333;">Hello ${user.name || user.email},</p>
+          <p style="font-size: 16px; color: #333;">Please click the link below to verify your email address:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background: #C96712; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+              Verify Email Address
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #666;">Or copy and paste this link into your browser:</p>
+          <p style="font-size: 12px; color: #999; word-break: break-all;">${verificationUrl}</p>
+          <p style="font-size: 14px; color: #666;">This link expires in 24 hours.</p>
+          <p style="font-size: 14px; color: #666;">If you didn't create an account, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #999; text-align: center;">SpectrumCosmo - Wear your excitement with pride</p>
+        </div>
+      `,
+    })
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Verification email sent successfully' 
+    })
+
   } catch (error) {
     console.error('Error in resend verification:', error)
     return NextResponse.json(
