@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
 
     const whereClause = whereConditions.join(' AND ');
 
+    // Get total count
     const countResult = await queryOne<{ count: number | string }>`
       SELECT COUNT(*) as count
       FROM security_logs l
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(allLogs);
     }
 
+    // Main query - same as your working SQL
     const logs = await queryMany`
       SELECT 
         l.id,
@@ -100,7 +102,14 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('Failed to fetch security logs:', err);
     return NextResponse.json(
-      { error: 'Failed to fetch logs', items: [], total: 0, totalPages: 0, currentPage: 1, limit: 50 },
+      { 
+        error: 'Failed to fetch logs', 
+        items: [], 
+        total: 0, 
+        totalPages: 0, 
+        currentPage: 1, 
+        limit: 50 
+      },
       { status: 500 }
     );
   }
