@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertCircle,
   Shield,
+  User,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,8 @@ interface SecurityLog {
   risk_level: string;
   blocked: boolean;
   user_id: number | null;
+  admin_email: string | null;
+  admin_name: string | null;
   user_agent: string | null;
   created_at: string;
 }
@@ -127,7 +130,7 @@ export default function SecurityLogsPage() {
 
   const convertToCSV = (data: any[]) => {
     if (!data || data.length === 0) return 'No data';
-    const headers = ['Time', 'IP', 'Action', 'Endpoint', 'Risk', 'Blocked'];
+    const headers = ['Time', 'IP', 'Action', 'Endpoint', 'Risk', 'Blocked', 'Admin'];
     const rows = data.map(item => [
       new Date(item.created_at).toLocaleString(),
       item.ip_address,
@@ -135,6 +138,7 @@ export default function SecurityLogsPage() {
       item.endpoint,
       item.risk_level,
       item.blocked ? 'Yes' : 'No',
+      item.admin_name || item.admin_email || 'System',
     ]);
     return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
   };
@@ -294,15 +298,16 @@ export default function SecurityLogsPage() {
         {/* Logs Table */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-sm">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-[var(--background-secondary)] border-b border-[var(--border)] sticky top-0">
                 <tr className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase tracking-wider">
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Time</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden sm:table-cell">IP Address</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Action</th>
-                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden md:table-cell">Endpoint</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden md:table-cell">Admin</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden lg:table-cell">Endpoint</th>
                   <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Risk</th>
-                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden lg:table-cell">Status</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left hidden xl:table-cell">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
@@ -317,13 +322,19 @@ export default function SecurityLogsPage() {
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground)]">
                       {log.action_type}
                     </td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground-muted)] truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px] hidden md:table-cell">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground)] hidden md:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <User size={12} className="text-[var(--foreground-muted)]" />
+                        <span>{log.admin_name || log.admin_email || 'System'}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs text-[var(--foreground-muted)] truncate max-w-[100px] sm:max-w-[150px] hidden lg:table-cell">
                       {log.endpoint}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3">
                       {getRiskBadge(log.risk_level)}
                     </td>
-                    <td className="px-3 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">
+                    <td className="px-3 sm:px-4 py-2 sm:py-3 hidden xl:table-cell">
                       {log.blocked ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400">
                           <Ban size={10} className="sm:w-3 sm:h-3" /> Blocked
@@ -338,7 +349,7 @@ export default function SecurityLogsPage() {
                 ))}
                 {logs.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center">
+                    <td colSpan={7} className="px-4 py-12 text-center">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-3">
                         <Shield size={20} className="text-[var(--foreground-muted)] sm:w-6 sm:h-6" />
                       </div>
