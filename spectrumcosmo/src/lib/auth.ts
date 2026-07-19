@@ -7,7 +7,6 @@ import { AdminPayload, UserPayload } from './types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'spectrumcosmo-secret-key-2024'
 
-// ─── ADMIN AUTH ───────────────────────────────────────────
 export function signAdminToken(payload: AdminPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
 }
@@ -41,7 +40,6 @@ export async function getAdminFromCookies(): Promise<AdminPayload | null> {
   return verifyToken(token)
 }
 
-// ─── CUSTOMER AUTH (with account status check) ───────────
 export function signUserToken(payload: UserPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
@@ -60,16 +58,13 @@ export function getUserFromRequest(req: NextRequest): UserPayload | null {
   return verifyUserToken(token)
 }
 
-// Enhanced version that also checks account status and admin
 export async function getVerifiedUser(req: NextRequest): Promise<{ user: any; error: NextResponse | null }> {
   const payload = getUserFromRequest(req)
   if (!payload) {
     return { user: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
-  // Ensure payload.id is a string
   const userId = String(payload.id)
-
   const sql = getDb()
   const users = await sql`
     SELECT id, email, account_status, deleted_at, is_admin
@@ -91,6 +86,54 @@ export async function getVerifiedUser(req: NextRequest): Promise<{ user: any; er
   if (user.account_status === 'banned') {
     return { user: null, error: NextResponse.json({ error: 'Account banned. Contact support.' }, { status: 403 }) }
   }
+  return { user, error: null }
+}
+
+export async function getVerifiedAdmin(req: NextRequest): Promise<{ user: any; error: NextResponse | null }> {
+  const adminPayload = getAdminFromRequest(req)
+  
+  if (!adminPayload) {
+    const userPayload = getUserFromRequest(req)
+    if (!userPayload) {
+      return { user: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+    }
+    
+    const userId = String(userPayload.id)
+    const sql = getDb()
+    const users = await sql`
+      SELECT id, email, account_status, deleted_at, is_admin
+      FROM users
+      WHERE id = ${userId}
+    `
+    const user = users?.[0] || null
+    
+    if (!user) {
+      return { user: null, error: NextResponse.json({ error: 'User not found' }, { status: 404 }) }
+    }
+    if (!user.is_admin) {
+      return { user: null, error: NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 }) }
+    }
+    
+    return { user, error: null }
+  }
+  
+  const adminId = String(adminPayload.id)
+  const sql = getDb()
+  const users = await sql`
+    SELECT id, email, account_status, deleted_at, is_admin
+    FROM users
+    WHERE id = ${adminId}
+  `
+  
+  const user = users?.[0] || null
+  
+  if (!user) {
+    return { user: null, error: NextResponse.json({ error: 'Admin user not found' }, { status: 404 }) }
+  }
+  if (!user.is_admin) {
+    return { user: null, error: NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 }) }
+  }
+  
   return { user, error: null }
 }
 
