@@ -4,7 +4,9 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  
+  // FIXED: Check is_admin instead of role
+  if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -38,7 +40,6 @@ export async function GET(req: NextRequest) {
 
     const whereClause = whereConditions.join(' AND ');
 
-    // Get total count for pagination
     const countResult = await queryOne<{ count: number | string }>`
       SELECT COUNT(*) as count
       FROM security_logs l
@@ -48,7 +49,6 @@ export async function GET(req: NextRequest) {
     const totalItems = Number(countResult?.count ?? 0);
     const totalPages = Math.ceil(totalItems / limit);
 
-    // If exporting, get all data without pagination
     if (exportLogs) {
       const allLogs = await queryMany`
         SELECT 
@@ -68,7 +68,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(allLogs);
     }
 
-    // Get paginated logs
     const logs = await queryMany`
       SELECT 
         l.id,
