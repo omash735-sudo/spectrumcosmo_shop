@@ -4,12 +4,13 @@ import { getVerifiedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
-  if (error || !user || user.role !== 'admin') {
+  
+  // FIXED: Check is_admin instead of role
+  if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // Get security stats
     const summary = await queryOne<{
       total_events: number | string;
       failed_logins: number | string;
@@ -23,13 +24,11 @@ export async function GET(req: NextRequest) {
       WHERE created_at >= NOW() - INTERVAL '24 hours'
     `;
 
-    // Get blocked IPs count
     const blocked = await queryOne<{ count: number | string }>`
       SELECT COUNT(*) as count FROM blocked_ips
       WHERE expires_at IS NULL OR expires_at > NOW()
     `;
 
-    // Get security score (calculate based on various factors)
     const scoreResult = await queryOne<{ score: number | string }>`
       SELECT 
         LEAST(100, 
@@ -42,13 +41,11 @@ export async function GET(req: NextRequest) {
       WHERE created_at >= NOW() - INTERVAL '24 hours'
     `;
 
-    // Check if 2FA is enabled for admin
     const twofaResult = await queryOne<{ enabled: number | string }>`
       SELECT COUNT(*) as enabled FROM twofa_settings 
       WHERE user_id = ${user.id} AND enabled = true
     `;
 
-    // Count active threats (unresolved alerts)
     const threatsResult = await queryOne<{ count: number | string }>`
       SELECT COUNT(*) as count FROM security_logs
       WHERE risk_level IN ('critical', 'high') 
