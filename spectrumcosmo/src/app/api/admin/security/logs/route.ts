@@ -10,40 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 500);
-    const offset = (page - 1) * limit;
-    const search = searchParams.get('search') || '';
-    const risk = searchParams.get('risk') || 'all';
-    const blocked = searchParams.get('blocked') || 'all';
-
-    let conditions = [];
-    
-    if (search) {
-      conditions.push(`(ip_address ILIKE '%${search}%' OR action_type ILIKE '%${search}%' OR endpoint ILIKE '%${search}%')`);
-    }
-    if (risk !== 'all') {
-      conditions.push(`risk_level = '${risk}'`);
-    }
-    if (blocked !== 'all') {
-      conditions.push(`blocked = ${blocked === 'true'}`);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    // Count query
-    const countQuery = `
-      SELECT COUNT(*) as count
-      FROM security_logs
-      ${whereClause}
-    `;
-    const countResult = await queryMany`${countQuery}`;
-    const totalItems = Number(countResult?.[0]?.count ?? 0);
-    const totalPages = Math.ceil(totalItems / limit);
-
-    // Main query - NO JOIN
-    const mainQuery = `
+    const logs = await queryMany`
       SELECT 
         id,
         action_type,
@@ -55,19 +22,16 @@ export async function GET(req: NextRequest) {
         user_agent,
         created_at
       FROM security_logs
-      ${whereClause}
       ORDER BY created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+      LIMIT 50
     `;
-
-    const logs = await queryMany`${mainQuery}`;
 
     return NextResponse.json({
       items: logs || [],
-      total: totalItems,
-      totalPages: totalPages,
-      currentPage: page,
-      limit: limit,
+      total: logs?.length || 0,
+      totalPages: 1,
+      currentPage: 1,
+      limit: 50,
     });
   } catch (err) {
     console.error('Failed to fetch security logs:', err);
