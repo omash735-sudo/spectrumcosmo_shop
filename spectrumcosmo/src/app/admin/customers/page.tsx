@@ -1,6 +1,3 @@
-Here's the updated Admin Customers page with emojis removed:
-
-```tsx
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
