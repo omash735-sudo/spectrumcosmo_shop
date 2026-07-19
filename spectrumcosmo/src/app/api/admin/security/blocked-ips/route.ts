@@ -4,7 +4,6 @@ import { getVerifiedAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedAdmin(req);
-
   if (error || !user || !user.is_admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -14,7 +13,6 @@ export async function GET(req: NextRequest) {
 
   try {
     let blockedIPs;
-
     if (limit > 0) {
       blockedIPs = await queryMany`
         SELECT 
@@ -45,19 +43,13 @@ export async function GET(req: NextRequest) {
         ORDER BY created_at DESC
       `;
     }
-
     return NextResponse.json(blockedIPs);
   } catch (err) {
-    // Log the FULL error
-    console.error('Database error details:', {
-      message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-      code: (err as any)?.code,
-      detail: (err as any)?.detail
-    });
-    return NextResponse.json({ 
-      error: 'Failed to fetch blocked IPs',
-      details: err instanceof Error ? err.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('Failed to fetch blocked IPs:', err);
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { error: 'Failed to fetch blocked IPs', detail },
+      { status: 500 }
+    );
   }
 }
