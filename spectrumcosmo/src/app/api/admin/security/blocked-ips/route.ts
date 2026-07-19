@@ -13,9 +13,6 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '0');
 
   try {
-    // You cannot splice a raw SQL clause (like "LIMIT n") into a tagged-template
-    // sql call — every ${...} becomes a bound parameter (a value), never raw
-    // SQL text/keywords. So branch into two full queries instead.
     let blockedIPs;
 
     if (limit > 0) {
@@ -51,7 +48,16 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(blockedIPs);
   } catch (err) {
-    console.error('Failed to fetch blocked IPs:', err);
-    return NextResponse.json({ error: 'Failed to fetch blocked IPs' }, { status: 500 });
+    // Log the FULL error
+    console.error('Database error details:', {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      code: (err as any)?.code,
+      detail: (err as any)?.detail
+    });
+    return NextResponse.json({ 
+      error: 'Failed to fetch blocked IPs',
+      details: err instanceof Error ? err.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
