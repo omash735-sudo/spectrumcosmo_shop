@@ -9,32 +9,70 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const searchParams = req.nextUrl.searchParams;
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 500);
+  const offset = (page - 1) * limit;
+  const search = searchParams.get('search') || '';
+  const risk = searchParams.get('risk') || 'all';
+  const blocked = searchParams.get('blocked') || 'all';
+
   try {
-    // No join - just get data from security_logs
-    const query = `
+    // Build the WHERE clause
+    let whereConditions = [];
+    
+    if (search) {
+      whereConditions.push(`(l.ip_address ILIKE '%${search}%' OR l.action_type ILIKE '%${search}%' OR l.endpoint ILIKE '%${search}%')`);
+    }
+    if (risk !== 'all') {
+      whereConditions.push(`l.risk_level = '${risk}'`);
+    }
+    if (blocked !== 'all') {
+      whereConditions.push(`l.blocked = ${blocked === 'true'}`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Count query - using template literal with the string
+    const countQuery = `
+      SELECT COUNT(*) as count
+      FROM security_logs l
+      ${whereClause}
+    `;
+    
+    const countResult = await queryOne`${countQuery}`;
+    const totalItems = Number(countResult?.count ?? 0);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // Main query with join - using template literal with the string
+    const mainQuery = `
       SELECT 
-        id,
-        action_type,
-        endpoint,
-        ip_address,
-        risk_level,
-        blocked,
-        user_id,
-        user_agent,
-        created_at
-      FROM security_logs
-      ORDER BY created_at DESC
-      LIMIT 50
+        l.id,
+        l.action_type,
+        l.endpoint,
+        l.ip_address,
+        l.risk_level,
+        l.blocked,
+        l.user_id,
+        u.email as admin_email,
+        u.name as admin_name,
+        l.user_agent,
+        l.created_at
+      FROM security_logs l
+      LEFT JOIN users u ON l.user_id::text = u.id::text
+      ${whereClause}
+      ORDER BY l.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
-    const logs = await queryMany`${query}`;
+    const logs = await queryMany`${mainQuery}`;
 
     return NextResponse.json({
       items: logs || [],
-      total: logs?.length || 0,
-      totalPages: 1,
-      currentPage: 1,
-      limit: 50,
+      total: totalItems,
+      totalPages: totalPages,
+      currentPage: page,
+      limit: limit,
     });
   } catch (err) {
     console.error('Failed to fetch security logs:', err);
