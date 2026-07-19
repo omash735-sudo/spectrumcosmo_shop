@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryMany, queryOne } from '@/lib/db';
+import { queryMany } from '@/lib/db';
 import { getVerifiedAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -9,106 +9,44 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const searchParams = req.nextUrl.searchParams;
-  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 500);
-  const offset = (page - 1) * limit;
-  const search = searchParams.get('search') || '';
-  const risk = searchParams.get('risk') || 'all';
-  const blocked = searchParams.get('blocked') || 'all';
-  const exportLogs = searchParams.get('export') === 'true';
-
   try {
-    let whereConditions = ['1=1'];
-    const params: any[] = [];
-
-    if (search) {
-      whereConditions.push(`(l.ip_address ILIKE $${params.length + 1} OR l.action_type ILIKE $${params.length + 1} OR l.endpoint ILIKE $${params.length + 1})`);
-      params.push(`%${search}%`);
-    }
-
-    if (risk !== 'all') {
-      whereConditions.push(`l.risk_level = $${params.length + 1}`);
-      params.push(risk);
-    }
-
-    if (blocked !== 'all') {
-      whereConditions.push(`l.blocked = $${params.length + 1}`);
-      params.push(blocked === 'true');
-    }
-
-    const whereClause = whereConditions.join(' AND ');
-
-    // Get total count
-    const countResult = await queryOne<{ count: number | string }>`
-      SELECT COUNT(*) as count
-      FROM security_logs l
-      WHERE ${whereClause}
-    `;
-
-    const totalItems = Number(countResult?.count ?? 0);
-    const totalPages = Math.ceil(totalItems / limit);
-
-    if (exportLogs) {
-      const allLogs = await queryMany`
-        SELECT 
-          l.id,
-          l.action_type,
-          l.endpoint,
-          l.ip_address,
-          l.risk_level,
-          l.blocked,
-          l.user_id,
-          u.email as admin_email,
-          u.name as admin_name,
-          l.user_agent,
-          l.created_at
-        FROM security_logs l
-        LEFT JOIN users u ON l.user_id::text = u.id::text
-        WHERE ${whereClause}
-        ORDER BY l.created_at DESC
-      `;
-      return NextResponse.json(allLogs);
-    }
-
-    // Main query - same as your working SQL
+    // SIMPLEST POSSIBLE QUERY - no filters, no joins, no pagination
     const logs = await queryMany`
       SELECT 
-        l.id,
-        l.action_type,
-        l.endpoint,
-        l.ip_address,
-        l.risk_level,
-        l.blocked,
-        l.user_id,
-        u.email as admin_email,
-        u.name as admin_name,
-        l.user_agent,
-        l.created_at
-      FROM security_logs l
-      LEFT JOIN users u ON l.user_id::text = u.id::text
-      WHERE ${whereClause}
-      ORDER BY l.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+        id,
+        action_type,
+        endpoint,
+        ip_address,
+        risk_level,
+        blocked,
+        user_id,
+        user_agent,
+        created_at
+      FROM security_logs
+      ORDER BY created_at DESC
+      LIMIT 10
     `;
 
+    console.log('✅ Logs found:', logs?.length || 0);
+
     return NextResponse.json({
-      items: logs,
-      total: totalItems,
-      totalPages: totalPages,
-      currentPage: page,
-      limit: limit,
+      items: logs || [],
+      total: logs?.length || 0,
+      totalPages: 1,
+      currentPage: 1,
+      limit: 10,
     });
   } catch (err) {
-    console.error('Failed to fetch security logs:', err);
+    console.error('❌ Error:', err);
     return NextResponse.json(
       { 
         error: 'Failed to fetch logs', 
+        details: err instanceof Error ? err.message : 'Unknown error',
         items: [], 
         total: 0, 
         totalPages: 0, 
         currentPage: 1, 
-        limit: 50 
+        limit: 10 
       },
       { status: 500 }
     );
