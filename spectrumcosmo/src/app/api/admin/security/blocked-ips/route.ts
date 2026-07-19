@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '0');
 
   try {
-    let query = `
+    // Use parameterized query - limit will be safely interpolated as $1
+    const blockedIPs = await queryMany`
       SELECT 
         id,
         ip_address,
@@ -25,13 +26,9 @@ export async function GET(req: NextRequest) {
       FROM blocked_ips
       WHERE expires_at IS NULL OR expires_at > NOW()
       ORDER BY created_at DESC
+      ${limit > 0 ? 'LIMIT ${limit}' : ''}
     `;
     
-    if (limit > 0) {
-      query += ` LIMIT ${limit}`;
-    }
-
-    const blockedIPs = await queryMany`${query}`;
     return NextResponse.json(blockedIPs);
   } catch (err) {
     console.error('Failed to fetch blocked IPs:', err);
