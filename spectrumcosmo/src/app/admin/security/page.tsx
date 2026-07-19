@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
+// Updated interfaces to match API responses
 interface SecurityLog {
   id: number;
   action_type: string;
@@ -29,6 +30,10 @@ interface SecurityLog {
   ip_address: string;
   risk_level: string;
   blocked: boolean;
+  user_id: string | null;
+  admin_email: string | null;
+  admin_name: string | null;
+  user_agent: string | null;
   created_at: string;
 }
 
@@ -37,6 +42,9 @@ interface BlockedIP {
   ip_address: string;
   reason: string;
   expires_at: string;
+  blocked_by: string;
+  is_manual: boolean;
+  created_at: string;
 }
 
 interface SecuritySummary {
@@ -99,9 +107,24 @@ export default function SecurityOverview() {
         fetch('/api/admin/security/blocked-ips?limit=5'),
       ]);
 
-      if (summaryRes.ok) setSummary(await summaryRes.json());
-      if (logsRes.ok) setLogs(await logsRes.json());
-      if (blockedRes.ok) setBlockedIPs(await blockedRes.json());
+      // Handle Summary (same format)
+      if (summaryRes.ok) {
+        const data = await summaryRes.json();
+        setSummary(data);
+      }
+
+      // Handle Logs - Now paginated! Extract 'items' from the response
+      if (logsRes.ok) {
+        const data = await logsRes.json();
+        // The API now returns { items: [...], total, totalPages, ... }
+        setLogs(data.items || []); // Extract the items array
+      }
+
+      // Handle Blocked IPs (direct array, same as before)
+      if (blockedRes.ok) {
+        const data = await blockedRes.json();
+        setBlockedIPs(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
       console.error('Failed to fetch security data:', err);
       toast.error('Failed to load security data');
@@ -211,7 +234,7 @@ export default function SecurityOverview() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock size={12} className="text-[var(--foreground-muted)]" />
-                  Last scan: {summary?.last_scan || 'Just now'}
+                  Last scan: {summary?.last_scan ? new Date(summary.last_scan).toLocaleString() : 'Just now'}
                 </span>
               </div>
             </div>
@@ -362,7 +385,7 @@ export default function SecurityOverview() {
                     </div>
                     <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)] flex items-center gap-1">
                       <Clock size={10} className="sm:w-3 sm:h-3" />
-                      Expires: {new Date(ip.expires_at).toLocaleDateString()}
+                      {ip.expires_at ? `Expires: ${new Date(ip.expires_at).toLocaleDateString()}` : 'Permanent'}
                     </span>
                   </div>
                 </div>
