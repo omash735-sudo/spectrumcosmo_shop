@@ -1,3 +1,6 @@
+Here's the updated Admin Customers page with emojis removed:
+
+```tsx
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
@@ -12,16 +15,15 @@ import {
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 
-// ============================================
-// TYPES
-// ============================================
-
 interface Customer {
   id: string;
   name: string;
   email: string;
   phone: string;
   account_status: 'active' | 'frozen' | 'banned' | 'deleted';
+  email_verified: boolean;
+  email_verified_at: string | null;
+  verification_status: 'verified' | 'pending' | 'unknown';
   total_orders: number;
   total_spent: number;
   last_order_date: string;
@@ -72,10 +74,6 @@ interface FilterState {
   dateRange: 'all' | 'week' | 'month' | 'year';
   search: string;
 }
-
-// ============================================
-// CONSTANTS & HELPERS
-// ============================================
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; actions: string[] }> = {
   active: { 
@@ -148,10 +146,6 @@ function calculateTier(totalSpent: number): 'bronze' | 'silver' | 'gold' | 'plat
   return 'bronze';
 }
 
-// ============================================
-// SKELETON
-// ============================================
-
 function CustomersSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -177,10 +171,6 @@ function CustomersSkeleton() {
     </div>
   );
 }
-
-// ============================================
-// CONFIRMATION MODAL COMPONENT
-// ============================================
 
 function ConfirmationModal({
   isOpen,
@@ -234,10 +224,6 @@ function ConfirmationModal({
     </div>
   );
 }
-
-// ============================================
-// FILTER BAR COMPONENT
-// ============================================
 
 function FilterBar({
   filters,
@@ -421,14 +407,12 @@ function FilterBar({
   );
 }
 
-// ============================================
-// CUSTOMER CARD (Mobile)
-// ============================================
-
-function CustomerCard({ customer, onView, onAction, isLoading }: {
+function CustomerCard({ customer, onView, onAction, onResendVerification, onManualVerify, isLoading }: {
   customer: Customer;
   onView: () => void;
   onAction: (action: string) => void;
+  onResendVerification: () => void;
+  onManualVerify: () => void;
   isLoading: boolean;
 }) {
   const status = STATUS_CONFIG[customer.account_status];
@@ -492,6 +476,12 @@ function CustomerCard({ customer, onView, onAction, isLoading }: {
           <span className="text-[var(--foreground-muted)]">Last Active</span>
           <span className="text-[var(--foreground-muted)]">{formatRelativeTime(customer.last_active || customer.last_order_date)}</span>
         </div>
+        <div className="flex justify-between text-xs sm:text-sm">
+          <span className="text-[var(--foreground-muted)]">Email</span>
+          <span className={customer.email_verified ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
+            {customer.email_verified ? 'Verified' : 'Pending'}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--border)]">
@@ -503,14 +493,30 @@ function CustomerCard({ customer, onView, onAction, isLoading }: {
           <TierIcon size={10} />
           {tier.label}
         </span>
+        {!customer.email_verified && (
+          <>
+            <button
+              onClick={onResendVerification}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
+            >
+              <Send size={10} />
+              Resend
+            </button>
+            <button
+              onClick={onManualVerify}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition"
+            >
+              <CheckCircle size={10} />
+              Verify
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-// ============================================
-// MAIN PAGE COMPONENT
-// ============================================
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -544,10 +550,6 @@ export default function CustomersPage() {
   
   const debouncedSearch = useDebounce(filters.search, 300);
 
-  // ============================================
-  // DATA FETCHING
-  // ============================================
-
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
@@ -572,10 +574,6 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
-
-  // ============================================
-  // FILTERING & SORTING LOGIC
-  // ============================================
 
   const filteredCustomers = useMemo(() => {
     let filtered = [...customers];
@@ -636,10 +634,6 @@ export default function CustomersPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortBy, sortOrder, itemsPerPage]);
-
-  // ============================================
-  // ACTIONS
-  // ============================================
 
   const viewProfile = useCallback(async (id: string) => {
     if (abortControllerRef.current) {
@@ -723,6 +717,45 @@ export default function CustomersPage() {
     }
   }, [fetchCustomers]);
 
+  const resendVerification = useCallback(async (id: string, email: string) => {
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/admin/customers/${id}/resend-verification`, {
+        method: 'POST'
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to resend verification');
+      }
+      toast.success(`Verification email sent to ${email}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to resend verification');
+    } finally {
+      setActionLoading(null);
+    }
+  }, []);
+
+  const manualVerify = useCallback(async (id: string, name: string) => {
+    if (!confirm(`Manually verify ${name}? They will be able to log in immediately.`)) return;
+    
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/admin/customers/${id}/verify`, {
+        method: 'POST'
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to verify user');
+      }
+      toast.success(`${name} verified successfully`);
+      await fetchCustomers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to verify user');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [fetchCustomers]);
+
   const handleAction = useCallback((customerId: string, action: string) => {
     setConfirmModal({ open: true, action, customerId });
   }, []);
@@ -752,12 +785,13 @@ export default function CustomersPage() {
   const exportToCSV = useCallback(() => {
     setExporting(true);
     try {
-      const headers = ['Name', 'Email', 'Phone', 'Status', 'Total Orders', 'Total Spent', 'Last Order', 'Loyalty Tier'];
+      const headers = ['Name', 'Email', 'Phone', 'Status', 'Email Verified', 'Total Orders', 'Total Spent', 'Last Order', 'Loyalty Tier'];
       const rows = filteredCustomers.map(c => [
         c.name,
         c.email,
         c.phone || '',
         c.account_status,
+        c.email_verified ? 'Yes' : 'No',
         c.total_orders.toString(),
         c.total_spent.toString(),
         formatDate(c.last_order_date),
@@ -782,22 +816,16 @@ export default function CustomersPage() {
     }
   }, [filteredCustomers]);
 
-  // ============================================
-  // STATS CARDS
-  // ============================================
-
   const stats = useMemo(() => {
     const active = customers.filter(c => c.account_status === 'active').length;
     const frozen = customers.filter(c => c.account_status === 'frozen' || c.account_status === 'banned').length;
+    const verified = customers.filter(c => c.email_verified).length;
+    const unverified = customers.filter(c => !c.email_verified).length;
     const totalSpent = customers.reduce((sum, c) => sum + c.total_spent, 0);
     const avgOrderValue = customers.length > 0 ? totalSpent / customers.length : 0;
     
-    return { active, frozen, totalSpent, avgOrderValue };
+    return { active, frozen, verified, unverified, totalSpent, avgOrderValue };
   }, [customers]);
-
-  // ============================================
-  // RENDER
-  // ============================================
 
   if (loading) {
     return (
@@ -811,7 +839,6 @@ export default function CustomersPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-20 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -831,7 +858,6 @@ export default function CustomersPage() {
       </div>
 
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
@@ -860,11 +886,11 @@ export default function CustomersPage() {
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Restricted</p>
-                <p className="text-lg sm:text-xl font-bold text-yellow-600 dark:text-yellow-400">{stats.frozen}</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Verified</p>
+                <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">{stats.verified}</p>
               </div>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-50 dark:bg-yellow-950/30 rounded-full flex items-center justify-center">
-                <UserX className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 dark:bg-blue-950/30 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
@@ -872,17 +898,16 @@ export default function CustomersPage() {
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Avg Order Value</p>
-                <p className="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400">{formatCurrency(stats.avgOrderValue)}</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Pending Verification</p>
+                <p className="text-lg sm:text-xl font-bold text-yellow-600 dark:text-yellow-400">{stats.unverified}</p>
               </div>
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-50 dark:bg-purple-950/30 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-50 dark:bg-yellow-950/30 rounded-full flex items-center justify-center">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filter Bar */}
         <FilterBar
           filters={filters}
           onFilterChange={setFilters}
@@ -891,17 +916,17 @@ export default function CustomersPage() {
           exporting={exporting}
         />
 
-        {/* Desktop Table View */}
         <div className="hidden lg:block mt-4 sm:mt-6">
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px]">
+              <table className="w-full min-w-[1200px]">
                 <thead className="bg-[var(--background-secondary)] border-b border-[var(--border)]">
                   <tr>
                     {[
                       { key: 'name', label: 'Customer', sortable: true },
                       { key: 'contact', label: 'Contact', sortable: false },
                       { key: 'status', label: 'Status', sortable: false },
+                      { key: 'verification', label: 'Verification', sortable: false },
                       { key: 'total_orders', label: 'Orders', sortable: true },
                       { key: 'total_spent', label: 'Total Spent', sortable: true },
                       { key: 'last_order_date', label: 'Last Active', sortable: true },
@@ -964,6 +989,41 @@ export default function CustomersPage() {
                             {status.label}
                           </span>
                         </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                          <div className="flex items-center gap-1">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+                              customer.email_verified 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            }`}>
+                              {customer.email_verified ? (
+                                <><CheckCircle size={10} /> Verified</>
+                              ) : (
+                                <><Clock size={10} /> Pending</>
+                              )}
+                            </span>
+                            {!customer.email_verified && (
+                              <>
+                                <button
+                                  onClick={() => resendVerification(customer.id, customer.email)}
+                                  disabled={actionLoading === customer.id}
+                                  className="p-1 rounded hover:bg-[var(--background-secondary)] transition text-blue-600 dark:text-blue-400 disabled:opacity-50"
+                                  title="Resend verification email"
+                                >
+                                  <Send size={14} />
+                                </button>
+                                <button
+                                  onClick={() => manualVerify(customer.id, customer.name)}
+                                  disabled={actionLoading === customer.id}
+                                  className="p-1 rounded hover:bg-[var(--background-secondary)] transition text-green-600 dark:text-green-400 disabled:opacity-50"
+                                  title="Manually verify"
+                                >
+                                  <CheckCircle size={14} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-[var(--foreground)]">{customer.total_orders}</td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-[var(--primary)]">
                           {formatCurrency(customer.total_spent)}
@@ -1016,7 +1076,6 @@ export default function CustomersPage() {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -1058,7 +1117,6 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        {/* Mobile Card View */}
         <div className="lg:hidden mt-4 space-y-3">
           {paginatedCustomers.map((customer) => (
             <CustomerCard
@@ -1066,6 +1124,8 @@ export default function CustomersPage() {
               customer={customer}
               onView={() => viewProfile(customer.id)}
               onAction={(action) => handleAction(customer.id, action)}
+              onResendVerification={() => resendVerification(customer.id, customer.email)}
+              onManualVerify={() => manualVerify(customer.id, customer.name)}
               isLoading={actionLoading === customer.id}
             />
           ))}
@@ -1092,7 +1152,6 @@ export default function CustomersPage() {
             </div>
           )}
 
-          {/* Mobile Pagination */}
           {totalPages > 1 && paginatedCustomers.length > 0 && (
             <div className="flex items-center justify-between pt-4">
               <button
@@ -1117,7 +1176,6 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Customer Profile Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl">
@@ -1147,7 +1205,6 @@ export default function CustomersPage() {
               </div>
             ) : selectedCustomer ? (
               <div className="overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 max-h-[calc(95vh-70px)] sm:max-h-[calc(90vh-70px)]">
-                {/* User Info */}
                 <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 bg-[var(--background-secondary)] rounded-xl p-4 sm:p-5">
                   <div className="flex items-center gap-3">
                     <User size={16} className="text-[var(--foreground-muted)] flex-shrink-0" />
@@ -1179,7 +1236,6 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   <div className="bg-orange-50 dark:bg-orange-950/30 p-3 sm:p-4 rounded-xl text-center">
                     <p className="text-xl sm:text-2xl font-bold text-[var(--primary)]">{selectedCustomer.orders?.length || 0}</p>
@@ -1197,7 +1253,6 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                {/* Top Products */}
                 {selectedCustomer.topProducts && selectedCustomer.topProducts.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-2 sm:mb-3 flex items-center gap-2">
@@ -1215,7 +1270,6 @@ export default function CustomersPage() {
                   </div>
                 )}
 
-                {/* Order History */}
                 {selectedCustomer.orders && selectedCustomer.orders.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-2 sm:mb-3 flex items-center gap-2">
@@ -1259,7 +1313,6 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal({ open: false, action: '', customerId: '' })}
@@ -1273,10 +1326,6 @@ export default function CustomersPage() {
   );
 }
 
-// ============================================
-// DEBOUNCE HOOK
-// ============================================
-
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -1285,3 +1334,4 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debouncedValue;
 }
+```
