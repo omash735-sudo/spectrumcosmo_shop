@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-});
+})
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,7 +23,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const sql = getDb()
     const { id } = await params
 
-    // Get user
     const [user] = await sql`
       SELECT id, name, email, email_verified
       FROM users 
@@ -34,28 +33,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if already verified
     if (user.email_verified) {
-      return NextResponse.json({ 
-        error: 'User is already verified' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'User is already verified' }, { status: 400 })
     }
 
-    // Delete any existing verification tokens for this user
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) NOT NULL UNIQUE,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_email_verifications_token ON email_verifications(token)
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications(user_id)
+    `
+
     await sql`DELETE FROM email_verifications WHERE user_id = ${user.id}`
 
-    // Generate a new token
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
-    // Save token to email_verifications table
     await sql`
       INSERT INTO email_verifications (user_id, token, expires_at)
       VALUES (${user.id}, ${token}, ${expiresAt})
     `
 
-    // Send verification email
     const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`
 
     await transporter.sendMail({
