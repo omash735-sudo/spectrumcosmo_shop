@@ -3,182 +3,111 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { signUserToken } from '@/lib/userAuth';
-import { recordFailedLogin, logSecurityEvent, isIPBlocked } from '@/lib/security-logger';
-import { setCsrfToken } from '@/lib/csrf';
+import { logSecurityEvent, isIPBlocked, recordFailedLogin } from '@/lib/security-logger';
 import { Redis } from '@upstash/redis';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 // Types
-interface LoginAttempt {
-  attempts: number;
-  firstAttempt: number;
-  blockedUntil: number | null;
-}
-
-interface CaptchaRecord {
-  answer: string;
-  expires: number;
-}
-
 interface LoginRequest {
   email: string;
   password: string;
-  captchaToken?: string;
-  captchaAnswer?: string;
 }
 
 // Configuration
 const LOGIN_CONFIG = {
   maxAttempts: 5,
-  windowMinutes: 10,
   blockMinutes: 15,
-  captchaThreshold: 3,
-  cleanupIntervalMs: 5 * 60 * 1000,
 };
 
 const redis = Redis.fromEnv();
 
-// In-memory stores with size limits
-const loginAttemptStore = new Map<string, LoginAttempt>();
-const captchaStore = new Map<string, CaptchaRecord>();
-const MAX_STORE_SIZE = 10000;
+// Email transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-function cleanupStores() {
-  const now = Date.now();
-  
-  if (loginAttemptStore.size > MAX_STORE_SIZE) {
-    const toDelete = Array.from(loginAttemptStore.entries())
-      .filter(([_, value]) => now > (value.firstAttempt + LOGIN_CONFIG.windowMinutes * 60 * 1000));
-    for (const [key] of toDelete) {
-      loginAttemptStore.delete(key);
-    }
-  }
-  
-  if (captchaStore.size > MAX_STORE_SIZE) {
-    const toDelete = Array.from(captchaStore.entries())
-      .filter(([_, value]) => now > value.expires);
-    for (const [key] of toDelete) {
-      captchaStore.delete(key);
-    }
-  }
-}
+async function sendVerificationEmail(email: string, name: string, token: string) {
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`;
 
-setInterval(cleanupStores, LOGIN_CONFIG.cleanupIntervalMs);
-
-function getAttempts(ip: string): LoginAttempt {
-  return loginAttemptStore.get(`attempts:${ip}`) || { attempts: 0, firstAttempt: Date.now(), blockedUntil: null };
-}
-
-function incrementAttempts(ip: string): { attempts: number; isBlocked: boolean; blockedUntil: number | null } {
-  const current = getAttempts(ip);
-  const newAttempts = current.attempts + 1;
-  let blockedUntil = current.blockedUntil;
-  
-  if (newAttempts >= LOGIN_CONFIG.maxAttempts && !blockedUntil) {
-    blockedUntil = Date.now() + LOGIN_CONFIG.blockMinutes * 60 * 1000;
-  }
-  
-  loginAttemptStore.set(`attempts:${ip}`, {
-    attempts: newAttempts,
-    firstAttempt: current.firstAttempt,
-    blockedUntil,
+  await transporter.sendMail({
+    from: `"SpectrumCosmo" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Verify your email address - SpectrumCosmo',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+        <h2 style="color: #C96712; margin-bottom: 20px;">Welcome to SpectrumCosmo!</h2>
+        <p style="font-size: 16px; color: #333;">Hello ${name || email},</p>
+        <p style="font-size: 16px; color: #333;">Please click the link below to verify your email address:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background: #C96712; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #666;">Or copy and paste this link into your browser:</p>
+        <p style="font-size: 12px; color: #999; word-break: break-all;">${verificationUrl}</p>
+        <p style="font-size: 14px; color: #666;">This link expires in 24 hours.</p>
+        <p style="font-size: 14px; color: #666;">If you didn't create an account, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #999; text-align: center;">SpectrumCosmo - Wear your excitement with pride</p>
+      </div>
+    `,
   });
-  
-  return { attempts: newAttempts, isBlocked: !!blockedUntil && Date.now() < blockedUntil, blockedUntil };
 }
 
-function resetAttempts(ip: string): void {
-  loginAttemptStore.delete(`attempts:${ip}`);
-  loginAttemptStore.delete(`blocked:${ip}`);
-}
-
-function isIpTemporarilyBlocked(ip: string): number | null {
-  const blocked = loginAttemptStore.get(`blocked:${ip}`);
-  if (blocked?.blockedUntil && Date.now() < blocked.blockedUntil) {
-    return Math.ceil((blocked.blockedUntil - Date.now()) / 60000);
-  }
-  return null;
-}
-
-function shouldRequireCaptcha(ip: string): boolean {
-  const attempts = getAttempts(ip);
-  return attempts.attempts >= LOGIN_CONFIG.captchaThreshold;
-}
-
-async function generateCaptcha(ip: string): Promise<{ token: string; challenge: string }> {
-  const num1 = Math.floor(Math.random() * 10) + 1;
-  const num2 = Math.floor(Math.random() * 10) + 1;
-  const answer = String(num1 + num2);
-  const token = Buffer.from(`${ip}:${Date.now()}:${Math.random()}`).toString('base64').slice(0, 64);
-  
-  captchaStore.set(token, {
-    answer,
-    expires: Date.now() + 5 * 60 * 1000,
-  });
-  
-  return {
-    token,
-    challenge: `What is ${num1} + ${num2}?`,
-  };
-}
-
-async function verifyCaptcha(token: string, answer: string): Promise<boolean> {
-  const captcha = captchaStore.get(token);
-  if (!captcha) return false;
-  if (Date.now() > captcha.expires) {
-    captchaStore.delete(token);
-    return false;
-  }
-  captchaStore.delete(token);
-  return captcha.answer === answer;
-}
-
-async function ensureUsersTable(): Promise<void> {
+async function createEmailVerification(userId: string, email: string) {
   const sql = getDb();
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24);
+
+  // Delete any existing tokens
+  await sql`DELETE FROM email_verifications WHERE user_id = ${userId}`;
+  
+  // Create new token
   await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      phone TEXT,
-      password_hash TEXT NOT NULL,
-      newsletter_subscribed BOOLEAN NOT NULL DEFAULT true,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-      two_factor_enabled BOOLEAN DEFAULT false,
-      two_factor_secret TEXT,
-      account_status TEXT DEFAULT 'active',
-      email_verified BOOLEAN DEFAULT false,
-      email_verified_at TIMESTAMP
-    )
+    INSERT INTO email_verifications (user_id, token, expires_at)
+    VALUES (${userId}, ${token}, ${expiresAt})
   `;
+
+  return token;
 }
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
   const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                     req.headers.get('x-real-ip') || 
                     'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
 
   try {
-    const blockedMinutes = isIpTemporarilyBlocked(ipAddress);
-    if (blockedMinutes) {
-      return NextResponse.json(
-        { error: `Too many failed attempts. Please try again in ${blockedMinutes} minutes.` },
-        { status: 429 }
-      );
-    }
-
+    // 1. Check global IP block
     const isGloballyBlocked = await isIPBlocked(ipAddress);
     if (isGloballyBlocked) {
+      await logSecurityEvent({
+        actionType: 'blocked_ip',
+        endpoint: '/api/auth/login',
+        requestMethod: 'POST',
+        responseStatus: 403,
+        ipAddress,
+        userAgent,
+        details: { reason: 'IP is globally blocked' }
+      });
       return NextResponse.json(
         { error: 'Access denied. Please contact support.' },
         { status: 403 }
       );
     }
 
-    await ensureUsersTable();
-    
+    // 2. Parse request body
     const body = await req.json() as LoginRequest;
-    const { email, password, captchaToken, captchaAnswer } = body;
+    const { email, password } = body;
     
     if (!email || !password) {
       await logSecurityEvent({
@@ -190,38 +119,37 @@ export async function POST(req: NextRequest) {
         userAgent,
         details: { reason: 'Missing credentials' }
       });
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
     }
 
-    const needsCaptcha = shouldRequireCaptcha(ipAddress);
-    if (needsCaptcha) {
-      if (!captchaToken || !captchaAnswer) {
-        const { token, challenge } = await generateCaptcha(ipAddress);
-        return NextResponse.json(
-          { error: 'CAPTCHA required', requiresCaptcha: true, captchaToken: token, captchaChallenge: challenge },
-          { status: 428 }
-        );
-      }
+    // 3. Check rate limiting in Redis
+    const rateLimitKey = `login:attempts:${ipAddress}`;
+    const attempts = await redis.get<number>(rateLimitKey) || 0;
+    
+    if (attempts >= LOGIN_CONFIG.maxAttempts) {
+      const ttl = await redis.ttl(rateLimitKey);
+      const minutesLeft = Math.ceil(ttl / 60);
       
-      const isCaptchaValid = await verifyCaptcha(captchaToken, captchaAnswer);
-      if (!isCaptchaValid) {
-        await logSecurityEvent({
-          actionType: 'failed_captcha',
-          endpoint: '/api/auth/login',
-          requestMethod: 'POST',
-          responseStatus: 400,
-          ipAddress,
-          userAgent,
-          details: { email }
-        });
-        const { token, challenge } = await generateCaptcha(ipAddress);
-        return NextResponse.json(
-          { error: 'Invalid CAPTCHA. Please try again.', requiresCaptcha: true, captchaToken: token, captchaChallenge: challenge },
-          { status: 400 }
-        );
-      }
+      await logSecurityEvent({
+        actionType: 'rate_limited',
+        endpoint: '/api/auth/login',
+        requestMethod: 'POST',
+        responseStatus: 429,
+        ipAddress,
+        userAgent,
+        details: { attempts, minutesLeft }
+      });
+      
+      return NextResponse.json(
+        { error: `Too many failed attempts. Please try again in ${minutesLeft} minutes.` },
+        { status: 429 }
+      );
     }
 
+    // 4. Find user
     const sql = getDb();
     const [user] = await sql`
       SELECT id, name, email, password_hash, account_status, email_verified 
@@ -230,7 +158,10 @@ export async function POST(req: NextRequest) {
     `;
 
     if (!user) {
-      const { attempts } = incrementAttempts(ipAddress);
+      // Increment failed attempts
+      await redis.incr(rateLimitKey);
+      await redis.expire(rateLimitKey, LOGIN_CONFIG.blockMinutes * 60);
+      
       await recordFailedLogin(email, ipAddress);
       await logSecurityEvent({
         actionType: 'failed_login',
@@ -248,18 +179,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.account_status === 'frozen') {
-      return NextResponse.json({ error: 'Account frozen. Please contact support.' }, { status: 403 });
+    // 5. Check account status
+    if (user.account_status === 'frozen' || user.account_status === 'banned') {
+      await logSecurityEvent({
+        actionType: 'blocked_account',
+        endpoint: '/api/auth/login',
+        requestMethod: 'POST',
+        responseStatus: 403,
+        ipAddress,
+        userAgent,
+        userId: user.id,
+        details: { status: user.account_status }
+      });
+      
+      return NextResponse.json(
+        { error: `Account ${user.account_status}. Please contact support.` },
+        { status: 403 }
+      );
     }
-    
-    if (user.account_status === 'banned') {
-      return NextResponse.json({ error: 'Account banned. Please contact support.' }, { status: 403 });
-    }
-    
+
+    // 6. Validate password
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     
     if (!passwordValid) {
-      const { attempts } = incrementAttempts(ipAddress);
+      // Increment failed attempts
+      await redis.incr(rateLimitKey);
+      await redis.expire(rateLimitKey, LOGIN_CONFIG.blockMinutes * 60);
+      
       await recordFailedLogin(email, ipAddress);
       await logSecurityEvent({
         actionType: 'failed_login',
@@ -278,32 +224,69 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 7. Check email verification
     if (!user.email_verified) {
-      await logSecurityEvent({
-        actionType: 'failed_login',
-        endpoint: '/api/auth/login',
-        requestMethod: 'POST',
-        responseStatus: 403,
-        ipAddress,
-        userAgent,
-        userId: user.id,
-        details: { email, reason: 'Email not verified' }
-      });
-      
-      return NextResponse.json(
-        { error: 'Please verify your email before logging in', needsVerification: true, email: user.email },
-        { status: 403 }
-      );
+      try {
+        // Create verification token
+        const token = await createEmailVerification(user.id, user.email);
+        
+        // Send verification email
+        await sendVerificationEmail(user.email, user.name, token);
+        
+        await logSecurityEvent({
+          actionType: 'verification_resent',
+          endpoint: '/api/auth/login',
+          requestMethod: 'POST',
+          responseStatus: 403,
+          ipAddress,
+          userAgent,
+          userId: user.id,
+          details: { email: user.email }
+        });
+
+        return NextResponse.json(
+          { 
+            error: 'Please verify your email before logging in. A new verification email has been sent.',
+            needsVerification: true,
+            email: user.email
+          },
+          { status: 403 }
+        );
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        
+        await logSecurityEvent({
+          actionType: 'verification_failed',
+          endpoint: '/api/auth/login',
+          requestMethod: 'POST',
+          responseStatus: 500,
+          ipAddress,
+          userAgent,
+          userId: user.id,
+          details: { error: 'Email sending failed' }
+        });
+
+        return NextResponse.json(
+          { 
+            error: 'Please verify your email before logging in. We could not send a verification email at this time. Please contact support.',
+            needsVerification: true,
+            email: user.email
+          },
+          { status: 403 }
+        );
+      }
     }
 
-    // Blacklist existing token
+    // 8. Success - blacklist old token if exists
     const existingToken = req.cookies.get('user_token')?.value;
     if (existingToken) {
       await redis.setex(`blacklist:${existingToken}`, 86400, 'logged_out');
     }
 
-    resetAttempts(ipAddress);
+    // 9. Clear rate limiting
+    await redis.del(rateLimitKey);
 
+    // 10. Generate new token
     const token = signUserToken({ 
       id: user.id, 
       name: user.name, 
@@ -311,6 +294,7 @@ export async function POST(req: NextRequest) {
       role: 'customer' 
     });
     
+    // 11. Log successful login
     await logSecurityEvent({
       actionType: 'successful_login',
       endpoint: '/api/auth/login',
@@ -319,22 +303,29 @@ export async function POST(req: NextRequest) {
       ipAddress,
       userAgent,
       userId: user.id,
-      details: { email: user.email }
+      details: { 
+        email: user.email,
+        duration: Date.now() - startTime
+      }
     });
     
+    // 12. Return response with cookie
     const response = NextResponse.json({ 
-      user: { id: user.id, name: user.name, email: user.email } 
+      success: true,
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email 
+      } 
     });
     
     response.cookies.set('user_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
     });
-    
-    setCsrfToken(response, user.id);
     
     return response;
     
@@ -352,12 +343,26 @@ export async function POST(req: NextRequest) {
       details: { error: errorMessage }
     });
     
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred. Please try again.' },
+      { status: 500 }
+    );
   }
 }
 
+// Optional: GET endpoint for captcha if you want to keep it
 export async function GET(req: NextRequest) {
-  const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-  const { token, challenge } = await generateCaptcha(ipAddress);
-  return NextResponse.json({ captchaToken: token, captchaChallenge: challenge });
+  // Simple captcha generation if needed
+  const num1 = Math.floor(Math.random() * 10) + 1;
+  const num2 = Math.floor(Math.random() * 10) + 1;
+  const answer = String(num1 + num2);
+  const token = crypto.randomBytes(32).toString('hex');
+  
+  const redis = Redis.fromEnv();
+  await redis.setex(`captcha:${token}`, 300, answer); // 5 minutes TTL
+  
+  return NextResponse.json({
+    captchaToken: token,
+    challenge: `What is ${num1} + ${num2}?`
+  });
 }
