@@ -7,6 +7,11 @@ type MailInput = {
   html?: string
 }
 
+type MailResult = {
+  sent: boolean
+  reason?: string
+}
+
 function getTransporter() {
   const host = process.env.SMTP_HOST
   const port = Number(process.env.SMTP_PORT || 587)
@@ -23,18 +28,26 @@ function getTransporter() {
   })
 }
 
-export async function sendMail(input: MailInput) {
-  const transporter = getTransporter()
-  if (!transporter) return { sent: false, reason: 'SMTP not configured' }
+export async function sendMail(input: MailInput): Promise<MailResult> {
+  try {
+    const transporter = getTransporter()
+    if (!transporter) {
+      console.error('sendMail failed: SMTP not configured')
+      return { sent: false, reason: 'SMTP not configured' }
+    }
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: input.to,
-    subject: input.subject,
-    text: input.text,
-    html: input.html,
-  })
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+    })
 
-  return { sent: true }
+    return { sent: true }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    console.error('sendMail failed:', errorMessage)
+    return { sent: false, reason: errorMessage }
+  }
 }
-
