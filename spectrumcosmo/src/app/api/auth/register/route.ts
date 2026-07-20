@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     await ensureTables();
     const sql = getDb();
 
-    // Check for existing user – use queryAsArray to get a real array
+    // Check for existing user
     const existingUsers = await queryAsArray<{ id: string }>`
       SELECT id FROM users WHERE email = ${email.toLowerCase()}
     `;
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
     }
 
-    // Create user – use queryOne for single row
+    // Create user
     const hash = await bcrypt.hash(password, 10);
     const newUser = await queryOne<{ id: string; name: string; email: string }>`
       INSERT INTO users (name, email, password_hash)
@@ -150,15 +150,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
-    // Subscribe to newsletter (no return needed, just execute)
-    await sql`
-      INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
-      VALUES (${email.toLowerCase()}, ${newUser.id}, true, NOW())
-      ON CONFLICT (email) DO UPDATE SET
-        user_id = EXCLUDED.user_id,
-        is_subscribed = true,
-        updated_at = NOW()
-    `;
+    // Subscribe to newsletter (non-blocking — won't crash registration if table is missing)
+    try {
+      await sql`
+        INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
+        VALUES (${email.toLowerCase()}, ${newUser.id}, true, NOW())
+        ON CONFLICT (email) DO UPDATE SET
+          user_id = EXCLUDED.user_id,
+          is_subscribed = true,
+          updated_at = NOW()
+      `;
+    } catch (newsletterErr) {
+      console.error('Newsletter subscription failed (non-fatal):', newsletterErr);
+    }
 
     // Generate verification token
     const token = crypto.randomBytes(32).toString('hex');
