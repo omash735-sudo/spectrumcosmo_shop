@@ -44,6 +44,17 @@ async function ensureTables(): Promise<void> {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      is_subscribed BOOLEAN DEFAULT true,
+      subscribed_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP,
+      UNIQUE(email)
+    )
+  `;
 }
 
 async function getRecentProducts(limit: number = 3): Promise<Product[]> {
@@ -150,7 +161,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
-    // Subscribe to newsletter (non-blocking — won't crash registration if table is missing)
+    // Subscribe to newsletter
     try {
       await sql`
         INSERT INTO newsletter_subscriptions (email, user_id, is_subscribed, subscribed_at)
