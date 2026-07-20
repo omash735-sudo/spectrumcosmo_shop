@@ -197,7 +197,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
+    const errorStack = err instanceof Error ? err.stack : '';
     console.error('Registration error:', errorMessage);
-    return NextResponse.json({ error: 'Failed to register. Please try again later.' }, { status: 500 });
+    console.error('Stack:', errorStack);
+    return NextResponse.json({ 
+      error: 'Failed to register. Please try again later.',
+      debug: errorMessage
+    }, { status: 500 });
   }
 }
