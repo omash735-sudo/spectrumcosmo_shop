@@ -109,11 +109,12 @@ export default function RegisterPage() {
       }
       
       setSuccess('Registration successful. Please check your email to verify.');
+      const registeredEmail = form.email;
       setForm({ name: '', email: '', password: '', confirm: '' });
       setAcceptedTerms(false);
       
       setTimeout(() => {
-        router.push('/auth/login?registered=true');
+        router.push(`/verify-email?email=${encodeURIComponent(registeredEmail)}`);
       }, 1500);
     } catch {
       setError('Something went wrong. Try again.');
@@ -147,11 +148,12 @@ export default function RegisterPage() {
       
       setShowCaptcha(false);
       setSuccess('Registration successful. Please check your email to verify.');
+      const registeredEmail = pendingForm.email;
       setForm({ name: '', email: '', password: '', confirm: '' });
       setAcceptedTerms(false);
       
       setTimeout(() => {
-        router.push('/auth/login?registered=true');
+        router.push(`/verify-email?email=${encodeURIComponent(registeredEmail)}`);
       }, 1500);
     } catch {
       setError('CAPTCHA verification failed. Please try again.');
