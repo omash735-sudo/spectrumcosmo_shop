@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Loader2, Plus, Trash2, Edit2, MapPin, Phone, Mail, 
-  Home, Building, CheckCircle, X, AlertCircle, Sparkles,
+  Home, Building, CheckCircle, X, AlertCircle,
   ArrowLeft, Globe, Clock, Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -206,7 +206,7 @@ export default function AddressesPage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-1 h-5 sm:h-6 bg-[var(--primary)] rounded-full"></div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">My Addresses</h1>
-              <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
+              {/* Sparkles removed */}
             </div>
           </div>
           <p className="text-[var(--foreground-muted)] text-xs sm:text-sm mt-1 ml-8 sm:ml-10 md:ml-14">Manage your shipping addresses</p>
