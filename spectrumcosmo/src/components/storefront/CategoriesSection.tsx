@@ -1,8 +1,7 @@
-// components/storefront/CategoriesSection.tsx
 import Link from 'next/link';
 import Image from 'next/image';
 import { getDb, queryMany } from '@/lib/db';
-import { FolderOpen, ArrowRight, Sparkles } from 'lucide-react';
+import { FolderOpen, ArrowRight } from 'lucide-react'; // <-- Removed Sparkles
 
 interface Category {
   id: string;
@@ -42,7 +41,7 @@ export default async function CategoriesSection() {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-1 h-5 sm:h-6 md:h-7 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
           <h2 className="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white">Shop by Category</h2>
-          <Sparkles size={14} className="text-orange-400 hidden sm:block sm:w-4 sm:h-4 md:w-5 md:h-5" />
+          {/* <Sparkles size={14} className="text-orange-400 hidden sm:block sm:w-4 sm:h-4 md:w-5 md:h-5" /> */} {/* REMOVED */}
         </div>
         <Link 
           href="/products" 
