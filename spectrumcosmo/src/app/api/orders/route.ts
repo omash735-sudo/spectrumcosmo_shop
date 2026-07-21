@@ -1,3 +1,4 @@
+// app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
@@ -180,16 +181,10 @@ export async function POST(req: NextRequest) {
       `;
     }
 
-    const orderItemsHtml = items.map((item: any) => `
-      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-        <span>${item.name} x ${item.quantity}</span>
-        <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
-      </div>
-    `).join('');
-
     const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${orderId}`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
+    // Common email placeholders
     const commonPlaceholders = {
       customer_name,
       order_number: orderNumber,
@@ -201,6 +196,7 @@ export async function POST(req: NextRequest) {
       tracking_url: trackingUrl,
     };
 
+    // ----- AUTOMATIC PAYMENT (order confirmation) -----
     if (isAutomatic) {
       let emailTemplate = await getEmailTemplate(sql, 'order_confirmation_automatic');
       
@@ -213,31 +209,42 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        const fallbackHtml = `
-          <div style="font-family: Arial; max-width:600px;">
-            <h2>Order Confirmed</h2>
-            <p>Hello ${customer_name},</p>
-            <p>Thank you for your order! Your payment has been processed successfully.</p>
-            <div style="background:#f9fafb; padding:20px; border-radius:12px;">
-              <h3>Order Summary</h3>
-              <p><strong>Order #:</strong> ${orderNumber}</p>
-              <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
-              <p><strong>Delivery Method:</strong> ${custom_delivery_method}</p>
-              <p><strong>Delivery Address:</strong> ${location}</p>
+        // Branded fallback for automatic confirmation
+        const html = `
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
+            <div style="background: #F97316; padding: 24px 20px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">Order Confirmed!</h1>
             </div>
-            <a href="${trackingUrl}" style="background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px;">View Order →</a>
+            <div style="padding: 24px; background: white;">
+              <p style="font-size: 16px; color: #333;">Hi <strong>${customer_name}</strong>,</p>
+              <p style="font-size: 15px; line-height: 1.5; color: #555;">Thank you for your order! Your payment has been processed successfully.</p>
+              <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <p style="margin: 0 0 8px;"><strong>Order #:</strong> ${orderNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Total:</strong> MWK ${safeTotal.toLocaleString()}</p>
+                <p style="margin: 0 0 8px;"><strong>Delivery Method:</strong> ${custom_delivery_method}</p>
+                <p style="margin: 0;"><strong>Delivery Address:</strong> ${location}</p>
+              </div>
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${trackingUrl}" style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">View Your Order</a>
+              </div>
+              <hr style="margin: 30px 0 20px; border: none; border-top: 1px solid #eee;" />
+              <p style="font-size: 12px; color: #999;">Questions? Just reply to this email – we're here to help.<br/>SpectrumCosmo Team – Wear your excitement with pride.</p>
+            </div>
           </div>
         `;
         await sendMail({
           to: customer_email,
-          subject: `Order Confirmation #${orderNumber}`,
-          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
-          html: fallbackHtml,
+          subject: `Order Confirmation #${orderNumber} – SpectrumCosmo`,
+          text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}. Track your order: ${trackingUrl}`,
+          html,
         }).catch(err => console.error('Email failed:', err));
       }
-    } else {
+    } 
+    // ----- MANUAL PAYMENT (payment instructions) -----
+    else {
       let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
       
+      // Promotional banner
       const activeBanner = await queryOne<{
         title: string;
         description: string;
@@ -278,56 +285,54 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        const orderItemsTable = items.map((item: any) => `
+        // Branded fallback for manual payment instructions
+        const orderItemsHtml = items.map((item: any) => `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span>${item.name} x ${item.quantity}</span>
             <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
           </div>
         `).join('');
 
-        const fallbackHtml = `
-          <div style="font-family: Arial; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:16px; overflow:hidden;">
-            <div style="background:#F97316; padding:20px; text-align:center;">
-              <img src="${settingsMap.invoice_logo_url || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'}" style="max-width:150px;" />
-              <h1 style="color:white; margin:10px 0 0;">Complete Your Payment</h1>
+        const html = `
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
+            <div style="background: #F97316; padding: 24px 20px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">Complete Your Payment</h1>
             </div>
-            <div style="padding:24px;">
-              <p>Hello <strong>${customer_name}</strong>,</p>
-              <p>Thank you for your order! To complete your purchase, please follow the instructions below.</p>
+            <div style="padding: 24px; background: white;">
+              <p style="font-size: 16px; color: #333;">Hi <strong>${customer_name}</strong>,</p>
+              <p style="font-size: 15px; line-height: 1.5; color: #555;">Thank you for your order! Please complete your payment using the details below.</p>
               
-              <div style="background:#f9fafb; padding:20px; border-radius:12px; margin:20px 0;">
-                <h3 style="margin-top:0;">Order Summary</h3>
-                ${orderItemsTable}
+              <div style="background: #f9fafb; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <h3 style="margin: 0 0 12px; color: #333;">Order Summary</h3>
+                ${orderItemsHtml}
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 18px; color: #F97316;">
-                  <span>Total Amount</span>
+                  <span>Total</span>
                   <span>MWK ${safeTotal.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div style="background:#fef3c7; padding:20px; border-radius:12px; margin:20px 0;">
-                <h3 style="margin-top:0;">Payment Instructions</h3>
-                <div style="font-size:14px;">${paymentInstructions}</div>
+              <div style="background: #fef3c7; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <h3 style="margin: 0 0 12px; color: #92400E;">Payment Instructions</h3>
+                <div style="font-size: 14px; color: #333;">${paymentInstructions}</div>
               </div>
 
-              <div style="text-align:center;">
-                <a href="${paymentUrl}" style="display:inline-block; background:#F97316; color:white; padding:12px 28px; text-decoration:none; border-radius:30px; font-weight:bold;">Complete Payment →</a>
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${paymentUrl}" style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">Confirm Payment</a>
               </div>
 
               ${discountBannerHtml}
-            </div>
-            <div style="background:#f9fafb; padding:20px; text-align:center; font-size:12px; color:#6b7280; border-top:1px solid #e5e7eb;">
-              <p>${settingsMap.company_name || 'SpectrumCosmo'} – Wear your excitement with pride.</p>
-              <p>${settingsMap.company_address || 'Lilongwe, Malawi'} | <a href="mailto:${settingsMap.company_email || 'hello@spectrumcosmo.shop'}" style="color:#F97316;">${settingsMap.company_email || 'hello@spectrumcosmo.shop'}</a></p>
-              <p>© ${new Date().getFullYear()} ${settingsMap.company_name || 'SpectrumCosmo'}. ${settingsMap.footer_copyright || 'All rights reserved.'}</p>
+
+              <hr style="margin: 30px 0 20px; border: none; border-top: 1px solid #eee;" />
+              <p style="font-size: 12px; color: #999;">Questions? Just reply to this email – we're here to help.<br/>SpectrumCosmo Team – Wear your excitement with pride.</p>
             </div>
           </div>
         `;
-        
+
         await sendMail({
           to: customer_email,
-          subject: `Complete Your Payment for Order #${orderNumber}`,
+          subject: `Complete Your Payment for Order #${orderNumber} – SpectrumCosmo`,
           text: `Hello ${customer_name},\n\nPlease complete your payment here: ${paymentUrl}`,
-          html: fallbackHtml,
+          html,
         }).catch(err => console.error('Email failed:', err));
       }
     }
