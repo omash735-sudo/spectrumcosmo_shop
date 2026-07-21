@@ -2,83 +2,158 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
-import Navbar from '@/components/storefront/Navbar'
-import Footer from '@/components/storefront/Footer'
+import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { motion, AnimatePresence } from 'framer-motion'
 
-export default function ForgotPasswordForm() {
+const LOGOS = {
+  light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
+  dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+}
+
+export default function ForgotPasswordPage() {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => { setMounted(true) }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
     setError('')
+    setSuccess(false)
     try {
-      // Call your old custom route (still exists if you didn't delete it)
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Something went wrong')
-      setMessage('If an account exists with that email, you will receive a password reset link.')
+      if (!res.ok) throw new Error('Something went wrong')
+      setSuccess(true)
       setEmail('')
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const logoSrc = "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+  const isDark = mounted && theme === 'dark'
+  const logoSrc = isDark ? LOGOS.dark : LOGOS.light
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-[#111111] flex items-center justify-center px-4 py-12">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, #F97316 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[var(--background)]">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            className="inline-block"
+          >
+            <img src={logoSrc} alt="SpectrumCosmo" className="h-16 mx-auto mb-4" />
+          </motion.div>
+          <p className="text-sm text-[var(--foreground-muted)]">Reset your password</p>
         </div>
-        <div className="relative w-full max-w-md">
-          <div className="text-center mb-8">
-            <img src={logoSrc} alt="SpectrumCosmo" className="h-12 mx-auto mb-4" />
-            <p className="text-gray-400 text-sm">Reset your password</p>
-          </div>
-          <div className="bg-white rounded-3xl p-8 shadow-2xl">
-            <h1 className="text-2xl font-bold text-[#111111] mb-2">Forgot password?</h1>
-            <p className="text-gray-500 text-sm mb-6">Enter your email and we'll send you a reset link.</p>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <input
-                type="email"
-                required
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input w-full"
-              />
-              {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
-              {message && <p className="text-sm text-green-600 bg-green-50 p-2 rounded">{message}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full justify-center py-3"
+
+        <div className="rounded-2xl p-6 shadow-xl border border-[var(--border)] bg-[var(--background-card)]">
+          <AnimatePresence mode="wait">
+            {success ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="text-center py-6"
               >
-                {loading ? <Loader2 className="animate-spin" size={16} /> : 'Send Reset Link'}
-              </button>
-              <p className="text-center text-xs text-gray-500">
-                Remember your password?{' '}
-                <Link href="/login" className="text-[#F97316] hover:underline">Sign in</Link>
-              </p>
-            </form>
-          </div>
+                <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Check your email</h3>
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  If an account exists for {email || 'that email'}, you’ll receive a password reset link.
+                </p>
+                <Link
+                  href="/auth/login"
+                  className="inline-block mt-6 text-[var(--primary)] hover:underline font-medium text-sm"
+                >
+                  Back to login
+                </Link>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center mx-auto mb-3">
+                    <Mail size={20} className="text-[var(--primary)]" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--foreground)]">Forgot password?</h2>
+                  <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                    Enter your email and we'll send you a reset link.
+                  </p>
+                </div>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="text-sm rounded-xl px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block text-[var(--foreground-muted)]">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all"
+                      placeholder="Enter your email address"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--primary)]/20 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : 'Send Reset Link'}
+                </button>
+
+                <div className="text-center">
+                  <Link
+                    href="/auth/login"
+                    className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1"
+                  >
+                    <ArrowLeft size={14} />
+                    Back to login
+                  </Link>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </div>
-      </main>
-      <Footer />
-    </>
+      </motion.div>
+    </div>
   )
 }
