@@ -18,7 +18,7 @@ import {
   Truck,
   CreditCard,
   Smartphone,
-  Handshake,  // Cash payment icon
+  Handshake,
   AlertCircle
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -152,6 +152,7 @@ export default function Footer() {
     { href: '/account', label: 'Account' },
     { href: '/contact', label: 'Contact' },
     { href: '/faq', label: 'FAQ' },
+    { href: '/newsletter', label: 'Newsletter' }, // <-- Added Newsletter link
   ]
 
   const socialLinks = [
@@ -162,11 +163,10 @@ export default function Footer() {
     { key: 'whatsapp', icon: MessageCircle, color: 'hover:bg-green-500' },
   ]
 
-  // Updated payment icons - Cash instead of Apple Pay
   const paymentIcons = [
     { icon: CreditCard, name: 'Card' },
     { icon: Smartphone, name: 'Mobile Money' },
-    { icon: Handshake, name: 'Cash' },  // Handshake icon for cash payments
+    { icon: Handshake, name: 'Cash' },
   ]
 
   const trustFeatures = [
