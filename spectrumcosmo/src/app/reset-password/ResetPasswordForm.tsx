@@ -1,7 +1,9 @@
+// app/reset-password/ResetPasswordForm.tsx
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Eye, EyeOff, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,7 +13,7 @@ const LOGOS = {
   dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
 }
 
-function ResetPasswordContent() {
+export default function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -184,17 +186,5 @@ function ResetPasswordContent() {
         </div>
       </motion.div>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   )
 }
