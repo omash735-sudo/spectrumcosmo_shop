@@ -7,8 +7,7 @@ import {
   HelpCircle,
   Phone,
   ChevronDown,
-  ChevronUp,
-  Sparkles
+  ChevronUp
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -58,7 +57,7 @@ export default function SupportPage() {
         <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
           <div className="w-1 h-5 sm:h-6 bg-[var(--primary)] rounded-full"></div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">Customer Support</h1>
-          <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
+          {/* Sparkles removed */}
         </div>
         <p className="text-[var(--foreground-muted)] text-xs sm:text-sm">
           We're here to help you anytime
