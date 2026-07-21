@@ -7,7 +7,7 @@ import Image from 'next/image';
 import ContactForm from '@/components/storefront/ContactForm';
 import { 
   Handshake, HelpCircle, Users, Briefcase, Mail, Phone, MapPin, 
-  Sparkles, ArrowRight, MessageCircle,
+  ArrowRight, MessageCircle,
   Facebook, Twitter, Instagram, Youtube
 } from 'lucide-react';
 
@@ -37,7 +37,12 @@ export default async function ContactPage() {
   };
   const formTitle = content.form_title || 'Send us a message';
   const formSubtitle = content.form_subtitle || 'We typically respond within 24 hours';
-  const featureGrid = content.feature_grid || [];
+  
+  // Filter out the "Support" item from feature grid
+  const featureGrid = (content.feature_grid || []).filter(
+    (item: any) => item.title?.toLowerCase() !== 'support'
+  );
+  
   const contactDetails = content.contact_details || {
     email: 'spectrumcosmo01@gmail.com',
     phone: '+265 893 160 202',
@@ -72,10 +77,7 @@ export default async function ContactPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-              <Sparkles size={16} className="text-orange-400" />
-              <span className="text-white text-sm font-medium">Get in Touch</span>
-            </div>
+            {/* REMOVED the "Get in Touch" badge with Sparkles */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
               {hero.title}
             </h1>
@@ -173,13 +175,13 @@ export default async function ContactPage() {
             </div>
           </div>
 
-          {/* Feature Grid */}
+          {/* Feature Grid - "Support" card filtered out */}
           {featureGrid.length > 0 && (
             <div className="mb-16">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-3">
-                  <Sparkles size={14} className="text-[var(--primary)]" />
-                  <span className="text-xs font-medium text-[var(--primary)]">Why Choose Us</span>
+                  {/* Sparkles removed, text made bold */}
+                  <span className="text-xs font-bold text-[var(--primary)]">Why Choose Us</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Connect With Us</h2>
                 <p className="text-[var(--foreground-muted)] mt-2">Explore partnership opportunities</p>
@@ -215,7 +217,8 @@ export default async function ContactPage() {
             <div className="bg-[var(--background-secondary)] rounded-2xl p-8 text-center border border-[var(--border)]">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
                 <Users size={14} className="text-[var(--primary)]" />
-                <span className="text-xs font-medium text-[var(--primary)]">Join the Movement</span>
+                {/* Made "Join the Movement" bold */}
+                <span className="text-xs font-bold text-[var(--primary)]">Join the Movement</span>
               </div>
               <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">Become Part of Our Community</h3>
               <p className="text-[var(--foreground-muted)] mb-6 max-w-md mx-auto">
@@ -234,7 +237,7 @@ export default async function ContactPage() {
             </div>
           )}
 
-          {/* FAQ Link */}
+          {/* FAQ Link - KEPT (restored) */}
           <div className="text-center mt-12">
             <p className="text-[var(--foreground-muted)] text-sm">
               Have questions? Check our{' '}
