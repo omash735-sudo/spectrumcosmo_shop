@@ -12,7 +12,7 @@ import {
   Send, 
   Loader2, 
   ArrowUp,
-  Sparkles,
+  // Sparkles removed (not used anymore)
   Heart,
   Shield,
   Truck,
@@ -152,7 +152,7 @@ export default function Footer() {
     { href: '/account', label: 'Account' },
     { href: '/contact', label: 'Contact' },
     { href: '/faq', label: 'FAQ' },
-    { href: '/newsletter', label: 'Newsletter' }, // <-- Added Newsletter link
+    { href: '/newsletter', label: 'Newsletter' },
   ]
 
   const socialLinks = [
@@ -183,9 +183,9 @@ export default function Footer() {
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
               <div className="text-center md:text-left">
+                {/* Updated badge: removed Sparkles and changed text */}
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[var(--primary)]/20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2 sm:mb-3">
-                  <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--primary)]" />
-                  <span className="text-[10px] sm:text-xs font-medium text-[var(--primary)]">Get 10% off</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-[var(--primary)]">Get 10% off on your first purchase</span>
                 </div>
                 <h3 className="text-base sm:text-xl font-bold text-[var(--foreground)]">Subscribe for exclusive offers</h3>
                 <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Anime news, drops & 10% off your first order</p>
@@ -224,7 +224,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main Footer */}
+        {/* Main Footer - unchanged */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
