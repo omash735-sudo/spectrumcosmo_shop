@@ -1,11 +1,10 @@
-// components/storefront/FeaturedProducts.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
-import { ChevronLeft, ChevronRight, Sparkles, ChevronRight as ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight } from 'lucide-react'; // <-- Removed Sparkles
 
 interface FeaturedProduct {
   id: string;
@@ -68,7 +67,6 @@ export default function FeaturedProducts() {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
-  // Touch handlers for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.targetTouches[0].clientX);
   };
@@ -109,7 +107,7 @@ export default function FeaturedProducts() {
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)]">Featured Products</h2>
             <p className="text-[10px] sm:text-xs md:text-sm text-[var(--foreground-muted)] mt-0.5">Handpicked just for you</p>
           </div>
-          <Sparkles size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] text-[var(--primary)]" />
+          {/* <Sparkles size={14} className="sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] text-[var(--primary)]" /> */} {/* REMOVED */}
         </div>
         <Link
           href="/products"
