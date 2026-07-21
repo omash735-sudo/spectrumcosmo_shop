@@ -16,8 +16,7 @@ import {
   User,
   Settings,
   Calendar,
-  DollarSign,
-  Sparkles,
+  // DollarSign removed
   ArrowRight,
   TrendingUp,
   Gift,
@@ -115,18 +114,18 @@ export default function AccountOverview() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 bg-[var(--background-card)]/20 backdrop-blur-sm px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
-                <Sparkles size={12} className="text-white sm:w-3.5 sm:h-3.5" />
-                <span className="text-[10px] sm:text-xs font-medium text-white">Welcome Back</span>
+                {/* Sparkles removed */}
+                <span className="text-[10px] sm:text-xs font-bold text-white">Welcome Back</span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--foreground)]">
                 Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
               </h1>
-              <p className="text-white/80 text-xs sm:text-sm mt-1">Track your orders and manage your account</p>
+              <p className="text-[var(--foreground-muted)] text-xs sm:text-sm mt-1">Track your orders and manage your account</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-center">
-                <p className="text-lg sm:text-2xl font-bold text-white">{totalSpent.toLocaleString()} MWK</p>
-                <p className="text-[10px] sm:text-xs text-white/80">Lifetime Spent</p>
+                <p className="text-lg sm:text-2xl font-bold text-[var(--foreground)]">{totalSpent.toLocaleString()} MWK</p>
+                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Lifetime Spent</p>
               </div>
             </div>
           </div>
@@ -222,13 +221,13 @@ export default function AccountOverview() {
                           {statusConfig.label}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1.5 sm:mt-2">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1.5 sm:mt-2">
                         <span className="flex items-center gap-0.5 sm:gap-1">
                           <Calendar size={10} className="sm:w-3 sm:h-3" />
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
-                        <span className="flex items-center gap-0.5 sm:gap-1">
-                          <DollarSign size={10} className="sm:w-3 sm:h-3" />
+                        {/* DollarSign removed - now just the amount */}
+                        <span className="font-medium text-[var(--foreground)]">
                           MWK {totalAmount.toLocaleString()}
                         </span>
                       </div>
