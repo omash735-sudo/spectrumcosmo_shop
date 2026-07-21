@@ -142,9 +142,11 @@ export async function POST(req: NextRequest) {
     await ensureTables();
     const sql = getDb();
 
-    // Check for existing user
+    // Check for existing user – exclude soft‑deleted accounts
     const existingUsers = await queryAsArray<{ id: string }>`
-      SELECT id FROM users WHERE email = ${email.toLowerCase()}
+      SELECT id FROM users 
+      WHERE email = ${email.toLowerCase()} 
+        AND deleted_at IS NULL
     `;
     if (existingUsers.length > 0) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
@@ -197,12 +199,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Internal server error';
-    const errorStack = err instanceof Error ? err.stack : '';
     console.error('Registration error:', errorMessage);
-    console.error('Stack:', errorStack);
-    return NextResponse.json({ 
-      error: 'Failed to register. Please try again later.',
-      debug: errorMessage
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to register. Please try again later.' }, { status: 500 });
   }
 }
