@@ -38,7 +38,7 @@ export default async function ContactPage() {
   const formTitle = content.form_title || 'Send us a message';
   const formSubtitle = content.form_subtitle || 'We typically respond within 24 hours';
   
-  // Filter out the "Support" item from feature grid
+  // Filter out the "Support" item
   const featureGrid = (content.feature_grid || []).filter(
     (item: any) => item.title?.toLowerCase() !== 'support'
   );
@@ -77,7 +77,6 @@ export default async function ContactPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            {/* REMOVED the "Get in Touch" badge with Sparkles */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
               {hero.title}
             </h1>
@@ -175,18 +174,18 @@ export default async function ContactPage() {
             </div>
           </div>
 
-          {/* Feature Grid - "Support" card filtered out */}
+          {/* Feature Grid - Evenly spaced with grid-cols-3 */}
           {featureGrid.length > 0 && (
             <div className="mb-16">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-3">
-                  {/* Sparkles removed, text made bold */}
                   <span className="text-xs font-bold text-[var(--primary)]">Why Choose Us</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Connect With Us</h2>
                 <p className="text-[var(--foreground-muted)] mt-2">Explore partnership opportunities</p>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Updated grid: responsive 1→2→3 columns, centered with max-w-4xl */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
                 {featureGrid.map((item: any, idx: number) => {
                   const Icon = getIconForTitle(item.title);
                   return (
@@ -217,7 +216,6 @@ export default async function ContactPage() {
             <div className="bg-[var(--background-secondary)] rounded-2xl p-8 text-center border border-[var(--border)]">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
                 <Users size={14} className="text-[var(--primary)]" />
-                {/* Made "Join the Movement" bold */}
                 <span className="text-xs font-bold text-[var(--primary)]">Join the Movement</span>
               </div>
               <h3 className="text-2xl font-bold text-[var(--foreground)] mb-3">Become Part of Our Community</h3>
@@ -237,7 +235,7 @@ export default async function ContactPage() {
             </div>
           )}
 
-          {/* FAQ Link - KEPT (restored) */}
+          {/* FAQ Link */}
           <div className="text-center mt-12">
             <p className="text-[var(--foreground-muted)] text-sm">
               Have questions? Check our{' '}
