@@ -1,3 +1,4 @@
+// app/api/admin/customers/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { getDb } from '@/lib/db'
@@ -66,6 +67,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const sql = getDb()
   const { id } = await params
-  await sql`UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = ${id}`
-  return NextResponse.json({ success: true })
+
+  
+  await sql`DELETE FROM email_verifications WHERE user_id = ${id}`
+  await sql`DELETE FROM newsletter_subscriptions WHERE user_id = ${id}`
+  await sql`DELETE FROM password_reset_tokens WHERE user_id = ${id}`
+
+  
+  await sql`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE user_id = ${id})`
+ 
+  await sql`DELETE FROM orders WHERE user_id = ${id}`
+
+
+  await sql`DELETE FROM users WHERE id = ${id}`
+
+  return NextResponse.json({ success: true, message: 'User permanently deleted' })
 }
