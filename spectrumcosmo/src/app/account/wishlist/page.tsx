@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft, Package, Sparkles } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft, Package } from 'lucide-react';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useWishlist } from '@/components/storefront/WishlistProvider';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
@@ -63,7 +63,7 @@ export default function WishlistPage() {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               My Wishlist
             </h1>
-            <Sparkles size={14} className="text-orange-400 sm:w-[18px] sm:h-[18px]" />
+            {/* Sparkles removed */}
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">
             {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'} saved for later
