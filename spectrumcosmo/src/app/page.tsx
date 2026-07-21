@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { 
   ArrowRight, Sparkles, Shield, Truck, Star, 
   ShoppingBag, Zap, CheckCircle, 
-  CreditCard, Headphones, Send, Gift
+  CreditCard, Headphones, Send, Gift, Shirt
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
@@ -164,11 +164,6 @@ export default async function HomePage() {
         {/* ============================================
             HERO SECTION - manga-bg + hero-manga
             ============================================ */}
-        {/* 
-          CHANGE: Reduced top/bottom padding to move content higher.
-          Original: py-8 md:py-16 lg:py-24 
-          New:      py-4 md:py-8 lg:py-12 
-        */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
             <Image
@@ -245,7 +240,8 @@ export default async function HomePage() {
                     <span className="text-xs sm:text-sm">{h.feature2}</span>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
-                    <Sparkles size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                    {/* REPLACED Sparkles with Shirt icon */}
+                    <Shirt size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature3}</span>
                   </div>
                 </div>
@@ -355,16 +351,9 @@ export default async function HomePage() {
         {/* ============================================
             NEWSLETTER - NO manga panel, just #111111 background
             ============================================ */}
-        {/* 
-          CHANGE: Removed the Zap icon and replaced the decorative pill with a simple square box.
-          The square box is a small div with border that adapts to light/dark mode via CSS variables.
-        */}
+        {/* REMOVED the square box entirely - now only heading, text, form, and note */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            {/* Simple square box - replaces the previous pill with icon */}
-            <div className="flex justify-center mb-6">
-              <div className="w-8 h-8 border-2 border-[var(--border)] bg-[var(--background-card)] rounded-sm"></div>
-            </div>
             <h2 className="text-3xl md:text-4xl font-bold text-[#F5F5F5] mb-4">Join Our Newsletter</h2>
             <p className="text-[#9A9A9A] mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
             <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
