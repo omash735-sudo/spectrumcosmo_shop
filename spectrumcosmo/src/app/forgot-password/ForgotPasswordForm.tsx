@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
