@@ -5,8 +5,9 @@ import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import Link from 'next/link';
 import DynamicImageViewer from '@/components/storefront/DynamicImageViewer';
+import Image from 'next/image';
 import { 
-  Sparkles, 
+  // Sparkles removed
   Users, 
   ShoppingBag, 
   Globe, 
@@ -20,7 +21,8 @@ import {
   CheckCircle,
   Mail,
   HelpCircle,
-  LucideIcon
+  LucideIcon,
+  Flag // Added for Malawi icon
 } from 'lucide-react';
 
 interface StatItem {
@@ -98,17 +100,23 @@ export default function AboutPage() {
     );
   }
 
-  // If no content or empty content, show a message
+  // If no content or empty content, show a message with logo
   if (!content || Object.keys(content).length === 0) {
     return (
       <>
         <Navbar />
         <main className="bg-[var(--background)] min-h-[60vh] flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
-            <div className="w-16 h-16 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-[var(--foreground-muted)]" />
+            <div className="flex justify-center mb-6">
+              <Image
+                src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+                alt="SpectrumCosmo"
+                width={160}
+                height={60}
+                className="object-contain"
+              />
             </div>
-            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">About Page Coming Soon</h2>
+            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">About SpectrumCosmo</h2>
             <p className="text-[var(--foreground-muted)] text-sm">The about page content is being prepared. Check back later!</p>
           </div>
         </main>
@@ -145,13 +153,14 @@ export default function AboutPage() {
       <main className="bg-[var(--background)] overflow-hidden">
         
         {/* Hero Section - With Manga Panel */}
-        <section className="manga-bg hero-manga relative py-20 md:py-28 overflow-hidden">
+        {/* Reduced top padding: was py-20 md:py-28, now pt-12 md:pt-16 */}
+        <section className="manga-bg hero-manga relative pt-12 md:pt-16 pb-16 md:pb-20 overflow-hidden">
           <div className="relative z-10 max-w-7xl mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1">
                 <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-4 py-1.5 rounded-full mb-6">
-                  <Sparkles size={14} className="text-[var(--primary)]" />
-                  <span className="text-xs font-medium text-[var(--primary)] uppercase tracking-wider">Our Story</span>
+                  {/* Sparkles removed - just bold text */}
+                  <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-wider">Our Story</span>
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--foreground)] mb-6 leading-tight">
                   Wear Your{' '}
@@ -203,7 +212,8 @@ export default function AboutPage() {
                   <div className="absolute -bottom-4 -right-4 bg-[var(--background-card)] rounded-xl shadow-lg p-3 border border-[var(--border)]">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-[var(--primary)] rounded-full flex items-center justify-center">
-                        <Sparkles size={14} className="text-white" />
+                        {/* Replaced Sparkles with Malawi Flag icon */}
+                        <Flag size={14} className="text-white" />
                       </div>
                       <div>
                         <p className="text-xs font-bold text-[var(--foreground)]">Est. 2024</p>
@@ -419,31 +429,12 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Roadmap */}
-        <section className="py-20 bg-[var(--background)]">
-          <div className="max-w-4xl mx-auto text-center px-4">
-            <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-6">
-              <Sparkles size={14} className="text-[var(--primary)]" />
-              <span className="text-xs font-medium text-[var(--primary)]">What's Next</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-6">Our Roadmap</h2>
-            <div className="bg-[var(--background-card)] rounded-2xl p-8 border border-[var(--border)]">
-              {futurePlans ? (
-                <p className="text-[var(--foreground-muted)] leading-relaxed whitespace-pre-line text-lg">{futurePlans}</p>
-              ) : (
-                <p className="text-[var(--foreground-muted)] italic">Future plans coming soon.</p>
-              )}
-            </div>
-          </div>
-        </section>
+        {/* WHAT'S NEXT / ROADMAP SECTION - COMPLETELY REMOVED */}
 
-        {/* CTA Section */}
+        {/* CTA Section - Removed "Join Us" badge with heart */}
         <section className="bg-[var(--background-secondary)] py-20 overflow-hidden border-t border-[var(--border)]">
           <div className="max-w-3xl mx-auto text-center px-4">
-            <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-6">
-              <Heart size={14} className="text-[var(--primary)]" />
-              <span className="text-xs font-medium text-[var(--primary)]">Join Us</span>
-            </div>
+            {/* "Join Us" badge with Heart icon REMOVED */}
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--foreground)] mb-6">
               Ready to Be Part of{' '}
               <span className="text-[var(--primary)]">
