@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { 
-  Loader2, Upload, User, Mail, Phone, Sparkles, 
+  Loader2, Upload, User, Mail, Phone, 
   CheckCircle, ArrowLeft, Camera, Save, X,
   MapPin, Lock, Trash2, ChevronRight, AlertCircle,
   Eye, EyeOff, Home, Building, Map, KeyRound
@@ -251,7 +251,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-1 h-5 sm:h-6 bg-[var(--primary)] rounded-full"></div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">My Profile</h1>
-              <Sparkles size={14} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px]" />
+              {/* Sparkles removed */}
             </div>
             <p className="text-[var(--foreground-muted)] text-xs sm:text-sm mt-0.5 sm:mt-1">Manage your personal information</p>
           </div>
