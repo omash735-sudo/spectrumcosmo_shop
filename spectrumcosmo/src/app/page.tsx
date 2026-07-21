@@ -164,7 +164,12 @@ export default async function HomePage() {
         {/* ============================================
             HERO SECTION - manga-bg + hero-manga
             ============================================ */}
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga">
+        {/* 
+          CHANGE: Reduced top/bottom padding to move content higher.
+          Original: py-8 md:py-16 lg:py-24 
+          New:      py-4 md:py-8 lg:py-12 
+        */}
+        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
             <Image
               src={h.bg_image_url}
@@ -184,23 +189,13 @@ export default async function HomePage() {
             />
           )}
 
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 lg:py-24">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
               
               {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 
-                {/* Badge - Updated with Gift icon and "Get Early Access" */}
-                <Link
-                  href={h.badge_link || '#'}
-                  className="inline-flex items-center gap-2 bg-[var(--background-card)] dark:bg-[var(--background-card)] text-[var(--foreground)] text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6 hover:bg-[var(--border)] dark:hover:bg-[var(--border)] transition max-w-full border border-[var(--border)]"
-                >
-                  <Gift size={14} className="text-[var(--primary)] flex-shrink-0" />
-                  <span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-xs font-bold">
-                    Get Early Access
-                  </span>
-                  <ArrowRight size={12} className="flex-shrink-0" />
-                </Link>
+                {/* REMOVED: The "Get Early Access" badge/link with Gift icon - as requested */}
 
                 {/* Heading */}
                 <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
@@ -360,11 +355,15 @@ export default async function HomePage() {
         {/* ============================================
             NEWSLETTER - NO manga panel, just #111111 background
             ============================================ */}
+        {/* 
+          CHANGE: Removed the Zap icon and replaced the decorative pill with a simple square box.
+          The square box is a small div with border that adapts to light/dark mode via CSS variables.
+        */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="inline-flex items-center gap-2 bg-[var(--background-card)] px-4 py-2 rounded-full mb-6 border border-[var(--border)]">
-              <Zap size={16} className="text-[var(--primary)]" />
-              <span className="text-[var(--foreground-muted)] text-sm font-medium">Stay Updated</span>
+            {/* Simple square box - replaces the previous pill with icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-8 h-8 border-2 border-[var(--border)] bg-[var(--background-card)] rounded-sm"></div>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-[#F5F5F5] mb-4">Join Our Newsletter</h2>
             <p className="text-[#9A9A9A] mb-8 max-w-lg mx-auto">Get exclusive offers, early access to new drops, and anime news delivered to your inbox.</p>
