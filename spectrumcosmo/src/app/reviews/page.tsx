@@ -9,7 +9,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Loader2, CheckCircle, Clock, XCircle, AlertCircle, Edit2, Save, X, 
-  Star, ChevronDown, Sparkles, Calendar, User, ShoppingBag
+  Star, ChevronDown, Calendar, User, ShoppingBag
+  // Sparkles removed
 } from 'lucide-react';
 
 type ReviewStatus = 'pending' | 'reviewing' | 'approved' | 'denied';
@@ -240,7 +241,7 @@ export default function ReviewsPage() {
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-12">
             <div className="relative z-10 text-center p-6 sm:p-8 md:p-10 bg-[var(--background-card)]/95">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
-                <Sparkles size={14} className="text-[var(--primary)]" />
+                {/* Sparkles removed */}
                 <span className="text-xs font-medium text-[var(--primary)]">Testimonials</span>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">Customer Reviews</h1>
