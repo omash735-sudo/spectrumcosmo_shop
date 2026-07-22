@@ -1,6 +1,12 @@
-import { handlers } from "@/auth";
-
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export const GET = handlers.GET;
-export const POST = handlers.POST;
+export async function GET(request: Request) {
+  const { handlers } = await import("@/auth");
+  return handlers.GET(request);
+}
+
+export async function POST(request: Request) {
+  const { handlers } = await import("@/auth");
+  return handlers.POST(request);
+}
