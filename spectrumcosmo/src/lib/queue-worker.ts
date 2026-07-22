@@ -1,7 +1,7 @@
-// lib/queue-worker.ts
-import { createAlgoliaSyncWorker, algoliaSyncQueue } from './algolia-queue';
+import { createAlgoliaSyncWorker, algoliaSyncQueue as queue } from './algolia-queue';
 
 let isWorkerRunning = false;
+let algoliaSyncQueue = queue;
 
 export async function initializeQueueWorker() {
   if (!process.env.REDIS_URL) {
