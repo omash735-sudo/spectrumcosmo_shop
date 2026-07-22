@@ -39,7 +39,7 @@ const LOGOS = {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { theme } = useTheme();
+  const { theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [index, setIndex] = useState(0);
@@ -59,6 +59,9 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState('');
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const isDark = currentTheme === 'dark';
 
   useEffect(() => {
     setMounted(true);
@@ -250,10 +253,11 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const isDark = mounted && theme === 'dark';
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // Desktop layout - Full screen, no scroll
+  // ============================================================
+  // DESKTOP LAYOUT (≥1024px) – Split‑screen
+  // ============================================================
   if (isDesktop) {
     return (
       <>
@@ -264,254 +268,258 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="h-screen relative overflow-hidden bg-black">
-          {activeSlides.map((img, i) => (
-            <div
-              key={i}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                i === index ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div 
-                className="absolute inset-0 bg-center bg-cover" 
-                style={{ backgroundImage: `url(${img})` }} 
-              />
-            </div>
-          ))}
-          
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        <div className="flex h-screen overflow-hidden bg-white dark:bg-black">
+          {/* LEFT SIDE – Image Carousel + Branding */}
+          <div className="relative flex-1 bg-black overflow-hidden">
+            {activeSlides.map((img, i) => (
+              <div
+                key={i}
+                className={`absolute inset-0 transition-opacity duration-1000 ${
+                  i === index ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                <div 
+                  className="absolute inset-0 bg-center bg-cover" 
+                  style={{ backgroundImage: `url(${img})` }} 
+                />
+              </div>
+            ))}
+            
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-          <div className="relative h-full flex items-center px-12 z-10">
-            {/* Left Side - Brand Message */}
-            <div className="flex-1 max-w-xl">
+            <div className="relative h-full flex flex-col justify-center px-12 z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
+                <span className="text-2xl font-bold tracking-tight">
+                  <span className="text-white">SPECTRUM</span>
+                  <span className="text-orange-400">COSMO</span>
+                </span>
+              </div>
+              
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-white"
+                className="text-white max-w-md"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
-                  <span className="text-2xl font-bold tracking-tight">
-                    <span className="text-white">SPECTRUM</span>
-                    <span className="text-orange-400">COSMO</span>
-                  </span>
-                </div>
-                
                 <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Welcome back to the
                   <br />
                   <span className="text-orange-400">anime marketplace</span>
                 </h1>
-                
-                <p className="text-gray-300 text-base mb-6 max-w-md leading-relaxed">
+                <p className="text-gray-300 text-base mb-6 leading-relaxed">
                   Sign in to access exclusive anime merch, track orders, and connect with fellow fans.
                 </p>
-
-                <div className="flex gap-4">
-                  {trustBadges.map((badge, i) => {
-                    const Icon = badge.icon;
-                    return (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + i * 0.1 }}
-                        className="flex items-center gap-2"
-                      >
-                        <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
-                          <Icon size={13} className="text-orange-400" />
-                        </div>
-                        <span className="text-xs text-gray-300">{badge.label}</span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
               </motion.div>
-            </div>
 
-            {/* Right Side - Login Card */}
+              <div className="flex flex-wrap gap-4">
+                {trustBadges.map((badge, i) => {
+                  const Icon = badge.icon;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + i * 0.1 }}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
+                        <Icon size={13} className="text-orange-400" />
+                      </div>
+                      <span className="text-xs text-gray-300">{badge.label}</span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Slide Indicators */}
+              <div className="absolute bottom-8 left-12 flex gap-1.5">
+                {activeSlides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setIndex(i)}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      i === index
+                        ? 'w-6 bg-orange-500'
+                        : 'w-1.5 bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE – Clean White Background + Login Form */}
+          <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="w-full max-w-sm ml-auto"
+              className="w-full max-w-sm"
             >
-              <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl">
-                <div className="text-center mb-5">
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-3">
-                    <Lock size={20} className="text-orange-400" />
-                  </div>
-                  <h2 className="text-white text-xl font-bold">Sign In</h2>
-                  <p className="text-gray-400 text-xs mt-0.5">Access your SpectrumCosmo account</p>
+              <div className="text-center mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+                  <Lock size={22} className="text-orange-500" />
                 </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sign In</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Access your SpectrumCosmo account</p>
+              </div>
 
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className={`text-xs rounded-xl px-3 py-2 mb-3 ${
-                        needsVerification
-                          ? 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400'
-                          : 'bg-red-500/20 border border-red-500/30 text-red-400'
-                      }`}
-                    >
-                      {error}
-                    </motion.div>
-                  )}
-
-                  {success && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-green-500/20 border border-green-500/30 text-green-400 text-xs rounded-xl px-3 py-2 mb-3"
-                    >
-                      {success}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <form onSubmit={onSubmit} className="space-y-3">
-                  <div>
-                    <label className="text-gray-300 text-xs font-medium mb-1 block">Email Address</label>
-                    <div className={`relative transition-all duration-200 ${
-                      focusedField === 'email' ? 'scale-[1.02]' : ''
-                    }`}>
-                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input
-                        ref={emailInputRef}
-                        type="email"
-                        placeholder="Enter your email"
-                        value={form.email}
-                        onChange={handleEmailChange}
-                        onFocus={() => setFocusedField('email')}
-                        onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
-                          emailError
-                            ? 'border-red-500 ring-2 ring-red-500/20'
-                            : focusedField === 'email'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
-                            : 'border-white/10'
-                        } focus:outline-none`}
-                        required
-                      />
-                    </div>
-                    {emailError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-red-400 text-[10px] mt-0.5"
-                      >
-                        {emailError}
-                      </motion.p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-gray-300 text-xs font-medium mb-1 block">Password</label>
-                    <div className={`relative transition-all duration-200 ${
-                      focusedField === 'password' ? 'scale-[1.02]' : ''
-                    }`}>
-                      <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input
-                        ref={passwordInputRef}
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Enter your password"
-                        value={form.password}
-                        onChange={e => setForm({ ...form, password: e.target.value })}
-                        onFocus={() => setFocusedField('password')}
-                        onBlur={() => setFocusedField(null)}
-                        className={`w-full pl-9 pr-10 py-2.5 text-sm rounded-xl bg-white/5 text-white placeholder-gray-500 border transition-all ${
-                          focusedField === 'password'
-                            ? 'border-orange-500 ring-2 ring-orange-500/20'
-                            : 'border-white/10'
-                        } focus:outline-none`}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
-                      >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Link href="/auth/forgot-password" className="text-xs text-gray-400 hover:text-orange-400 transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5">
-                      Forgot password?
-                      <ChevronRight size={12} />
-                    </Link>
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={`text-sm rounded-xl px-4 py-3 mb-4 ${
+                      needsVerification
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
+                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+                    }`}
                   >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="animate-spin" size={16} />
-                        Signing in...
-                      </span>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </motion.button>
-                </form>
-
-                {needsVerification && (
-                  <div className="mt-3 text-center">
-                    <button
-                      onClick={handleResendVerification}
-                      disabled={resending}
-                      className="text-orange-400 hover:text-orange-300 text-xs transition-colors disabled:opacity-50"
-                    >
-                      {resending ? 'Sending...' : 'Resend verification email'}
-                    </button>
-                  </div>
+                    {error}
+                  </motion.div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-white/10 text-center">
-                  <p className="text-gray-400 text-xs">
-                    Don't have an account?{' '}
-                    <Link href="/auth/register" className="text-orange-400 hover:text-orange-300 font-medium transition-all hover:translate-x-0.5 inline-flex items-center gap-0.5 text-xs">
-                      Create one
-                      <ChevronRight size={12} />
-                    </Link>
-                  </p>
+                {success && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
+                  >
+                    {success}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form onSubmit={onSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Email Address
+                  </label>
+                  <div className={`relative transition-all duration-200 ${
+                    focusedField === 'email' ? 'scale-[1.02]' : ''
+                  }`}>
+                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      placeholder="Enter your email"
+                      value={form.email}
+                      onChange={handleEmailChange}
+                      onFocus={() => setFocusedField('email')}
+                      onBlur={() => setFocusedField(null)}
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
+                        emailError
+                          ? 'border-red-500 ring-2 ring-red-500/20'
+                          : focusedField === 'email'
+                          ? 'border-orange-500 ring-2 ring-orange-500/20'
+                          : 'border-gray-200 dark:border-gray-700'
+                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
+                      required
+                    />
+                  </div>
+                  {emailError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-red-500 dark:text-red-400 text-xs mt-1"
+                    >
+                      {emailError}
+                    </motion.p>
+                  )}
                 </div>
 
-                <div className="mt-2 text-center">
-                  <Link href="/" className="text-gray-500 text-[11px] hover:text-gray-400 transition-colors inline-flex items-center gap-0.5">
-                    <ArrowLeft size={12} />
-                    Back to Shop
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Password
+                  </label>
+                  <div className={`relative transition-all duration-200 ${
+                    focusedField === 'password' ? 'scale-[1.02]' : ''
+                  }`}>
+                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                    <input
+                      ref={passwordInputRef}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                      onFocus={() => setFocusedField('password')}
+                      onBlur={() => setFocusedField(null)}
+                      className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
+                        focusedField === 'password'
+                          ? 'border-orange-500 ring-2 ring-orange-500/20'
+                          : 'border-gray-200 dark:border-gray-700'
+                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                  >
+                    Forgot password?
                   </Link>
                 </div>
+
+                <motion.button
+                  type="submit"
+                  disabled={loading}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="animate-spin" size={18} />
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
+                </motion.button>
+              </form>
+
+              {needsVerification && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
+                  >
+                    {resending ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Don't have an account?{' '}
+                  <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
+                    Create one
+                  </Link>
+                </p>
+              </div>
+
+              <div className="mt-4 text-center">
+                <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors inline-flex items-center gap-1">
+                  <ArrowLeft size={14} />
+                  Back to Shop
+                </Link>
               </div>
             </motion.div>
-          </div>
-
-          {/* Slide Indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
-            {activeSlides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIndex(i)}
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  i === index
-                    ? 'w-6 bg-orange-500'
-                    : 'w-1.5 bg-white/30 hover:bg-white/50'
-                }`}
-              />
-            ))}
           </div>
         </div>
 
@@ -524,7 +532,9 @@ export default function LoginPage() {
     );
   }
 
-  // Mobile layout
+  // ============================================================
+  // MOBILE LAYOUT (<1024px) – Same as before (form only)
+  // ============================================================
   return (
     <>
       {isTestAccount && (
