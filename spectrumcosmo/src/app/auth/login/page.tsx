@@ -11,7 +11,7 @@ import {
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signIn } from '@/auth';
+import { signIn } from 'next-auth/react'; // ✅ client-side signIn
 
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
@@ -123,6 +123,7 @@ export default function LoginPage() {
     setEmailError(validateEmail(value));
   };
 
+  // This onSubmit uses the client-side signIn – it works for credentials
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -385,12 +386,13 @@ export default function LoginPage() {
                     <GoogleIcon />
                     <span className="text-sm font-medium">Sign in with Google</span>
                   </button>
+                  {/* ✅ Fixed divider */}
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
                       <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className={`bg-transparent px-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <span className={`px-3 ${isDark ? 'bg-gray-900/95' : 'bg-white/95'} text-gray-500 dark:text-gray-400`}>
                         Or continue with email
                       </span>
                     </div>
@@ -426,7 +428,7 @@ export default function LoginPage() {
                 </AnimatePresence>
 
                 <form onSubmit={onSubmit} className="space-y-5">
-                  {/* Email */}
+                  {/* Email and password fields – unchanged */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
@@ -470,7 +472,6 @@ export default function LoginPage() {
                     )}
                   </div>
 
-                  {/* Password */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
@@ -657,12 +658,13 @@ export default function LoginPage() {
                 <GoogleIcon />
                 <span className="text-sm font-medium">Sign in with Google</span>
               </button>
+              {/* ✅ Fixed divider */}
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className={`bg-transparent px-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <span className={`px-3 ${isDark ? 'bg-gray-900/80' : 'bg-white/95'} text-gray-500 dark:text-gray-400`}>
                     Or continue with email
                   </span>
                 </div>
