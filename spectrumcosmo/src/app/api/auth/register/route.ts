@@ -32,6 +32,8 @@ async function ensureTables(): Promise<void> {
       profile_image TEXT,
       email_verified BOOLEAN DEFAULT false,
       email_verified_at TIMESTAMP,
+      account_status TEXT DEFAULT 'active',
+      deleted_at TIMESTAMP,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     )
   `;
@@ -152,11 +154,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
     }
 
-    // Create user
+    // Create user with account_status set to 'active'
     const hash = await bcrypt.hash(password, 10);
     const newUser = await queryOne<{ id: string; name: string; email: string }>`
-      INSERT INTO users (name, email, password_hash)
-      VALUES (${name}, ${email.toLowerCase()}, ${hash})
+      INSERT INTO users (name, email, password_hash, account_status)
+      VALUES (${name}, ${email.toLowerCase()}, ${hash}, 'active')
       RETURNING id, name, email
     `;
     if (!newUser) {
