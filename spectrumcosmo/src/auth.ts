@@ -16,6 +16,9 @@ export const { handlers, signIn, signOut, auth } = isBuild
       auth: async () => null,
     }
   : NextAuth({
+      // 👇 Add debug mode to see detailed OAuth errors
+      debug: true,
+
       providers: [
         CredentialsProvider({
           name: "credentials",
