@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/auth';
+import jwt from 'jsonwebtoken';
 
 function isAdminRoute(pathname: string): boolean {
   return pathname.startsWith('/api/admin/') || pathname.startsWith('/admin');
@@ -19,6 +19,15 @@ function isPublicAsset(pathname: string): boolean {
     pathname.includes('.webp');
 }
 
+function verifyToken(token: string): boolean {
+  try {
+    jwt.verify(token, process.env.NEXTAUTH_SECRET!);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
@@ -31,8 +40,9 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
 
   const adminToken = request.cookies.get('admin_token')?.value;
+  const userToken = request.cookies.get('user_token')?.value;
 
-  // Admin routes (unchanged)
+  // Admin routes
   if (isAdminRoute(pathname)) {
     const isLoginPage = pathname === '/admin/login';
     const isAuthApi = pathname === '/api/admin/auth';
@@ -44,11 +54,11 @@ export async function middleware(request: NextRequest) {
     if (isAsset) return response;
   }
 
-  // Protect user routes with Auth.js
+  // Protect user routes with JWT token
   if (pathname.startsWith('/account') || pathname.startsWith('/checkout')) {
     if (isPublicAsset(pathname)) return response;
-    const session = await auth();
-    if (!session) {
+    
+    if (!userToken || !verifyToken(userToken)) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
   }
