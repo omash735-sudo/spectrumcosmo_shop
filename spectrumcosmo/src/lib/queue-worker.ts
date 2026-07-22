@@ -1,7 +1,7 @@
-import { createAlgoliaSyncWorker, algoliaSyncQueue as queue } from './algolia-queue';
+import { createAlgoliaSyncWorker, getAlgoliaSyncQueue } from './algolia-queue';
 
 let isWorkerRunning = false;
-let algoliaSyncQueue = queue;
+let algoliaSyncQueue: ReturnType<typeof getAlgoliaSyncQueue> | null = null;
 
 export async function initializeQueueWorker() {
   if (!process.env.REDIS_URL) {
@@ -13,6 +13,7 @@ export async function initializeQueueWorker() {
     return null;
   }
 
+  algoliaSyncQueue = getAlgoliaSyncQueue();
   const worker = createAlgoliaSyncWorker();
 
   worker.on('completed', (job) => {
@@ -27,12 +28,12 @@ export async function initializeQueueWorker() {
 
   process.on('SIGTERM', async () => {
     await worker.close();
-    await algoliaSyncQueue.close();
+    if (algoliaSyncQueue) await algoliaSyncQueue.close();
   });
 
   process.on('SIGINT', async () => {
     await worker.close();
-    await algoliaSyncQueue.close();
+    if (algoliaSyncQueue) await algoliaSyncQueue.close();
   });
 
   return worker;
@@ -42,5 +43,6 @@ export async function getQueueHealth() {
   return {
     running: isWorkerRunning,
     configured: !!process.env.REDIS_URL,
+    queueName: algoliaSyncQueue?.name || 'not-initialized',
   };
 }
