@@ -4,23 +4,23 @@ import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import AppleProvider from "next-auth/providers/apple";
 
-console.log('🔍 Auth initialization started');
-console.log('🔍 NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-console.log('🔍 NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'SET' : 'MISSING');
-console.log('🔍 AUTH_GOOGLE_ID:', process.env.AUTH_GOOGLE_ID ? 'SET' : 'MISSING');
-console.log('🔍 AUTH_GOOGLE_SECRET:', process.env.AUTH_GOOGLE_SECRET ? 'SET' : 'MISSING');
+console.log('Auth initialization started');
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'SET' : 'MISSING');
+console.log('AUTH_GOOGLE_ID:', process.env.AUTH_GOOGLE_ID ? 'SET' : 'MISSING');
+console.log('AUTH_GOOGLE_SECRET:', process.env.AUTH_GOOGLE_SECRET ? 'SET' : 'MISSING');
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
   logger: {
-    error(code, metadata) {
-      console.error('❌ AUTH ERROR:', code, metadata);
+    error: (code, metadata) => {
+      console.error('AUTH ERROR:', code, metadata);
     },
-    warn(code, metadata) {
-      console.warn('⚠️ AUTH WARN:', code, metadata);
+    warn: (code) => {
+      console.warn('AUTH WARN:', code);
     },
-    debug(code, metadata) {
-      console.log('🐛 AUTH DEBUG:', code, metadata);
+    debug: (code, metadata) => {
+      console.log('AUTH DEBUG:', code, metadata);
     },
   },
   providers: [
@@ -33,7 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         captchaAnswer: { label: "captchaAnswer", type: "text" },
       },
       async authorize(credentials) {
-        console.log('🔑 Authorize called for:', credentials?.email);
+        console.log('Authorize called for:', credentials?.email);
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
