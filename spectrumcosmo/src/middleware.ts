@@ -1,15 +1,7 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-const SKIP_SECURITY_PATHS = [
-  '/_next/',
-  '/favicon.ico',
-  '/api/security/',
-  '/api/log-request',
-  '/api/cron/',
-  '/api/csrf',
-];
+import { auth } from '@/auth';
 
 function isAdminRoute(pathname: string): boolean {
   return pathname.startsWith('/api/admin/') || pathname.startsWith('/admin');
@@ -29,15 +21,16 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
+  // Security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
 
-  const userToken = request.cookies.get('user_token')?.value;
   const adminToken = request.cookies.get('admin_token')?.value;
 
+  // Admin routes (unchanged)
   if (isAdminRoute(pathname)) {
     const isLoginPage = pathname === '/admin/login';
     const isAuthApi = pathname === '/api/admin/auth';
@@ -49,11 +42,16 @@ export async function middleware(request: NextRequest) {
     if (isAsset) return response;
   }
 
-  if (pathname.startsWith('/account') && !userToken) {
+  // Protect user routes with Auth.js
+  if (pathname.startsWith('/account') || pathname.startsWith('/checkout')) {
     if (isPublicAsset(pathname)) return response;
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+    const session = await auth();
+    if (!session) {
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
   }
 
+  // CSP header
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
@@ -65,7 +63,6 @@ export async function middleware(request: NextRequest) {
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; ');
-
   response.headers.set('Content-Security-Policy', csp);
 
   return response;
