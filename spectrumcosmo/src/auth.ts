@@ -1,8 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import FacebookProvider from "next-auth/providers/facebook";
-import AppleProvider from "next-auth/providers/apple";
 
 console.log('Auth initialization started');
 console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
@@ -23,6 +21,14 @@ const fallback = {
 let authConfig;
 
 try {
+  if (!process.env.NEXTAUTH_URL || !process.env.NEXTAUTH_SECRET) {
+    throw new Error("NEXTAUTH_URL or NEXTAUTH_SECRET is missing");
+  }
+
+  if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
+    throw new Error("Google credentials are missing");
+  }
+
   authConfig = NextAuth({
     debug: true,
     logger: {
@@ -77,14 +83,6 @@ try {
       GoogleProvider({
         clientId: process.env.AUTH_GOOGLE_ID!,
         clientSecret: process.env.AUTH_GOOGLE_SECRET!,
-      }),
-      FacebookProvider({
-        clientId: process.env.AUTH_FACEBOOK_ID!,
-        clientSecret: process.env.AUTH_FACEBOOK_SECRET!,
-      }),
-      AppleProvider({
-        clientId: process.env.AUTH_APPLE_ID!,
-        clientSecret: process.env.AUTH_APPLE_SECRET!,
       }),
     ],
     pages: {
