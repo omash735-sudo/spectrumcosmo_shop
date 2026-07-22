@@ -45,11 +45,8 @@ function BannerSkeleton() {
 }
 
 export default function BannerAdminPage() {
-  const [items, setItems] = useState<{ icon: string; text: string }[]>([
-    { icon: 'Truck', text: 'Free shipping over 50,000 MWK' },
-    { icon: 'Shield', text: '30-day returns' },
-    { icon: 'Tag', text: 'Subscribe for 10% off' },
-  ]);
+  // Start with empty array — no placeholders
+  const [items, setItems] = useState<{ icon: string; text: string }[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [backgroundColor, setBackgroundColor] = useState('#C96712');
   const [textColor, setTextColor] = useState('#FFFFFF');
@@ -66,6 +63,7 @@ export default function BannerAdminPage() {
       const res = await fetch('/api/banner');
       if (res.ok) {
         const data = await res.json();
+        // If the API returns data, use it; otherwise keep empty array
         setItems(data.items || []);
         setIsActive(data.is_active !== false);
         setBackgroundColor(data.background_color || '#C96712');
