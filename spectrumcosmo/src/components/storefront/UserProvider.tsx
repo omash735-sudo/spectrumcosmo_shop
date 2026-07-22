@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 type User = {
   id: string
@@ -21,16 +22,14 @@ type UserContextType = {
 const UserContext = createContext<UserContextType | null>(null)
 
 function clearStaleAuthData() {
-  // Clear any stale localStorage items
   localStorage.removeItem('spectrumcosmo_cart')
   sessionStorage.clear()
-  // Note: clearing cookies is not possible from client side for httpOnly cookies,
-  // but the backend will reject them anyway. The user will be logged out gracefully.
 }
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const pathname = usePathname()
 
   const loadUser = async () => {
     setLoading(true)
@@ -38,7 +37,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/auth/me')
       
-      // Safely parse JSON – if response is not JSON, treat as not logged in
       let data
       try {
         data = await res.json()
@@ -52,7 +50,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (data?.user) {
         setUser(data.user)
       } else {
-        // If the API returned null user or an error, clear stale auth data
         clearStaleAuthData()
         setUser(null)
       }
@@ -64,9 +61,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setLoading(false)
   }
 
+  // Initial load
   useEffect(() => {
     loadUser()
   }, [])
+
+  // Re-fetch user when pathname changes (navigation between pages)
+  useEffect(() => {
+    // Only re-fetch if we're on a protected route or account page
+    if (pathname?.startsWith('/account') || pathname?.startsWith('/checkout')) {
+      loadUser()
+    }
+  }, [pathname])
 
   return (
     <UserContext.Provider
