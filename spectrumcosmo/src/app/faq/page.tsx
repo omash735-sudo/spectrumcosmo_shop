@@ -6,7 +6,7 @@ import Footer from '@/components/storefront/Footer';
 import { 
   Loader2, Send, Plus, CheckCircle, AlertCircle, Search, 
   ChevronDown, ChevronUp, HelpCircle, Package, CreditCard, 
-  Truck, Sparkles, MessageCircle, X, Mail, Phone
+  Truck, MessageCircle, X, Mail, Phone
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -148,10 +148,7 @@ export default function FAQPage() {
           {/* Header - With Manga Panel */}
           <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-10">
             <div className="relative z-10 text-center p-6 sm:p-8 md:p-10 bg-[var(--background-card)]/95">
-              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
-                <Sparkles size={14} className="text-[var(--primary)]" />
-                <span className="text-xs font-medium text-[var(--primary)]">Help Center</span>
-              </div>
+              {/* Removed the badge with Sparkles and "Help Center" text */}
               <h1 className="text-3xl md:text-4xl font-bold text-[var(--foreground)]">Frequently Asked Questions</h1>
               <p className="text-[var(--foreground-muted)] mt-2 max-w-xl mx-auto">Find answers to common questions about ordering, payments, and delivery.</p>
             </div>
