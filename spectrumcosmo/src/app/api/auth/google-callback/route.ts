@@ -49,10 +49,14 @@ export async function POST(req: NextRequest) {
       { expiresIn: '7d' }
     );
     
+    // Create response with redirect URL
+    const redirectUrl = new URL('/account', process.env.NEXTAUTH_URL);
+    
     // Set cookie and return response
     const response = NextResponse.json({ 
       success: true,
-      user: { id: userId, email: user.email, name: userName }
+      user: { id: userId, email: user.email, name: userName },
+      redirectUrl: redirectUrl.toString()
     });
     
     response.cookies.set('user_token', token, {
