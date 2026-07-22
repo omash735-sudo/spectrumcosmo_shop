@@ -12,17 +12,18 @@ import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const mobileSlides = [
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776964570/WhatsApp_Image_2026-04-23_at_18.37.58_ihjqbi.jpg',
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776964617/WhatsApp_Image_2026-04-23_at_18.37.56_ztrygu.jpg',
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776964638/WhatsApp_Image_2026-04-23_at_18.37.55_llcwfg.jpg'
+// Updated carousel images
+const desktopSlides = [
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/d06ebcc93b8c82b1af5eaeb992d8113f_jy0lt0.jpg',
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714750/a8695ea4a7d8d41af342b506893c8f66_hqawc8.jpg',
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714750/7d489dc0932a70d5c13a49eb6a04b3d5.webp_ic8mhb.webp',
+  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714750/d98193c851d049a19cf7de400ec47132_fepxrd.jpg'
 ];
 
-const desktopSlides = [
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776969177/WhatsApp_Image_2026-04-23_at_20.31.09_unga3v.jpg',
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776969160/WhatsApp_Image_2026-04-23_at_20.31.08_bv77wh.jpg',
-  'https://res.cloudinary.com/dfsvnaslv/image/upload/v1776969140/kkkk_a1elqx.jpg'
-];
+// Manga background for the right side
+const MANGA_BG = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775798/9b8e69a00494ab278c6f3f1e8d1a4f0c_vkjyhx.jpg';
 
 const trustBadges = [
   { icon: Shield, label: 'Secure Checkout' },
@@ -71,13 +72,12 @@ export default function LoginPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const activeSlides = isDesktop ? desktopSlides : mobileSlides;
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % activeSlides.length);
+      setIndex((prev) => (prev + 1) % desktopSlides.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [activeSlides.length]);
+  }, []);
 
   useEffect(() => {
     const verified = searchParams.get('verified');
@@ -256,7 +256,7 @@ export default function LoginPage() {
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
   // ============================================================
-  // DESKTOP LAYOUT (≥1024px) – Split‑screen
+  // DESKTOP LAYOUT (≥1024px) – Split‑screen with manga bg on right
   // ============================================================
   if (isDesktop) {
     return (
@@ -268,10 +268,10 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="flex h-screen overflow-hidden bg-white dark:bg-black">
+        <div className="flex h-screen overflow-hidden bg-black">
           {/* LEFT SIDE – Image Carousel + Branding */}
           <div className="relative flex-1 bg-black overflow-hidden">
-            {activeSlides.map((img, i) => (
+            {desktopSlides.map((img, i) => (
               <div
                 key={i}
                 className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -335,7 +335,7 @@ export default function LoginPage() {
 
               {/* Slide Indicators */}
               <div className="absolute bottom-8 left-12 flex gap-1.5">
-                {activeSlides.map((_, i) => (
+                {desktopSlides.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setIndex(i)}
@@ -350,174 +350,218 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – Clean White Background + Login Form */}
-          <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-900">
+          {/* RIGHT SIDE – Manga Background + Login Form */}
+          <div 
+            className="flex-1 flex items-center justify-center p-8 relative overflow-hidden"
+            style={{
+              backgroundImage: `url(${MANGA_BG})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            {/* Dark overlay for readability - adapts to theme */}
+            <div className={`absolute inset-0 ${
+              isDark 
+                ? 'bg-black/70' 
+                : 'bg-white/80'
+            }`} />
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="w-full max-w-sm"
+              className="relative z-10 w-full max-w-sm"
             >
-              <div className="text-center mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
-                  <Lock size={22} className="text-orange-500" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sign In</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Access your SpectrumCosmo account</p>
-              </div>
-
-              <AnimatePresence>
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className={`text-sm rounded-xl px-4 py-3 mb-4 ${
-                      needsVerification
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
-                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
-                    }`}
-                  >
-                    {error}
-                  </motion.div>
-                )}
-
-                {success && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
-                  >
-                    {success}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <form onSubmit={onSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Email Address
-                  </label>
-                  <div className={`relative transition-all duration-200 ${
-                    focusedField === 'email' ? 'scale-[1.02]' : ''
-                  }`}>
-                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                    <input
-                      ref={emailInputRef}
-                      type="email"
-                      placeholder="Enter your email"
-                      value={form.email}
-                      onChange={handleEmailChange}
-                      onFocus={() => setFocusedField('email')}
-                      onBlur={() => setFocusedField(null)}
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
-                        emailError
-                          ? 'border-red-500 ring-2 ring-red-500/20'
-                          : focusedField === 'email'
-                          ? 'border-orange-500 ring-2 ring-orange-500/20'
-                          : 'border-gray-200 dark:border-gray-700'
-                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
-                      required
-                    />
+              <div className={`rounded-2xl p-8 shadow-2xl ${
+                isDark 
+                  ? 'bg-gray-900/95 backdrop-blur-sm border border-gray-800' 
+                  : 'bg-white/95 backdrop-blur-sm border border-gray-200'
+              }`}>
+                <div className="text-center mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+                    <Lock size={22} className="text-orange-500" />
                   </div>
-                  {emailError && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-500 dark:text-red-400 text-xs mt-1"
-                    >
-                      {emailError}
-                    </motion.p>
-                  )}
+                  <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Sign In
+                  </h2>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Access your SpectrumCosmo account
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Password
-                  </label>
-                  <div className={`relative transition-all duration-200 ${
-                    focusedField === 'password' ? 'scale-[1.02]' : ''
-                  }`}>
-                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                    <input
-                      ref={passwordInputRef}
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
-                      value={form.password}
-                      onChange={e => setForm({ ...form, password: e.target.value })}
-                      onFocus={() => setFocusedField('password')}
-                      onBlur={() => setFocusedField(null)}
-                      className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
-                        focusedField === 'password'
-                          ? 'border-orange-500 ring-2 ring-orange-500/20'
-                          : 'border-gray-200 dark:border-gray-700'
-                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500`}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`text-sm rounded-xl px-4 py-3 mb-4 ${
+                        needsVerification
+                          ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
+                          : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+                      }`}
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {error}
+                    </motion.div>
+                  )}
+
+                  {success && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
+                    >
+                      {success}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <form onSubmit={onSubmit} className="space-y-5">
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      Email Address
+                    </label>
+                    <div className={`relative transition-all duration-200 ${
+                      focusedField === 'email' ? 'scale-[1.02]' : ''
+                    }`}>
+                      <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`} />
+                      <input
+                        ref={emailInputRef}
+                        type="email"
+                        placeholder="Enter your email"
+                        value={form.email}
+                        onChange={handleEmailChange}
+                        onFocus={() => setFocusedField('email')}
+                        onBlur={() => setFocusedField(null)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
+                          emailError
+                            ? 'border-red-500 ring-2 ring-red-500/20'
+                            : focusedField === 'email'
+                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            : isDark
+                            ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                        }`}
+                        required
+                      />
+                    </div>
+                    {emailError && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-red-500 dark:text-red-400 text-xs mt-1"
+                      >
+                        {emailError}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
+                      Password
+                    </label>
+                    <div className={`relative transition-all duration-200 ${
+                      focusedField === 'password' ? 'scale-[1.02]' : ''
+                    }`}>
+                      <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`} />
+                      <input
+                        ref={passwordInputRef}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter your password"
+                        value={form.password}
+                        onChange={e => setForm({ ...form, password: e.target.value })}
+                        onFocus={() => setFocusedField('password')}
+                        onBlur={() => setFocusedField(null)}
+                        className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
+                          focusedField === 'password'
+                            ? 'border-orange-500 ring-2 ring-orange-500/20'
+                            : isDark
+                            ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                            : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                        }`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                          isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                        } transition`}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Link
+                      href="/auth/forgot-password"
+                      className={`text-sm ${
+                        isDark ? 'text-gray-400 hover:text-orange-400' : 'text-gray-600 hover:text-orange-500'
+                      } transition-colors`}
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="animate-spin" size={18} />
+                        Signing in...
+                      </span>
+                    ) : (
+                      'Sign In'
+                    )}
+                  </motion.button>
+                </form>
+
+                {needsVerification && (
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={handleResendVerification}
+                      disabled={resending}
+                      className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
+                    >
+                      {resending ? 'Sending...' : 'Resend verification email'}
                     </button>
                   </div>
+                )}
+
+                <div className={`mt-6 pt-6 border-t text-center ${
+                  isDark ? 'border-gray-800' : 'border-gray-200'
+                }`}>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Don't have an account?{' '}
+                    <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
+                      Create one
+                    </Link>
+                  </p>
                 </div>
 
-                <div className="flex justify-end">
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
-                <motion.button
-                  type="submit"
-                  disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="animate-spin" size={18} />
-                      Signing in...
-                    </span>
-                  ) : (
-                    'Sign In'
-                  )}
-                </motion.button>
-              </form>
-
-              {needsVerification && (
                 <div className="mt-4 text-center">
-                  <button
-                    onClick={handleResendVerification}
-                    disabled={resending}
-                    className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
-                  >
-                    {resending ? 'Sending...' : 'Resend verification email'}
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Don't have an account?{' '}
-                  <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
-                    Create one
+                  <Link href="/" className={`text-sm ${
+                    isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
+                  } transition-colors inline-flex items-center gap-1`}>
+                    <ArrowLeft size={14} />
+                    Back to Shop
                   </Link>
-                </p>
-              </div>
-
-              <div className="mt-4 text-center">
-                <Link href="/" className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors inline-flex items-center gap-1">
-                  <ArrowLeft size={14} />
-                  Back to Shop
-                </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -533,7 +577,7 @@ export default function LoginPage() {
   }
 
   // ============================================================
-  // MOBILE LAYOUT (<1024px) – Same as before (form only)
+  // MOBILE LAYOUT (<1024px) – Form only (no carousel)
   // ============================================================
   return (
     <>
