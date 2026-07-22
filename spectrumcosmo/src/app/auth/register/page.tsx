@@ -171,14 +171,14 @@ export default function RegisterPage() {
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
   // ============================================================
-  // DESKTOP LAYOUT (≥1024px) – Split‑screen with curved right side
+  // DESKTOP LAYOUT (≥1024px) – 60/40 split (flex-[3] / flex-[2])
   // ============================================================
   if (isDesktop) {
     return (
       <>
-        <div className="flex h-screen overflow-hidden bg-[var(--background)]">
-          {/* LEFT SIDE – Image Carousel + Branding (50%) */}
-          <div className="relative flex-1 bg-black overflow-hidden">
+        <div className="flex h-screen overflow-hidden bg-black">
+          {/* LEFT SIDE – 60% (flex-[3]) */}
+          <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
                 key={i}
@@ -192,15 +192,15 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            {/* Solid overlay – no gradients */}
+            <div className="absolute inset-0 bg-black/60" />
 
-            <div className="relative h-full flex flex-col justify-center px-12 z-10">
+            <div className="relative h-full flex flex-col justify-center px-10 z-10">
               <div className="flex items-center gap-3 mb-6">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
                 <span className="text-2xl font-bold tracking-tight">
                   <span className="text-white">SPECTRUM</span>
-                  <span className="text-[var(--primary)]">COSMO</span>
+                  <span className="text-orange-400">COSMO</span>
                 </span>
               </div>
               
@@ -213,7 +213,7 @@ export default function RegisterPage() {
                 <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Join the
                   <br />
-                  <span className="text-[var(--primary)]">anime community</span>
+                  <span className="text-orange-400">anime community</span>
                 </h1>
                 <p className="text-gray-300 text-base mb-6 leading-relaxed">
                   Create your account and start exploring exclusive anime merch, deals, and more.
@@ -221,14 +221,14 @@ export default function RegisterPage() {
               </motion.div>
 
               {/* Slide Indicators */}
-              <div className="absolute bottom-8 left-12 flex gap-1.5">
+              <div className="absolute bottom-8 left-10 flex gap-1.5">
                 {desktopSlides.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setIndex(i)}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       i === index
-                        ? 'w-6 bg-[var(--primary)]'
+                        ? 'w-6 bg-orange-400'
                         : 'w-1.5 bg-white/30 hover:bg-white/50'
                     }`}
                   />
@@ -237,8 +237,8 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – Manga Background + Curved edges (50%) */}
-          <div className="relative flex-1 overflow-hidden">
+          {/* RIGHT SIDE – 40% (flex-[2]) with curved clip-path */}
+          <div className="relative flex-[2] overflow-hidden">
             <div 
               className="absolute inset-0"
               style={{
@@ -249,12 +249,12 @@ export default function RegisterPage() {
             />
             <div className={`absolute inset-0 ${
               isDark 
-                ? 'bg-[var(--background)]/70' 
-                : 'bg-[var(--background)]/80'
+                ? 'bg-black/70' 
+                : 'bg-white/80'
             }`} />
 
             <div 
-              className="relative h-full flex items-center justify-center p-8"
+              className="relative h-full flex items-center justify-center p-6"
               style={{
                 clipPath: 'polygon(8% 0%, 100% 0%, 100% 100%, 8% 100%, 0% 50%)',
               }}
@@ -265,19 +265,19 @@ export default function RegisterPage() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="relative z-10 w-full max-w-sm"
               >
-                <div className={`rounded-2xl p-8 shadow-xl ${
+                <div className={`rounded-2xl p-6 shadow-2xl ${
                   isDark 
-                    ? 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]' 
-                    : 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]'
+                    ? 'bg-gray-900/95 backdrop-blur-sm border border-gray-800' 
+                    : 'bg-white/95 backdrop-blur-sm border border-gray-200'
                 }`}>
                   <div className="text-center mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mx-auto mb-4">
-                      <User size={22} className="text-[var(--primary)]" />
+                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+                      <User size={22} className="text-orange-500" />
                     </div>
-                    <h2 className="text-2xl font-bold text-[var(--foreground)]">
+                    <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       Create Account
                     </h2>
-                    <p className="text-sm mt-1 text-[var(--foreground-muted)]">
+                    <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                       Join the SpectrumCosmo community
                     </p>
                   </div>
@@ -288,7 +288,11 @@ export default function RegisterPage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-4"
+                        className={`text-sm rounded-xl px-4 py-3 mb-4 ${
+                          isDark
+                            ? 'bg-red-900/30 border border-red-800 text-red-400'
+                            : 'bg-red-50 border border-red-200 text-red-600'
+                        }`}
                       >
                         {error}
                       </motion.div>
@@ -299,7 +303,11 @@ export default function RegisterPage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-3 mb-4"
+                        className={`text-sm rounded-xl px-4 py-3 mb-4 ${
+                          isDark
+                            ? 'bg-green-900/30 border border-green-800 text-green-400'
+                            : 'bg-green-50 border border-green-200 text-green-700'
+                        }`}
                       >
                         {success}
                       </motion.div>
@@ -308,13 +316,17 @@ export default function RegisterPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                      <label className={`block text-sm font-medium mb-1.5 ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Full Name
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'name' ? 'scale-[1.02]' : ''
                       }`}>
-                        <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                        <User size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         <input
                           type="text"
                           placeholder="Enter your name"
@@ -322,10 +334,12 @@ export default function RegisterPage() {
                           onChange={e => setForm({ ...form, name: e.target.value })}
                           onFocus={() => setFocusedField('name')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
                             focusedField === 'name'
-                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                              : 'border-[var(--border)]'
+                              ? 'border-orange-500 ring-2 ring-orange-500/20'
+                              : isDark
+                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                           }`}
                           required
                         />
@@ -333,13 +347,17 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                      <label className={`block text-sm font-medium mb-1.5 ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Email Address
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'email' ? 'scale-[1.02]' : ''
                       }`}>
-                        <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                        <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         <input
                           type="email"
                           placeholder="Enter your email"
@@ -347,10 +365,12 @@ export default function RegisterPage() {
                           onChange={e => setForm({ ...form, email: e.target.value })}
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
                             focusedField === 'email'
-                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                              : 'border-[var(--border)]'
+                              ? 'border-orange-500 ring-2 ring-orange-500/20'
+                              : isDark
+                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                           }`}
                           required
                         />
@@ -358,13 +378,17 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                      <label className={`block text-sm font-medium mb-1.5 ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Password
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'password' ? 'scale-[1.02]' : ''
                       }`}>
-                        <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                        <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         <input
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Min. 8 characters"
@@ -372,17 +396,21 @@ export default function RegisterPage() {
                           onChange={e => setForm({ ...form, password: e.target.value })}
                           onFocus={() => setFocusedField('password')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
                             focusedField === 'password'
-                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                              : 'border-[var(--border)]'
+                              ? 'border-orange-500 ring-2 ring-orange-500/20'
+                              : isDark
+                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                           }`}
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                            isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                          } transition`}
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -390,13 +418,17 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                      <label className={`block text-sm font-medium mb-1.5 ${
+                        isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                         Confirm Password
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'confirm' ? 'scale-[1.02]' : ''
                       }`}>
-                        <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                        <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                          isDark ? 'text-gray-500' : 'text-gray-400'
+                        }`} />
                         <input
                           type={showConfirm ? 'text' : 'password'}
                           placeholder="Repeat your password"
@@ -404,17 +436,21 @@ export default function RegisterPage() {
                           onChange={e => setForm({ ...form, confirm: e.target.value })}
                           onFocus={() => setFocusedField('confirm')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
                             focusedField === 'confirm'
-                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                              : 'border-[var(--border)]'
+                              ? 'border-orange-500 ring-2 ring-orange-500/20'
+                              : isDark
+                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                           }`}
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirm(!showConfirm)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                            isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                          } transition`}
                         >
                           {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -427,15 +463,17 @@ export default function RegisterPage() {
                         id="terms"
                         checked={acceptedTerms}
                         onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded border-[var(--border)] bg-[var(--background-secondary)] text-[var(--primary)] focus:ring-[var(--primary)] focus:ring-offset-0"
+                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
                       />
-                      <label htmlFor="terms" className="text-sm leading-relaxed text-[var(--foreground-muted)]">
+                      <label htmlFor="terms" className={`text-sm leading-relaxed ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
                         I agree to the{' '}
-                        <Link href="/terms" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
+                        <Link href="/terms" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">
                           Terms & Conditions
                         </Link>
                         {' '}and{' '}
-                        <Link href="/privacy" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
+                        <Link href="/privacy" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">
                           Privacy Policy
                         </Link>
                       </label>
@@ -446,7 +484,7 @@ export default function RegisterPage() {
                       disabled={loading}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
                     >
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -459,17 +497,21 @@ export default function RegisterPage() {
                     </motion.button>
                   </form>
 
-                  <div className="mt-6 pt-6 border-t border-[var(--border)] text-center">
-                    <p className="text-sm text-[var(--foreground-muted)]">
+                  <div className={`mt-6 pt-6 border-t text-center ${
+                    isDark ? 'border-gray-800' : 'border-gray-200'
+                  }`}>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       Already have an account?{' '}
-                      <Link href="/auth/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
+                      <Link href="/auth/login" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
                         Sign in
                       </Link>
                     </p>
                   </div>
 
                   <div className="mt-4 text-center">
-                    <Link href="/" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1">
+                    <Link href="/" className={`text-sm ${
+                      isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
+                    } transition-colors inline-flex items-center gap-1`}>
                       <ArrowLeft size={14} />
                       Back to Shop
                     </Link>
@@ -495,7 +537,7 @@ export default function RegisterPage() {
   return (
     <>
       <div 
-        className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden bg-[var(--background)]"
+        className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
         style={{
           backgroundImage: `url(${MANGA_BG})`,
           backgroundSize: 'cover',
@@ -504,8 +546,8 @@ export default function RegisterPage() {
       >
         <div className={`absolute inset-0 ${
           isDark 
-            ? 'bg-[var(--background)]/70' 
-            : 'bg-[var(--background)]/80'
+            ? 'bg-black/70' 
+            : 'bg-white/80'
         }`} />
 
         <motion.div
@@ -524,23 +566,23 @@ export default function RegisterPage() {
               <img src={logoSrc} alt="SpectrumCosmo" className="h-20 mx-auto mb-4" />
             </motion.div>
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className="text-[var(--foreground)]">SPECTRUM</span>
-              <span className="text-[var(--primary)]">COSMO</span>
+              <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
+              <span className="text-orange-500">COSMO</span>
             </h1>
-            <p className="text-sm mt-1 text-[var(--foreground-muted)]">
+            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               Create your account
             </p>
           </div>
 
           <div className={`rounded-2xl p-6 shadow-xl ${
             isDark 
-              ? 'bg-[var(--background-card)]/95 backdrop-blur-xl border border-[var(--border)]' 
-              : 'bg-[var(--background-card)]/95 backdrop-blur-xl border border-[var(--border)]'
+              ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
+              : 'bg-white/95 backdrop-blur-xl border border-gray-200'
           }`}>
-            <h2 className="text-lg font-semibold mb-1 text-[var(--foreground)]">
+            <h2 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Create Account
             </h2>
-            <p className="text-sm mb-6 text-[var(--foreground-muted)]">
+            <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               Enter your details to get started
             </p>
 
@@ -578,13 +620,17 @@ export default function RegisterPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                <label className={`block text-sm font-medium mb-1.5 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Name
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'name' ? 'scale-[1.02]' : ''
                 }`}>
-                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                  <User size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <input
                     type="text"
                     placeholder="Enter your name"
@@ -592,10 +638,12 @@ export default function RegisterPage() {
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
                       focusedField === 'name'
-                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                        : 'border-[var(--border)]'
+                        ? 'border-orange-500 ring-2 ring-orange-500/20'
+                        : isDark
+                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                     }`}
                     required
                   />
@@ -603,13 +651,17 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                <label className={`block text-sm font-medium mb-1.5 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Email
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'email' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                  <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <input
                     type="email"
                     placeholder="Enter your email"
@@ -617,10 +669,12 @@ export default function RegisterPage() {
                     onChange={e => setForm({ ...form, email: e.target.value })}
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
                       focusedField === 'email'
-                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                        : 'border-[var(--border)]'
+                        ? 'border-orange-500 ring-2 ring-orange-500/20'
+                        : isDark
+                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                     }`}
                     required
                   />
@@ -628,13 +682,17 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                <label className={`block text-sm font-medium mb-1.5 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'password' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Min. 8 characters"
@@ -642,17 +700,21 @@ export default function RegisterPage() {
                     onChange={e => setForm({ ...form, password: e.target.value })}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
                       focusedField === 'password'
-                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                        : 'border-[var(--border)]'
+                        ? 'border-orange-500 ring-2 ring-orange-500/20'
+                        : isDark
+                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                     }`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -660,13 +722,17 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-[var(--foreground)]">
+                <label className={`block text-sm font-medium mb-1.5 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Confirm Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'confirm' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
+                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Repeat your password"
@@ -674,17 +740,21 @@ export default function RegisterPage() {
                     onChange={e => setForm({ ...form, confirm: e.target.value })}
                     onFocus={() => setFocusedField('confirm')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
                       focusedField === 'confirm'
-                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
-                        : 'border-[var(--border)]'
+                        ? 'border-orange-500 ring-2 ring-orange-500/20'
+                        : isDark
+                        ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
                     }`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   >
                     {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -697,15 +767,17 @@ export default function RegisterPage() {
                   id="terms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-[var(--border)] bg-[var(--background-secondary)] text-[var(--primary)] focus:ring-[var(--primary)] focus:ring-offset-0"
+                  className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
                 />
-                <label htmlFor="terms" className="text-sm leading-relaxed text-[var(--foreground-muted)]">
+                <label htmlFor="terms" className={`text-sm leading-relaxed ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   I agree to the{' '}
-                  <Link href="/terms" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
+                  <Link href="/terms" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">
                     Terms & Conditions
                   </Link>
                   {' '}and{' '}
-                  <Link href="/privacy" className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors">
+                  <Link href="/privacy" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">
                     Privacy Policy
                   </Link>
                 </label>
@@ -715,7 +787,7 @@ export default function RegisterPage() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -728,17 +800,21 @@ export default function RegisterPage() {
               </motion.button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-[var(--border)] text-center">
-              <p className="text-sm text-[var(--foreground-muted)]">
+            <div className={`mt-6 pt-6 border-t text-center ${
+              isDark ? 'border-gray-800' : 'border-gray-200'
+            }`}>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Already have an account?{' '}
-                <Link href="/auth/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
+                <Link href="/auth/login" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
                   Sign in
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className="text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1">
+              <Link href="/" className={`text-sm ${
+                isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
+              } transition-colors inline-flex items-center gap-1`}>
                 <ArrowLeft size={14} />
                 Back to Shop
               </Link>
