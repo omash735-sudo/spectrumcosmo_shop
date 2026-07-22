@@ -4,9 +4,7 @@ import { Redis } from '@upstash/redis';
 let redisInstance: Redis | null = null;
 
 export function getRedis(): Redis {
-  // During Next.js build (e.g., on Vercel), return a dummy client
   if (process.env.NEXT_PHASE === 'phase-production-build') {
-    // Return a fake client with no-op methods
     return {
       get: async () => null,
       set: async () => 'OK',
@@ -15,9 +13,15 @@ export function getRedis(): Redis {
       del: async () => 1,
       ttl: async () => 0,
       setex: async () => 'OK',
+      multi: () => ({
+        zadd: () => {},
+        zremrangebyscore: () => {},
+        zcard: () => {},
+        expire: () => {},
+        exec: async () => [[null, 0]],
+      }),
     } as unknown as Redis;
   }
-
   if (!redisInstance) {
     redisInstance = Redis.fromEnv();
   }
