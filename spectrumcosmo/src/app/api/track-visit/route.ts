@@ -33,9 +33,16 @@ export async function POST(req: NextRequest) {
 
     const payload = getUserFromRequest(req);
     const userId = payload?.id || null;
-    const isAdmin = payload?.is_admin || false;
 
+    // Check if the user is an admin (fetch from DB to be safe)
+    let isAdmin = false;
+    if (userId) {
+      const sql = getDb();
+      const userResult = await sql`SELECT is_admin FROM users WHERE id = ${userId}`;
+      isAdmin = userResult[0]?.is_admin || false;
+    }
 
+    // Skip tracking for admins
     if (isAdmin) {
       return NextResponse.json({ success: true, skipped: true });
     }
