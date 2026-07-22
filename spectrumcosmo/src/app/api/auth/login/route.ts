@@ -1,8 +1,6 @@
-// app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
-import { signUserToken } from '@/lib/userAuth';
 import { logSecurityEvent, isIPBlocked, recordFailedLogin } from '@/lib/security-logger';
 import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
@@ -67,10 +65,7 @@ async function createEmailVerification(userId: string, email: string) {
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
 
-  // Delete any existing tokens
   await sql`DELETE FROM email_verifications WHERE user_id = ${userId}`;
-  
-  // Create new token
   await sql`
     INSERT INTO email_verifications (user_id, token, expires_at)
     VALUES (${userId}, ${token}, ${expiresAt})
@@ -158,10 +153,8 @@ export async function POST(req: NextRequest) {
     `;
 
     if (!user) {
-      // Increment failed attempts
       await redis.incr(rateLimitKey);
       await redis.expire(rateLimitKey, LOGIN_CONFIG.blockMinutes * 60);
-      
       await recordFailedLogin(email, ipAddress);
       await logSecurityEvent({
         actionType: 'failed_login',
@@ -172,7 +165,6 @@ export async function POST(req: NextRequest) {
         userAgent,
         details: { email, reason: 'User not found' }
       });
-      
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -191,7 +183,6 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         details: { status: user.account_status }
       });
-      
       return NextResponse.json(
         { error: `Account ${user.account_status}. Please contact support.` },
         { status: 403 }
@@ -202,10 +193,8 @@ export async function POST(req: NextRequest) {
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     
     if (!passwordValid) {
-      // Increment failed attempts
       await redis.incr(rateLimitKey);
       await redis.expire(rateLimitKey, LOGIN_CONFIG.blockMinutes * 60);
-      
       await recordFailedLogin(email, ipAddress);
       await logSecurityEvent({
         actionType: 'failed_login',
@@ -217,7 +206,6 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         details: { email, reason: 'Invalid password' }
       });
-      
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -227,10 +215,7 @@ export async function POST(req: NextRequest) {
     // 7. Check email verification
     if (!user.email_verified) {
       try {
-        // Create verification token
         const token = await createEmailVerification(user.id, user.email);
-        
-        // Send verification email
         await sendVerificationEmail(user.email, user.name, token);
         
         await logSecurityEvent({
@@ -254,7 +239,6 @@ export async function POST(req: NextRequest) {
         );
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
-        
         await logSecurityEvent({
           actionType: 'verification_failed',
           endpoint: '/api/auth/login',
@@ -265,7 +249,6 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           details: { error: 'Email sending failed' }
         });
-
         return NextResponse.json(
           { 
             error: 'Please verify your email before logging in. We could not send a verification email at this time. Please contact support.',
@@ -277,24 +260,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 8. Success - blacklist old token if exists
-    const existingToken = req.cookies.get('user_token')?.value;
-    if (existingToken) {
-      await redis.setex(`blacklist:${existingToken}`, 86400, 'logged_out');
-    }
-
-    // 9. Clear rate limiting
+    // 8. Clear rate limiting
     await redis.del(rateLimitKey);
 
-    // 10. Generate new token
-    const token = signUserToken({ 
-      id: user.id, 
-      name: user.name, 
-      email: user.email, 
-      role: 'customer' 
-    });
-    
-    // 11. Log successful login
+    // 9. Log successful login
     await logSecurityEvent({
       actionType: 'successful_login',
       endpoint: '/api/auth/login',
@@ -308,9 +277,9 @@ export async function POST(req: NextRequest) {
         duration: Date.now() - startTime
       }
     });
-    
-    // 12. Return response with cookie
-    const response = NextResponse.json({ 
+
+    // 10. Return user data (no cookie – Auth.js will handle session)
+    return NextResponse.json({ 
       success: true,
       user: { 
         id: user.id, 
@@ -318,16 +287,6 @@ export async function POST(req: NextRequest) {
         email: user.email 
       } 
     });
-    
-    response.cookies.set('user_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-    
-    return response;
     
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -350,16 +309,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Optional: GET endpoint for captcha if you want to keep it
+// Optional: GET endpoint for captcha (unchanged)
 export async function GET(req: NextRequest) {
-  // Simple captcha generation if needed
   const num1 = Math.floor(Math.random() * 10) + 1;
   const num2 = Math.floor(Math.random() * 10) + 1;
   const answer = String(num1 + num2);
   const token = crypto.randomBytes(32).toString('hex');
   
   const redis = Redis.fromEnv();
-  await redis.setex(`captcha:${token}`, 300, answer); // 5 minutes TTL
+  await redis.setex(`captcha:${token}`, 300, answer);
   
   return NextResponse.json({
     captchaToken: token,
