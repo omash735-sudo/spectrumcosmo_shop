@@ -1,4 +1,3 @@
-// src/auth.ts
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -8,8 +7,8 @@ import AppleProvider from "next-auth/providers/apple";
 // Fallback that always exports valid handlers
 const fallback = {
   handlers: {
-    GET: () => new Response('Auth is unavailable', { status: 503 }),
-    POST: () => new Response('Auth is unavailable', { status: 503 }),
+    GET: () => new Response("Auth unavailable", { status: 503 }),
+    POST: () => new Response("Auth unavailable", { status: 503 }),
   },
   signIn: async () => {},
   signOut: async () => {},
@@ -17,6 +16,7 @@ const fallback = {
 };
 
 let authConfig;
+
 try {
   authConfig = NextAuth({
     debug: true,
@@ -95,7 +95,7 @@ try {
     session: { strategy: "jwt" },
   });
 } catch (err) {
-  console.error('❌ Auth initialization failed:', err);
+  console.error("❌ Auth initialization failed:", err);
   authConfig = fallback;
 }
 
