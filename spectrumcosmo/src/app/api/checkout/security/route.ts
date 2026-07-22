@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { verifyCsrfToken } from '@/lib/csrf';
-import { rateLimit, RateLimitResult } from '@/lib/rate-limit';
-import { Redis } from '@upstash/redis';
 
 // Types
 interface OrderData {
@@ -23,8 +21,6 @@ interface FraudDetectionResult {
 
 interface FraudRules {
   maxOrderAmount: number;
-  maxAttemptsPerHour: number;
-  highRiskCountries: string[];
   suspiciousEmailDomains: string[];
   riskThreshold: number;
 }
@@ -32,13 +28,9 @@ interface FraudRules {
 // Default fraud rules (should come from database in production)
 const DEFAULT_FRAUD_RULES: FraudRules = {
   maxOrderAmount: 5000,
-  maxAttemptsPerHour: 10,
-  highRiskCountries: ['NG', 'KE', 'PK', 'VN'],
   suspiciousEmailDomains: ['tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com'],
   riskThreshold: 50,
 };
-
-const redis = Redis.fromEnv();
 
 async function getFraudRules(): Promise<FraudRules> {
   try {
@@ -75,16 +67,6 @@ async function detectFraud(
   if (emailDomain && rules.suspiciousEmailDomains.includes(emailDomain)) {
     riskScore += 40;
     reasons.push('Suspicious email domain detected');
-  }
-  
-  // Check rapid attempts
-  const attemptKey = `checkout:attempts:${ipAddress}`;
-  const attemptCount = await redis.incr(attemptKey);
-  await redis.expire(attemptKey, 3600);
-  
-  if (attemptCount > rules.maxAttemptsPerHour) {
-    riskScore += 50;
-    reasons.push('Excessive checkout attempts detected');
   }
   
   // Check for user account age (if logged in)
@@ -124,23 +106,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Security validation failed' }, { status: 403 });
   }
   
-  // Rate limiting
-  const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                    req.headers.get('x-real-ip') || 
-                    'unknown';
-  
-  const rateResult: RateLimitResult = await rateLimit(`checkout:${ipAddress}`, 10, 3600);
-  
-  if (!rateResult.success) {
-    return NextResponse.json({ 
-      error: `Too many checkout attempts. Try again in ${rateResult.retryAfterMinutes} minutes.`,
-      retryAfterSeconds: rateResult.retryAfterSeconds,
-    }, { status: 429 });
-  }
-  
   // Get authenticated user
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
+  
+  const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                    req.headers.get('x-real-ip') || 
+                    'unknown';
   
   try {
     const orderData = await req.json();
@@ -154,14 +126,6 @@ export async function POST(req: NextRequest) {
     
     const sql = getDb();
     
-    // Check if IP is temporarily blocked
-    const isBlocked = await redis.get(`blocked:checkout:${ipAddress}`);
-    if (isBlocked) {
-      return NextResponse.json({ 
-        error: 'Checkout temporarily blocked due to suspicious activity. Please contact support.' 
-      }, { status: 403 });
-    }
-    
     // Run fraud detection
     const fraudResult = await detectFraud(orderData, ipAddress, user?.id);
     
@@ -173,9 +137,6 @@ export async function POST(req: NextRequest) {
     
     // Block fraudulent attempts
     if (fraudResult.isFraudulent) {
-      // Block IP for 1 hour
-      await redis.setex(`blocked:checkout:${ipAddress}`, 3600, 'fraud_detected');
-      
       // Log security incident
       await sql`
         INSERT INTO security_logs (user_id, action_type, severity, ip_address, details, created_at)
