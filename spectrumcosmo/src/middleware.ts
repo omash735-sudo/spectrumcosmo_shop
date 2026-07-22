@@ -1,5 +1,4 @@
-// middleware.ts
-export const runtime = 'nodejs'; 
+export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -21,7 +20,7 @@ function isPublicAsset(pathname: string): boolean {
 
 function verifyToken(token: string): boolean {
   try {
-    jwt.verify(token, process.env.NEXTAUTH_SECRET!);
+    jwt.verify(token, process.env.JWT_SECRET!);
     return true;
   } catch {
     return false;
@@ -32,7 +31,6 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
 
-  // Security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -42,7 +40,6 @@ export async function middleware(request: NextRequest) {
   const adminToken = request.cookies.get('admin_token')?.value;
   const userToken = request.cookies.get('user_token')?.value;
 
-  // Admin routes
   if (isAdminRoute(pathname)) {
     const isLoginPage = pathname === '/admin/login';
     const isAuthApi = pathname === '/api/admin/auth';
@@ -54,16 +51,14 @@ export async function middleware(request: NextRequest) {
     if (isAsset) return response;
   }
 
-  // Protect user routes with JWT token
   if (pathname.startsWith('/account') || pathname.startsWith('/checkout')) {
     if (isPublicAsset(pathname)) return response;
-    
+
     if (!userToken || !verifyToken(userToken)) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
   }
 
-  // CSP header
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
