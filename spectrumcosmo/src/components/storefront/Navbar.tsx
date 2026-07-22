@@ -27,14 +27,10 @@ import {
   Tag,
   Truck,
   Shield,
-  Shirt,
-  Package as PackageIcon,
-  Sparkles,
-  GraduationCap,
   ArrowRight,
   CalendarDays,
   Gift,
-  Zap
+  Zap,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -47,11 +43,12 @@ import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
 
+// Categories without icons - just text
 const categories = [
-  { name: 'T-Shirts', href: '/products?category=T-Shirts', icon: Shirt },
-  { name: 'Hoodies', href: '/products?category=Hoodies', icon: PackageIcon },
-  { name: 'Accessories', href: '/products?category=Accessories', icon: Sparkles },
-  { name: 'Anime Jerseys', href: '/products?category=Anime Jerseys', icon: GraduationCap },
+  { name: 'T-Shirts', href: '/products?category=T-Shirts' },
+  { name: 'Hoodies', href: '/products?category=Hoodies' },
+  { name: 'Accessories', href: '/products?category=Accessories' },
+  { name: 'Anime Jerseys', href: '/products?category=Anime Jerseys' },
 ];
 
 const desktopLinks = [
@@ -89,7 +86,6 @@ const iconMap: Record<string, any> = {
   Truck,
   Shield,
   Tag,
-  Sparkles,
   Star,
   Heart,
   Gift,
@@ -186,7 +182,7 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
-  // Determine banner display - Fixed TypeScript error
+  // Determine banner display
   const showBanner = bannerData?.is_active !== false && 
     bannerData?.items && 
     bannerData.items.length > 0;
@@ -344,20 +340,16 @@ export default function Navbar() {
                           <div className="px-4 py-2 border-b border-[var(--border)]">
                             <p className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Shop by Category</p>
                           </div>
-                          {categories.map((cat) => {
-                            const Icon = cat.icon;
-                            return (
-                              <Link
-                                key={cat.name}
-                                href={cat.href}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--foreground-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition group"
-                                onClick={() => setOpenDropdown(null)}
-                              >
-                                <Icon size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition" />
-                                {cat.name}
-                              </Link>
-                            );
-                          })}
+                          {categories.map((cat) => (
+                            <Link
+                              key={cat.name}
+                              href={cat.href}
+                              className="flex items-center px-4 py-2.5 text-sm text-[var(--foreground-muted)] hover:bg-[var(--primary)]/10 hover:text-[var(--primary)] transition group"
+                              onClick={() => setOpenDropdown(null)}
+                            >
+                              {cat.name}
+                            </Link>
+                          ))}
                           <div className="border-t border-[var(--border)] mt-2 pt-2">
                             <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-[var(--primary)] hover:bg-[var(--primary)]/10 transition group">
                               View All Products 
