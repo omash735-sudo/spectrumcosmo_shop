@@ -255,7 +255,7 @@ export default function LoginPage() {
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
   // ============================================================
-  // DESKTOP LAYOUT (≥1024px) – Split‑screen with curved right side
+  // DESKTOP LAYOUT (≥1024px) – 60/40 split (flex-[3] / flex-[2])
   // ============================================================
   if (isDesktop) {
     return (
@@ -268,8 +268,8 @@ export default function LoginPage() {
         )}
 
         <div className="flex h-screen overflow-hidden bg-[var(--background)]">
-          {/* LEFT SIDE – Image Carousel + Branding (50%) */}
-          <div className="relative flex-1 bg-black overflow-hidden">
+          {/* LEFT SIDE – 60% (flex-[3]) */}
+          <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
                 key={i}
@@ -284,10 +284,10 @@ export default function LoginPage() {
               </div>
             ))}
             
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            {/* Solid overlay – no gradients */}
+            <div className="absolute inset-0 bg-black/60" />
 
-            <div className="relative h-full flex flex-col justify-center px-12 z-10">
+            <div className="relative h-full flex flex-col justify-center px-10 z-10">
               <div className="flex items-center gap-3 mb-6">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
                 <span className="text-2xl font-bold tracking-tight">
@@ -333,7 +333,7 @@ export default function LoginPage() {
               </div>
 
               {/* Slide Indicators */}
-              <div className="absolute bottom-8 left-12 flex gap-1.5">
+              <div className="absolute bottom-8 left-10 flex gap-1.5">
                 {desktopSlides.map((_, i) => (
                   <button
                     key={i}
@@ -349,8 +349,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – Manga Background + Curved edges (50%) */}
-          <div className="relative flex-1 overflow-hidden">
+          {/* RIGHT SIDE – 40% (flex-[2]) with curved clip-path */}
+          <div className="relative flex-[2] overflow-hidden">
             <div 
               className="absolute inset-0"
               style={{
@@ -366,7 +366,7 @@ export default function LoginPage() {
             }`} />
 
             <div 
-              className="relative h-full flex items-center justify-center p-8"
+              className="relative h-full flex items-center justify-center p-6"
               style={{
                 clipPath: 'polygon(8% 0%, 100% 0%, 100% 100%, 8% 100%, 0% 50%)',
               }}
@@ -377,7 +377,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="relative z-10 w-full max-w-sm"
               >
-                <div className={`rounded-2xl p-8 shadow-xl ${
+                <div className={`rounded-2xl p-6 shadow-2xl ${
                   isDark 
                     ? 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]' 
                     : 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]'
