@@ -11,7 +11,7 @@ import {
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signIn } from 'next-auth/react'; // ✅ client-side signIn
+import { useGoogleLogin } from '@react-oauth/google';
 
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
@@ -66,11 +66,52 @@ export default function LoginPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const [emailError, setEmailError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const user = await userInfo.json();
+        
+        const res = await fetch('/api/auth/google-callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            accessToken: tokenResponse.access_token,
+            user: user 
+          }),
+        });
+        
+        if (res.ok) {
+          setSuccess('Welcome! Redirecting...');
+          setTimeout(() => {
+            router.push('/account');
+            router.refresh();
+          }, 1200);
+        } else {
+          const data = await res.json();
+          setError(data.error || 'Google login failed');
+        }
+      } catch (err) {
+        setError('Google login failed. Please try again.');
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => {
+      setError('Google login failed. Please try again.');
+      setGoogleLoading(false);
+    },
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -123,7 +164,6 @@ export default function LoginPage() {
     setEmailError(validateEmail(value));
   };
 
-  // This onSubmit uses the client-side signIn – it works for credentials
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -141,30 +181,41 @@ export default function LoginPage() {
     setNeedsVerification(false);
 
     try {
-      const result = await signIn('credentials', {
-        email: form.email,
-        password: form.password,
-        redirect: false,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: form.email, 
+          password: form.password 
+        }),
       });
 
-      if (result?.error) {
-        if (result.error === 'CAPTCHA_REQUIRED') {
-          setRequiresCaptcha(true);
-          setShowCaptcha(true);
-          setPendingCredentials({ email: form.email, password: form.password });
-          setLoading(false);
-          return;
-        }
-        if (result.error === 'VERIFICATION_REQUIRED') {
-          setNeedsVerification(true);
-          setUnverifiedEmail(form.email);
-          setError('Please verify your email before logging in.');
-          setLoading(false);
-          return;
-        }
-        setError(result.error || 'Invalid credentials');
+      const data = await res.json();
+
+      if (res.status === 428 && data.requiresCaptcha) {
+        setRequiresCaptcha(true);
+        setShowCaptcha(true);
+        setPendingCredentials({ email: form.email, password: form.password });
         setLoading(false);
         return;
+      }
+
+      if (res.status === 403 && data.needsVerification) {
+        setNeedsVerification(true);
+        setUnverifiedEmail(data.email || form.email);
+        setError(data.error || 'Please verify your email before logging in.');
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.error || 'Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
+      if (data.user?.is_test_account) {
+        setIsTestAccount(true);
       }
 
       setSuccess('Welcome back! Redirecting...');
@@ -172,8 +223,8 @@ export default function LoginPage() {
         router.push('/account');
         router.refresh();
       }, 1200);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
+    } catch {
+      setError('Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
@@ -214,20 +265,25 @@ export default function LoginPage() {
 
   const handleCaptchaVerify = async (captchaToken: string, captchaAnswer: string) => {
     try {
-      const result = await signIn('credentials', {
-        email: pendingCredentials.email,
-        password: pendingCredentials.password,
-        captchaToken,
-        captchaAnswer,
-        redirect: false,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: pendingCredentials.email,
+          password: pendingCredentials.password,
+          captchaToken,
+          captchaAnswer,
+        }),
       });
-
-      if (result?.error) {
-        setError(result.error || 'Verification failed');
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setError(data.error || 'Verification failed');
         setShowCaptcha(false);
         throw new Error('CAPTCHA verification failed');
       }
-
+      
       setShowCaptcha(false);
       setRequiresCaptcha(false);
       setSuccess('Welcome back! Redirecting...');
@@ -380,13 +436,19 @@ export default function LoginPage() {
                 {/* Google Sign-In Button (Desktop) */}
                 <div className="mb-4">
                   <button
-                    onClick={() => signIn('google', { redirectTo: '/account' })}
-                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => googleLogin()}
+                    disabled={googleLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <GoogleIcon />
-                    <span className="text-sm font-medium">Sign in with Google</span>
+                    {googleLoading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <GoogleIcon />
+                    )}
+                    <span className="text-sm font-medium">
+                      {googleLoading ? 'Signing in...' : 'Sign in with Google'}
+                    </span>
                   </button>
-                  {/* ✅ Fixed divider */}
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
                       <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
@@ -428,7 +490,6 @@ export default function LoginPage() {
                 </AnimatePresence>
 
                 <form onSubmit={onSubmit} className="space-y-5">
-                  {/* Email and password fields – unchanged */}
                   <div>
                     <label className={`block text-sm font-medium mb-1.5 ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
@@ -652,13 +713,19 @@ export default function LoginPage() {
             {/* Google Sign-In Button (Mobile) */}
             <div className="mb-4">
               <button
-                onClick={() => signIn('google', { redirectTo: '/account' })}
-                className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => googleLogin()}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <GoogleIcon />
-                <span className="text-sm font-medium">Sign in with Google</span>
+                {googleLoading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                <span className="text-sm font-medium">
+                  {googleLoading ? 'Signing in...' : 'Sign in with Google'}
+                </span>
               </button>
-              {/* ✅ Fixed divider */}
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
@@ -708,7 +775,6 @@ export default function LoginPage() {
             </AnimatePresence>
 
             <form onSubmit={onSubmit} className="space-y-4">
-              {/* Email */}
               <div>
                 <label className={`text-sm font-medium mb-1.5 block ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
@@ -752,7 +818,6 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Password */}
               <div>
                 <label className={`text-sm font-medium mb-1.5 block ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
