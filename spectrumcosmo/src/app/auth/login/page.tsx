@@ -12,7 +12,7 @@ import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Updated carousel images (desktop only)
+// Carousel images (desktop only)
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
@@ -22,7 +22,7 @@ const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714750/d98193c851d049a19cf7de400ec47132_fepxrd.jpg'
 ];
 
-// Manga background for BOTH desktop (right side) and mobile
+// Manga background for both desktop (right side) and mobile
 const MANGA_BG = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775798/9b8e69a00494ab278c6f3f1e8d1a4f0c_vkjyhx.jpg';
 
 const trustBadges = [
@@ -268,7 +268,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="flex h-screen overflow-hidden bg-black">
+        <div className="flex h-screen overflow-hidden bg-[var(--background)]">
           {/* LEFT SIDE – Image Carousel + Branding (50%) */}
           <div className="relative flex-1 bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
@@ -293,7 +293,7 @@ export default function LoginPage() {
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
                 <span className="text-2xl font-bold tracking-tight">
                   <span className="text-white">SPECTRUM</span>
-                  <span className="text-orange-400">COSMO</span>
+                  <span className="text-[var(--primary)]">COSMO</span>
                 </span>
               </div>
               
@@ -306,7 +306,7 @@ export default function LoginPage() {
                 <h1 className="text-4xl font-bold mb-3 leading-tight">
                   Welcome back to the
                   <br />
-                  <span className="text-orange-400">anime marketplace</span>
+                  <span className="text-[var(--primary)]">anime marketplace</span>
                 </h1>
                 <p className="text-gray-300 text-base mb-6 leading-relaxed">
                   Sign in to access exclusive anime merch, track orders, and connect with fellow fans.
@@ -324,8 +324,8 @@ export default function LoginPage() {
                       transition={{ delay: 0.2 + i * 0.1 }}
                       className="flex items-center gap-2"
                     >
-                      <div className="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center">
-                        <Icon size={13} className="text-orange-400" />
+                      <div className="w-7 h-7 rounded-full bg-[var(--primary)]/20 flex items-center justify-center">
+                        <Icon size={13} className="text-[var(--primary)]" />
                       </div>
                       <span className="text-xs text-gray-300">{badge.label}</span>
                     </motion.div>
@@ -341,7 +341,7 @@ export default function LoginPage() {
                     onClick={() => setIndex(i)}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       i === index
-                        ? 'w-6 bg-orange-500'
+                        ? 'w-6 bg-[var(--primary)]'
                         : 'w-1.5 bg-white/30 hover:bg-white/50'
                     }`}
                   />
@@ -362,28 +362,12 @@ export default function LoginPage() {
               }}
             />
             
-            {/* Overlay */}
+            {/* Overlay using CSS variables */}
             <div className={`absolute inset-0 ${
               isDark 
-                ? 'bg-black/70' 
-                : 'bg-white/80'
+                ? 'bg-[var(--background)]/70' 
+                : 'bg-[var(--background)]/80'
             }`} />
-
-            {/* Curved overlay shape at the top and bottom */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <defs>
-                <clipPath id="rightSideCurve">
-                  <path d="
-                    M 0 0
-                    L 100 0
-                    L 100 100
-                    L 0 100
-                    C 15 85, 15 15, 0 0
-                    Z
-                  " />
-                </clipPath>
-              </defs>
-            </svg>
 
             {/* Content with curved clip path */}
             <div 
@@ -398,19 +382,19 @@ export default function LoginPage() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="relative z-10 w-full max-w-sm"
               >
-                <div className={`rounded-2xl p-8 shadow-2xl ${
+                <div className={`rounded-2xl p-8 shadow-xl ${
                   isDark 
-                    ? 'bg-gray-900/95 backdrop-blur-sm border border-gray-800' 
-                    : 'bg-white/95 backdrop-blur-sm border border-gray-200'
+                    ? 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]' 
+                    : 'bg-[var(--background-card)]/95 backdrop-blur-sm border border-[var(--border)]'
                 }`}>
                   <div className="text-center mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
-                      <Lock size={22} className="text-orange-500" />
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mx-auto mb-4">
+                      <Lock size={22} className="text-[var(--primary)]" />
                     </div>
-                    <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <h2 className={`text-2xl font-bold text-[var(--foreground)]`}>
                       Sign In
                     </h2>
-                    <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <p className={`text-sm mt-1 text-[var(--foreground-muted)]`}>
                       Access your SpectrumCosmo account
                     </p>
                   </div>
@@ -445,17 +429,13 @@ export default function LoginPage() {
 
                   <form onSubmit={onSubmit} className="space-y-5">
                     <div>
-                      <label className={`block text-sm font-medium mb-1.5 ${
-                        isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
+                      <label className={`block text-sm font-medium mb-1.5 text-[var(--foreground)]`}>
                         Email Address
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'email' ? 'scale-[1.02]' : ''
                       }`}>
-                        <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                          isDark ? 'text-gray-500' : 'text-gray-400'
-                        }`} />
+                        <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]`} />
                         <input
                           ref={emailInputRef}
                           type="email"
@@ -464,14 +444,12 @@ export default function LoginPage() {
                           onChange={handleEmailChange}
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none ${
+                          className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                             emailError
                               ? 'border-red-500 ring-2 ring-red-500/20'
                               : focusedField === 'email'
-                              ? 'border-orange-500 ring-2 ring-orange-500/20'
-                              : isDark
-                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
-                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                              : 'border-[var(--border)]'
                           }`}
                           required
                         />
@@ -488,17 +466,13 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label className={`block text-sm font-medium mb-1.5 ${
-                        isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
+                      <label className={`block text-sm font-medium mb-1.5 text-[var(--foreground)]`}>
                         Password
                       </label>
                       <div className={`relative transition-all duration-200 ${
                         focusedField === 'password' ? 'scale-[1.02]' : ''
                       }`}>
-                        <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                          isDark ? 'text-gray-500' : 'text-gray-400'
-                        }`} />
+                        <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]`} />
                         <input
                           ref={passwordInputRef}
                           type={showPassword ? 'text' : 'password'}
@@ -507,21 +481,17 @@ export default function LoginPage() {
                           onChange={e => setForm({ ...form, password: e.target.value })}
                           onFocus={() => setFocusedField('password')}
                           onBlur={() => setFocusedField(null)}
-                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
+                          className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                             focusedField === 'password'
-                              ? 'border-orange-500 ring-2 ring-orange-500/20'
-                              : isDark
-                              ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
-                              : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                              ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                              : 'border-[var(--border)]'
                           }`}
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                            isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                          } transition`}
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition`}
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -531,9 +501,7 @@ export default function LoginPage() {
                     <div className="flex justify-end">
                       <Link
                         href="/auth/forgot-password"
-                        className={`text-sm ${
-                          isDark ? 'text-gray-400 hover:text-orange-400' : 'text-gray-600 hover:text-orange-500'
-                        } transition-colors`}
+                        className={`text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors`}
                       >
                         Forgot password?
                       </Link>
@@ -544,7 +512,7 @@ export default function LoginPage() {
                       disabled={loading}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -562,28 +530,24 @@ export default function LoginPage() {
                       <button
                         onClick={handleResendVerification}
                         disabled={resending}
-                        className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
+                        className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm transition-colors disabled:opacity-50"
                       >
                         {resending ? 'Sending...' : 'Resend verification email'}
                       </button>
                     </div>
                   )}
 
-                  <div className={`mt-6 pt-6 border-t text-center ${
-                    isDark ? 'border-gray-800' : 'border-gray-200'
-                  }`}>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className={`mt-6 pt-6 border-t text-center border-[var(--border)]`}>
+                    <p className={`text-sm text-[var(--foreground-muted)]`}>
                       Don't have an account?{' '}
-                      <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors">
+                      <Link href="/auth/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
                         Create one
                       </Link>
                     </p>
                   </div>
 
                   <div className="mt-4 text-center">
-                    <Link href="/" className={`text-sm ${
-                      isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
-                    } transition-colors inline-flex items-center gap-1`}>
+                    <Link href="/" className={`text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1`}>
                       <ArrowLeft size={14} />
                       Back to Shop
                     </Link>
@@ -616,7 +580,7 @@ export default function LoginPage() {
       )}
 
       <div 
-        className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
+        className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden bg-[var(--background)]"
         style={{
           backgroundImage: `url(${MANGA_BG})`,
           backgroundSize: 'cover',
@@ -625,8 +589,8 @@ export default function LoginPage() {
       >
         <div className={`absolute inset-0 ${
           isDark 
-            ? 'bg-black/70' 
-            : 'bg-white/80'
+            ? 'bg-[var(--background)]/70' 
+            : 'bg-[var(--background)]/80'
         }`} />
 
         <motion.div
@@ -645,23 +609,23 @@ export default function LoginPage() {
               <img src={logoSrc} alt="SpectrumCosmo" className="h-20 mx-auto mb-4" />
             </motion.div>
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
-              <span className="text-orange-500">COSMO</span>
+              <span className="text-[var(--foreground)]">SPECTRUM</span>
+              <span className="text-[var(--primary)]">COSMO</span>
             </h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm mt-1 text-[var(--foreground-muted)]`}>
               Sign in to your account
             </p>
           </div>
 
           <div className={`rounded-2xl p-6 shadow-xl ${
             isDark 
-              ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
-              : 'bg-white/95 backdrop-blur-xl border border-gray-200'
+              ? 'bg-[var(--background-card)]/95 backdrop-blur-xl border border-[var(--border)]' 
+              : 'bg-[var(--background-card)]/95 backdrop-blur-xl border border-[var(--border)]'
           }`}>
-            <h2 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className={`text-lg font-semibold mb-1 text-[var(--foreground)]`}>
               Welcome back
             </h2>
-            <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm mb-6 text-[var(--foreground-muted)]`}>
               Sign in to manage your account and orders
             </p>
 
@@ -703,17 +667,13 @@ export default function LoginPage() {
 
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`text-sm font-medium mb-1.5 block text-[var(--foreground)]`}>
                   Email
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'email' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Mail size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]`} />
                   <input
                     ref={emailInputRef}
                     type="email"
@@ -722,15 +682,13 @@ export default function LoginPage() {
                     onChange={handleEmailChange}
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       emailError
                         ? 'border-red-500 ring-2 ring-red-500/20'
                         : focusedField === 'email'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    }`}
                     required
                   />
                 </div>
@@ -738,7 +696,7 @@ export default function LoginPage() {
                   <motion.p
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-red-400 text-xs mt-1"
+                    className="text-red-500 dark:text-red-400 text-xs mt-1"
                   >
                     {emailError}
                   </motion.p>
@@ -746,17 +704,13 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className={`text-sm font-medium mb-1.5 block ${
-                  isDark ? 'text-gray-300' : 'text-gray-700'
-                }`}>
+                <label className={`text-sm font-medium mb-1.5 block text-[var(--foreground)]`}>
                   Password
                 </label>
                 <div className={`relative transition-all duration-200 ${
                   focusedField === 'password' ? 'scale-[1.02]' : ''
                 }`}>
-                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
-                    isDark ? 'text-gray-500' : 'text-gray-400'
-                  }`} />
+                  <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]`} />
                   <input
                     ref={passwordInputRef}
                     type={showPassword ? 'text' : 'password'}
@@ -765,21 +719,17 @@ export default function LoginPage() {
                     onChange={e => setForm({ ...form, password: e.target.value })}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none bg-[var(--background-secondary)] text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] ${
                       focusedField === 'password'
-                        ? 'border-orange-500 ring-2 ring-orange-500/20'
-                        : isDark
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                    } placeholder-gray-500 focus:outline-none`}
+                        ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20'
+                        : 'border-[var(--border)]'
+                    }`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition`}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -787,9 +737,7 @@ export default function LoginPage() {
               </div>
 
               <div className="flex justify-end">
-                <Link href="/auth/forgot-password" className={`text-sm ${
-                  isDark ? 'text-gray-400 hover:text-orange-400' : 'text-gray-500 hover:text-orange-500'
-                } transition-colors`}>
+                <Link href="/auth/forgot-password" className={`text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors`}>
                   Forgot password?
                 </Link>
               </div>
@@ -798,7 +746,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -816,28 +764,24 @@ export default function LoginPage() {
                 <button
                   onClick={handleResendVerification}
                   disabled={resending}
-                  className="text-orange-500 hover:text-orange-600 text-sm transition-colors disabled:opacity-50"
+                  className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm transition-colors disabled:opacity-50"
                 >
                   {resending ? 'Sending...' : 'Resend verification email'}
                 </button>
               </div>
             )}
 
-            <div className={`mt-6 pt-6 border-t text-center ${
-              isDark ? 'border-gray-800' : 'border-gray-200'
-            }`}>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`mt-6 pt-6 border-t text-center border-[var(--border)]`}>
+              <p className={`text-sm text-[var(--foreground-muted)]`}>
                 Don't have an account?{' '}
-                <Link href="/auth/register" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
+                <Link href="/auth/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors">
                   Create one
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className={`text-sm ${
-                isDark ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'
-              } transition-colors inline-flex items-center gap-1`}>
+              <Link href="/" className={`text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1`}>
                 <ArrowLeft size={14} />
                 Back to Shop
               </Link>
