@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import { getVerifiedUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rate-limit';
 
 // Types
 interface FAQ {
@@ -71,18 +70,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limiting
-  const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                    req.headers.get('x-real-ip') || 
-                    'unknown';
-  
-  const rateResult = await rateLimit(`faq:${ipAddress}`, 5, 3600);
-  
-  if (!rateResult.success) {
-    return NextResponse.json({ 
-      error: `Too many questions. Please try again in ${rateResult.retryAfterMinutes} minutes.` 
-    }, { status: 429 });
-  }
+  // Rate limiting removed – rely on database or other mechanisms if needed.
+  // No Redis connection attempted here.
   
   try {
     const body = await req.json() as FAQRequest;
