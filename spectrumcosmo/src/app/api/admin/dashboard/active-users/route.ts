@@ -1,10 +1,8 @@
-// app/api/admin/active-users/route.ts
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAdminFromRequest } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  // Admin authentication
   const admin = getAdminFromRequest(req as any);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -12,41 +10,57 @@ export async function GET(req: Request) {
 
   try {
     const sql = getDb();
+    const url = new URL(req.url);
+    const timeRange = url.searchParams.get('timeRange') || '15'; // minutes
 
-    const result = await sql`
+    const cutoffMinutes = parseInt(timeRange);
+    const cutoffTime = new Date(Date.now() - cutoffMinutes * 60 * 1000);
+
+    
+    const users = await sql`
       SELECT 
-        us.session_id,
-        us.user_id,
+        au.session_id,
+        au.user_id,
+        au.current_page as page_url,
+        au.user_agent,
+        au.ip_address,
+        au.device_type,
+        au.browser,
+        au.os,
+        au.last_seen as visited_at,
+        EXTRACT(EPOCH FROM (NOW() - au.last_seen)) as seconds_ago,
         u.name as user_name,
-        u.email as user_email,
-        us.page_url,
-        us.user_agent,
-        us.ip_address,
-        us.visited_at as last_seen,
-        EXTRACT(EPOCH FROM (NOW() - us.visited_at)) as seconds_ago,
-        CASE 
-          WHEN us.user_agent ILIKE '%Mobile%' THEN 'Mobile'
-          WHEN us.user_agent ILIKE '%Tablet%' THEN 'Tablet'
-          ELSE 'Desktop'
-        END as device_type,
-        CASE 
-          WHEN us.user_agent ILIKE '%Chrome%' THEN 'Chrome'
-          WHEN us.user_agent ILIKE '%Firefox%' THEN 'Firefox'
-          WHEN us.user_agent ILIKE '%Safari%' THEN 'Safari'
-          WHEN us.user_agent ILIKE '%Edge%' THEN 'Edge'
-          ELSE 'Other'
-        END as browser
-      FROM user_sessions us
-      LEFT JOIN users u ON us.user_id = u.id
-      WHERE us.visited_at >= NOW() - INTERVAL '15 minutes'
-      ORDER BY us.visited_at DESC
+        u.email as user_email
+      FROM active_users au
+      LEFT JOIN users u ON au.user_id = u.id
+      WHERE au.last_seen >= ${cutoffTime}
+        AND (u.id IS NULL OR u.is_admin = false)   -- exclude admins, include guests
+      ORDER BY au.last_seen DESC
     `;
 
-    // Cast to array to satisfy TypeScript (Neon returns a union that lacks .length)
-    const activeUsers = result as any[];
-    const count = activeUsers.length;
+    // Count unique sessions
+    const countResult = await sql`
+      SELECT COUNT(DISTINCT au.session_id) as count
+      FROM active_users au
+      LEFT JOIN users u ON au.user_id = u.id
+      WHERE au.last_seen >= ${cutoffTime}
+        AND (u.id IS NULL OR u.is_admin = false)
+    `;
 
-    return NextResponse.json({ count, users: activeUsers });
+    const total = countResult[0]?.count || 0;
+
+    // Format device_type to match dashboard expectations (Mobile, Tablet, Desktop)
+    const formattedUsers = (users as any[]).map((user: any) => ({
+      ...user,
+      device_type: user.device_type === 'mobile' ? 'Mobile' : 
+                    user.device_type === 'tablet' ? 'Tablet' : 'Desktop',
+    }));
+
+    return NextResponse.json({
+      count: total,
+      users: formattedUsers,
+      cutoff: cutoffTime,
+    });
   } catch (err) {
     console.error('Failed to fetch active users:', err);
     return NextResponse.json(
