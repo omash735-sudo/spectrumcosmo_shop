@@ -74,21 +74,18 @@ export default function LoginPage() {
   const isDark = currentTheme === 'dark';
 
   const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+    flow: 'auth-code',
+    onSuccess: async (codeResponse) => {
       setGoogleLoading(true);
       setError('');
       try {
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const user = await userInfo.json();
+        console.log('Google auth code received');
         
         const res = await fetch('/api/auth/google-callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            accessToken: tokenResponse.access_token,
-            user: user 
+          body: JSON.stringify({
+            code: codeResponse.code,
           }),
         });
         
@@ -305,9 +302,6 @@ export default function LoginPage() {
 
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // ============================================================
-  // DESKTOP LAYOUT (≥1024px)
-  // ============================================================
   if (isDesktop) {
     return (
       <>
@@ -319,7 +313,6 @@ export default function LoginPage() {
         )}
 
         <div className="flex h-screen overflow-hidden bg-black">
-          {/* LEFT SIDE – 60% */}
           <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
@@ -396,7 +389,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – 40% */}
           <div 
             className="relative flex-[2] flex items-center justify-center p-6 overflow-hidden"
             style={{
@@ -434,7 +426,6 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                {/* Google Sign-In Button (Desktop) */}
                 <div className="mb-4">
                   <button
                     onClick={() => googleLogin()}
@@ -649,9 +640,6 @@ export default function LoginPage() {
     );
   }
 
-  // ============================================================
-  // MOBILE LAYOUT (<1024px)
-  // ============================================================
   return (
     <>
       {isTestAccount && (
@@ -711,7 +699,6 @@ export default function LoginPage() {
               Sign in to manage your account and orders
             </p>
 
-            {/* Google Sign-In Button (Mobile) */}
             <div className="mb-4">
               <button
                 onClick={() => googleLogin()}
