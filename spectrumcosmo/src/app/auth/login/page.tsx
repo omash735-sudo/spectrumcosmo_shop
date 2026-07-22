@@ -11,8 +11,9 @@ import {
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { signIn } from '@/auth'; 
 
-// Updated carousel images (desktop only)
+
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
@@ -115,6 +116,7 @@ export default function LoginPage() {
     setEmailError(validateEmail(value));
   };
 
+  // ---- UPDATED: use Auth.js signIn ----
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -132,50 +134,41 @@ export default function LoginPage() {
     setNeedsVerification(false);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: form.email, 
-          password: form.password 
-        }),
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false, // we handle redirect manually
       });
 
-      const data = await res.json();
-
-      if (res.status === 428 && data.requiresCaptcha) {
-        setRequiresCaptcha(true);
-        setShowCaptcha(true);
-        setPendingCredentials({ email: form.email, password: form.password });
+      if (result?.error) {
+        // Special error types thrown from authorize()
+        if (result.error === 'CAPTCHA_REQUIRED') {
+          setRequiresCaptcha(true);
+          setShowCaptcha(true);
+          setPendingCredentials({ email: form.email, password: form.password });
+          setLoading(false);
+          return;
+        }
+        if (result.error === 'VERIFICATION_REQUIRED') {
+          setNeedsVerification(true);
+          setUnverifiedEmail(form.email);
+          setError('Please verify your email before logging in.');
+          setLoading(false);
+          return;
+        }
+        setError(result.error || 'Invalid credentials');
         setLoading(false);
         return;
       }
 
-      if (res.status === 403 && data.needsVerification) {
-        setNeedsVerification(true);
-        setUnverifiedEmail(data.email || form.email);
-        setError(data.error || 'Please verify your email before logging in.');
-        setLoading(false);
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error || 'Invalid credentials');
-        setLoading(false);
-        return;
-      }
-
-      if (data.user?.is_test_account) {
-        setIsTestAccount(true);
-      }
-
+      // Success
       setSuccess('Welcome back! Redirecting...');
       setTimeout(() => {
         router.push('/account');
         router.refresh();
       }, 1200);
-    } catch {
-      setError('Something went wrong. Try again.');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -214,27 +207,23 @@ export default function LoginPage() {
     }
   };
 
+  // ---- UPDATED: use signIn with captcha ----
   const handleCaptchaVerify = async (captchaToken: string, captchaAnswer: string) => {
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: pendingCredentials.email,
-          password: pendingCredentials.password,
-          captchaToken,
-          captchaAnswer,
-        }),
+      const result = await signIn('credentials', {
+        email: pendingCredentials.email,
+        password: pendingCredentials.password,
+        captchaToken,
+        captchaAnswer,
+        redirect: false,
       });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.error || 'Verification failed');
+
+      if (result?.error) {
+        setError(result.error || 'Verification failed');
         setShowCaptcha(false);
         throw new Error('CAPTCHA verification failed');
       }
-      
+
       setShowCaptcha(false);
       setRequiresCaptcha(false);
       setSuccess('Welcome back! Redirecting...');
@@ -256,7 +245,7 @@ export default function LoginPage() {
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
   // ============================================================
-  // DESKTOP LAYOUT (≥1024px) – 60/40 split (flex-[3] / flex-[2])
+  // DESKTOP LAYOUT (≥1024px) – 60/40 split
   // ============================================================
   if (isDesktop) {
     return (
@@ -285,7 +274,6 @@ export default function LoginPage() {
               </div>
             ))}
             
-            {/* Solid overlay – no gradients */}
             <div className="absolute inset-0 bg-black/60" />
 
             <div className="relative h-full flex flex-col justify-center px-10 z-10">
@@ -333,7 +321,6 @@ export default function LoginPage() {
                 })}
               </div>
 
-              {/* Slide Indicators */}
               <div className="absolute bottom-8 left-10 flex gap-1.5">
                 {desktopSlides.map((_, i) => (
                   <button
@@ -576,7 +563,7 @@ export default function LoginPage() {
   }
 
   // ============================================================
-  // MOBILE LAYOUT (<1024px) – unchanged
+  // MOBILE LAYOUT (<1024px)
   // ============================================================
   return (
     <>
