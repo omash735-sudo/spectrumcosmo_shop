@@ -16,7 +16,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         captchaAnswer: { label: "captchaAnswer", type: "text" },
       },
       async authorize(credentials) {
-        
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
