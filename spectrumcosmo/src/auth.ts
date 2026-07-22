@@ -1,4 +1,4 @@
-// auth.ts – root of project
+// src/auth.ts
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -7,7 +7,6 @@ import AppleProvider from "next-auth/providers/apple";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    // ----- Credentials (calls your existing /api/auth/login) -----
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -17,6 +16,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         captchaAnswer: { label: "captchaAnswer", type: "text" },
       },
       async authorize(credentials) {
+        
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password are required");
+        }
+
         const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -37,7 +41,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error(data.error || "Invalid credentials");
         }
 
-        // Return user object – Auth.js will create the session
         return {
           id: data.user.id,
           email: data.user.email,
@@ -45,8 +48,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         };
       },
     }),
-
-    // ----- OAuth providers -----
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
@@ -59,14 +60,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTH_APPLE_ID!,
       clientSecret: process.env.AUTH_APPLE_SECRET!,
     }),
-    // TikTok – we can add it later using a custom provider
   ],
-
   pages: {
-    signIn: "/auth/login",   // use your existing login page
-    error: "/auth/login",    // we'll handle errors there
+    signIn: "/auth/login",
+    error: "/auth/login",
   },
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -85,7 +83,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
-
   session: { strategy: "jwt" },
   trustHost: true,
 });
