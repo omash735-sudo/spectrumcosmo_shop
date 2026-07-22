@@ -36,7 +36,7 @@
     "date-fns": "^3.6.0",
     "xlsx": "^0.18.5",
     "framer-motion": "^11.0.0",
-    "next-auth": "^4.24.7"
+    "@react-oauth/google": "^0.12.1"
   },
   "devDependencies": {
     "typescript": "^5",
