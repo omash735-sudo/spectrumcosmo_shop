@@ -3,7 +3,8 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+// Export ThemeProvider for backward compatibility with your layout
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
   return (
@@ -19,3 +20,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </GoogleOAuthProvider>
   );
 }
+
+// Also export as Providers for flexibility
+export { ThemeProvider as Providers };
