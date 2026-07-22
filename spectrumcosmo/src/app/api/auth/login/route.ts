@@ -1,5 +1,7 @@
+// app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { getDb } from '@/lib/db';
 import { logSecurityEvent, isIPBlocked, recordFailedLogin } from '@/lib/security-logger';
 import { getRedis } from '@/lib/redis'; 
@@ -18,7 +20,7 @@ const LOGIN_CONFIG = {
   blockMinutes: 15,
 };
 
-// Email transporter (kept at top level – fine)
+// Email transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -145,12 +147,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Find user
+    // 5. Find user (including soft-deleted check)
     const sql = getDb();
     const [user] = await sql`
       SELECT id, name, email, password_hash, account_status, email_verified 
       FROM users 
       WHERE email = ${email.toLowerCase()}
+        AND (deleted_at IS NULL OR deleted_at > NOW())
     `;
 
     if (!user) {
@@ -279,8 +282,20 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // 11. Return user data (no cookie – Auth.js handles session)
-    return NextResponse.json({ 
+    // 11. Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name,
+        role: 'customer' 
+      },
+      process.env.NEXTAUTH_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // 12. Create response with user data and set cookie
+    const response = NextResponse.json({ 
       success: true,
       user: { 
         id: user.id, 
@@ -288,6 +303,17 @@ export async function POST(req: NextRequest) {
         email: user.email 
       } 
     });
+
+    response.cookies.set('user_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? 'spectrumcosmo.vercel.app' : undefined,
+    });
+
+    return response;
     
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
