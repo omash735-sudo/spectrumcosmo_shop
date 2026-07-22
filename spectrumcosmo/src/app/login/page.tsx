@@ -1,4 +1,4 @@
-// app/auth/login/page.tsx
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -76,6 +76,7 @@ export default function LoginPage() {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
+      setError('');
       try {
         const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
@@ -91,23 +92,25 @@ export default function LoginPage() {
           }),
         });
         
+        const data = await res.json();
+        
         if (res.ok) {
           setSuccess('Welcome! Redirecting...');
           setTimeout(() => {
-            router.push('/account');
-            router.refresh();
-          }, 1200);
+            window.location.href = '/account';
+          }, 500);
         } else {
-          const data = await res.json();
           setError(data.error || 'Google login failed');
+          setGoogleLoading(false);
         }
       } catch (err) {
+        console.error('Google login error:', err);
         setError('Google login failed. Please try again.');
-      } finally {
         setGoogleLoading(false);
       }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Google OAuth error:', error);
       setError('Google login failed. Please try again.');
       setGoogleLoading(false);
     },
