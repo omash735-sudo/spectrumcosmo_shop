@@ -3,20 +3,28 @@ import { getDb } from '@/lib/db';
 import { getAdminFromRequest } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  const admin = getAdminFromRequest(req as any);
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const sql = getDb();
+    const admin = getAdminFromRequest(req as any);
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const url = new URL(req.url);
-    const timeRange = url.searchParams.get('timeRange') || '15'; // minutes
+    const timeRangeParam = url.searchParams.get('timeRange') || '15';
+    let cutoffMinutes = parseInt(timeRangeParam, 10);
 
-    const cutoffMinutes = parseInt(timeRange);
-    const cutoffTime = new Date(Date.now() - cutoffMinutes * 60 * 1000);
+    // Ensure we have a positive number, default to 15 if invalid
+    if (isNaN(cutoffMinutes) || cutoffMinutes < 1) {
+      cutoffMinutes = 15;
+    }
 
-    
+    // Calculate cutoff date
+    const cutoffTime = new Date();
+    cutoffTime.setMinutes(cutoffTime.getMinutes() - cutoffMinutes);
+
+    const sql = getDb();
+
+    // Fetch active users, excluding admins
     const users = await sql`
       SELECT 
         au.session_id,
@@ -33,8 +41,8 @@ export async function GET(req: Request) {
         u.email as user_email
       FROM active_users au
       LEFT JOIN users u ON au.user_id = u.id
-      WHERE au.last_seen >= ${cutoffTime}
-        AND (u.id IS NULL OR u.is_admin = false)   -- exclude admins, include guests
+      WHERE au.last_seen >= ${cutoffTime.toISOString()}::timestamptz
+        AND (u.id IS NULL OR u.is_admin = false)
       ORDER BY au.last_seen DESC
     `;
 
@@ -43,13 +51,13 @@ export async function GET(req: Request) {
       SELECT COUNT(DISTINCT au.session_id) as count
       FROM active_users au
       LEFT JOIN users u ON au.user_id = u.id
-      WHERE au.last_seen >= ${cutoffTime}
+      WHERE au.last_seen >= ${cutoffTime.toISOString()}::timestamptz
         AND (u.id IS NULL OR u.is_admin = false)
     `;
 
     const total = countResult[0]?.count || 0;
 
-    // Format device_type to match dashboard expectations (Mobile, Tablet, Desktop)
+    // Format device_type to match dashboard expectations
     const formattedUsers = (users as any[]).map((user: any) => ({
       ...user,
       device_type: user.device_type === 'mobile' ? 'Mobile' : 
@@ -59,7 +67,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       count: total,
       users: formattedUsers,
-      cutoff: cutoffTime,
+      cutoff: cutoffTime.toISOString(),
     });
   } catch (err) {
     console.error('Failed to fetch active users:', err);
