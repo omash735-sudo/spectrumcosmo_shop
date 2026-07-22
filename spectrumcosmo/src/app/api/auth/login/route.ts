@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { logSecurityEvent, isIPBlocked, recordFailedLogin } from '@/lib/security-logger';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis'; 
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
@@ -18,9 +18,7 @@ const LOGIN_CONFIG = {
   blockMinutes: 15,
 };
 
-const redis = Redis.fromEnv();
-
-// Email transporter
+// Email transporter (kept at top level – fine)
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -120,7 +118,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Check rate limiting in Redis
+    // 3. Get Redis client (safe – dummy during build)
+    const redis = getRedis();
+
+    // 4. Check rate limiting in Redis
     const rateLimitKey = `login:attempts:${ipAddress}`;
     const attempts = await redis.get<number>(rateLimitKey) || 0;
     
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Find user
+    // 5. Find user
     const sql = getDb();
     const [user] = await sql`
       SELECT id, name, email, password_hash, account_status, email_verified 
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Check account status
+    // 6. Check account status
     if (user.account_status === 'frozen' || user.account_status === 'banned') {
       await logSecurityEvent({
         actionType: 'blocked_account',
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. Validate password
+    // 7. Validate password
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     
     if (!passwordValid) {
@@ -212,7 +213,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. Check email verification
+    // 8. Check email verification
     if (!user.email_verified) {
       try {
         const token = await createEmailVerification(user.id, user.email);
@@ -260,10 +261,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 8. Clear rate limiting
+    // 9. Clear rate limiting
     await redis.del(rateLimitKey);
 
-    // 9. Log successful login
+    // 10. Log successful login
     await logSecurityEvent({
       actionType: 'successful_login',
       endpoint: '/api/auth/login',
@@ -278,7 +279,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // 10. Return user data (no cookie – Auth.js will handle session)
+    // 11. Return user data (no cookie – Auth.js handles session)
     return NextResponse.json({ 
       success: true,
       user: { 
@@ -309,14 +310,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Optional: GET endpoint for captcha (unchanged)
+// GET endpoint for captcha – also uses safe Redis
 export async function GET(req: NextRequest) {
   const num1 = Math.floor(Math.random() * 10) + 1;
   const num2 = Math.floor(Math.random() * 10) + 1;
   const answer = String(num1 + num2);
   const token = crypto.randomBytes(32).toString('hex');
   
-  const redis = Redis.fromEnv();
+  const redis = getRedis(); 
   await redis.setex(`captcha:${token}`, 300, answer);
   
   return NextResponse.json({
