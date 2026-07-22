@@ -68,7 +68,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
       }
@@ -77,12 +76,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.email = token.email ?? undefined; // also convert here
+        session.user.email = token.email ?? undefined;
         session.user.name = token.name ?? undefined;
       }
       return session;
     },
   },
   session: { strategy: "jwt" },
-  trustHost: true,
+  
 });
