@@ -223,9 +223,8 @@ export default function LoginPage() {
 
       setSuccess('Welcome back! Redirecting...');
       setTimeout(() => {
-        router.push('/account');
-        router.refresh();
-      }, 1200);
+        window.location.href = '/account';
+      }, 500);
     } catch {
       setError('Something went wrong. Try again.');
     } finally {
@@ -291,9 +290,8 @@ export default function LoginPage() {
       setRequiresCaptcha(false);
       setSuccess('Welcome back! Redirecting...');
       setTimeout(() => {
-        router.push('/account');
-        router.refresh();
-      }, 1200);
+        window.location.href = '/account';
+      }, 500);
     } catch (err) {
       setError('CAPTCHA verification failed. Please try again.');
       throw err;
