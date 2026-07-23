@@ -11,7 +11,6 @@ import {
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGoogleLogin } from '@react-oauth/google';
 
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
@@ -73,45 +72,25 @@ export default function LoginPage() {
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
 
-  const googleLogin = useGoogleLogin({
-    flow: 'auth-code',
-    onSuccess: async (codeResponse) => {
-      setGoogleLoading(true);
-      setError('');
-      try {
-        console.log('Google auth code received');
-        
-        const res = await fetch('/api/auth/google-callback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: codeResponse.code,
-          }),
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) {
-          setSuccess('Welcome! Redirecting...');
-          setTimeout(() => {
-            window.location.href = '/account';
-          }, 500);
-        } else {
-          setError(data.error || 'Google login failed');
-          setGoogleLoading(false);
-        }
-      } catch (err) {
-        console.error('Google login error:', err);
-        setError('Google login failed. Please try again.');
-        setGoogleLoading(false);
-      }
-    },
-    onError: (error) => {
-      console.error('Google OAuth error:', error);
-      setError('Google login failed. Please try again.');
+  const handleGoogleLogin = () => {
+    setGoogleLoading(true);
+    setError('');
+    
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      setError('Google Sign-In is not configured. Please try again later.');
       setGoogleLoading(false);
-    },
-  });
+      return;
+    }
+    
+    const redirectUri = `${window.location.origin}/api/auth/google-callback`;
+    const scope = 'email profile openid';
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    
+    window.location.href = authUrl;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -428,7 +407,7 @@ export default function LoginPage() {
 
                 <div className="mb-4">
                   <button
-                    onClick={() => googleLogin()}
+                    onClick={handleGoogleLogin}
                     disabled={googleLoading}
                     className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -701,7 +680,7 @@ export default function LoginPage() {
 
             <div className="mb-4">
               <button
-                onClick={() => googleLogin()}
+                onClick={handleGoogleLogin}
                 disabled={googleLoading}
                 className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
