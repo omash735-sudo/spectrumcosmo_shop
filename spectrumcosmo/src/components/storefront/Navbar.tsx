@@ -107,6 +107,7 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [bannerData, setBannerData] = useState<BannerData | null>(null);
   const [bannerLoading, setBannerLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
   const { resolvedTheme } = useSettings();
@@ -136,6 +137,24 @@ export default function Navbar() {
     };
     fetchBanner();
   }, []);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (user) {
+      const fetchUnreadCount = async () => {
+        try {
+          const res = await fetch('/api/notifications/unread-count');
+          if (res.ok) {
+            const data = await res.json();
+            setUnreadCount(data.count || 0);
+          }
+        } catch (err) {
+          console.error('Failed to fetch unread count:', err);
+        }
+      };
+      fetchUnreadCount();
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -216,6 +235,14 @@ export default function Navbar() {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
+        @keyframes slide-in {
+          from {
+            transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
         .whatsapp-float { animation: float 2s ease-in-out infinite; }
         .whatsapp-pulse { animation: pulse-ring 1.5s infinite; }
         .dropdown-content {
@@ -224,10 +251,13 @@ export default function Navbar() {
         .banner-marquee {
           animation: marquee 20s linear infinite;
         }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
       `}</style>
 
       <header className={clsx(
-        'sticky top-0 z-50 transition-all duration-300',
+        'sticky top-0 z-50 transition-all duration-300 overflow-x-hidden w-full',
         scrolled 
           ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md' 
           : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
@@ -280,7 +310,7 @@ export default function Navbar() {
         )}
 
         {/* Desktop Header */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
               
@@ -391,35 +421,90 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* Tablet Header - visible between md and lg */}
+        <div className="hidden md:block lg:hidden">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              
+              {/* Logo - smaller on tablet */}
+              <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
+                <img src={logoSrc} alt="SpectrumCosmo" className="h-8 w-auto transition-transform group-hover:scale-105" />
+                <span className="text-lg font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
+                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
+                </span>
+              </Link>
+
+              {/* Navigation - condensed for tablet */}
+              <nav className="flex items-center gap-0.5 flex-1 justify-center px-2 overflow-x-auto">
+                {desktopLinks.slice(0, 4).map(link => {
+                  const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={clsx(
+                        'px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 whitespace-nowrap',
+                        isActive
+                          ? 'bg-[var(--primary)] text-white shadow-sm'
+                          : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--primary)]'
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* Right Section - tablet */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {isLoggedIn && unreadCount > 0 && <NotificationBell />}
+                <button 
+                  onClick={openCart} 
+                  className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart size={18} className="text-[var(--foreground-muted)]" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[9px] font-bold min-w-[16px] h-3.5 px-1 rounded-full flex items-center justify-center shadow-sm">
+                      {totalItems > 99 ? '99+' : totalItems}
+                    </span>
+                  )}
+                </button>
+                <UserMenu />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Mobile Header */}
-        <div className="md:hidden px-4 py-3">
-          <div className="flex items-center justify-between">
+        <div className="md:hidden px-3 py-2.5">
+          <div className="flex items-center justify-between gap-1 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(true)} 
-              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex-shrink-0"
               aria-label="Menu"
             >
               <Menu size={22} className="text-[var(--foreground-muted)]" />
             </button>
 
-            <Link href="/" className="flex items-center gap-2">
-              <img src={logoSrc} alt="SpectrumCosmo" className="h-7 w-auto" />
-              <span className="text-base font-bold text-[var(--foreground)]">
+            <Link href="/" className="flex items-center gap-1.5 flex-shrink-0 min-w-0">
+              <img src={logoSrc} alt="SpectrumCosmo" className="h-6 w-auto" />
+              <span className="text-sm font-bold text-[var(--foreground)] truncate">
                 Spectrum<span className="text-[var(--primary)]">Cosmo</span>
               </span>
             </Link>
 
-            <div className="flex items-center gap-1">
-              {isLoggedIn && <NotificationBell />}
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {isLoggedIn && unreadCount > 0 && <NotificationBell />}
               <UserMenu />
               <button 
                 onClick={openCart} 
                 className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
                 aria-label="Cart"
               >
-                <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
+                <ShoppingCart size={19} className="text-[var(--foreground-muted)]" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[9px] font-bold min-w-[15px] h-3.5 px-1 rounded-full flex items-center justify-center">
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
                 )}
@@ -459,11 +544,15 @@ export default function Navbar() {
                   </div>
                 </div>
                 {isLoggedIn ? (
-                  <Link href="/account/profile" onClick={closeMobileMenu} className="text-xs text-[var(--primary)] font-medium hover:underline">
+                  <Link 
+                    href="/account/profile" 
+                    onClick={closeMobileMenu} 
+                    className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+                  >
                     Profile
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white px-3 py-1 rounded-full hover:bg-[var(--primary-hover)]">
+                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white font-semibold px-4 py-2 rounded-full hover:bg-[var(--primary-hover)]">
                     Sign In
                   </Link>
                 )}
@@ -513,12 +602,7 @@ export default function Navbar() {
                 <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> FAQ
               </Link>
               
-              <button onClick={openCart} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-left text-[var(--foreground-muted)]">
-                <ShoppingCart size={18} className="text-[var(--foreground-muted)]" /> Cart
-                {totalItems > 0 && (
-                  <span className="ml-auto bg-[var(--primary)]/10 text-[var(--primary)] text-xs px-2 py-0.5 rounded-full">{totalItems}</span>
-                )}
-              </button>
+              {/* Removed duplicate cart link from here */}
               
               {isLoggedIn && (
                 <>
