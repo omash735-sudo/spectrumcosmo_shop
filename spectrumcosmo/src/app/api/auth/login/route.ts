@@ -183,6 +183,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ============================================================
+    // FIX: Check if this is a Google-only account (no password_hash)
+    // ============================================================
+    if (!user.password_hash) {
+      await logSecurityEvent({
+        actionType: 'failed_login',
+        endpoint: '/api/auth/login',
+        requestMethod: 'POST',
+        responseStatus: 400,
+        ipAddress,
+        userAgent,
+        userId: user.id,
+        details: { 
+          email: user.email, 
+          reason: 'Google-only account - no password set' 
+        }
+      });
+      return NextResponse.json(
+        { 
+          error: 'This account uses Google sign-in. Please click "Continue with Google" instead.',
+          useGoogle: true 
+        },
+        { status: 400 }
+      );
+    }
+
     const passwordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordValid) {
