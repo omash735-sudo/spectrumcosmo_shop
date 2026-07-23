@@ -398,7 +398,7 @@ export default function Navbar() {
                 <CurrencySelector />
                 <SearchBar />
                 
-                {isLoggedIn && <NotificationBell />}
+                {isLoggedIn && unreadCount > 0 && <NotificationBell />}
                 
                 <div className="relative group">
                   <button 
@@ -602,20 +602,12 @@ export default function Navbar() {
                 <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> FAQ
               </Link>
               
-              {/* Removed duplicate cart link from here */}
+              {/* Cart link removed as requested */}
               
               {isLoggedIn && (
                 <>
                   <div className="border-t my-3 mx-3 border-[var(--border)]"></div>
-                  <Link href="/account/orders" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
-                    <Clock size={18} className="text-[var(--foreground-muted)]" /> Orders
-                  </Link>
-                  <Link href="/account/wishlist" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
-                    <Heart size={18} className="text-[var(--foreground-muted)]" /> Wishlist
-                  </Link>
-                  <Link href="/account/settings" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
-                    <Settings size={18} className="text-[var(--foreground-muted)]" /> Settings
-                  </Link>
+                  {/* Orders, Wishlist, Settings removed as requested */}
                 </>
               )}
             </div>
