@@ -257,7 +257,7 @@ export default function Navbar() {
       `}</style>
 
       <header className={clsx(
-        'sticky top-0 z-50 transition-all duration-300 overflow-x-hidden w-full',
+        'sticky top-0 z-50 transition-all duration-300',
         scrolled 
           ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md' 
           : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
@@ -310,7 +310,7 @@ export default function Navbar() {
         )}
 
         {/* Desktop Header */}
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
               
@@ -425,16 +425,12 @@ export default function Navbar() {
         <div className="hidden md:block lg:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              
-              {/* Logo - smaller on tablet */}
               <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-8 w-auto transition-transform group-hover:scale-105" />
                 <span className="text-lg font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
                   Spectrum<span className="text-[var(--primary)]">Cosmo</span>
                 </span>
               </Link>
-
-              {/* Navigation - condensed for tablet */}
               <nav className="flex items-center gap-0.5 flex-1 justify-center px-2 overflow-x-auto">
                 {desktopLinks.slice(0, 4).map(link => {
                   const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
@@ -454,15 +450,9 @@ export default function Navbar() {
                   );
                 })}
               </nav>
-
-              {/* Right Section - tablet */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
-                <button 
-                  onClick={openCart} 
-                  className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
-                  aria-label="Cart"
-                >
+                <button onClick={openCart} className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors" aria-label="Cart">
                   <ShoppingCart size={18} className="text-[var(--foreground-muted)]" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[9px] font-bold min-w-[16px] h-3.5 px-1 rounded-full flex items-center justify-center shadow-sm">
@@ -547,12 +537,12 @@ export default function Navbar() {
                   <Link 
                     href="/account/profile" 
                     onClick={closeMobileMenu} 
-                    className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm"
+                    className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm flex items-center justify-center"
                   >
                     Profile
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white font-semibold px-4 py-2 rounded-full hover:bg-[var(--primary-hover)]">
+                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white font-semibold px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] flex items-center justify-center">
                     Sign In
                   </Link>
                 )}
@@ -601,15 +591,6 @@ export default function Navbar() {
               <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
                 <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> FAQ
               </Link>
-              
-              {/* Cart link removed as requested */}
-              
-              {isLoggedIn && (
-                <>
-                  <div className="border-t my-3 mx-3 border-[var(--border)]"></div>
-                  {/* Orders, Wishlist, Settings removed as requested */}
-                </>
-              )}
             </div>
 
             <div className="p-5 border-t border-[var(--border)]">
