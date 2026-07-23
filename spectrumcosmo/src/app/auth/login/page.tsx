@@ -11,6 +11,7 @@ import {
 import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
@@ -35,15 +36,6 @@ const LOGOS = {
   dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
 };
 
-const GoogleIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
-    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
-    <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
-    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
-    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
-  </svg>
-);
-
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,32 +57,11 @@ export default function LoginPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const [emailError, setEmailError] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
-
-  const handleGoogleLogin = () => {
-    setGoogleLoading(true);
-    setError('');
-    
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    
-    if (!clientId) {
-      setError('Google Sign-In is not configured. Please try again later.');
-      setGoogleLoading(false);
-      return;
-    }
-    
-    const redirectUri = `${window.location.origin}/api/auth/google-callback`;
-    const scope = 'email profile openid';
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-    
-    window.location.href = authUrl;
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -126,6 +97,15 @@ export default function LoginPage() {
     }
     if (errorParam === 'expired_token') {
       setError('Verification link expired. Request a new one below.');
+      setTimeout(() => setError(''), 5000);
+    }
+    // Google OAuth error handling
+    if (errorParam === 'google_auth_failed') {
+      setError('Google sign-in failed. Please try again.');
+      setTimeout(() => setError(''), 5000);
+    }
+    if (errorParam === 'no_code' || errorParam === 'callback_failed') {
+      setError('Something went wrong signing in with Google. Please try again.');
       setTimeout(() => setError(''), 5000);
     }
   }, [searchParams]);
@@ -199,8 +179,9 @@ export default function LoginPage() {
 
       setSuccess('Welcome back! Redirecting...');
       setTimeout(() => {
-        window.location.href = '/account';
-      }, 500);
+        router.push('/account');
+        router.refresh();
+      }, 1200);
     } catch {
       setError('Something went wrong. Try again.');
     } finally {
@@ -266,8 +247,9 @@ export default function LoginPage() {
       setRequiresCaptcha(false);
       setSuccess('Welcome back! Redirecting...');
       setTimeout(() => {
-        window.location.href = '/account';
-      }, 500);
+        router.push('/account');
+        router.refresh();
+      }, 1200);
     } catch (err) {
       setError('CAPTCHA verification failed. Please try again.');
       throw err;
@@ -279,8 +261,22 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const handleGoogleSuccess = () => {
+    setSuccess('Welcome! Redirecting...');
+    setTimeout(() => {
+      window.location.href = '/account';
+    }, 500);
+  };
+
+  const handleGoogleError = (errorMsg: string) => {
+    setError(errorMsg);
+  };
+
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
+  // ============================================================
+  // DESKTOP LAYOUT (≥1024px)
+  // ============================================================
   if (isDesktop) {
     return (
       <>
@@ -292,6 +288,7 @@ export default function LoginPage() {
         )}
 
         <div className="flex h-screen overflow-hidden bg-black">
+          {/* LEFT SIDE – 60% */}
           <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
@@ -368,6 +365,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* RIGHT SIDE – 40% */}
           <div 
             className="relative flex-[2] flex items-center justify-center p-6 overflow-hidden"
             style={{
@@ -405,21 +403,13 @@ export default function LoginPage() {
                   </p>
                 </div>
 
+                {/* Google Sign-In Button */}
                 <div className="mb-4">
-                  <button
-                    onClick={handleGoogleLogin}
-                    disabled={googleLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {googleLoading ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <GoogleIcon />
-                    )}
-                    <span className="text-sm font-medium">
-                      {googleLoading ? 'Signing in...' : 'Sign in with Google'}
-                    </span>
-                  </button>
+                  <GoogleSignInButton 
+                    isDark={isDark}
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                  />
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
                       <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
@@ -619,6 +609,9 @@ export default function LoginPage() {
     );
   }
 
+  // ============================================================
+  // MOBILE LAYOUT (<1024px)
+  // ============================================================
   return (
     <>
       {isTestAccount && (
@@ -678,21 +671,13 @@ export default function LoginPage() {
               Sign in to manage your account and orders
             </p>
 
+            {/* Google Sign-In Button */}
             <div className="mb-4">
-              <button
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 px-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {googleLoading ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                <span className="text-sm font-medium">
-                  {googleLoading ? 'Signing in...' : 'Sign in with Google'}
-                </span>
-              </button>
+              <GoogleSignInButton 
+                isDark={isDark}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`} />
