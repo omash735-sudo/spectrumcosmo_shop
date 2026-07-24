@@ -99,7 +99,6 @@ export default function LoginPage() {
       setError('Verification link expired. Request a new one below.');
       setTimeout(() => setError(''), 5000);
     }
-    // Google OAuth error handling
     if (errorParam === 'google_auth_failed') {
       setError('Google sign-in failed. Please try again.');
       setTimeout(() => setError(''), 5000);
@@ -274,9 +273,6 @@ export default function LoginPage() {
 
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // ============================================================
-  // DESKTOP LAYOUT (≥1024px)
-  // ============================================================
   if (isDesktop) {
     return (
       <>
@@ -288,7 +284,6 @@ export default function LoginPage() {
         )}
 
         <div className="flex h-screen overflow-hidden bg-black">
-          {/* LEFT SIDE – 60% */}
           <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
@@ -365,7 +360,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – 40% */}
           <div 
             className="relative flex-[2] flex items-center justify-center p-6 overflow-hidden"
             style={{
@@ -403,7 +397,6 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                {/* Google Sign-In Button */}
                 <div className="mb-4">
                   <GoogleSignInButton 
                     isDark={isDark}
@@ -609,9 +602,6 @@ export default function LoginPage() {
     );
   }
 
-  // ============================================================
-  // MOBILE LAYOUT (<1024px)
-  // ============================================================
   return (
     <>
       {isTestAccount && (
@@ -671,7 +661,6 @@ export default function LoginPage() {
               Sign in to manage your account and orders
             </p>
 
-            {/* Google Sign-In Button */}
             <div className="mb-4">
               <GoogleSignInButton 
                 isDark={isDark}
