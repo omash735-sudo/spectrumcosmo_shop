@@ -1,4 +1,3 @@
-// app/api/banner/route.ts
 import { NextResponse } from 'next/server';
 import { getDb, queryOne } from '@/lib/db';
 
@@ -20,12 +19,8 @@ export async function GET() {
 
     if (!banner) {
       return NextResponse.json({
-        is_active: true,
-        items: [
-          { icon: 'Truck', text: 'Free shipping over 50,000 MWK' },
-          { icon: 'Shield', text: '30-day returns' },
-          { icon: 'Tag', text: 'Subscribe for 10% off' }
-        ],
+        is_active: false,
+        items: [],
         background_color: '#C96712',
         text_color: '#FFFFFF'
       });
