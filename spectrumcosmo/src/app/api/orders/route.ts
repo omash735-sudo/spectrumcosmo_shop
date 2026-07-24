@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import { getVerifiedUser } from '@/lib/auth';
+import crypto from 'crypto';
 
 function renderEmailTemplate(template: string, placeholders: Record<string, string>): string {
   let result = template;
@@ -64,6 +65,50 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
+    const deductedItems: { product_id: string; quantity: number }[] = [];
+    let stockError: string | null = null;
+
+    for (const item of items) {
+      const quantity = Number(item.quantity);
+      if (isNaN(quantity) || quantity <= 0) continue;
+
+      const productId = item.product_id || item.id;
+      if (!productId) {
+        stockError = `Missing product reference for "${item.name || item.product_name || 'an item'}"`;
+        break;
+      }
+
+      const result = await queryAsArray<{ id: string }>`
+        UPDATE products
+        SET stock_quantity = stock_quantity - ${quantity}
+        WHERE id = ${productId} AND stock_quantity >= ${quantity}
+        RETURNING id
+      `;
+
+      if (result.length === 0) {
+        stockError = `"${item.name || item.product_name || 'This item'}" is no longer available in the quantity you requested.`;
+        break;
+      }
+
+      deductedItems.push({ product_id: productId, quantity });
+    }
+
+    if (stockError) {
+      for (const deducted of deductedItems) {
+        await sql`
+          UPDATE products 
+          SET stock_quantity = stock_quantity + ${deducted.quantity}
+          WHERE id = ${deducted.product_id}
+        `;
+      }
+      return NextResponse.json({ error: stockError }, { status: 409 });
+    }
+
+    const orderId = crypto.randomUUID();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+    const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
     let isAutomatic = false;
     let paymentInstructions = '';
     if (payment_provider_id) {
@@ -81,7 +126,7 @@ export async function POST(req: NextRequest) {
       `;
       isAutomatic = provider?.type === 'automatic';
       paymentInstructions = provider?.instructions || '';
-      
+
       if (!isAutomatic && provider) {
         paymentInstructions = `
           <strong>${provider.name}</strong><br/>
@@ -101,90 +146,97 @@ export async function POST(req: NextRequest) {
       settingsMap[s.setting_key] = s.setting_value;
     });
 
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
-    const orderNumber = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      await (sql as any).transaction((tx: any) => {
+        const statements = [
+          tx`
+            INSERT INTO orders (
+              id,
+              customer_name, 
+              customer_email, 
+              phone_number, 
+              delivery_address,
+              payment_note, 
+              payment_method, 
+              total_amount, 
+              status, 
+              user_id, 
+              created_at,
+              custom_delivery_method,
+              delivery_fee, 
+              payment_provider_id, 
+              payment_status,
+              promo_code,
+              referral_code,
+              discount_amount,
+              tax_amount,
+              expires_at,
+              order_number,
+              stock_deducted
+            ) VALUES (
+              ${orderId}::uuid,
+              ${customer_name}, 
+              ${customer_email}, 
+              ${phone_number}, 
+              ${location},
+              ${notes || ''}, 
+              ${payment_method}, 
+              ${safeTotal}, 
+              'pending',
+              ${user?.id || null}, 
+              ${now.toISOString()},
+              ${custom_delivery_method},
+              ${delivery_fee || 0},
+              ${payment_provider_id || null}, 
+              ${isAutomatic ? 'paid' : 'pending'},
+              ${promo_code || null},
+              ${referral_code || null},
+              ${discount_amount || 0},
+              ${tax_amount || 0},
+              ${expiresAt.toISOString()},
+              ${orderNumber},
+              true
+            )
+          `,
+        ];
 
-    await sql`
-      INSERT INTO orders (
-        customer_name, 
-        customer_email, 
-        phone_number, 
-        delivery_address,
-        payment_note, 
-        payment_method, 
-        total_amount, 
-        status, 
-        user_id, 
-        created_at,
-        custom_delivery_method,
-        delivery_fee, 
-        payment_provider_id, 
-        payment_status,
-        promo_code,
-        referral_code,
-        discount_amount,
-        tax_amount,
-        expires_at,
-        order_number
-      ) VALUES (
-        ${customer_name}, 
-        ${customer_email}, 
-        ${phone_number}, 
-        ${location},
-        ${notes || ''}, 
-        ${payment_method}, 
-        ${safeTotal}, 
-        'pending',
-        ${user?.id || null}, 
-        ${now.toISOString()},
-        ${custom_delivery_method},
-        ${delivery_fee || 0},
-        ${payment_provider_id || null}, 
-        ${isAutomatic ? 'paid' : 'pending'},
-        ${promo_code || null},
-        ${referral_code || null},
-        ${discount_amount || 0},
-        ${tax_amount || 0},
-        ${expiresAt.toISOString()},
-        ${orderNumber}
-      )
-    `;
+        for (const item of items) {
+          let unitPriceUsd = Number(item.price_usd);
+          if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
+          const quantity = Number(item.quantity);
+          if (isNaN(quantity)) continue;
+          const subtotalUsd = quantity * unitPriceUsd;
+          const productName = item.product_name || item.name || 'Product';
 
-    const orderResult = await queryOne<{ id: string }>`
-      SELECT id::text FROM orders 
-      WHERE order_number = ${orderNumber} 
-      LIMIT 1
-    `;
+          statements.push(
+            tx`
+              INSERT INTO order_items (
+                order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
+              ) VALUES (
+                ${orderId}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
+                ${item.custom_details || null}
+              )
+            `
+          );
+        }
 
-    if (!orderResult || !orderResult.id) {
-      throw new Error('Failed to retrieve created order');
-    }
-
-    const orderId = orderResult.id;
-
-    for (const item of items) {
-      let unitPriceUsd = Number(item.price_usd);
-      if (isNaN(unitPriceUsd)) unitPriceUsd = 0;
-      const quantity = Number(item.quantity);
-      if (isNaN(quantity)) continue;
-      const subtotalUsd = quantity * unitPriceUsd;
-      const productName = item.product_name || item.name || 'Product';
-      
-      await sql`
-        INSERT INTO order_items (
-          order_id, product_name, quantity, unit_price_usd, subtotal_usd, custom_details
-        ) VALUES (
-          ${orderId}::uuid, ${productName}, ${quantity}, ${unitPriceUsd}, ${subtotalUsd},
-          ${item.custom_details || null}
-        )
-      `;
+        return statements;
+      });
+    } catch (txErr) {
+      console.error('Order transaction failed, releasing reserved stock:', txErr);
+      for (const deducted of deductedItems) {
+        await sql`
+          UPDATE products 
+          SET stock_quantity = stock_quantity + ${deducted.quantity}
+          WHERE id = ${deducted.product_id}
+        `;
+      }
+      throw txErr;
     }
 
     const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${orderId}`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
-    // Common email placeholders
     const commonPlaceholders = {
       customer_name,
       order_number: orderNumber,
@@ -196,10 +248,9 @@ export async function POST(req: NextRequest) {
       tracking_url: trackingUrl,
     };
 
-    // ----- AUTOMATIC PAYMENT (order confirmation) -----
     if (isAutomatic) {
       let emailTemplate = await getEmailTemplate(sql, 'order_confirmation_automatic');
-      
+
       if (emailTemplate) {
         const html = renderEmailTemplate(emailTemplate.html_template, commonPlaceholders);
         await sendMail({
@@ -209,7 +260,6 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        // Branded fallback for automatic confirmation
         const html = `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 20px; overflow: hidden;">
             <div style="background: #F97316; padding: 24px 20px; text-align: center;">
@@ -239,12 +289,9 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       }
-    } 
-    // ----- MANUAL PAYMENT (payment instructions) -----
-    else {
+    } else {
       let emailTemplate = await getEmailTemplate(sql, 'payment_instructions');
-      
-      // Promotional banner
+
       const activeBanner = await queryOne<{
         title: string;
         description: string;
@@ -285,7 +332,6 @@ export async function POST(req: NextRequest) {
           html,
         }).catch(err => console.error('Email failed:', err));
       } else {
-        // Branded fallback for manual payment instructions
         const orderItemsHtml = items.map((item: any) => `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span>${item.name} x ${item.quantity}</span>
