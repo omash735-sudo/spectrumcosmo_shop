@@ -1,4 +1,3 @@
-// lib/db.ts
 import { neon, neonConfig, NeonQueryFunction } from '@neondatabase/serverless';
 
 export type DatabaseClient = NeonQueryFunction<false, false>;
@@ -30,84 +29,21 @@ const DEFAULT_CONFIG: DatabaseConfig = {
 neonConfig.poolQueryViaFetch = true;
 
 let sql: DatabaseClient | null = null;
-let initPromise: Promise<DatabaseClient> | null = null;
-let initError: Error | null = null;
 let activeQueries = 0;
 let totalQueries = 0;
 
-function validateConfig(): void {
-  if (!process.env.POSTGRES_URL) {
-    throw new Error('POSTGRES_URL environment variable is not set');
-  }
-}
-
-async function createConnection(retries: number = DEFAULT_CONFIG.maxRetries!): Promise<DatabaseClient> {
-  validateConfig();
-  for (let i = 0; i < retries; i++) {
-    try {
-      const client = neon(process.env.POSTGRES_URL!);
-      await client`SELECT 1 as connected`;
-      return client;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Connection failed';
-      console.error(`Database connection attempt ${i + 1} failed:`, errorMsg);
-      if (i < retries - 1) {
-        const delay = DEFAULT_CONFIG.retryDelayMs! * Math.pow(2, i);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-  throw new Error(`Failed to connect after ${retries} attempts`);
-}
-
-export async function initDb(): Promise<DatabaseClient> {
-  if (sql) return sql;
-  if (initPromise) return initPromise;
-
-  initPromise = (async () => {
-    try {
-      sql = await createConnection();
-      initError = null;
-      console.log('Database connected successfully');
-      return sql;
-    } catch (err) {
-      initError = err instanceof Error ? err : new Error('Unknown connection error');
-      console.error('Database initialization failed:', initError);
-      throw initError;
-    } finally {
-      initPromise = null;
-    }
-  })();
-  return initPromise;
-}
-
-// Dummy client that returns empty arrays for any query (used when DB is unreachable)
-// Cast to any to bypass strict type checking – it's a safe fallback.
-const dummyClient: DatabaseClient = (async (strings: TemplateStringsArray, ...values: any[]) => {
-  console.warn('Dummy database client used – returning empty result');
-  return [];
-}) as any;
-
 export function getDb(): DatabaseClient {
-  if (sql) return sql;
-  if (initError) {
-    console.warn('Database previously failed to initialize – using dummy client');
-    return dummyClient;
+  if (!sql) {
+    if (!process.env.POSTGRES_URL) {
+      throw new Error('POSTGRES_URL environment variable is not set');
+    }
+    sql = neon(process.env.POSTGRES_URL);
   }
-  if (!initPromise) {
-    initDb().catch(err => console.error('Background init failed:', err));
-  }
-  return dummyClient;
+  return sql;
 }
 
 export async function getDbAsync(): Promise<DatabaseClient> {
-  if (sql) return sql;
-  if (initError) return dummyClient;
-  try {
-    return await initDb();
-  } catch {
-    return dummyClient;
-  }
+  return getDb();
 }
 
 export async function executeQuery<T = any>(
@@ -154,7 +90,7 @@ export async function withTransaction<T>(callback: TransactionCallback<T>): Prom
 export async function healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; latencyMs: number; error?: string }> {
   const startTime = Date.now();
   try {
-    const client = await getDbAsync();
+    const client = getDb();
     await client`SELECT 1 as connected`;
     const latencyMs = Date.now() - startTime;
     return { status: 'healthy', latencyMs };
@@ -167,8 +103,8 @@ export async function healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; 
 export function getPoolStatus() {
   return {
     isConnected: sql !== null,
-    hasError: initError !== null,
-    errorMessage: initError?.message || null,
+    hasError: false,
+    errorMessage: null,
     activeQueries,
     totalQueries,
   };
@@ -189,12 +125,7 @@ export function resetMetrics(): void {
 }
 
 export async function closeDb(): Promise<void> {
-  if (sql && typeof (sql as any).end === 'function') {
-    await (sql as any).end();
-    console.log('Database connection closed');
-  }
   sql = null;
-  initError = null;
 }
 
 export function setupGracefulShutdown(): void {
@@ -210,10 +141,6 @@ export function setupGracefulShutdown(): void {
     process.exit(0);
   });
 }
-
-// ============================================
-// TYPED QUERY HELPERS (now use dummy‑safe getDb)
-// ============================================
 
 export async function queryOne<T = any>(
   strings: TemplateStringsArray,
