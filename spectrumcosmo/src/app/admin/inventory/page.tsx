@@ -132,12 +132,12 @@ export default function InventoryDashboard() {
     fetchAlerts();
   }, []);
 
-  const getAlertColor = (type: string) => {
+  const getAlertBg = (type: string) => {
     switch (type) {
-      case 'out': return 'border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400';
-      case 'critical': return 'border-l-4 border-[var(--primary)] bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400';
-      case 'low': return 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400';
-      default: return 'border-l-4 border-gray-300 bg-[var(--background-secondary)]';
+      case 'out': return 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400';
+      case 'critical': return 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400';
+      case 'low': return 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400';
+      default: return 'bg-[var(--background-secondary)]';
     }
   };
 
@@ -316,7 +316,7 @@ export default function InventoryDashboard() {
             {filteredAlerts.map((alert) => (
               <div
                 key={alert.product_id}
-                className={`${getAlertColor(alert.alert_type)} rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition`}
+                className={`${getAlertBg(alert.alert_type)} rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition border border-[var(--border)]`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-start gap-3 min-w-0 flex-1">
