@@ -32,7 +32,6 @@ interface AlertSummary {
   total_alerts: number;
 }
 
-// ===== SKELETON =====
 function InventorySkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -219,7 +218,6 @@ export default function InventoryDashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -246,7 +244,6 @@ export default function InventoryDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Summary Cards */}
         {summary && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {summaryCards.map((card, index) => (
@@ -268,7 +265,6 @@ export default function InventoryDashboard() {
           </div>
         )}
 
-        {/* All Clear State */}
         {summary && summary.total_alerts === 0 && (
           <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
@@ -281,7 +277,6 @@ export default function InventoryDashboard() {
           </div>
         )}
 
-        {/* Search & Filter */}
         {alerts.length > 0 && (
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="relative flex-1">
@@ -312,7 +307,6 @@ export default function InventoryDashboard() {
           </div>
         )}
 
-        {/* Alerts List */}
         {filteredAlerts.length > 0 ? (
           <div className="space-y-3">
             <h2 className="text-sm sm:text-base font-semibold text-[var(--foreground)] flex items-center gap-2">
@@ -395,7 +389,6 @@ export default function InventoryDashboard() {
           </div>
         ) : null}
 
-        {/* Threshold Update Modal */}
         {showThresholdModal && selectedProduct && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
             <div className="bg-[var(--background-card)] rounded-xl max-w-md w-full shadow-xl p-4 sm:p-6">
