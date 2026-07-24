@@ -11,7 +11,6 @@ import { useTheme } from 'next-themes';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Same carousel images as login
 const desktopSlides = [
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/b9b5c0ea33a39be2b0aa420ba5d665ce.webp_n59npa.webp',
   'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
@@ -170,14 +169,10 @@ export default function RegisterPage() {
 
   const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
 
-  // ============================================================
-  // DESKTOP LAYOUT (≥1024px) – 60/40 split (flex-[3] / flex-[2])
-  // ============================================================
   if (isDesktop) {
     return (
       <>
         <div className="flex h-screen overflow-hidden bg-black">
-          {/* LEFT SIDE – 60% (flex-[3]) */}
           <div className="relative flex-[3] bg-black overflow-hidden">
             {desktopSlides.map((img, i) => (
               <div
@@ -192,7 +187,6 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
-            {/* Solid overlay – no gradients */}
             <div className="absolute inset-0 bg-black/60" />
 
             <div className="relative h-full flex flex-col justify-center px-10 z-10">
@@ -220,7 +214,6 @@ export default function RegisterPage() {
                 </p>
               </motion.div>
 
-              {/* Slide Indicators */}
               <div className="absolute bottom-8 left-10 flex gap-1.5">
                 {desktopSlides.map((_, i) => (
                   <button
@@ -237,7 +230,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* RIGHT SIDE – 40% (flex-[2]) with curved clip-path */}
           <div className="relative flex-[2] overflow-hidden">
             <div 
               className="absolute inset-0"
@@ -531,9 +523,6 @@ export default function RegisterPage() {
     );
   }
 
-  // ============================================================
-  // MOBILE LAYOUT (<1024px) – Manga background behind form
-  // ============================================================
   return (
     <>
       <div 
