@@ -11,29 +11,30 @@ const ALERT_COOLDOWN_HOURS = {
 };
 
 async function getAdminEmails(sql: any, alertType: string) {
-  const receiveColumn = 
-    alertType === 'low' ? 'receive_low_stock' :
-    alertType === 'critical' ? 'receive_critical' : 'receive_out_of_stock';
-  
-  const admins = await sql`
-    SELECT email FROM admin_alert_settings 
-    WHERE ${sql.raw(receiveColumn)} = true
-  `;
+  let admins;
+  if (alertType === 'low') {
+    admins = await sql`SELECT email FROM admin_alert_settings WHERE receive_low_stock = true`;
+  } else if (alertType === 'critical') {
+    admins = await sql`SELECT email FROM admin_alert_settings WHERE receive_critical = true`;
+  } else {
+    admins = await sql`SELECT email FROM admin_alert_settings WHERE receive_out_of_stock = true`;
+  }
   return admins.map((a: any) => a.email);
 }
 
 async function shouldSendAlert(sql: any, productId: string, alertType: string): Promise<boolean> {
   const cooldownHours = ALERT_COOLDOWN_HOURS[alertType as keyof typeof ALERT_COOLDOWN_HOURS];
-  
+  const cutoff = new Date(Date.now() - cooldownHours * 60 * 60 * 1000);
+
   const [recentAlert] = await sql`
     SELECT id FROM stock_alerts 
     WHERE product_id = ${productId}
       AND alert_type = ${alertType}
-      AND sent_at > NOW() - INTERVAL '${cooldownHours} hours'
+      AND sent_at > ${cutoff.toISOString()}
       AND resolved_at IS NULL
     LIMIT 1
   `;
-  
+
   return !recentAlert;
 }
 
@@ -50,7 +51,6 @@ export async function POST(req: NextRequest) {
     
     const sql = getDb();
     
-    // Get current stock
     const [product] = await sql`
       SELECT name, stock_quantity, low_stock_threshold FROM products WHERE id = ${productId}
     `;
@@ -62,14 +62,12 @@ export async function POST(req: NextRequest) {
     const previousStock = product.stock_quantity;
     const threshold = product.low_stock_threshold || 5;
     
-    // Update stock
     await sql`
       UPDATE products 
       SET stock_quantity = ${newStock}, updated_at = NOW()
       WHERE id = ${productId}
     `;
     
-    // Determine alert type
     let alertType: 'low' | 'critical' | 'out' | null = null;
     if (newStock === 0) {
       alertType = 'out';
@@ -79,7 +77,6 @@ export async function POST(req: NextRequest) {
       alertType = 'low';
     }
     
-    // Send alert if needed
     if (alertType && await shouldSendAlert(sql, productId, alertType)) {
       const adminEmails = await getAdminEmails(sql, alertType);
       
@@ -93,7 +90,6 @@ export async function POST(req: NextRequest) {
         }, adminEmails);
       }
       
-      // Record alert in log
       await sql`
         INSERT INTO stock_alerts (product_id, alert_type, current_stock, threshold)
         VALUES (${productId}, ${alertType}, ${newStock}, ${threshold})
