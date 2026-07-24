@@ -23,7 +23,6 @@ const availableIcons = [
   { value: 'ShoppingCart', label: 'Shopping Cart', icon: ShoppingCart },
 ];
 
-// ===== SKELETON =====
 function BannerSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -45,7 +44,6 @@ function BannerSkeleton() {
 }
 
 export default function BannerAdminPage() {
-  // Start with empty array — no placeholders
   const [items, setItems] = useState<{ icon: string; text: string }[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [backgroundColor, setBackgroundColor] = useState('#C96712');
@@ -54,16 +52,12 @@ export default function BannerAdminPage() {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
-  useEffect(() => {
-    fetchBanner();
-  }, []);
-
   const fetchBanner = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/banner');
+      const res = await fetch('/api/banner?t=' + Date.now());
       if (res.ok) {
         const data = await res.json();
-        // If the API returns data, use it; otherwise keep empty array
         setItems(data.items || []);
         setIsActive(data.is_active !== false);
         setBackgroundColor(data.background_color || '#C96712');
@@ -76,6 +70,10 @@ export default function BannerAdminPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchBanner();
+  }, []);
 
   const handleSave = async () => {
     if (items.some(item => !item.text.trim())) {
@@ -95,8 +93,10 @@ export default function BannerAdminPage() {
           text_color: textColor,
         }),
       });
+      
       if (res.ok) {
         toast.success('Banner updated successfully!');
+        await fetchBanner();
       } else {
         const error = await res.json();
         toast.error(error.error || 'Failed to update banner');
@@ -144,7 +144,6 @@ export default function BannerAdminPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center">
@@ -157,7 +156,6 @@ export default function BannerAdminPage() {
           </p>
         </div>
 
-        {/* Active Toggle */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -183,7 +181,6 @@ export default function BannerAdminPage() {
           </div>
         </div>
 
-        {/* Colors */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3 sm:mb-4">Colors</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -228,7 +225,6 @@ export default function BannerAdminPage() {
           </div>
         </div>
 
-        {/* Items */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
             <div>
@@ -289,7 +285,6 @@ export default function BannerAdminPage() {
           )}
         </div>
 
-        {/* Preview */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
@@ -327,7 +322,6 @@ export default function BannerAdminPage() {
           )}
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           disabled={saving}
@@ -337,7 +331,6 @@ export default function BannerAdminPage() {
           {saving ? 'Saving...' : 'Save Banner Settings'}
         </button>
 
-        {/* Pro Tips */}
         <div className="mt-4 sm:mt-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
           <div className="flex items-start gap-2">
             <AlertCircle size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
