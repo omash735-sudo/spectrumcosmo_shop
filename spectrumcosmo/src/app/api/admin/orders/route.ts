@@ -1,3 +1,4 @@
+// app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -148,7 +149,7 @@ export async function PATCH(req: NextRequest) {
     const ipAddress = req.headers.get('x-forwarded-for') || 'unknown';
 
     const [currentOrder] = await sql`
-      SELECT status, paid_at FROM orders WHERE id = ${id}::uuid
+      SELECT status, paid_at, stock_deducted FROM orders WHERE id = ${id}::uuid
     `;
 
     if (!currentOrder) {
@@ -156,12 +157,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (status === 'approved' && currentOrder.status !== 'approved') {
-      const stockDeducted = await deductStock(id);
-      if (!stockDeducted) {
-        return NextResponse.json(
-          { error: 'Failed to deduct stock. Items may be out of stock.' },
-          { status: 409 }
-        );
+      if (!currentOrder.stock_deducted) {
+        const stockDeducted = await deductStock(id);
+        if (!stockDeducted) {
+          return NextResponse.json(
+            { error: 'Failed to deduct stock. Items may be out of stock.' },
+            { status: 409 }
+          );
+        }
+        await sql`UPDATE orders SET stock_deducted = true WHERE id = ${id}::uuid`;
       }
     }
 
@@ -170,7 +174,10 @@ export async function PATCH(req: NextRequest) {
       currentOrder.status !== 'declined' &&
       currentOrder.status !== 'cancelled'
     ) {
-      await releaseReservedStock(id);
+      if (currentOrder.stock_deducted) {
+        await releaseReservedStock(id);
+        await sql`UPDATE orders SET stock_deducted = false WHERE id = ${id}::uuid`;
+      }
     }
 
     const [updatedOrder] = (await sql`
