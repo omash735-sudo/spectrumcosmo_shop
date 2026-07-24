@@ -3,15 +3,22 @@ import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
-  const sql = getDb();
-  const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
-  return NextResponse.json(row?.content || {});
+  try {
+    const sql = getDb();
+    const [row] = await sql`SELECT content FROM page_contents WHERE page = 'about'`;
+    return NextResponse.json(row?.content || {});
+  } catch (err) {
+    console.error('Failed to fetch about page content:', err);
+    return NextResponse.json(
+      { error: 'Failed to load content' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(req: NextRequest) {
   const adminError = requireAdmin(req);
   if (adminError) return adminError;
-
   try {
     const content = await req.json();
     const sql = getDb();
