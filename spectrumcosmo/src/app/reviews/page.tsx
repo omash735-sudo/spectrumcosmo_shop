@@ -497,7 +497,7 @@ export default function ReviewsPage() {
                   </div>
                 </div>
                 <a
-                  href="https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID"
+                  href="https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 bg-[#4285F4] hover:bg-[#3367D6] text-white px-6 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md min-h-[44px]"
