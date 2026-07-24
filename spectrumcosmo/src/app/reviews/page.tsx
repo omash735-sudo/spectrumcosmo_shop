@@ -497,7 +497,7 @@ export default function ReviewsPage() {
                   </div>
                 </div>
                 <a
-                  href="https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4"
+                  href="https://www.google.com/maps/place/Spectrumcosmo/@-14.8581028,34.4124312,7z/data=!4m6!3m5!1s0x8d449b35d94fcc9:0x365dc42a7d21a14b!8m2!3d-14.8581028!4d34.4124312!16s%2Fg%2F11ywdpyppq?utm_campaign=ml-ardl&g_ep=Eg1tbF8yMDI2MDcyMV8wIJvbDyoASAJQAQ%3D%3D"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 bg-[#4285F4] hover:bg-[#3367D6] text-white px-6 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md min-h-[44px]"
