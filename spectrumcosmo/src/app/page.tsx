@@ -107,7 +107,7 @@ function TrustBar() {
             const Icon = item.icon;
             return (
               <div key={idx} className="flex items-center gap-2 mx-6 text-sm font-medium">
-                <Icon size={16} className="text-[var(--primary)] flex-shrink-0" />
+                <Icon size={16} className="text-[var(--burnt-orange)] flex-shrink-0" />
                 <span>{item.text}</span>
               </div>
             );
@@ -196,12 +196,9 @@ export default async function HomePage() {
                 <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
-                    <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] bg-clip-text text-transparent">
+                    <span className="text-[var(--burnt-orange)]">
                       {h.highlighted_word}
                     </span>
-                    <svg className="absolute -bottom-2 sm:-bottom-3 left-0 w-full" height="8" viewBox="0 0 300 10" fill="none">
-                      <path d="M2 7 C60 3, 130 8, 200 5 S270 3, 298 6" stroke="#C96712" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                    </svg>
                   </span>{' '}
                   <span className="whitespace-nowrap">with pride.</span>
                 </h1>
@@ -232,16 +229,15 @@ export default async function HomePage() {
                 {/* Features */}
                 <div className="flex flex-wrap gap-3 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--border)]">
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
-                    <Shield size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                    <Shield size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature1}</span>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
-                    <Truck size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                    <Truck size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature2}</span>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap">
-                    {/* REPLACED Sparkles with Shirt icon */}
-                    <Shirt size={15} className="text-[var(--primary)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                    <Shirt size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature3}</span>
                   </div>
                 </div>
@@ -310,13 +306,13 @@ export default async function HomePage() {
                   <div key={idx} className="bg-[var(--background-card)] rounded-2xl p-6 shadow-sm border border-[var(--border)] hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                     <div className="flex gap-1 mb-3">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-[var(--primary)] text-[var(--primary)]' : 'text-[var(--border)]'} />
+                        <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-[var(--burnt-orange)] text-[var(--burnt-orange)]' : 'text-[var(--border)]'} />
                       ))}
                     </div>
                     <p className="text-[var(--foreground-muted)] text-sm leading-relaxed">"{review.review_text || review.comment || 'Amazing quality! The design is perfect.'}"</p>
                     <div className="mt-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
-                        <span className="text-[var(--primary)] font-semibold">
+                      <div className="w-10 h-10 bg-[var(--burnt-orange)]/10 rounded-full flex items-center justify-center">
+                        <span className="text-[var(--burnt-orange)] font-semibold">
                           {(review.customer_name || review.user_name || review.name || 'A').charAt(0)}
                         </span>
                       </div>
@@ -361,7 +357,7 @@ export default async function HomePage() {
                 type="email" 
                 name="email" 
                 placeholder="Your email address" 
-                className="w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all" 
+                className="w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:border-transparent transition-all" 
               />
               <button type="submit" className="btn-primary justify-center">
                 Subscribe <Send size={16} />
@@ -377,7 +373,7 @@ export default async function HomePage() {
         <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)] manga-bg hero-manga">
           <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-4xl sm:text-5xl font-bold text-[var(--foreground)] mb-6">
-              Ready to wear your <span className="text-[var(--primary)] underline decoration-2">excitement?</span>
+              Ready to wear your <span className="text-[var(--burnt-orange)]">excitement?</span>
             </h2>
             <p className="text-[var(--foreground-muted)] text-lg mb-10 max-w-xl mx-auto">
               Browse our full collection and find the piece that speaks to your passion.
