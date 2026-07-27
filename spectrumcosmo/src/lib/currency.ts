@@ -1,4 +1,5 @@
-// lib/currency.ts
+import { COUNTRY_CURRENCY_MAP as GEO_MAP, DEFAULT_CURRENCY } from './geo-config';
+
 export type CurrencyCode = 'USD' | 'MWK' | 'ZAR' | 'EUR' | 'NGN' | 'GBP' | 'KES' | 'TZS' | 'ZMW' | 'ZWL';
 
 export const CURRENCY_INFO: Record<CurrencyCode, {
@@ -20,19 +21,14 @@ export const CURRENCY_INFO: Record<CurrencyCode, {
   ZWL: { symbol: '$', label: 'Zimbabwe Dollar', locale: 'en-ZW', decimalPlaces: 2, flag: '🇿🇼' },
 };
 
-export const COUNTRY_CURRENCY_MAP: Record<string, { currency: CurrencyCode; country: string }> = {
-  MW: { currency: 'MWK', country: 'Malawi' },
-  US: { currency: 'USD', country: 'United States' },
-  ZA: { currency: 'ZAR', country: 'South Africa' },
-  NG: { currency: 'NGN', country: 'Nigeria' },
-  GB: { currency: 'GBP', country: 'United Kingdom' },
-  KE: { currency: 'KES', country: 'Kenya' },
-  TZ: { currency: 'TZS', country: 'Tanzania' },
-  ZM: { currency: 'ZMW', country: 'Zambia' },
-  ZW: { currency: 'ZWL', country: 'Zimbabwe' },
-};
+export const COUNTRY_CURRENCY_MAP = Object.fromEntries(
+  Object.entries(GEO_MAP).map(([code, info]) => [
+    code, 
+    { currency: info.currency as CurrencyCode, country: info.label }
+  ])
+);
 
-export const DEFAULT_CURRENCY: CurrencyCode = 'MWK';
+export { DEFAULT_CURRENCY };
 
 export function formatCurrencyAmount(amount: number, currency: CurrencyCode): string {
   const info = CURRENCY_INFO[currency];
