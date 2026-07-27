@@ -1,3 +1,4 @@
+// app/admin/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -20,6 +21,7 @@ import {
   UserCheck,
   UserX,
   ArrowRight,
+  Download,
 } from 'lucide-react';
 import { useRealtimeActiveUsers } from '@/hooks/useRealtimeActiveUsers';
 import Link from 'next/link';
@@ -68,12 +70,66 @@ const getDeviceIcon = (deviceType: string) => {
   return <Laptop size={12} />;
 };
 
+// CSV Export Function
+const exportToCSV = (users: any[]) => {
+  if (!users || users.length === 0) {
+    alert('No users to export');
+    return;
+  }
+
+  // Headers
+  const headers = [
+    'Session ID',
+    'User Name',
+    'User Email',
+    'IP Address',
+    'Device Type',
+    'Browser',
+    'OS',
+    'Current Page',
+    'Last Active',
+    'Time on Site (seconds)',
+  ];
+
+  // Build CSV rows
+  const rows = users.map((user: any) => [
+    user.session_id || 'N/A',
+    user.user_name || 'Guest',
+    user.user_email || 'N/A',
+    user.ip_address || 'N/A',
+    user.device_type || 'Unknown',
+    user.browser || 'Unknown',
+    user.os || 'Unknown',
+    user.page_url || '/',
+    new Date(user.visited_at || user.last_seen || Date.now()).toLocaleString(),
+    Math.round(user.seconds_ago || 0),
+  ]);
+
+  // Combine headers and rows
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n');
+
+  // Create download link
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `active-users-${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
   const [activeUsersTimeFilter, setActiveUsersTimeFilter] = useState<'15min' | '30min' | '1hour' | '24hour'>('15min');
+  const [isExporting, setIsExporting] = useState(false);
   
   const { data: realtimeUsers, isConnected, refresh: refreshUsers } = useRealtimeActiveUsers();
 
@@ -140,6 +196,29 @@ export default function AdminDashboard() {
       { label: '1h', count: oneHour.length, icon: Users, color: 'text-orange-500' },
       { label: 'Today', count: today.length, icon: UserCheck, color: 'text-purple-500' },
     ];
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch all users from the last 24 hours
+      const res = await fetch('/api/admin/active-users?timeRange=1440');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users && data.users.length > 0) {
+          exportToCSV(data.users);
+        } else {
+          alert('No visitors in the last 24 hours to export');
+        }
+      } else {
+        alert('Failed to fetch visitor data');
+      }
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export data');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const statCards = [
@@ -390,6 +469,18 @@ export default function AdminDashboard() {
                     </button>
                   ))}
                 </div>
+                
+                {/* Download Button */}
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="flex items-center gap-1 px-2 sm:px-3 py-1 text-[9px] sm:text-xs rounded-md transition min-h-[28px] sm:min-h-[32px] bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                  title="Download all visitors from last 24 hours (CSV)"
+                >
+                  <Download size={12} />
+                  <span className="hidden xs:inline">Export</span>
+                </button>
+
                 <button 
                   onClick={() => {
                     refreshUsers();
