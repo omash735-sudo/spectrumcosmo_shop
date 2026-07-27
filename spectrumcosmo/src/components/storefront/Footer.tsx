@@ -12,7 +12,6 @@ import {
   Send, 
   Loader2, 
   ArrowUp,
-  // Sparkles removed (not used anymore)
   Heart,
   Shield,
   Truck,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
+import { useSettings } from './SettingsProvider'
 
 type SocialLinks = {
   instagram: string
@@ -35,6 +35,7 @@ type SocialLinks = {
 
 export default function Footer() {
   const { theme, systemTheme } = useTheme()
+  const { settings } = useSettings()
   const [mounted, setMounted] = useState(false)
   const [links, setLinks] = useState<SocialLinks>({
     instagram: '',
@@ -42,7 +43,7 @@ export default function Footer() {
     facebook: '',
     tiktok: '',
     whatsapp: '',
-    email: 'spectrumcosmo01@gmail.com',
+    email: settings?.store_email || 'spectrumcosmo01@gmail.com',
   })
   const [emailSub, setEmailSub] = useState('')
   const [subStatus, setSubStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
@@ -56,9 +57,10 @@ export default function Footer() {
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light'
   
+  // Use company_logo from settings, fallback to hardcoded
   const logoSrc = currentTheme === 'dark'
-    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
+    ? settings?.company_logo_dark || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
+    : settings?.company_logo || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,6 +83,13 @@ export default function Footer() {
       })
       .catch(() => null)
   }, [])
+
+  // Update email when settings change
+  useEffect(() => {
+    if (settings?.store_email) {
+      setLinks(prev => ({ ...prev, email: settings.store_email }))
+    }
+  }, [settings?.store_email])
 
   const checkSubscriptionStatus = async (email: string) => {
     if (!email || !email.includes('@')) return
@@ -175,6 +184,13 @@ export default function Footer() {
     { icon: Shield, text: 'Secure Payments' },
   ]
 
+  // Use settings for company info
+  const companyName = settings?.store_name || 'SpectrumCosmo'
+  const companyAddress = settings?.store_address || 'Lilongwe, Malawi'
+  const companyEmail = settings?.store_email || 'spectrumcosmo01@gmail.com'
+  const companyPhone = settings?.store_phone || '+265 893 16 02 02'
+  const footerCopyright = settings?.footer_copyright || 'All rights reserved.'
+
   return (
     <>
       <footer className="bg-[var(--background-secondary)] dark:bg-[var(--background-secondary)] text-[var(--foreground)] mt-20 border-t border-[var(--border)]">
@@ -183,7 +199,6 @@ export default function Footer() {
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
               <div className="text-center md:text-left">
-                {/* Updated badge: removed Sparkles and changed text */}
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[var(--primary)]/20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2 sm:mb-3">
                   <span className="text-[10px] sm:text-xs font-medium text-[var(--primary)]">Get 10% off on your first purchase</span>
                 </div>
@@ -224,7 +239,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main Footer - unchanged */}
+        {/* Main Footer */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
@@ -232,7 +247,7 @@ export default function Footer() {
             <div className="lg:col-span-4 space-y-3 sm:space-y-4">
               <Image
                 src={logoSrc}
-                alt="SpectrumCosmo"
+                alt={companyName}
                 width={140}
                 height={48}
                 className="object-contain"
@@ -260,7 +275,7 @@ export default function Footer() {
                   )
                 })}
                 <a
-                  href={`mailto:${links.email}`}
+                  href={`mailto:${companyEmail}`}
                   className="w-8 h-8 sm:w-9 sm:h-9 bg-[var(--background)] rounded-full flex items-center justify-center transition-all hover:scale-110 text-[var(--foreground-muted)] hover:text-white hover:bg-[var(--primary)]"
                   aria-label="Email"
                 >
@@ -317,17 +332,24 @@ export default function Footer() {
 
             {/* Trust & Payment - 3 columns */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Why Shop With Us</h3>
+              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Contact Us</h3>
               <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                {trustFeatures.map((feature, idx) => {
-                  const Icon = feature.icon
-                  return (
-                    <li key={idx} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
-                      <Icon size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--primary)]" />
-                      {feature.text}
-                    </li>
-                  )
-                })}
+                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                  <Mail size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
+                  <a href={`mailto:${companyEmail}`} className="hover:text-[var(--primary)] transition">
+                    {companyEmail}
+                  </a>
+                </li>
+                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                  <Smartphone size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
+                  <a href={`tel:${companyPhone}`} className="hover:text-[var(--primary)] transition">
+                    {companyPhone}
+                  </a>
+                </li>
+                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                  <MapPin size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
+                  <span>{companyAddress}</span>
+                </li>
               </ul>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                 {paymentIcons.map((payment, idx) => {
@@ -346,7 +368,7 @@ export default function Footer() {
           {/* Bottom Bar */}
           <div className="border-t border-[var(--border)] mt-6 sm:mt-8 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
             <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] text-center sm:text-left">
-              © {new Date().getFullYear()} SpectrumCosmo. All rights reserved.
+              © {new Date().getFullYear()} {companyName}. {footerCopyright}
             </p>
             <div className="flex gap-3 sm:gap-5 text-[10px] sm:text-xs">
               <Link href="/terms" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Terms</Link>
