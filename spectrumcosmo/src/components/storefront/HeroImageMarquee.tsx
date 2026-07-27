@@ -1,6 +1,7 @@
+// components/storefront/HeroImageMarquee.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import CategoryPopup from './CategoryPopup';
 
@@ -14,55 +15,20 @@ interface HeroImageMarqueeProps {
   images: MarqueeImage[];
 }
 
-const marqueeKeyframes = `
-  @keyframes scrollUp {
-    from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
-  }
-  @keyframes scrollDown {
-    from { transform: translateY(-50%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes scrollLeft {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-  @keyframes scrollRight {
-    from { transform: translateX(-50%); }
-    to { transform: translateX(0); }
-  }
-  .marquee-col-a { animation: scrollUp 22s linear infinite; }
-  .marquee-col-b { animation: scrollDown 22s linear infinite; }
-  .marquee-row-a { animation: scrollLeft 18s linear infinite; }
-  .marquee-row-b { animation: scrollRight 18s linear infinite; }
-  @media (prefers-reduced-motion: reduce) {
-    .marquee-col-a, .marquee-col-b, .marquee-row-a, .marquee-row-b {
-      animation: none;
-    }
-  }
-`;
-
-function Tile({ url, alt, category, onClick }: { url: string; alt: string; category: string; onClick: (category: string, url: string) => void }) {
-  return (
-    <button
-      onClick={() => onClick(category, url)}
-      className="relative aspect-square w-full flex-shrink-0 overflow-hidden cursor-pointer group focus:outline-none"
-      aria-label={`View ${category}`}
-    >
-      <Image src={url} alt={alt} fill sizes="200px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
-      {/* Subtle overlay on hover */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-    </button>
-  );
-}
-
 export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  if (!images || images.length === 0) return null;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 4000);
 
-  const handleTileClick = (category: string, url: string) => {
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const handleImageClick = (category: string, url: string) => {
     setSelectedCategory(category);
     setSelectedImage(url);
   };
@@ -72,71 +38,49 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
     setSelectedImage(null);
   };
 
-  const colA = [images[0], images[1]].filter(Boolean);
-  const colB = [images[2], images[3]].filter(Boolean);
-  const doubledColA = [...colA, ...colA];
-  const doubledColB = [...colB, ...colB];
-  const doubledAll = [...images, ...images];
+  if (!images || images.length === 0) return null;
 
   return (
     <>
-      <div className="relative">
-        <style>{marqueeKeyframes}</style>
-
-        <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden">
-          <div className="flex flex-col gap-4 marquee-col-a">
-            {doubledColA.map((img, i) => (
-              <Tile
-                key={`a-${i}`}
-                url={img.url}
-                alt={img.alt}
-                category={img.category}
-                onClick={handleTileClick}
+      <div className="relative w-full overflow-hidden">
+        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden">
+          {images.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => handleImageClick(image.category, image.url)}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out cursor-pointer ${
+                index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+              aria-label={`View ${image.category}`}
+            >
+              <Image
+                src={image.url}
+                alt={image.alt}
+                fill
+                className="object-cover"
+                priority={index === 0}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
-            ))}
-          </div>
-          <div className="flex flex-col gap-4 marquee-col-b">
-            {doubledColB.map((img, i) => (
-              <Tile
-                key={`b-${i}`}
-                url={img.url}
-                alt={img.alt}
-                category={img.category}
-                onClick={handleTileClick}
-              />
-            ))}
-          </div>
+            </button>
+          ))}
         </div>
 
-        <div className="flex sm:hidden flex-col gap-3 overflow-hidden">
-          <div className="flex gap-3 w-max marquee-row-a">
-            {doubledAll.map((img, i) => (
-              <div key={`row1-${i}`} className="w-24 flex-shrink-0">
-                <Tile
-                  url={img.url}
-                  alt={img.alt}
-                  category={img.category}
-                  onClick={handleTileClick}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3 w-max marquee-row-b">
-            {doubledAll.map((img, i) => (
-              <div key={`row2-${i}`} className="w-24 flex-shrink-0">
-                <Tile
-                  url={img.url}
-                  alt={img.alt}
-                  category={img.category}
-                  onClick={handleTileClick}
-                />
-              </div>
-            ))}
-          </div>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? 'bg-white w-6'
+                  : 'bg-white/40 hover:bg-white/60'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Category Popup */}
       {selectedCategory && selectedImage && (
         <CategoryPopup
           category={selectedCategory}
