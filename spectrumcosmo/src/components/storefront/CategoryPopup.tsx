@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { X, ArrowRight, Clock } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface CategoryPopupProps {
   category: string;
@@ -14,8 +15,14 @@ interface CategoryPopupProps {
 
 export default function CategoryPopup({ category, imageUrl, onClose }: CategoryPopupProps) {
   const router = useRouter();
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [countdown, setCountdown] = useState(10);
   const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -42,11 +49,11 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
     onClose();
   };
 
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const isDark = currentTheme === 'dark';
+
   return (
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div 
         className="relative max-w-md w-full bg-[var(--background-card)] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)]"
         onClick={(e) => e.stopPropagation()}
@@ -66,7 +73,11 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className={`absolute inset-0 bg-gradient-to-t ${
+            isDark 
+              ? 'from-black/80 via-black/20 to-transparent' 
+              : 'from-black/60 via-black/10 to-transparent'
+          }`} />
         </div>
 
         <div className="p-6 text-center">
