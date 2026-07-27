@@ -4,14 +4,9 @@ import { getDb } from '@/lib/db';
 import { getAdminFromRequest } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  console.log('[active-users] API route was called!'); // Debug
-
   try {
     const admin = getAdminFromRequest(req as any);
-    console.log('[active-users] admin check:', admin); // Debug
-
     if (!admin) {
-      console.log('[active-users] Unauthorized – returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,10 +21,9 @@ export async function GET(req: Request) {
     const cutoffTime = new Date();
     cutoffTime.setMinutes(cutoffTime.getMinutes() - cutoffMinutes);
 
-    console.log('[active-users] cutoffTime:', cutoffTime.toISOString());
-
     const sql = getDb();
 
+    // Get users from active_users table
     const users = await sql`
       SELECT 
         au.session_id,
@@ -66,8 +60,6 @@ export async function GET(req: Request) {
       device_type: user.device_type === 'mobile' ? 'Mobile' : 
                     user.device_type === 'tablet' ? 'Tablet' : 'Desktop',
     }));
-
-    console.log('[active-users] returning count:', total);
 
     return NextResponse.json({
       count: total,
