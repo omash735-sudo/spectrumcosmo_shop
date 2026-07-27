@@ -160,19 +160,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((theme: ThemeMode) => update({ theme }), [update])
   const resetSettings = useCallback(() => setSettings(defaultSettings), [])
 
+  const contextValue: SettingsContextType = {
+    settings,
+    update,
+    setCurrency,
+    setLanguage,
+    setTheme,
+    resetSettings,
+    hydrated,
+    resolvedTheme,
+  }
+
   return (
-    <SettingsContext.Provider
-      value={{
-        settings,
-        update,
-        setCurrency,
-        setLanguage,
-        setTheme,
-        resetSettings,
-        hydrated,
-        resolvedTheme,
-      }}
-    >
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   )
