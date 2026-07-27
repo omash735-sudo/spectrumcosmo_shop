@@ -23,7 +23,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
-// TestAccountKillSwitch moved from dashboard to here
 import TestAccountKillSwitch from '@/components/admin/TestAccountKillSwitch';
 
 interface SystemStatus {
@@ -36,14 +35,12 @@ interface SystemStatus {
 }
 
 export default function SettingsPage() {
-  // Password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // Social links state
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialMessage, setSocialMessage] = useState('');
   const [socialLinks, setSocialLinks] = useState({
@@ -55,15 +52,16 @@ export default function SettingsPage() {
     email: 'spectrumcosmo01@gmail.com',
   });
 
-  // System status
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // Store settings state
   const [storeSettings, setStoreSettings] = useState({
     store_name: 'SpectrumCosmo',
     store_email: 'hello@spectrumcosmo.shop',
+    store_phone: '+265 893 16 02 02',
     store_address: 'Lilongwe, Malawi',
+    company_logo: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+    company_logo_dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
     data_retention_days: '2555',
     default_delivery_days: '5',
     discount_banner_default: 'Get 25% off your next order with code: WELCOME25',
@@ -74,7 +72,6 @@ export default function SettingsPage() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [savingStore, setSavingStore] = useState(false);
 
-  // Fetch all settings on load
   useEffect(() => {
     const fetchAllSettings = async () => {
       try {
@@ -90,9 +87,12 @@ export default function SettingsPage() {
         const settingsData = await settingsRes.json();
         setStoreSettings(prev => ({
           ...prev,
-          store_name: settingsData.company_name || prev.store_name,
-          store_email: settingsData.company_email || prev.store_email,
-          store_address: settingsData.company_address || prev.store_address,
+          store_name: settingsData.store_name || settingsData.company_name || prev.store_name,
+          store_email: settingsData.store_email || settingsData.company_email || prev.store_email,
+          store_phone: settingsData.store_phone || settingsData.company_phone || prev.store_phone,
+          store_address: settingsData.store_address || settingsData.company_address || prev.store_address,
+          company_logo: settingsData.company_logo || prev.company_logo,
+          company_logo_dark: settingsData.company_logo_dark || prev.company_logo_dark,
           data_retention_days: settingsData.data_retention_days || prev.data_retention_days,
           default_delivery_days: settingsData.default_delivery_days || prev.default_delivery_days,
           discount_banner_default: settingsData.discount_banner_default || prev.discount_banner_default,
@@ -114,7 +114,6 @@ export default function SettingsPage() {
     fetchAllSettings();
   }, []);
 
-  // Password change handler
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -136,7 +135,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Social links save handler
   const saveSocialLinks = async (e: React.FormEvent) => {
     e.preventDefault();
     setSocialLoading(true);
@@ -150,7 +148,6 @@ export default function SettingsPage() {
     setSocialMessage(res.ok ? 'Social links saved.' : 'Failed to save social links.');
   };
 
-  // Store settings save handler
   const saveStoreSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingStore(true);
@@ -177,7 +174,6 @@ export default function SettingsPage() {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Settings & Content</h1>
         <p className="text-sm text-[var(--foreground-muted)] mt-1">
@@ -185,7 +181,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Quick Links to Other Settings Pages */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Link 
           href="/admin/email-templates" 
@@ -218,7 +213,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
-        {/* Password Change */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-[var(--primary)]">
@@ -262,7 +256,6 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* System Status */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -314,7 +307,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Store Information */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -341,12 +333,48 @@ export default function SettingsPage() {
               />
             </div>
             <div>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Store Phone</label>
+              <input
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+                value={storeSettings.store_phone}
+                onChange={e => setStoreSettings(p => ({ ...p, store_phone: e.target.value }))}
+              />
+            </div>
+            <div>
               <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Store Address</label>
               <input
                 className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
                 value={storeSettings.store_address}
                 onChange={e => setStoreSettings(p => ({ ...p, store_address: e.target.value }))}
               />
+            </div>
+            <div>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Company Logo (Light Mode)</label>
+              <input
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+                value={storeSettings.company_logo}
+                onChange={e => setStoreSettings(p => ({ ...p, company_logo: e.target.value }))}
+              />
+              {storeSettings.company_logo && (
+                <div className="mt-2 p-2 bg-[var(--background-secondary)] rounded-lg border border-[var(--border)]">
+                  <p className="text-xs text-[var(--foreground-muted)] mb-1">Preview:</p>
+                  <img src={storeSettings.company_logo} alt="Logo preview" className="h-10 w-auto object-contain" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Company Logo (Dark Mode)</label>
+              <input
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"
+                value={storeSettings.company_logo_dark}
+                onChange={e => setStoreSettings(p => ({ ...p, company_logo_dark: e.target.value }))}
+              />
+              {storeSettings.company_logo_dark && (
+                <div className="mt-2 p-2 bg-[var(--background-secondary)] rounded-lg border border-[var(--border)]">
+                  <p className="text-xs text-[var(--foreground-muted)] mb-1">Preview (Dark):</p>
+                  <img src={storeSettings.company_logo_dark} alt="Logo dark preview" className="h-10 w-auto object-contain" />
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs sm:text-sm font-medium text-[var(--foreground-muted)] block mb-1.5">Invoice Logo URL</label>
@@ -405,7 +433,6 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Social Links */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-50 dark:bg-purple-950/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -464,7 +491,6 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Test Account Kill Switch */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600 dark:text-red-400">
@@ -480,7 +506,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Data Cleanup */}
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
@@ -509,7 +534,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Danger Zone */}
         <div className="bg-[var(--background-card)] rounded-xl border-2 border-red-200 dark:border-red-800 overflow-hidden shadow-sm lg:col-span-2">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-red-200 dark:border-red-800 flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600 dark:text-red-400">
@@ -526,7 +550,6 @@ export default function SettingsPage() {
               <button 
                 onClick={() => {
                   if (confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
-                    // Clear logs logic
                     alert('Logs cleared successfully.');
                   }
                 }}
@@ -543,7 +566,6 @@ export default function SettingsPage() {
               <button 
                 onClick={() => {
                   if (confirm('Are you sure you want to reset all system settings? This cannot be undone.')) {
-                    // Reset logic
                     alert('System settings reset to default.');
                   }
                 }}
@@ -556,7 +578,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Pro Tip */}
       <div className="mt-6 sm:mt-8 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-200 dark:border-orange-800 p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-2">
           <SettingsIcon size={18} className="text-orange-600 dark:text-orange-400" />
