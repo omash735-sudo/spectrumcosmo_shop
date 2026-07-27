@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
+import CategoryPopup from './CategoryPopup';
 
 interface MarqueeImage {
   url: string;
   alt: string;
+  category: string;
 }
 
 interface HeroImageMarqueeProps {
@@ -39,16 +42,35 @@ const marqueeKeyframes = `
   }
 `;
 
-function Tile({ url, alt }: MarqueeImage) {
+function Tile({ url, alt, category, onClick }: { url: string; alt: string; category: string; onClick: (category: string, url: string) => void }) {
   return (
-    <div className="relative aspect-square w-full flex-shrink-0 rounded-2xl overflow-hidden">
-      <Image src={url} alt={alt} fill sizes="200px" className="object-cover" />
-    </div>
+    <button
+      onClick={() => onClick(category, url)}
+      className="relative aspect-square w-full flex-shrink-0 overflow-hidden cursor-pointer group focus:outline-none"
+      aria-label={`View ${category}`}
+    >
+      <Image src={url} alt={alt} fill sizes="200px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+      {/* Subtle overlay on hover */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+    </button>
   );
 }
 
 export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   if (!images || images.length === 0) return null;
+
+  const handleTileClick = (category: string, url: string) => {
+    setSelectedCategory(category);
+    setSelectedImage(url);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedCategory(null);
+    setSelectedImage(null);
+  };
 
   const colA = [images[0], images[1]].filter(Boolean);
   const colB = [images[2], images[3]].filter(Boolean);
@@ -57,38 +79,71 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
   const doubledAll = [...images, ...images];
 
   return (
-    <div className="relative">
-      <style>{marqueeKeyframes}</style>
+    <>
+      <div className="relative">
+        <style>{marqueeKeyframes}</style>
 
-      <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden">
-        <div className="flex flex-col gap-4 marquee-col-a">
-          {doubledColA.map((img, i) => (
-            <Tile key={`a-${i}`} url={img.url} alt={img.alt} />
-          ))}
+        <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden">
+          <div className="flex flex-col gap-4 marquee-col-a">
+            {doubledColA.map((img, i) => (
+              <Tile
+                key={`a-${i}`}
+                url={img.url}
+                alt={img.alt}
+                category={img.category}
+                onClick={handleTileClick}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-4 marquee-col-b">
+            {doubledColB.map((img, i) => (
+              <Tile
+                key={`b-${i}`}
+                url={img.url}
+                alt={img.alt}
+                category={img.category}
+                onClick={handleTileClick}
+              />
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 marquee-col-b">
-          {doubledColB.map((img, i) => (
-            <Tile key={`b-${i}`} url={img.url} alt={img.alt} />
-          ))}
+
+        <div className="flex sm:hidden flex-col gap-3 overflow-hidden">
+          <div className="flex gap-3 w-max marquee-row-a">
+            {doubledAll.map((img, i) => (
+              <div key={`row1-${i}`} className="w-24 flex-shrink-0">
+                <Tile
+                  url={img.url}
+                  alt={img.alt}
+                  category={img.category}
+                  onClick={handleTileClick}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 w-max marquee-row-b">
+            {doubledAll.map((img, i) => (
+              <div key={`row2-${i}`} className="w-24 flex-shrink-0">
+                <Tile
+                  url={img.url}
+                  alt={img.alt}
+                  category={img.category}
+                  onClick={handleTileClick}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex sm:hidden flex-col gap-3 overflow-hidden">
-        <div className="flex gap-3 w-max marquee-row-a">
-          {doubledAll.map((img, i) => (
-            <div key={`row1-${i}`} className="w-24 flex-shrink-0">
-              <Tile url={img.url} alt={img.alt} />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-3 w-max marquee-row-b">
-          {doubledAll.map((img, i) => (
-            <div key={`row2-${i}`} className="w-24 flex-shrink-0">
-              <Tile url={img.url} alt={img.alt} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+      {/* Category Popup */}
+      {selectedCategory && selectedImage && (
+        <CategoryPopup
+          category={selectedCategory}
+          imageUrl={selectedImage}
+          onClose={handleClosePopup}
+        />
+      )}
+    </>
   );
 }
