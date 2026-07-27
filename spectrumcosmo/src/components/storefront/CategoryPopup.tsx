@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { X, ArrowRight, Clock } from 'lucide-react';
@@ -22,19 +23,16 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
   const [isRedirecting, setIsRedirecting] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Mount for theme
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Handle redirect when countdown reaches 0
   useEffect(() => {
     if (countdown === 0) {
       handleRedirect();
     }
   }, [countdown]);
 
-  // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -49,7 +47,6 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
     return () => clearInterval(timer);
   }, []);
 
-  // Body scroll lock
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -59,7 +56,6 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
     };
   }, []);
 
-  // Escape key handler
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -71,14 +67,12 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  // Handle redirect with debounce
   const handleRedirect = useCallback(() => {
     if (isRedirecting) return;
     setIsRedirecting(true);
     router.push(`/products?category=${encodeURIComponent(category)}`);
   }, [isRedirecting, router, category]);
 
-  // Handle backdrop click
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -88,19 +82,22 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
 
-  // Calculate progress for ring
   const progress = (countdown / 10) * 100;
   const circumference = 2 * Math.PI * 28;
 
-  return (
+  // Don't render until mounted on client
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm"
         onClick={handleBackdropClick}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       >
         <motion.div
           ref={popupRef}
@@ -108,10 +105,9 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative max-w-md w-full bg-[var(--background-card)] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)]"
+          className="relative w-full max-w-sm sm:max-w-md bg-[var(--background-card)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-[var(--border)]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
@@ -120,7 +116,6 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
             <X size={20} />
           </button>
 
-          {/* Image */}
           <div className="relative w-full aspect-[4/3] bg-[var(--background-secondary)]">
             <Image
               src={imageUrl}
@@ -136,12 +131,11 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
             }`} />
           </div>
 
-          {/* Content */}
-          <div className="p-6 text-center">
-            <h3 className="text-2xl font-bold text-[var(--foreground)] mb-2">
+          <div className="p-5 sm:p-6 text-center">
+            <h3 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-2">
               Shop {category}
             </h3>
-            <p className="text-[var(--foreground-muted)] text-sm mb-6">
+            <p className="text-sm text-[var(--foreground-muted)] mb-4 sm:mb-6">
               Explore our collection of {category.toLowerCase()} and find your perfect piece.
             </p>
 
@@ -166,9 +160,7 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
               </button>
             </div>
 
-            {/* Countdown with progress ring */}
             <div className="mt-5 flex items-center justify-center gap-4">
-              {/* Progress ring */}
               <div className="relative w-14 h-14 flex items-center justify-center">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
@@ -205,6 +197,7 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
