@@ -126,6 +126,7 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
       <div className="relative">
         <style>{marqueeKeyframes}</style>
 
+        {/* Desktop Layout - with vertical fade */}
         <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden marquee-fade-vertical">
           <div className="flex flex-col gap-4 marquee-col-a">
             {doubledColA.map((img, i) => (
@@ -151,8 +152,9 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
           </div>
         </div>
 
-        <div className="flex sm:hidden flex-col gap-3 overflow-hidden">
-          <div className="flex gap-3 w-max marquee-row-a marquee-fade-horizontal">
+        {/* Mobile Layout - with horizontal fade on container */}
+        <div className="flex sm:hidden flex-col gap-3 overflow-hidden marquee-fade-horizontal">
+          <div className="flex gap-3 w-max marquee-row-a">
             {doubledAll.map((img, i) => (
               <div key={`row1-${i}`} className="w-24 flex-shrink-0">
                 <Tile
@@ -164,7 +166,7 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
               </div>
             ))}
           </div>
-          <div className="flex gap-3 w-max marquee-row-b marquee-fade-horizontal">
+          <div className="flex gap-3 w-max marquee-row-b">
             {doubledAll.map((img, i) => (
               <div key={`row2-${i}`} className="w-24 flex-shrink-0">
                 <Tile
