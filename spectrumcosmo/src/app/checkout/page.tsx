@@ -47,7 +47,6 @@ export default function CheckoutPage() {
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
-  // Load delivery methods independently
   useEffect(() => {
     const loadDeliveryMethods = async () => {
       try {
@@ -65,7 +64,6 @@ export default function CheckoutPage() {
     loadDeliveryMethods();
   }, []);
 
-  // Load payment providers independently
   useEffect(() => {
     const loadPaymentProviders = async () => {
       try {
@@ -87,7 +85,6 @@ export default function CheckoutPage() {
     loadPaymentProviders();
   }, []);
 
-  // Load tax rate independently
   useEffect(() => {
     const loadTax = async () => {
       try {
@@ -157,6 +154,7 @@ export default function CheckoutPage() {
       promo_code_id: appliedPromo?.id || null,
       promo_code: appliedPromo?.code || null,
       referral_code: savedReferral || null,
+      currency: currency,
     };
 
     try {
@@ -171,11 +169,10 @@ export default function CheckoutPage() {
     } finally {
       setIsCreatingOrder(false);
     }
-  }, [state, items, subtotal, taxAmount, finalTotal, preferredCourier, createOrder, clearCart, resetCheckout, router]);
+  }, [state, items, subtotal, taxAmount, finalTotal, preferredCourier, currency, createOrder, clearCart, resetCheckout, router]);
 
   const isEmpty = items.length === 0;
 
-  // Show delivery methods as empty array while loading
   const displayDeliveryMethods = deliveryMethods.length > 0 ? deliveryMethods : [];
 
   return (
