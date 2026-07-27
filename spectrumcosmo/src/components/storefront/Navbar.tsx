@@ -528,22 +528,6 @@ export default function Navbar() {
               <CurrencySelector />
             </div>
 
-            <button 
-              onClick={() => {
-                router.push('/products');
-                closeMobileMenu();
-              }}
-              className="mx-5 mt-5 block bg-[var(--primary)] hover:bg-[var(--primary-hover)] p-3.5 rounded-xl transition-all duration-200 shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white">Shop Now</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14"/>
-                  <path d="m12 5 7 7-7 7"/>
-                </svg>
-              </div>
-            </button>
-
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
                 <Home size={18} className="text-[var(--foreground-muted)]" /> Home
