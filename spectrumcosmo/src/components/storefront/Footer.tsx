@@ -1,3 +1,4 @@
+// components/storefront/Footer.tsx
 'use client'
 
 import Link from 'next/link'
@@ -18,7 +19,7 @@ import {
   CreditCard,
   Smartphone,
   Handshake,
-  AlertCircle
+  MapPin
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
@@ -57,7 +58,6 @@ export default function Footer() {
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light'
   
-  // Use company_logo from settings, fallback to hardcoded
   const logoSrc = currentTheme === 'dark'
     ? settings?.company_logo_dark || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : settings?.company_logo || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
@@ -84,7 +84,6 @@ export default function Footer() {
       .catch(() => null)
   }, [])
 
-  // Update email when settings change
   useEffect(() => {
     if (settings?.store_email) {
       setLinks(prev => ({ ...prev, email: settings.store_email }))
@@ -184,7 +183,6 @@ export default function Footer() {
     { icon: Shield, text: 'Secure Payments' },
   ]
 
-  // Use settings for company info
   const companyName = settings?.store_name || 'SpectrumCosmo'
   const companyAddress = settings?.store_address || 'Lilongwe, Malawi'
   const companyEmail = settings?.store_email || 'spectrumcosmo01@gmail.com'
@@ -194,7 +192,6 @@ export default function Footer() {
   return (
     <>
       <footer className="bg-[var(--background-secondary)] dark:bg-[var(--background-secondary)] text-[var(--foreground)] mt-20 border-t border-[var(--border)]">
-        {/* Newsletter Section */}
         <div className="border-b border-[var(--border)]">
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
@@ -239,11 +236,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main Footer */}
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
-            {/* Brand - 4 columns */}
             <div className="lg:col-span-4 space-y-3 sm:space-y-4">
               <Image
                 src={logoSrc}
@@ -284,7 +279,6 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Quick Links - 2 columns */}
             <div className="lg:col-span-2">
               <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Shop</h3>
               <ul className="space-y-1.5 sm:space-y-2">
@@ -298,7 +292,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Support - 3 columns */}
             <div className="lg:col-span-3">
               <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Support</h3>
               <ul className="space-y-1.5 sm:space-y-2">
@@ -330,7 +323,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Trust & Payment - 3 columns */}
             <div className="lg:col-span-3">
               <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Contact Us</h3>
               <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
@@ -365,7 +357,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Bottom Bar */}
           <div className="border-t border-[var(--border)] mt-6 sm:mt-8 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
             <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] text-center sm:text-left">
               © {new Date().getFullYear()} {companyName}. {footerCopyright}
@@ -382,7 +373,6 @@ export default function Footer() {
         </div>
       </footer>
 
-      {/* Back to Top Button */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
