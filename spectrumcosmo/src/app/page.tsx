@@ -62,6 +62,12 @@ interface Review {
   rating: number;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  image_url: string | null;
+}
+
 const fallbackHero: HeroSection = {
   id: 'fallback',
   badge_text: 'Get Early Access',
@@ -85,6 +91,29 @@ const fallbackHero: HeroSection = {
   bg_image_url: '',
   bg_image_url_dark: '',
 };
+
+const fallbackMarqueeImages = [
+  { 
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg',
+    alt: 'T-Shirts',
+    category: 'T-Shirts'
+  },
+  {
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_23.58.16_a0z7ns.jpg',
+    alt: 'Hoodies',
+    category: 'Hoodies'
+  },
+  {
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.34_c2lzfq.jpg',
+    alt: 'Accessories',
+    category: 'Accessories'
+  },
+  {
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
+    alt: 'Anime Jerseys',
+    category: 'Anime Jerseys'
+  }
+];
 
 function TrustBar() {
   const trustItems = [
@@ -136,6 +165,7 @@ export default async function HomePage() {
   let hero: HeroSection | null = null;
   let products: Product[] = [];
   let reviews: Review[] = [];
+  let categories: Category[] = [];
 
   try {
     const sql = getDb();
@@ -149,11 +179,28 @@ export default async function HomePage() {
     reviews = await queryMany<Review>`
       SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 6
     `;
+    categories = await queryMany<Category>`
+      SELECT id, name, image_url 
+      FROM categories 
+      WHERE is_active = true 
+      AND image_url IS NOT NULL
+      ORDER BY sort_order ASC, name ASC 
+      LIMIT 4
+    `;
   } catch (err) {
     console.error('Homepage DB error:', err);
   }
 
   const h = hero || fallbackHero;
+
+  // Build marquee images from categories or use fallback
+  const marqueeImages = categories && categories.length > 0
+    ? categories.map(cat => ({
+        url: cat.image_url!,
+        alt: cat.name,
+        category: cat.name
+      }))
+    : fallbackMarqueeImages;
 
   return (
     <>
@@ -246,14 +293,7 @@ export default async function HomePage() {
               {/* RIGHT IMAGES - MARQUEE */}
               <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
                 <div className="relative -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <HeroImageMarquee
-                    images={[
-                      { url: h.cat_image1_url, alt: h.cat_image1_alt },
-                      { url: h.cat_image2_url, alt: h.cat_image2_alt },
-                      { url: h.cat_image3_url, alt: h.cat_image3_alt },
-                      { url: h.cat_image4_url, alt: h.cat_image4_alt },
-                    ]}
-                  />
+                  <HeroImageMarquee images={marqueeImages} />
                 </div>
               </div>
             </div>
