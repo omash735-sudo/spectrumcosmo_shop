@@ -13,6 +13,17 @@ type Settings = {
   emailNotifications: boolean
   smsAlerts: boolean
   twoFactor: boolean
+  store_name: string
+  store_email: string
+  store_phone: string
+  store_address: string
+  company_logo: string
+  company_logo_dark: string
+  footer_copyright: string
+  invoice_logo_url: string
+  default_delivery_days: number
+  data_retention_days: number
+  discount_banner_default: string
 }
 
 type SettingsContextType = {
@@ -35,10 +46,20 @@ const defaultSettings: Settings = {
   emailNotifications: true,
   smsAlerts: false,
   twoFactor: false,
+  store_name: 'SpectrumCosmo',
+  store_email: 'spectrumcosmo01@gmail.com',
+  store_phone: '+265 893 16 02 02',
+  store_address: 'Lilongwe, Malawi',
+  company_logo: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+  company_logo_dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
+  footer_copyright: 'All rights reserved.',
+  invoice_logo_url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+  default_delivery_days: 5,
+  data_retention_days: 2555,
+  discount_banner_default: 'Get 25% off your next order with code: WELCOME25',
 }
 
-// Validation helpers
-const validCurrencies: CurrencyCode[] = ['USD', 'MWK']
+const validCurrencies: CurrencyCode[] = ['USD', 'MWK', 'ZAR', 'EUR', 'NGN', 'GBP', 'KES', 'TZS', 'ZMW', 'ZWL']
 const validLanguages: LanguageCode[] = ['English', 'Chichewa']
 const validThemes: ThemeMode[] = ['light', 'dark', 'system']
 
@@ -69,7 +90,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false)
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 
-  // Load saved settings on mount
+  // Load saved settings from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
@@ -86,6 +107,40 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
     setHydrated(true)
   }, [])
+
+  // Fetch store settings from database after hydration
+  useEffect(() => {
+    if (!hydrated) return
+
+    const fetchStoreSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/settings')
+        if (res.ok) {
+          const data = await res.json()
+          
+          // Map database keys to settings object
+          setSettings(prev => ({
+            ...prev,
+            store_name: data.store_name || data.company_name || prev.store_name,
+            store_email: data.store_email || data.company_email || prev.store_email,
+            store_phone: data.store_phone || data.company_phone || prev.store_phone,
+            store_address: data.store_address || data.company_address || prev.store_address,
+            company_logo: data.company_logo || prev.company_logo,
+            company_logo_dark: data.company_logo_dark || prev.company_logo_dark,
+            footer_copyright: data.footer_copyright || prev.footer_copyright,
+            invoice_logo_url: data.invoice_logo_url || prev.invoice_logo_url,
+            default_delivery_days: data.default_delivery_days ? parseInt(data.default_delivery_days) : prev.default_delivery_days,
+            data_retention_days: data.data_retention_days ? parseInt(data.data_retention_days) : prev.data_retention_days,
+            discount_banner_default: data.discount_banner_default || prev.discount_banner_default,
+          }))
+        }
+      } catch (err) {
+        console.error('Failed to fetch store settings:', err)
+      }
+    }
+
+    fetchStoreSettings()
+  }, [hydrated])
 
   // Cross-tab sync
   useEffect(() => {
