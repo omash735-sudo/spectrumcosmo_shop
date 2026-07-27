@@ -36,6 +36,38 @@ const marqueeKeyframes = `
   .marquee-col-b { animation: scrollDown 22s linear infinite; }
   .marquee-row-a { animation: scrollLeft 18s linear infinite; }
   .marquee-row-b { animation: scrollRight 18s linear infinite; }
+  .marquee-fade-vertical {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%
+    );
+  }
+  .marquee-fade-horizontal {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+  }
   @media (prefers-reduced-motion: reduce) {
     .marquee-col-a, .marquee-col-b, .marquee-row-a, .marquee-row-b {
       animation: none;
@@ -83,7 +115,6 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
     setSelectedImage(null);
   };
 
-  // Arrange images for grid layout
   const colA = [images[0], images[1]].filter(Boolean);
   const colB = [images[2], images[3]].filter(Boolean);
   const doubledColA = [...colA, ...colA];
@@ -95,8 +126,7 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
       <div className="relative">
         <style>{marqueeKeyframes}</style>
 
-        {/* Desktop: 2-column scrolling marquee */}
-        <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden">
+        <div className="hidden sm:grid grid-cols-2 gap-4 h-[420px] lg:h-[520px] overflow-hidden marquee-fade-vertical">
           <div className="flex flex-col gap-4 marquee-col-a">
             {doubledColA.map((img, i) => (
               <Tile
@@ -121,9 +151,8 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
           </div>
         </div>
 
-        {/* Mobile: Horizontal scrolling rows */}
         <div className="flex sm:hidden flex-col gap-3 overflow-hidden">
-          <div className="flex gap-3 w-max marquee-row-a">
+          <div className="flex gap-3 w-max marquee-row-a marquee-fade-horizontal">
             {doubledAll.map((img, i) => (
               <div key={`row1-${i}`} className="w-24 flex-shrink-0">
                 <Tile
@@ -135,7 +164,7 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
               </div>
             ))}
           </div>
-          <div className="flex gap-3 w-max marquee-row-b">
+          <div className="flex gap-3 w-max marquee-row-b marquee-fade-horizontal">
             {doubledAll.map((img, i) => (
               <div key={`row2-${i}`} className="w-24 flex-shrink-0">
                 <Tile
@@ -150,7 +179,6 @@ export default function HeroImageMarquee({ images }: HeroImageMarqueeProps) {
         </div>
       </div>
 
-      {/* Category Popup */}
       {selectedCategory && selectedImage && (
         <CategoryPopup
           category={selectedCategory}
