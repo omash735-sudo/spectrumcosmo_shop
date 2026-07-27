@@ -1,18 +1,7 @@
-// app/api/social-links/route.ts
+// app/api/admin/social-links/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryOne, queryMany } from '@/lib/db';
+import { getDb, queryOne } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
-
-async function ensureSettingsTable() {
-  const sql = getDb();
-  await sql`
-    CREATE TABLE IF NOT EXISTS site_settings (
-      key TEXT PRIMARY KEY,
-      value JSONB NOT NULL DEFAULT '{}'::jsonb,
-      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-    )
-  `;
-}
 
 const defaultSocialLinks = {
   instagram: '',
@@ -25,13 +14,16 @@ const defaultSocialLinks = {
 
 export async function GET() {
   try {
-    await ensureSettingsTable();
+    const sql = getDb();
 
-    const socialLinksRow = await queryOne<{ value: any }>`
-      SELECT value FROM site_settings WHERE key = 'social_links'
+    const socialLinksRow = await queryOne<{ setting_value: string }>`
+      SELECT setting_value FROM system_settings WHERE setting_key = 'social_links'
     `;
 
-    const socialLinks = socialLinksRow?.value ?? defaultSocialLinks;
+    const socialLinks = socialLinksRow?.setting_value 
+      ? JSON.parse(socialLinksRow.setting_value) 
+      : defaultSocialLinks;
+    
     return NextResponse.json(socialLinks);
   } catch (err) {
     console.error('Failed to fetch social links:', err);
@@ -47,19 +39,17 @@ export async function PATCH(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    await ensureSettingsTable();
+    const sql = getDb();
     const body = await req.json();
 
-    const updatedRow = await queryOne<{ value: any }>`
-      INSERT INTO site_settings (key, value)
-      VALUES ('social_links', ${body}::jsonb)
-      ON CONFLICT (key)
-      DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-      RETURNING value
+    await sql`
+      INSERT INTO system_settings (setting_key, setting_value, updated_at)
+      VALUES ('social_links', ${JSON.stringify(body)}::jsonb, NOW())
+      ON CONFLICT (setting_key) DO UPDATE 
+      SET setting_value = EXCLUDED.setting_value, updated_at = NOW()
     `;
 
-    const socialLinks = updatedRow?.value ?? defaultSocialLinks;
-    return NextResponse.json(socialLinks);
+    return NextResponse.json({ success: true, data: body });
   } catch (err) {
     console.error('Failed to update social links:', err);
     const errorMessage = process.env.NODE_ENV === 'production'
