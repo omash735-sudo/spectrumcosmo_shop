@@ -1,3 +1,4 @@
+// app/api/orders/create/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
       tax_amount,
       promo_code,
       referral_code,
+      currency = 'MWK',
     } = body;
 
     const missingFields: string[] = [];
@@ -192,7 +194,8 @@ export async function POST(req: NextRequest) {
           discount_amount,
           tax_amount,
           expires_at,
-          order_number
+          order_number,
+          currency
         ) VALUES (
           ${customer_name}, 
           ${customer_email}, 
@@ -213,7 +216,8 @@ export async function POST(req: NextRequest) {
           ${discount_amount || 0},
           ${tax_amount || 0},
           ${expiresAt.toISOString()},
-          ${orderNumber}
+          ${orderNumber},
+          ${currency}
         )
       `;
 
@@ -256,10 +260,14 @@ export async function POST(req: NextRequest) {
     const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/payment?orderId=${orderId}`;
     const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/account/orders`;
 
+    const displayCurrency = currency || 'MWK';
+    const displayTotal = safeTotal.toLocaleString();
+
     const commonPlaceholders = {
       customer_name,
       order_number: orderNumber,
-      total_amount: safeTotal.toLocaleString(),
+      total_amount: displayTotal,
+      currency: displayCurrency,
       delivery_address: location,
       delivery_method: finalDeliveryMethod,
       payment_instructions: paymentInstructions,
@@ -276,14 +284,14 @@ export async function POST(req: NextRequest) {
           await sendMail({
             to: customer_email,
             subject: renderEmailTemplate(emailTemplate.subject, commonPlaceholders),
-            text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+            text: `Your order #${orderNumber} has been confirmed. Total: ${displayCurrency} ${displayTotal}`,
             html,
           }).catch(err => console.error(`[${requestId}] Email failed:`, err));
         } else {
           await sendMail({
             to: customer_email,
             subject: `Order Confirmation #${orderNumber}`,
-            text: `Your order #${orderNumber} has been confirmed. Total: MWK ${safeTotal.toLocaleString()}`,
+            text: `Your order #${orderNumber} has been confirmed. Total: ${displayCurrency} ${displayTotal}`,
             html: `
               <div style="font-family: Arial; max-width:600px;">
                 <h2>Order Confirmed</h2>
@@ -292,7 +300,7 @@ export async function POST(req: NextRequest) {
                 <div style="background:#f9fafb; padding:20px; border-radius:12px;">
                   <h3>Order Summary</h3>
                   <p><strong>Order #:</strong> ${orderNumber}</p>
-                  <p><strong>Total Amount:</strong> MWK ${safeTotal.toLocaleString()}</p>
+                  <p><strong>Total Amount:</strong> ${displayCurrency} ${displayTotal}</p>
                   <p><strong>Delivery Method:</strong> ${finalDeliveryMethod}</p>
                   <p><strong>Delivery Address:</strong> ${location}</p>
                 </div>
@@ -348,7 +356,7 @@ export async function POST(req: NextRequest) {
           const orderItemsTable = items.map((item: any) => `
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
               <span>${item.name} x ${item.quantity}</span>
-              <span>MWK ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
+              <span>${displayCurrency} ${(Number(item.price_usd) * Number(item.quantity)).toLocaleString()}</span>
             </div>
           `).join('');
 
@@ -371,7 +379,7 @@ export async function POST(req: NextRequest) {
                     ${orderItemsTable}
                     <div style="display: flex; justify-content: space-between; padding: 12px 0; font-weight: bold; font-size: 18px; color: #F97316;">
                       <span>Total Amount</span>
-                      <span>MWK ${safeTotal.toLocaleString()}</span>
+                      <span>${displayCurrency} ${displayTotal}</span>
                     </div>
                   </div>
 
@@ -407,6 +415,7 @@ export async function POST(req: NextRequest) {
       id: orderId,
       order_number: orderNumber,
       total_amount: safeTotal,
+      currency: displayCurrency,
     });
 
   } catch (err) {
