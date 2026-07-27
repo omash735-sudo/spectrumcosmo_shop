@@ -1,3 +1,4 @@
+// app/api/tax/route.ts
 import { NextResponse } from 'next/server';
 import { getDb, queryOne } from '@/lib/db';
 
@@ -16,9 +17,17 @@ export async function GET() {
       WHERE setting_key = 'tax_name'
     `;
     
-    // Default values if not set
-    const rate = taxRate ? parseFloat(taxRate.setting_value) : 16.5;
-    const name = taxName?.setting_value || 'VAT';
+    // If no setting exists, use 0
+    let rate = 0;
+    let name = 'VAT';
+    
+    if (taxRate) {
+      rate = parseFloat(taxRate.setting_value);
+    }
+    
+    if (taxName?.setting_value) {
+      name = taxName.setting_value;
+    }
     
     return NextResponse.json({
       rate,
@@ -27,11 +36,10 @@ export async function GET() {
     });
   } catch (err) {
     console.error('Failed to fetch tax rate:', err);
-    // Return default tax rate instead of error
     return NextResponse.json({
-      rate: 16.5,
+      rate: 0,
       name: 'VAT',
-      is_enabled: true,
+      is_enabled: false,
     });
   }
 }
