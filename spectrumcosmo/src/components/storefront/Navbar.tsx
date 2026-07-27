@@ -43,7 +43,6 @@ import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
 
-// Categories without icons - just text
 const categories = [
   { name: 'T-Shirts', href: '/products?category=T-Shirts' },
   { name: 'Hoodies', href: '/products?category=Hoodies' },
@@ -81,7 +80,6 @@ interface BannerData {
   text_color: string;
 }
 
-// Map icon strings to actual Lucide components
 const iconMap: Record<string, any> = {
   Truck,
   Shield,
@@ -120,7 +118,6 @@ export default function Navbar() {
     setMounted(true);
   }, []);
 
-  // Fetch banner data
   useEffect(() => {
     const fetchBanner = async () => {
       try {
@@ -138,7 +135,6 @@ export default function Navbar() {
     fetchBanner();
   }, []);
 
-  // Fetch unread notification count
   useEffect(() => {
     if (user) {
       const fetchUnreadCount = async () => {
@@ -201,7 +197,6 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
-  // Determine banner display
   const showBanner = bannerData?.is_active !== false && 
     bannerData?.items && 
     bannerData.items.length > 0;
@@ -263,7 +258,6 @@ export default function Navbar() {
           : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
       )}>
         
-        {/* Dynamic Top Banner */}
         {showBanner && !bannerLoading && (
           <div 
             className="hidden md:block text-center py-2 text-sm overflow-hidden"
@@ -286,7 +280,6 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Mobile Banner - Marquee style for limited space */}
         {showBanner && !bannerLoading && (
           <div 
             className="md:hidden py-1.5 text-xs overflow-hidden"
@@ -310,7 +303,7 @@ export default function Navbar() {
         )}
 
         {/* Desktop Header */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
               
@@ -327,24 +320,6 @@ export default function Navbar() {
                 {desktopLinks.map(link => {
                   const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
                   
-                  if (link.label === 'Events') {
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={clsx(
-                          'px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5',
-                          isActive
-                            ? 'bg-[var(--primary)] text-white shadow-sm'
-                            : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)] hover:text-[var(--primary)]'
-                        )}
-                      >
-                        <CalendarDays size={16} className={isActive ? 'text-white' : 'text-[var(--primary)]'} />
-                        {link.label}
-                      </Link>
-                    );
-                  }
-
                   return (
                     <div
                       key={link.href}
@@ -577,7 +552,7 @@ export default function Navbar() {
                 <Package size={18} className="text-[var(--foreground-muted)]" /> Products
               </Link>
               <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
-                <CalendarDays size={18} className="text-[var(--primary)]" /> Events
+                <CalendarDays size={18} className="text-[var(--foreground-muted)]" /> Events
               </Link>
               <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
                 <Star size={18} className="text-[var(--foreground-muted)]" /> Reviews
@@ -618,7 +593,6 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* WhatsApp Float Button */}
       {showWhatsApp && (
         <a 
           href={WHATSAPP_URL} 
