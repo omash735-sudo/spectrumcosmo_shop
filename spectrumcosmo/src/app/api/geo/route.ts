@@ -1,6 +1,5 @@
-// app/api/geo/route.ts
 import { NextResponse } from 'next/server';
-import { COUNTRY_CURRENCY_MAP, DEFAULT_CURRENCY } from '@/lib/currency';
+import { COUNTRY_CURRENCY_MAP, DEFAULT_CURRENCY, DEFAULT_COUNTRY } from '@/lib/geo-config';
 
 export async function GET() {
   try {
@@ -14,15 +13,15 @@ export async function GET() {
     const countryInfo = COUNTRY_CURRENCY_MAP[geo.country_code];
 
     return NextResponse.json({
-      country_code: geo.country_code || 'MW',
-      country_name: geo.country_name || 'Malawi',
+      country_code: geo.country_code || DEFAULT_COUNTRY,
+      country_name: countryInfo?.label || 'Malawi',
       currency: countryInfo?.currency || DEFAULT_CURRENCY,
       detected: true,
     });
   } catch (error) {
     console.error('Geo detection failed:', error);
     return NextResponse.json({
-      country_code: 'MW',
+      country_code: DEFAULT_COUNTRY,
       country_name: 'Malawi',
       currency: DEFAULT_CURRENCY,
       detected: false,
