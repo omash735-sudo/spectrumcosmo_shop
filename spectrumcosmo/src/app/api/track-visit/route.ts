@@ -46,9 +46,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, skipped: true });
     }
 
-    const sessionId = req.cookies.get('session_id')?.value || 
-                     req.cookies.get('visitor_session')?.value || 
-                     crypto.randomUUID();
+    let sessionId = req.cookies.get('visitor_session')?.value;
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+    }
 
     const userAgent = req.headers.get('user-agent') || '';
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -59,7 +60,6 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb();
 
-    // Insert into visitor_tracking (historical data)
     await sql`
       INSERT INTO visitor_tracking (
         session_id, 
@@ -96,7 +96,6 @@ export async function POST(req: NextRequest) {
       ON CONFLICT (id) DO NOTHING
     `;
 
-    // Also track in active_users for real-time
     await sql`
       INSERT INTO active_users (
         session_id, 
@@ -132,7 +131,6 @@ export async function POST(req: NextRequest) {
         last_seen = NOW()
     `;
 
-    // Insert into analytics_events for dashboard stats
     await sql`
       INSERT INTO analytics_events (
         event_type,
@@ -158,10 +156,19 @@ export async function POST(req: NextRequest) {
       )
     `;
 
-    // Clean up active_users older than 24 hours
     await sql`DELETE FROM active_users WHERE last_seen < NOW() - INTERVAL '24 hours'`;
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+
+    response.cookies.set('visitor_session', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    });
+
+    return response;
   } catch (err) {
     console.error('Track visit error:', err);
     return NextResponse.json({ error: 'Failed to track visit' }, { status: 500 });
