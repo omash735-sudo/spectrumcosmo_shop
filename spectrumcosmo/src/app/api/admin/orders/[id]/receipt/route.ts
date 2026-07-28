@@ -20,7 +20,6 @@ export async function POST(
 
     const sql = getDb();
 
-    // Get order details
     const [order] = await sql`
       SELECT 
         id,
@@ -31,6 +30,7 @@ export async function POST(
         delivery_address,
         total_amount,
         status,
+        user_id,
         custom_delivery_method
       FROM orders 
       WHERE id = ${orderId}::uuid
@@ -43,7 +43,6 @@ export async function POST(
     let trackingNumber = '';
     let trackingDetails: any = {};
 
-    // Extract tracking info from manual data
     if (manualData) {
       trackingNumber = manualData.parcelId || '';
       trackingDetails = {
@@ -60,14 +59,12 @@ export async function POST(
       };
     }
 
-    // Extract tracking info from receipt text (CTS courier format)
     if (receiptText && !manualData) {
       const extracted = extractTrackingInfo(receiptText);
       trackingNumber = extracted.parcelId || '';
       trackingDetails = extracted;
     }
 
-    // Store receipt info in database
     await sql`
       UPDATE orders 
       SET 
@@ -79,7 +76,6 @@ export async function POST(
       WHERE id = ${orderId}::uuid
     `;
 
-    // Update order status to "shipped" if it was "approved" or "pending"
     const statusToSet = order.status === 'approved' || order.status === 'pending' ? 'shipped' : order.status;
     
     if (statusToSet !== order.status) {
@@ -94,7 +90,34 @@ export async function POST(
       });
     }
 
-    // Send email notification to customer
+    // Create notification for customer
+    if (order.user_id) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.shop';
+      
+      await sql`
+        INSERT INTO user_notifications (
+          user_id,
+          title,
+          message,
+          type,
+          icon_name,
+          action_url,
+          action_label,
+          created_at
+        ) VALUES (
+          ${order.user_id}::uuid,
+          'Order #${order.order_number} Has Been Shipped!',
+          'Your order has been shipped. Tracking #: ${trackingNumber || 'N/A'}. Click to track your delivery.',
+          'order',
+          'truck',
+          ${`${appUrl}/account/orders/${order.id}`},
+          'Track Your Order',
+          NOW()
+        )
+      `;
+    }
+
+    // Send email notification
     await sendReceiptEmail(order, trackingNumber, trackingDetails, imageUrl);
 
     return NextResponse.json({
@@ -112,46 +135,38 @@ export async function POST(
   }
 }
 
-// Helper function to extract tracking info from CTS receipt text
 function extractTrackingInfo(text: string) {
   const result: any = {};
 
-  // Try to extract parcel ID (various formats)
   const parcelMatch = text.match(/Parcel\s*(?:ID|No|Number|#)?\s*[:.]?\s*([A-Z0-9-]+)/i) ||
                       text.match(/CTS-\d+/i) ||
                       text.match(/Tracking\s*(?:ID|No|Number|#)?\s*[:.]?\s*([A-Z0-9-]+)/i);
   if (parcelMatch) result.parcelId = parcelMatch[1] || parcelMatch[0];
 
-  // Extract receiver name
   const nameMatch = text.match(/Receiver\s*(?:Name)?\s*[:.]?\s*([A-Za-z\s]+)/i) ||
                     text.match(/Consignee\s*[:.]?\s*([A-Za-z\s]+)/i) ||
                     text.match(/To\s*[:.]?\s*([A-Za-z\s]+)/i);
   if (nameMatch) result.receiverName = nameMatch[1]?.trim();
 
-  // Extract phone number
   const phoneMatch = text.match(/Phone\s*[:.]?\s*([+\d\s-]{8,})/i) ||
                      text.match(/Mobile\s*[:.]?\s*([+\d\s-]{8,})/i) ||
                      text.match(/([+\d\s-]{10,})/);
   if (phoneMatch) result.receiverPhone = phoneMatch[1]?.trim();
 
-  // Extract city/location
   const cityMatch = text.match(/City\s*[:.]?\s*([A-Za-z\s]+)/i) ||
                     text.match(/Location\s*[:.]?\s*([A-Za-z\s]+)/i) ||
                     text.match(/Destination\s*[:.]?\s*([A-Za-z\s]+)/i);
   if (cityMatch) result.receiverCity = cityMatch[1]?.trim();
 
-  // Extract total amount
   const amountMatch = text.match(/Total\s*(?:Amount)?\s*[:.]?\s*MWK?\s*([\d,]+)/i) ||
                       text.match(/Amount\s*[:.]?\s*MWK?\s*([\d,]+)/i) ||
                       text.match(/MWK\s*([\d,]+)/i);
   if (amountMatch) result.totalAmount = amountMatch[1]?.replace(/,/g, '');
 
-  // Extract truck number
   const truckMatch = text.match(/Truck\s*(?:No|Number)?\s*[:.]?\s*([A-Z0-9-]+)/i) ||
                      text.match(/Vehicle\s*(?:No|Number)?\s*[:.]?\s*([A-Z0-9-]+)/i);
   if (truckMatch) result.truckNumber = truckMatch[1]?.trim();
 
-  // Extract delivery counter
   const counterMatch = text.match(/Counter\s*[:.]?\s*([A-Z0-9-]+)/i) ||
                        text.match(/Collection\s*(?:Point|Counter)?\s*[:.]?\s*([A-Z0-9-]+)/i);
   if (counterMatch) result.deliveryCounter = counterMatch[1]?.trim();
@@ -159,7 +174,6 @@ function extractTrackingInfo(text: string) {
   return result;
 }
 
-// Helper function to send receipt email
 async function sendReceiptEmail(order: any, trackingNumber: string, trackingDetails: any, imageUrl: string | null) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.shop';
   const trackingUrl = `${appUrl}/account/orders/${order.id}`;
@@ -199,7 +213,7 @@ async function sendReceiptEmail(order: any, trackingNumber: string, trackingDeta
 
         <hr style="margin: 30px 0 20px; border: none; border-top: 1px solid #eee;" />
         <p style="font-size: 12px; color: #999;">
-          Questions about your delivery? Reply to this email or contact us at support@spectrumcosmo.shop<br/>
+          Questions about your delivery? Reply to this email or contact us at spectrumcosmo01@gmail.com<br/>
           SpectrumCosmo Team – Wear your excitement with pride.
         </p>
       </div>
