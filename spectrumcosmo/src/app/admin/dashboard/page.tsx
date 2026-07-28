@@ -77,7 +77,6 @@ const exportToCSV = (users: any[]) => {
     return;
   }
 
-  // Headers
   const headers = [
     'Session ID',
     'User Name',
@@ -91,7 +90,6 @@ const exportToCSV = (users: any[]) => {
     'Time on Site (seconds)',
   ];
 
-  // Build CSV rows
   const rows = users.map((user: any) => [
     user.session_id || 'N/A',
     user.user_name || 'Guest',
@@ -105,13 +103,11 @@ const exportToCSV = (users: any[]) => {
     Math.round(user.seconds_ago || 0),
   ]);
 
-  // Combine headers and rows
   const csvContent = [
     headers.join(','),
     ...rows.map(row => row.join(','))
   ].join('\n');
 
-  // Create download link
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -131,7 +127,20 @@ export default function AdminDashboard() {
   const [activeUsersTimeFilter, setActiveUsersTimeFilter] = useState<'15min' | '30min' | '1hour' | '24hour'>('15min');
   const [isExporting, setIsExporting] = useState(false);
   
-  const { data: realtimeUsers, isConnected, refresh: refreshUsers } = useRealtimeActiveUsers();
+  // Convert filter to API timeRange value
+  const getTimeRangeValue = (filter: string): string => {
+    switch (filter) {
+      case '15min': return '15';
+      case '30min': return '30';
+      case '1hour': return '60';
+      case '24hour': return '1440';
+      default: return '15';
+    }
+  };
+
+  // Pass the current time range to the hook
+  const { data: realtimeUsers, isConnected, isLoading: usersLoading, refresh: refreshUsers } = 
+    useRealtimeActiveUsers(getTimeRangeValue(activeUsersTimeFilter));
 
   const fetchDashboardData = useCallback(async () => {
     setRefreshing(true);
@@ -154,19 +163,6 @@ export default function AdminDashboard() {
     const interval = setInterval(fetchDashboardData, 60000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
-
-  const getFilteredActiveUsers = () => {
-    if (!realtimeUsers?.users) return [];
-    const now = Date.now();
-    return realtimeUsers.users.filter((user: any) => {
-      const userTime = new Date(user.last_seen || user.timestamp || Date.now()).getTime();
-      const diffMinutes = (now - userTime) / (1000 * 60);
-      if (activeUsersTimeFilter === '15min') return diffMinutes <= 15;
-      if (activeUsersTimeFilter === '30min') return diffMinutes <= 30;
-      if (activeUsersTimeFilter === '1hour') return diffMinutes <= 60;
-      return true;
-    });
-  };
 
   const getUserTimeBuckets = (): UserTimeBucket[] => {
     if (!realtimeUsers?.users) return [];
@@ -201,7 +197,6 @@ export default function AdminDashboard() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // Fetch all users from the last 24 hours
       const res = await fetch('/api/admin/active-users?timeRange=1440');
       if (res.ok) {
         const data = await res.json();
@@ -285,9 +280,8 @@ export default function AdminDashboard() {
     );
   }
 
-  const filteredUsers = getFilteredActiveUsers();
-  const filteredCount = filteredUsers.length;
   const userBuckets = getUserTimeBuckets();
+  const filteredCount = realtimeUsers?.count || 0;
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -452,6 +446,9 @@ export default function AdminDashboard() {
                 <span className="bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full">
                   {filteredCount} active
                 </span>
+                {usersLoading && (
+                  <Loader2 size={14} className="animate-spin text-[var(--primary)]" />
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <div className="flex flex-wrap gap-0.5 sm:gap-1">
@@ -470,39 +467,42 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 
-                {/* Download Button */}
+                {/* Download Button - Fixed to be fluid */}
                 <button
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="flex items-center gap-1 px-2 sm:px-3 py-1 text-[9px] sm:text-xs rounded-md transition min-h-[28px] sm:min-h-[32px] bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-md transition min-h-[44px] bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
                   title="Download all visitors from last 24 hours (CSV)"
                 >
-                  <Download size={12} />
-                  <span className="hidden xs:inline">Export</span>
+                  <Download size={16} />
+                  <span className="hidden xs:inline">Export CSV</span>
                 </button>
 
                 <button 
                   onClick={() => {
                     refreshUsers();
-                    setActiveUsersTimeFilter('15min');
                   }} 
-                  className="p-1.5 hover:bg-[var(--background-secondary)] rounded-full transition"
+                  className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
                   title="Refresh"
                 >
-                  <RefreshCw size={14} className="text-[var(--foreground-muted)] sm:size-4" />
+                  <RefreshCw size={16} className="text-[var(--foreground-muted)]" />
                 </button>
                 <button 
                   onClick={() => setShowActiveUsersModal(false)} 
-                  className="p-1.5 hover:bg-[var(--background-secondary)] rounded-full transition"
+                  className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
-                  <X size={16} className="text-[var(--foreground-muted)] sm:size-5" />
+                  <X size={18} className="text-[var(--foreground-muted)]" />
                 </button>
               </div>
             </div>
             
             {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(95vh-70px)] sm:max-h-[calc(90vh-80px)] p-3 sm:p-5">
-              {filteredCount === 0 ? (
+              {usersLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+                </div>
+              ) : filteredCount === 0 ? (
                 <div className="text-center py-8 sm:py-12 text-[var(--foreground-muted)]">
                   <UserX size={32} className="mx-auto mb-3 opacity-50 sm:size-12" />
                   <p className="text-xs sm:text-sm">No active users in the last {activeUsersTimeFilter === '15min' ? '15 minutes' : activeUsersTimeFilter === '30min' ? '30 minutes' : activeUsersTimeFilter === '1hour' ? 'hour' : '24 hours'}</p>
@@ -519,7 +519,7 @@ export default function AdminDashboard() {
                   </div>
                   
                   {/* Mobile Cards */}
-                  {filteredUsers.map((user: any) => (
+                  {(realtimeUsers?.users || []).map((user: any) => (
                     <div 
                       key={user.session_id} 
                       className="border border-[var(--border)] rounded-lg p-3 sm:p-4 hover:bg-[var(--background-secondary)] transition md:hover:bg-transparent md:p-0 md:border-0"
