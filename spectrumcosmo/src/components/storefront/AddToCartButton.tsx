@@ -1,3 +1,4 @@
+// components/storefront/AddToCartButton.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +14,7 @@ interface AddToCartButtonProps {
   disabled?: boolean;
   className?: string;
   showIcon?: boolean;
+  quantity?: number;
   onSuccess?: () => void;
 }
 
@@ -25,6 +27,7 @@ export default function AddToCartButton({
   disabled = false,
   className = '',
   showIcon = true,
+  quantity = 1,
   onSuccess,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
@@ -41,7 +44,7 @@ export default function AddToCartButton({
         name: productName,
         image_url: imageUrl,
         priceUsd,
-      });
+      }, quantity);
 
       setSuccess(true);
       if (onSuccess) onSuccess();
