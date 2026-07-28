@@ -26,23 +26,24 @@ export default function UserMenu() {
 
   const logout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      const res = await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
       
       if (res.ok) {
         setUser(null);
-        localStorage.removeItem('user_token');
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('preferred_currency');
+        localStorage.clear();
         sessionStorage.clear();
         setMenuOpen(false);
-        window.location.href = '/';
+        window.location.replace('/?t=' + Date.now());
       }
     } catch (error) {
       console.error('Logout failed:', error);
       setUser(null);
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/';
+      window.location.replace('/?t=' + Date.now());
     }
   };
 
