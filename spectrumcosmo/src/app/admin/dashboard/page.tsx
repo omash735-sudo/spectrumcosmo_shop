@@ -26,7 +26,6 @@ import {
 import { useRealtimeActiveUsers } from '@/hooks/useRealtimeActiveUsers';
 import Link from 'next/link';
 
-// Types
 interface DashboardStats {
   revenue_today: number;
   orders_today: number;
@@ -70,7 +69,6 @@ const getDeviceIcon = (deviceType: string) => {
   return <Laptop size={12} />;
 };
 
-// CSV Export Function
 const exportToCSV = (users: any[]) => {
   if (!users || users.length === 0) {
     alert('No users to export');
@@ -127,7 +125,6 @@ export default function AdminDashboard() {
   const [activeUsersTimeFilter, setActiveUsersTimeFilter] = useState<'15min' | '30min' | '1hour' | '24hour'>('15min');
   const [isExporting, setIsExporting] = useState(false);
   
-  // Convert filter to API timeRange value
   const getTimeRangeValue = (filter: string): string => {
     switch (filter) {
       case '15min': return '15';
@@ -138,7 +135,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Pass the current time range to the hook
   const { data: realtimeUsers, isConnected, isLoading: usersLoading, refresh: refreshUsers } = 
     useRealtimeActiveUsers(getTimeRangeValue(activeUsersTimeFilter));
 
@@ -285,7 +281,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-start md:items-center gap-3 md:gap-4">
@@ -312,7 +307,6 @@ export default function AdminDashboard() {
 
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="max-w-[1440px] mx-auto">
-          {/* User Activity Buckets */}
           <div className="mb-4 sm:mb-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {userBuckets.map((bucket) => (
@@ -332,7 +326,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Main Stats Cards */}
           <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-6 sm:mb-8">
             {statCards.map((stat, index) => {
               const Icon = stat.icon;
@@ -375,7 +368,6 @@ export default function AdminDashboard() {
             })}
           </div>
 
-          {/* Quick Navigation Cards */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Link 
               href="/admin/analytics"
@@ -434,11 +426,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Active Users Modal */}
       {showActiveUsersModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-xl">
-            {/* Modal Header */}
             <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 p-3 sm:p-5 border-b border-[var(--border)] sticky top-0 bg-[var(--background-card)] z-10">
               <div className="flex items-center gap-2">
                 <Users size={16} className="text-[var(--primary)] sm:size-5" />
@@ -467,7 +457,6 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 
-                {/* Download Button - Fixed to be fluid */}
                 <button
                   onClick={handleExport}
                   disabled={isExporting}
@@ -496,7 +485,6 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            {/* Modal Body */}
             <div className="overflow-y-auto max-h-[calc(95vh-70px)] sm:max-h-[calc(90vh-80px)] p-3 sm:p-5">
               {usersLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -509,7 +497,6 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2 sm:space-y-3">
-                  {/* Desktop Table View */}
                   <div className="hidden md:grid md:grid-cols-12 gap-3 px-3 py-2 text-xs font-semibold text-[var(--foreground-muted)] border-b border-[var(--border)]">
                     <div className="col-span-4">User</div>
                     <div className="col-span-3">Current Page</div>
@@ -518,13 +505,11 @@ export default function AdminDashboard() {
                     <div className="col-span-1">Last Active</div>
                   </div>
                   
-                  {/* Mobile Cards */}
                   {(realtimeUsers?.users || []).map((user: any) => (
                     <div 
                       key={user.session_id} 
                       className="border border-[var(--border)] rounded-lg p-3 sm:p-4 hover:bg-[var(--background-secondary)] transition md:hover:bg-transparent md:p-0 md:border-0"
                     >
-                      {/* Mobile Card Layout */}
                       <div className="md:hidden space-y-2">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -571,7 +556,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       
-                      {/* Desktop Row View */}
                       <div className="hidden md:grid md:grid-cols-12 gap-3 py-3 border-b border-[var(--border)] last:border-0">
                         <div className="col-span-4">
                           <div className="flex items-center gap-2">
