@@ -1,3 +1,4 @@
+// app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -8,12 +9,20 @@ export async function GET(req: NextRequest) {
 
     if (authError) {
       console.log('Auth error in /me:', authError);
-      return NextResponse.json({ user: null });
+      const res = NextResponse.json({ user: null });
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
+      return res;
     }
 
     if (!userToken) {
       console.log('No user token in /me');
-      return NextResponse.json({ user: null });
+      const res = NextResponse.json({ user: null });
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
+      return res;
     }
 
     const sql = getDb();
@@ -33,7 +42,11 @@ export async function GET(req: NextRequest) {
 
     if (!user) {
       console.log('User not found in database:', userToken.id);
-      return NextResponse.json({ user: null });
+      const res = NextResponse.json({ user: null });
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
+      return res;
     }
 
     const [subscription] = await sql`
@@ -45,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     const newsletter_subscribed = subscription?.status === 'confirmed';
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
@@ -58,8 +71,19 @@ export async function GET(req: NextRequest) {
         createdAt: user.created_at,
       },
     });
+
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    res.headers.set('Surrogate-Control', 'no-store');
+
+    return res;
   } catch (err) {
     console.error('Auth me error:', err);
-    return NextResponse.json({ user: null });
+    const res = NextResponse.json({ user: null });
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    return res;
   }
 }
