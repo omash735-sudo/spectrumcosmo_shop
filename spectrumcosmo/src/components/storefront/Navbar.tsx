@@ -1,3 +1,4 @@
+// components/storefront/Navbar.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -42,6 +43,7 @@ import SearchBar from '@/components/storefront/SearchBar';
 import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
+import { useUser } from '@/components/storefront/UserProvider';
 
 const categories = [
   { name: 'T-Shirts', href: '/products?category=T-Shirts' },
@@ -98,9 +100,9 @@ const getIconComponent = (iconName: string) => {
 };
 
 export default function Navbar() {
+  const { user: contextUser } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [bannerData, setBannerData] = useState<BannerData | null>(null);
@@ -113,6 +115,8 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  const user = contextUser;
 
   useEffect(() => {
     setMounted(true);
@@ -149,6 +153,8 @@ export default function Navbar() {
         }
       };
       fetchUnreadCount();
+    } else {
+      setUnreadCount(0);
     }
   }, [user]);
 
@@ -178,13 +184,6 @@ export default function Navbar() {
   const logoSrc = currentTheme === 'dark'
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => setUser(data?.user || null))
-      .catch(() => null);
-  }, []);
 
   const openCart = () => {
     setCartOpen(true);
@@ -302,11 +301,10 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Desktop Header */}
+        {/* Desktop Header - lg and up */}
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
-              
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-9 w-auto transition-transform group-hover:scale-105" />
@@ -368,27 +366,25 @@ export default function Navbar() {
                 })}
               </nav>
 
-              {/* Right Section */}
+              {/* Right Section - All buttons fluid and centered */}
               <div className="flex items-center gap-2">
                 <CurrencySelector />
                 <SearchBar />
                 
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
                 
-                <div className="relative group">
-                  <button 
-                    onClick={openCart} 
-                    className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
-                    aria-label="Cart"
-                  >
-                    <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold min-w-[18px] h-4 px-1 rounded-full flex items-center justify-center shadow-sm">
-                        {totalItems > 99 ? '99+' : totalItems}
-                      </span>
-                    )}
-                  </button>
-                </div>
+                <button 
+                  onClick={openCart} 
+                  className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold min-w-[18px] h-4 px-1 rounded-full flex items-center justify-center shadow-sm">
+                      {totalItems > 99 ? '99+' : totalItems}
+                    </span>
+                  )}
+                </button>
 
                 <UserMenu />
               </div>
@@ -396,7 +392,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Tablet Header - visible between md and lg */}
+        {/* Tablet Header - md to lg */}
         <div className="hidden md:block lg:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-2">
@@ -427,7 +423,7 @@ export default function Navbar() {
               </nav>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
-                <button onClick={openCart} className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors" aria-label="Cart">
+                <button onClick={openCart} className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]" aria-label="Cart">
                   <ShoppingCart size={18} className="text-[var(--foreground-muted)]" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[9px] font-bold min-w-[16px] h-3.5 px-1 rounded-full flex items-center justify-center shadow-sm">
@@ -441,12 +437,12 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Header */}
+        {/* Mobile Header - below md */}
         <div className="md:hidden px-3 py-2.5">
           <div className="flex items-center justify-between gap-1 min-w-0">
             <button 
               onClick={() => setMobileMenuOpen(true)} 
-              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex-shrink-0"
+              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
               aria-label="Menu"
             >
               <Menu size={22} className="text-[var(--foreground-muted)]" />
@@ -464,7 +460,7 @@ export default function Navbar() {
               <UserMenu />
               <button 
                 onClick={openCart} 
-                className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors"
+                className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                 aria-label="Cart"
               >
                 <ShoppingCart size={19} className="text-[var(--foreground-muted)]" />
@@ -488,7 +484,7 @@ export default function Navbar() {
                 <img src={logoSrc} alt="Logo" className="h-7 w-auto" />
                 <span className="font-bold text-[var(--foreground)]">Menu</span>
               </div>
-              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition">
+              <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition flex items-center justify-center min-h-[44px] min-w-[44px]">
                 <X size={20} className="text-[var(--foreground-muted)]" />
               </button>
             </div>
@@ -512,12 +508,12 @@ export default function Navbar() {
                   <Link 
                     href="/account/profile" 
                     onClick={closeMobileMenu} 
-                    className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm flex items-center justify-center"
+                    className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm flex items-center justify-center min-h-[44px]"
                   >
                     Profile
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white font-semibold px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] flex items-center justify-center">
+                  <Link href="/login" onClick={closeMobileMenu} className="text-xs bg-[var(--primary)] text-white font-semibold px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] flex items-center justify-center min-h-[44px]">
                     Sign In
                   </Link>
                 )}
@@ -529,25 +525,25 @@ export default function Navbar() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <Home size={18} className="text-[var(--foreground-muted)]" /> Home
               </Link>
-              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/products" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <Package size={18} className="text-[var(--foreground-muted)]" /> Products
               </Link>
-              <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/events" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <CalendarDays size={18} className="text-[var(--foreground-muted)]" /> Events
               </Link>
-              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/reviews" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <Star size={18} className="text-[var(--foreground-muted)]" /> Reviews
               </Link>
-              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <Info size={18} className="text-[var(--foreground-muted)]" /> About
               </Link>
-              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/contact" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> Contact
               </Link>
-              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)]">
+              <Link href="/faq" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--background-secondary)] transition text-[var(--foreground-muted)] min-h-[44px]">
                 <HelpCircle size={18} className="text-[var(--foreground-muted)]" /> FAQ
               </Link>
             </div>
@@ -557,10 +553,10 @@ export default function Navbar() {
                 <button 
                   onClick={async () => {
                     await fetch('/api/auth/logout', { method: 'POST' });
-                    router.push('/');
-                    closeMobileMenu();
+                    // Force page reload to clear all state
+                    window.location.href = '/';
                   }} 
-                  className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition"
+                  className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition min-h-[44px]"
                 >
                   <LogOut size={18} /> Log out
                 </button>
@@ -586,7 +582,7 @@ export default function Navbar() {
         >
           <div className="relative">
             <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
-            <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center md:p-3.5">
+            <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center min-h-[48px] min-w-[48px] md:p-3.5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-5 h-5 md:w-6 md:h-6">
                 <path d="M12.032 2.5C6.49 2.5 2 6.99 2 12.532c0 2.12.65 4.09 1.76 5.73L2 21.5l3.42-.98c1.57.93 3.4 1.48 5.36 1.48 5.54 0 10.03-4.49 10.03-10.03S17.57 2.5 12.032 2.5zm0 18.48c-1.75 0-3.38-.5-4.78-1.38l-.34-.2-2.03.58.58-2.02-.22-.35a7.86 7.86 0 0 1-1.4-4.44c0-4.33 3.53-7.85 7.85-7.85 4.33 0 7.85 3.52 7.85 7.85-.01 4.32-3.53 7.85-7.86 7.85zm4.21-5.88c-.23-.12-1.38-.68-1.6-.76-.21-.08-.37-.12-.52.12-.15.24-.59.76-.72.92-.13.15-.27.17-.5.05-.23-.12-.97-.36-1.85-1.14-.68-.6-1.14-1.34-1.28-1.57-.13-.23-.01-.36.1-.48.1-.1.23-.26.34-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.52-1.26-.72-1.73-.18-.45-.37-.37-.52-.38-.13-.01-.29-.01-.44-.01s-.4.06-.61.29c-.21.23-.8.78-.8 1.9s.82 2.2.93 2.36c.11.15 1.6 2.44 3.88 3.42.54.23.96.37 1.29.47.54.17 1.03.14 1.42.09.43-.05 1.38-.56 1.57-1.11.19-.54.19-1 .13-1.1-.06-.1-.22-.16-.46-.28z" />
               </svg>
