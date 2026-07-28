@@ -85,7 +85,6 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
   const progress = (countdown / 10) * 100;
   const circumference = 2 * Math.PI * 28;
 
-  // Don't render until mounted on client
   if (!mounted) return null;
 
   return createPortal(
@@ -108,12 +107,13 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
           className="relative w-full max-w-sm sm:max-w-md bg-[var(--background-card)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-[var(--border)]"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Close Button - Bigger on mobile */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+            className="absolute top-3 right-3 z-10 p-2.5 sm:p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors shadow-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close"
           >
-            <X size={20} />
+            <X size={20} className="sm:size-[18px]" />
           </button>
 
           <div className="relative w-full aspect-[4/3] bg-[var(--background-secondary)]">
@@ -143,7 +143,7 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
               <button
                 onClick={handleRedirect}
                 disabled={isRedirecting}
-                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 min-h-[48px]"
               >
                 {isRedirecting ? 'Redirecting...' : (
                   <>
@@ -154,7 +154,7 @@ export default function CategoryPopup({ category, imageUrl, onClose }: CategoryP
               </button>
               <button
                 onClick={onClose}
-                className="w-full text-[var(--foreground-muted)] hover:text-[var(--foreground)] text-sm font-medium py-2 transition-colors"
+                className="w-full text-[var(--foreground-muted)] hover:text-[var(--foreground)] text-sm font-medium py-2 transition-colors min-h-[44px]"
               >
                 Continue Browsing
               </button>
