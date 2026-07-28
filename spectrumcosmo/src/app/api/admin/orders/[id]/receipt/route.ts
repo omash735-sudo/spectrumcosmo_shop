@@ -40,11 +40,11 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    let trackingNumber = '';
+    let trackingNumber: string | undefined = undefined;
     let trackingDetails: any = {};
 
     if (manualData) {
-      trackingNumber = manualData.parcelId || '';
+      trackingNumber = manualData.parcelId || undefined;
       trackingDetails = {
         parcelId: manualData.parcelId || '',
         receiverName: manualData.receiverName || '',
@@ -61,7 +61,7 @@ export async function POST(
 
     if (receiptText && !manualData) {
       const extracted = extractTrackingInfo(receiptText);
-      trackingNumber = extracted.parcelId || '';
+      trackingNumber = extracted.parcelId || undefined;
       trackingDetails = extracted;
     }
 
@@ -83,7 +83,7 @@ export async function POST(
         orderId,
         newStatusSlug: statusToSet,
         adminNotes: `Receipt uploaded. Tracking #: ${trackingNumber || 'N/A'}`,
-        trackingNumber: trackingNumber || null,
+        trackingNumber: trackingNumber,
         trackingNotes: `Receipt uploaded on ${new Date().toLocaleString()}`,
         changedBy: 'admin',
         ipAddress: req.headers.get('x-forwarded-for') || 'unknown',
@@ -106,8 +106,8 @@ export async function POST(
           created_at
         ) VALUES (
           ${order.user_id}::uuid,
-          'Order #${order.order_number} Has Been Shipped!',
-          'Your order has been shipped. Tracking #: ${trackingNumber || 'N/A'}. Click to track your delivery.',
+          ${`Order #${order.order_number} Has Been Shipped!`},
+          ${`Your order has been shipped. Tracking #: ${trackingNumber || 'N/A'}. Click to track your delivery.`},
           'order',
           'truck',
           ${`${appUrl}/account/orders/${order.id}`},
@@ -174,7 +174,7 @@ function extractTrackingInfo(text: string) {
   return result;
 }
 
-async function sendReceiptEmail(order: any, trackingNumber: string, trackingDetails: any, imageUrl: string | null) {
+async function sendReceiptEmail(order: any, trackingNumber: string | undefined, trackingDetails: any, imageUrl: string | null) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.shop';
   const trackingUrl = `${appUrl}/account/orders/${order.id}`;
 
