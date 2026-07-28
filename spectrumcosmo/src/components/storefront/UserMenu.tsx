@@ -31,17 +31,18 @@ export default function UserMenu() {
       if (res.ok) {
         setUser(null);
         localStorage.removeItem('user_token');
+        localStorage.removeItem('admin_token');
         localStorage.removeItem('preferred_currency');
         sessionStorage.clear();
         setMenuOpen(false);
-        router.push('/');
-        router.refresh();
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Logout failed:', error);
       setUser(null);
-      router.push('/');
-      router.refresh();
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/';
     }
   };
 
@@ -51,7 +52,7 @@ export default function UserMenu() {
     return (
       <Link 
         href="/login" 
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors min-h-[44px] min-w-[44px]"
       >
         <User size={18} className="text-gray-600 dark:text-gray-400" />
       </Link>
@@ -65,7 +66,7 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors overflow-hidden"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors overflow-hidden min-h-[44px] min-w-[44px]"
         aria-label="User menu"
       >
         {profileImage ? (
@@ -89,35 +90,35 @@ export default function UserMenu() {
           <Link
             href="/account/profile"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors min-h-[44px]"
           >
             <User size={16} /> My Profile
           </Link>
           <Link
             href="/account/orders"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors min-h-[44px]"
           >
             <Package size={16} /> My Orders
           </Link>
           <Link
             href="/account/wishlist"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors min-h-[44px]"
           >
             <Heart size={16} /> Wishlist
           </Link>
           <Link
             href="/account/addresses"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors min-h-[44px]"
           >
             <MapPin size={16} /> Addresses
           </Link>
           <Link
             href="/account/settings"
             onClick={closeMenu}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-[#F97316] transition-colors min-h-[44px]"
           >
             <Settings size={16} /> Settings
           </Link>
@@ -125,7 +126,7 @@ export default function UserMenu() {
           <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
           <button
             onClick={() => { logout(); }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left min-h-[44px]"
           >
             <LogOut size={16} /> Logout
           </button>
