@@ -301,11 +301,9 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Desktop Header - lg and up */}
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
-              {/* Logo */}
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
                 <img src={logoSrc} alt="SpectrumCosmo" className="h-9 w-auto transition-transform group-hover:scale-105" />
                 <span className="text-xl font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
@@ -313,7 +311,6 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* Navigation */}
               <nav className="flex items-center gap-1">
                 {desktopLinks.map(link => {
                   const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
@@ -366,7 +363,6 @@ export default function Navbar() {
                 })}
               </nav>
 
-              {/* Right Section - All buttons fluid and centered */}
               <div className="flex items-center gap-2">
                 <CurrencySelector />
                 <SearchBar />
@@ -392,7 +388,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Tablet Header - md to lg */}
         <div className="hidden md:block lg:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-2">
@@ -437,7 +432,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Header - below md */}
         <div className="md:hidden px-3 py-2.5">
           <div className="flex items-center justify-between gap-1 min-w-0">
             <button 
@@ -475,7 +469,6 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Sidebar */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-[var(--background-card)] shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
@@ -552,9 +545,13 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <button 
                   onClick={async () => {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                    // Force page reload to clear all state
-                    window.location.href = '/';
+                    try {
+                      await fetch('/api/auth/logout', { method: 'POST' });
+                      window.location.href = '/';
+                    } catch (error) {
+                      console.error('Logout failed:', error);
+                      window.location.href = '/';
+                    }
                   }} 
                   className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition min-h-[44px]"
                 >
