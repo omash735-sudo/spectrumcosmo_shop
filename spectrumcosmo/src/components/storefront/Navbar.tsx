@@ -202,6 +202,24 @@ export default function Navbar() {
   const bgColor = bannerData?.background_color || 'var(--primary)';
   const textColor = bannerData?.text_color || '#FFFFFF';
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Force hard reload with cache busting
+    window.location.replace('/?t=' + Date.now());
+  };
+
   return (
     <>
       <style>{`
@@ -544,15 +562,7 @@ export default function Navbar() {
             <div className="p-5 border-t border-[var(--border)]">
               {isLoggedIn ? (
                 <button 
-                  onClick={async () => {
-                    try {
-                      await fetch('/api/auth/logout', { method: 'POST' });
-                      window.location.href = '/';
-                    } catch (error) {
-                      console.error('Logout failed:', error);
-                      window.location.href = '/';
-                    }
-                  }} 
+                  onClick={handleLogout}
                   className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition min-h-[44px]"
                 >
                   <LogOut size={18} /> Log out
