@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { User, Package, Heart, MapPin, Settings, LogOut } from 'lucide-react';
-import { useUser } from '@/context/UserProvider';
+import { useUser } from '@/components/storefront/UserProvider';
 
 export default function UserMenu() {
   const { user, setUser } = useUser();
@@ -26,32 +26,19 @@ export default function UserMenu() {
 
   const logout = async () => {
     try {
-      // 1. Call logout API
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       
       if (res.ok) {
-        // 2. Clear user from context
         setUser(null);
-        
-        // 3. Clear localStorage (keep cart for guest if desired)
         localStorage.removeItem('user_token');
         localStorage.removeItem('preferred_currency');
-        // Optional: Clear cart on logout
-        // localStorage.removeItem('spectrumcosmo_cart');
-        
-        // 4. Clear sessionStorage
         sessionStorage.clear();
-        
-        // 5. Close menu
         setMenuOpen(false);
-        
-        // 6. Redirect to home with refresh
         router.push('/');
         router.refresh();
       }
     } catch (error) {
       console.error('Logout failed:', error);
-      // Force redirect even if API fails
       setUser(null);
       router.push('/');
       router.refresh();
