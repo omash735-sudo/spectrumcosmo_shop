@@ -2,11 +2,15 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+const COOKIE_DOMAIN = process.env.NODE_ENV === 'production' 
+  ? 'spectrumcosmo.vercel.app' 
+  : undefined;
+
 export async function POST() {
   try {
     const cookieStore = await cookies();
     
-    // Get all cookies and delete them
+    // Delete cookies with domain awareness
     const allCookies = cookieStore.getAll();
     for (const cookie of allCookies) {
       if (cookie.name === 'user_token' || cookie.name === 'admin_token') {
@@ -16,11 +20,11 @@ export async function POST() {
     
     const res = NextResponse.json({ success: true, message: 'Logged out successfully' });
     
-    // Delete cookies with explicit settings
+    // Delete with explicit settings
     res.cookies.delete('user_token');
     res.cookies.delete('admin_token');
     
-    // Force clear by setting expired
+    // Force clear by setting expired with matching domain
     res.cookies.set('user_token', '', {
       expires: new Date(0),
       path: '/',
@@ -28,6 +32,7 @@ export async function POST() {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0,
+      domain: COOKIE_DOMAIN, // <-- CRITICAL FIX
     });
     res.cookies.set('admin_token', '', {
       expires: new Date(0),
@@ -36,9 +41,9 @@ export async function POST() {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0,
+      domain: COOKIE_DOMAIN, // <-- CRITICAL FIX
     });
     
-    // Also set a no-cache header to prevent caching
     res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.headers.set('Pragma', 'no-cache');
     res.headers.set('Expires', '0');
