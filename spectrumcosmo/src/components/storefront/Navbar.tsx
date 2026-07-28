@@ -206,7 +206,6 @@ export default function Navbar() {
     try {
       await fetch('/api/auth/logout', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
       });
     } catch (error) {
@@ -215,8 +214,6 @@ export default function Navbar() {
     
     localStorage.clear();
     sessionStorage.clear();
-    
-    // Force hard reload with cache busting
     window.location.replace('/?t=' + Date.now());
   };
 
