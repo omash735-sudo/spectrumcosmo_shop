@@ -90,31 +90,37 @@ export async function POST(
       });
     }
 
-    // Create notification for customer
+    // Create notification for customer (only if user_id exists)
     if (order.user_id) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.shop';
       
-      await sql`
-        INSERT INTO user_notifications (
-          user_id,
-          title,
-          message,
-          type,
-          icon_name,
-          action_url,
-          action_label,
-          created_at
-        ) VALUES (
-          ${order.user_id}::uuid,
-          ${`Order #${order.order_number} Has Been Shipped!`},
-          ${`Your order has been shipped. Tracking #: ${trackingNumber || 'N/A'}. Click to track your delivery.`},
-          'order',
-          'truck',
-          ${`${appUrl}/account/orders/${order.id}`},
-          'Track Your Order',
-          NOW()
-        )
-      `;
+      try {
+        await sql`
+          INSERT INTO user_notifications (
+            user_id,
+            title,
+            message,
+            type,
+            icon_name,
+            action_url,
+            action_label,
+            created_at
+          ) VALUES (
+            ${order.user_id}::uuid,
+            ${`Order #${order.order_number} Has Been Shipped!`},
+            ${`Your order has been shipped. Tracking #: ${trackingNumber || 'N/A'}. Click to track your delivery.`},
+            'order',
+            'truck',
+            ${`${appUrl}/account/orders/${order.id}`},
+            'Track Your Order',
+            NOW()
+          )
+        `;
+        console.log('Notification created for user:', order.user_id);
+      } catch (notifErr) {
+        console.error('Failed to create notification:', notifErr);
+        // Continue with email even if notification fails
+      }
     }
 
     // Send email notification
