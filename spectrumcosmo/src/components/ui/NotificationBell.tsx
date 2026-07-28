@@ -1,10 +1,11 @@
+// components/ui/NotificationBell.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useUser } from '@/components/storefront/UserProvider';
 import { 
   Bell, BellOff, Sparkles, BarChart3, Wrench, ChevronRight, Trash2,
-  // Import all icons for dynamic loading
   Package, Box, Truck, Bike, Plane, MapPin, Clock,
   ShoppingBag, Shirt, Watch, Gem, Camera, Smartphone, Laptop, Coffee, Home, Dumbbell,
   CreditCard, Wallet, Banknote, Coins, Receipt, Percent,
@@ -26,12 +27,10 @@ interface Notification {
   icon_name?: string;
 }
 
-// Dynamic icon mapper - matches admin panel icons
 const getIconComponent = (iconName?: string) => {
   if (!iconName) return Sparkles;
   
   const iconMap: Record<string, any> = {
-    // Orders & Shipping
     'package': Package,
     'box': Box,
     'truck': Truck,
@@ -39,7 +38,6 @@ const getIconComponent = (iconName?: string) => {
     'plane': Plane,
     'map-pin': MapPin,
     'clock': Clock,
-    // Products & Inventory
     'shopping-bag': ShoppingBag,
     'shirt': Shirt,
     'watch': Watch,
@@ -50,14 +48,12 @@ const getIconComponent = (iconName?: string) => {
     'coffee': Coffee,
     'home': Home,
     'dumbbell': Dumbbell,
-    // Payments & Finance
     'credit-card': CreditCard,
     'wallet': Wallet,
     'banknote': Banknote,
     'coins': Coins,
     'receipt': Receipt,
     'percent': Percent,
-    // Promotions & Marketing
     'sparkles': Sparkles,
     'gift': Gift,
     'tag': Tag,
@@ -66,7 +62,6 @@ const getIconComponent = (iconName?: string) => {
     'trophy': Trophy,
     'star': Star,
     'heart': Heart,
-    // System & Maintenance
     'wrench': Wrench,
     'settings': Settings,
     'database': Database,
@@ -74,13 +69,11 @@ const getIconComponent = (iconName?: string) => {
     'cloud': Cloud,
     'shield': Shield,
     'lock': Lock,
-    // Customer Support
     'headphones': Headphones,
     'help-circle': HelpCircle,
     'message-circle': MessageCircle,
     'phone': Phone,
     'mail': Mail,
-    // Alerts & Updates
     'bell': Bell,
     'bell-ring': BellRing,
     'info': Info,
@@ -94,21 +87,31 @@ const getIconComponent = (iconName?: string) => {
 };
 
 export default function NotificationBell() {
+  const { user } = useUser();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
+    // Only fetch if user is logged in
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const res = await fetch('/api/notifications?limit=20');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setNotifications(data.notifications);
-      setUnreadCount(data.unreadCount);
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
+      setNotifications([]);
+      setUnreadCount(0);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchNotifications();
@@ -206,7 +209,6 @@ export default function NotificationBell() {
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 mt-2 sm:mt-3 w-[95vw] sm:w-[380px] md:w-[420px] max-w-[420px] bg-[var(--background-card)] rounded-2xl shadow-2xl border border-[var(--border)] z-50 overflow-hidden">
             
-            {/* Header with Trash Icon */}
             <div className="flex justify-between items-center px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--border)]">
               <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Notification Centre</h3>
               {notifications.length > 0 && (
@@ -220,7 +222,6 @@ export default function NotificationBell() {
               )}
             </div>
 
-            {/* Notifications List with Groups */}
             <div className="overflow-y-auto max-h-[450px] sm:max-h-[500px] md:max-h-[550px]">
               {notifications.length === 0 ? (
                 <div className="py-10 sm:py-12 text-center">
@@ -237,14 +238,12 @@ export default function NotificationBell() {
 
                   return (
                     <div key={groupName}>
-                      {/* Group Header */}
                       <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-1.5 sm:pb-2 bg-[var(--background-secondary)]/50">
                         <h4 className="text-[10px] sm:text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">
                           {groupName}
                         </h4>
                       </div>
 
-                      {/* Group Notifications */}
                       {groupNotifs.map((notif) => {
                         const Icon = getIconComponent(notif.icon_name);
                         const timeAgo = getTimeAgo(notif.created_at);
@@ -259,7 +258,6 @@ export default function NotificationBell() {
                             }`}
                           >
                             <div className="flex gap-2.5 sm:gap-3">
-                              {/* Icon */}
                               <div className="flex-shrink-0">
                                 <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${
                                   !notif.is_read 
@@ -274,7 +272,6 @@ export default function NotificationBell() {
                                 </div>
                               </div>
 
-                              {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
                                   <p className="font-medium text-sm text-[var(--foreground)]">
