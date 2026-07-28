@@ -1,3 +1,4 @@
+// components/TrackVisits.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -11,6 +12,7 @@ export default function TrackVisits() {
       fetch('/api/track-visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ page_url: pathname }),
       }).catch(() => {});
     }
