@@ -1,3 +1,4 @@
+// components/storefront/UserMenu.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -5,19 +6,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { User, Package, Heart, MapPin, Settings, LogOut } from 'lucide-react';
+import { useUser } from '@/context/UserProvider';
 
 export default function UserMenu() {
-  const [user, setUser] = useState<any>(null);
+  const { user, setUser } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => setUser(data?.user || null))
-      .catch(() => null);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -30,10 +25,37 @@ export default function UserMenu() {
   }, []);
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    router.push('/');
-    router.refresh();
+    try {
+      // 1. Call logout API
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      
+      if (res.ok) {
+        // 2. Clear user from context
+        setUser(null);
+        
+        // 3. Clear localStorage (keep cart for guest if desired)
+        localStorage.removeItem('user_token');
+        localStorage.removeItem('preferred_currency');
+        // Optional: Clear cart on logout
+        // localStorage.removeItem('spectrumcosmo_cart');
+        
+        // 4. Clear sessionStorage
+        sessionStorage.clear();
+        
+        // 5. Close menu
+        setMenuOpen(false);
+        
+        // 6. Redirect to home with refresh
+        router.push('/');
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force redirect even if API fails
+      setUser(null);
+      router.push('/');
+      router.refresh();
+    }
   };
 
   const closeMenu = () => setMenuOpen(false);
@@ -115,7 +137,7 @@ export default function UserMenu() {
 
           <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
           <button
-            onClick={() => { logout(); closeMenu(); }}
+            onClick={() => { logout(); }}
             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left"
           >
             <LogOut size={16} /> Logout
