@@ -13,6 +13,7 @@ interface ProductVariant {
   stock_quantity: number;
   sku: string | null;
   image_url: string | null;
+  gallery_images: string[] | null;
   is_active: boolean;
   display_order: number;
   created_at: Date;
@@ -43,11 +44,43 @@ export async function POST(
   if (authError) return authError;
   
   const { id: productId } = await params;
-  const { size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order } = await req.json();
+  const { 
+    size, 
+    color, 
+    price_override, 
+    compare_price_override, 
+    stock_quantity, 
+    sku, 
+    image_url,
+    gallery_images,
+    display_order 
+  } = await req.json();
   
   const newVariant = await queryOne<ProductVariant>`
-    INSERT INTO product_variants (product_id, size, color, price_override, compare_price_override, stock_quantity, sku, image_url, display_order)
-    VALUES (${productId}, ${size || null}, ${color || null}, ${price_override ?? null}, ${compare_price_override ?? null}, ${stock_quantity || 0}, ${sku || null}, ${image_url || null}, ${display_order ?? 0})
+    INSERT INTO product_variants (
+      product_id, 
+      size, 
+      color, 
+      price_override, 
+      compare_price_override, 
+      stock_quantity, 
+      sku, 
+      image_url,
+      gallery_images,
+      display_order
+    )
+    VALUES (
+      ${productId}, 
+      ${size || null}, 
+      ${color || null}, 
+      ${price_override ?? null}, 
+      ${compare_price_override ?? null}, 
+      ${stock_quantity || 0}, 
+      ${sku || null}, 
+      ${image_url || null},
+      ${gallery_images ? JSON.stringify(gallery_images) : null}::jsonb,
+      ${display_order ?? 0}
+    )
     RETURNING *
   `;
   
@@ -65,7 +98,19 @@ export async function PATCH(
   if (authError) return authError;
   
   const { id: productId } = await params;
-  const { variantId, size, color, price_override, compare_price_override, stock_quantity, sku, image_url, is_active, display_order } = await req.json();
+  const { 
+    variantId, 
+    size, 
+    color, 
+    price_override, 
+    compare_price_override, 
+    stock_quantity, 
+    sku, 
+    image_url,
+    gallery_images,
+    is_active, 
+    display_order 
+  } = await req.json();
   
   if (!variantId) {
     return NextResponse.json({ error: 'Variant ID required' }, { status: 400 });
@@ -80,6 +125,7 @@ export async function PATCH(
       stock_quantity = COALESCE(${stock_quantity ?? null}, stock_quantity),
       sku = COALESCE(${sku ?? null}, sku),
       image_url = COALESCE(${image_url ?? null}, image_url),
+      gallery_images = COALESCE(${gallery_images ? JSON.stringify(gallery_images) : null}::jsonb, gallery_images),
       is_active = COALESCE(${is_active ?? null}, is_active),
       display_order = COALESCE(${display_order ?? null}, display_order),
       updated_at = NOW()
