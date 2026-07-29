@@ -15,14 +15,14 @@ import ShareButton from '@/components/storefront/ShareButton';
 import ProductViewTracker from '@/components/storefront/ProductViewTracker';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
 import QuantitySelector from '@/components/storefront/QuantitySelector';
-import { getDb, queryOne, queryMany } from '@/lib/db';
 import { 
   Heart, 
   Shield, 
   Truck, 
   RotateCcw, 
   CheckCircle,
-  ChevronLeft
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface Product {
@@ -50,6 +50,7 @@ interface Variant {
   stock_quantity: number;
   sku: string | null;
   image_url: string | null;
+  gallery_images: string[] | null;
   is_active: boolean;
   display_order: number;
 }
@@ -74,6 +75,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,6 +88,11 @@ export default function ProductDetailPage() {
           setReviews(data.reviews || []);
           setVariants(data.variants || []);
           setRelatedProducts(data.relatedProducts || []);
+          
+          // Select first variant if available
+          if (data.variants && data.variants.length > 0) {
+            setSelectedVariant(data.variants[0]);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch product:', err);
@@ -148,6 +156,20 @@ export default function ProductDetailPage() {
     { icon: CheckCircle, text: 'Secure Checkout' },
   ];
 
+  // Get all images (product image + variant gallery images)
+  const allImages: string[] = [];
+  if (product.image_url) allImages.push(product.image_url);
+  
+  // Add variant gallery images
+  variants.forEach(v => {
+    if (v.gallery_images && v.gallery_images.length > 0) {
+      allImages.push(...v.gallery_images);
+    }
+    if (v.image_url && !allImages.includes(v.image_url)) {
+      allImages.push(v.image_url);
+    }
+  });
+
   const handleIncrement = () => {
     if (quantity < totalStock) {
       setQuantity(prev => prev + 1);
@@ -159,6 +181,20 @@ export default function ProductDetailPage() {
       setQuantity(prev => prev - 1);
     }
   };
+
+  const handleImageChange = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex(prev => (prev + 1) % allImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+  };
+
+  const currentImage = allImages[currentImageIndex] || product.image_url || '/placeholder-image.jpg';
 
   return (
     <>
@@ -182,13 +218,14 @@ export default function ProductDetailPage() {
               <div className="sticky top-24">
                 <div className="relative h-[300px] sm:h-[400px] lg:h-[550px] rounded-xl sm:rounded-2xl overflow-hidden bg-[var(--background-secondary)]">
                   <Image
-                    src={product.image_url || '/placeholder-image.jpg'}
+                    src={currentImage}
                     alt={product.name}
                     fill
-                    className="object-cover hover:scale-105 transition duration-700"
+                    className="object-cover"
                     priority
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
+                  
                   {!isInStock && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <span className="bg-[var(--background-card)] text-[var(--foreground)] px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base border border-[var(--border)]">
@@ -206,7 +243,42 @@ export default function ProductDetailPage() {
                       Featured
                     </div>
                   )}
+
+                  {/* Navigation arrows */}
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
                 </div>
+
+                {/* Thumbnails */}
+                {allImages.length > 1 && (
+                  <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                    {allImages.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleImageChange(index)}
+                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition ${
+                          currentImageIndex === index ? 'border-[var(--primary)]' : 'border-transparent'
+                        }`}
+                      >
+                        <Image src={img} alt={`Product ${index + 1}`} fill className="object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -252,7 +324,7 @@ export default function ProductDetailPage() {
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`px-3 sm:px-5 py-1.5 sm:py-2.5 border rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
+                        className={`px-3 sm:px-5 py-1.5 sm:py-2.5 border rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] flex items-center justify-center min-h-[36px] sm:min-h-[44px] ${
                           selectedSize === size 
                             ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' 
                             : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
@@ -274,7 +346,7 @@ export default function ProductDetailPage() {
                       <button
                         key={color}
                         onClick={() => setSelectedColor(color)}
-                        className={`px-3 sm:px-5 py-1.5 sm:py-2.5 border rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
+                        className={`px-3 sm:px-5 py-1.5 sm:py-2.5 border rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] flex items-center justify-center min-h-[36px] sm:min-h-[44px] ${
                           selectedColor === color 
                             ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' 
                             : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
@@ -295,7 +367,6 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Quantity Selector - Interactive */}
               <QuantitySelector
                 quantity={quantity}
                 onIncrement={handleIncrement}
@@ -314,7 +385,7 @@ export default function ProductDetailPage() {
                   quantity={quantity}
                   className="flex-1"
                 />
-                <button className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-[var(--border)] rounded-xl font-medium text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition">
+                <button className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-[var(--border)] rounded-xl font-medium text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition min-h-[44px]">
                   <Heart size={18} />
                   Wishlist
                 </button>
