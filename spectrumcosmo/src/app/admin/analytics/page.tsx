@@ -18,7 +18,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-// Types
 interface Stats {
   totalOrders: number;
   totalRevenue: number;
@@ -239,7 +238,7 @@ export default async function AnalyticsPage() {
 
             <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div className="lg:col-span-1">
-                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm h-full">
                   <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
                     <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
                     <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">Customer Retention</h2>
@@ -253,7 +252,7 @@ export default async function AnalyticsPage() {
                           {customerStats.repeatCustomers}
                         </p>
                       </div>
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center flex-shrink-0">
                         <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                     </div>
@@ -265,7 +264,7 @@ export default async function AnalyticsPage() {
                           {customerStats.newCustomers}
                         </p>
                       </div>
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center flex-shrink-0">
                         <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                       </div>
                     </div>
@@ -273,7 +272,7 @@ export default async function AnalyticsPage() {
                     {customerStats.repeatCustomers + customerStats.newCustomers > 0 && (
                       <div className="mt-3 sm:mt-4 pt-3 border-t border-[var(--border)]">
                         <p className="text-xs text-[var(--foreground-muted)]">
-                          Retention Rate: {' '}
+                          Retention Rate:{' '}
                           <span className="font-medium text-[var(--foreground)]">
                             {Math.round((customerStats.repeatCustomers / (customerStats.repeatCustomers + customerStats.newCustomers)) * 100)}%
                           </span>
@@ -285,7 +284,7 @@ export default async function AnalyticsPage() {
               </div>
 
               <div className="lg:col-span-2">
-                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm h-full">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-[var(--border)]">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
@@ -311,7 +310,7 @@ export default async function AnalyticsPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="h-48 sm:h-64">
+                    <div className="h-64 sm:h-72 lg:h-80 w-full">
                       <MonthlySalesChart data={monthlyData} />
                     </div>
                   )}
@@ -356,7 +355,7 @@ export default async function AnalyticsPage() {
                         <tr key={product.product_name} className="hover:bg-[var(--background-secondary)] transition">
                           <td className="px-4 sm:px-6 py-3 sm:py-4">
                             <span className={`
-                              inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
+                              inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium flex-shrink-0
                               ${index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400' :
                                 index === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' :
                                 index === 2 ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400' :
