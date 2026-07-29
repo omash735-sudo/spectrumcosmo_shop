@@ -1,3 +1,4 @@
+// app/admin/products/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -8,7 +9,7 @@ import {
   CheckCircle, Clock, AlertCircle, Ban, TrendingUp, Copy,
   Grid3X3, List, ChevronDown, Eye, MoreVertical, 
   ExternalLink, Archive, Copy as Duplicate, Tag,
-  ShoppingBag, AlertTriangle, ArrowUp, ArrowDown
+  ShoppingBag, AlertTriangle, ArrowUp, ArrowDown, Image as ImageIcon
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
@@ -49,7 +50,6 @@ export default function AdminProductsPage() {
   const [filterFeatured, setFilterFeatured] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -308,7 +308,7 @@ export default function AdminProductsPage() {
             </div>
             <button 
               onClick={openAdd} 
-              className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-sm min-h-[44px] justify-center"
+              className="flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm min-h-[44px]"
             >
               <Plus size={16} /> Add Product
             </button>
@@ -437,7 +437,7 @@ export default function AdminProductsPage() {
                 <div className="flex items-center gap-1 border border-[var(--border)] rounded-lg p-1 bg-[var(--background-card)]">
                   <button
                     onClick={() => setViewMode('table')}
-                    className={`p-1.5 rounded transition min-h-[32px] min-w-[32px] ${
+                    className={`flex items-center justify-center p-1.5 rounded transition min-h-[32px] min-w-[32px] ${
                       viewMode === 'table' 
                         ? 'bg-[var(--primary)] text-white' 
                         : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)]'
@@ -447,7 +447,7 @@ export default function AdminProductsPage() {
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded transition min-h-[32px] min-w-[32px] ${
+                    className={`flex items-center justify-center p-1.5 rounded transition min-h-[32px] min-w-[32px] ${
                       viewMode === 'grid' 
                         ? 'bg-[var(--primary)] text-white' 
                         : 'text-[var(--foreground-muted)] hover:bg-[var(--background-secondary)]'
@@ -475,19 +475,19 @@ export default function AdminProductsPage() {
               <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={() => bulkFeature(true)} 
-                  className="px-3 py-1.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition min-h-[32px]"
+                  className="flex items-center justify-center px-3 py-1.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition min-h-[32px]"
                 >
                   Mark Featured
                 </button>
                 <button 
                   onClick={() => bulkFeature(false)} 
-                  className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[32px]"
+                  className="flex items-center justify-center px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[32px]"
                 >
                   Remove Featured
                 </button>
                 <button 
                   onClick={bulkDelete} 
-                  className="px-3 py-1.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition min-h-[32px]"
+                  className="flex items-center justify-center px-3 py-1.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition min-h-[32px]"
                 >
                   Delete Selected
                 </button>
@@ -587,7 +587,7 @@ export default function AdminProductsPage() {
                         <td className="px-3 sm:px-4 py-3 hidden xl:table-cell">
                           <button
                             onClick={() => toggleFeatured(p.id, p.is_featured)}
-                            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all duration-200 ${
+                            className={`flex items-center justify-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all duration-200 min-h-[32px] ${
                               p.is_featured 
                                 ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50' 
                                 : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
@@ -600,7 +600,7 @@ export default function AdminProductsPage() {
                         <td className="px-3 sm:px-4 py-3 hidden 2xl:table-cell">
                           <Link
                             href={`/admin/products/${p.id}/variants`}
-                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/50 transition"
+                            className="inline-flex items-center justify-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/50 transition min-h-[32px]"
                           >
                             <Grid3X3 size={12} /> {p.variant_count || 0}
                           </Link>
@@ -609,7 +609,7 @@ export default function AdminProductsPage() {
                           <div className="relative flex justify-end">
                             <button
                               onClick={() => setActionMenuOpen(actionMenuOpen === p.id ? null : p.id)}
-                              className="p-2 rounded-lg hover:bg-[var(--background-secondary)] transition min-h-[36px] min-w-[36px]"
+                              className="flex items-center justify-center p-2 rounded-lg hover:bg-[var(--background-secondary)] transition min-h-[36px] min-w-[36px]"
                             >
                               <MoreVertical size={16} className="text-[var(--foreground-muted)]" />
                             </button>
@@ -680,10 +680,10 @@ export default function AdminProductsPage() {
                       <span className="text-xs text-[var(--foreground-muted)]">SKU: {p.sku || `PROD-${p.id.slice(0, 6)}`}</span>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <button onClick={() => openEdit(p)} className="flex-1 text-center text-sm bg-[var(--background-secondary)] hover:bg-[var(--primary)] hover:text-white py-2 rounded-lg transition-all duration-200 font-medium">
+                      <button onClick={() => openEdit(p)} className="flex-1 flex items-center justify-center text-sm bg-[var(--background-secondary)] hover:bg-[var(--primary)] hover:text-white py-2 rounded-lg transition-all duration-200 font-medium min-h-[40px]">
                         Edit
                       </button>
-                      <button onClick={() => deleteProduct(p.id)} className="flex-1 text-center text-sm bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 py-2 rounded-lg transition font-medium">
+                      <button onClick={() => deleteProduct(p.id)} className="flex-1 flex items-center justify-center text-sm bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 py-2 rounded-lg transition font-medium min-h-[40px]">
                         Delete
                       </button>
                     </div>
@@ -701,7 +701,7 @@ export default function AdminProductsPage() {
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-lg shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-[var(--background-card)] flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] z-10">
               <h2 className="font-bold text-[var(--foreground)] text-base sm:text-lg">{editing ? 'Edit Product' : 'Add Product'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[36px] min-w-[36px]">
+              <button onClick={() => setShowModal(false)} className="flex items-center justify-center p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[36px] min-w-[36px]">
                 <X size={18} />
               </button>
             </div>
@@ -798,7 +798,7 @@ export default function AdminProductsPage() {
                     <button
                       type="button"
                       onClick={() => setShowCategoryModal(true)}
-                      className="px-3 border border-[var(--border)] rounded-xl hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                      className="flex items-center justify-center px-3 border border-[var(--border)] rounded-xl hover:bg-[var(--background-secondary)] transition min-h-[44px]"
                     >
                       <Plus size={16} />
                     </button>
@@ -860,14 +860,14 @@ export default function AdminProductsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                  className="flex-1 flex items-center justify-center px-4 py-2.5 border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl text-sm py-2.5 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm min-h-[44px]"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl text-sm py-2.5 transition disabled:opacity-50 shadow-sm min-h-[44px]"
                 >
                   {saving ? <Loader2 size={15} className="animate-spin" /> : editing ? 'Save Changes' : 'Add Product'}
                 </button>
@@ -892,13 +892,13 @@ export default function AdminProductsPage() {
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowCategoryModal(false)} 
-                className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                className="flex-1 flex items-center justify-center px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px]"
               >
                 Cancel
               </button>
               <button 
                 onClick={addCategory} 
-                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl py-2.5 transition min-h-[44px]"
+                className="flex-1 flex items-center justify-center bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-xl py-2.5 transition min-h-[44px]"
               >
                 Add Category
               </button>
