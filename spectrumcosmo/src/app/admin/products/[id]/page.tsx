@@ -4,10 +4,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2, Plus, Trash2, Save, X, Edit, ChevronDown, Package, Tag, Layers, AlertCircle } from 'lucide-react';
+import { Loader2, Plus, Trash2, Save, X, Edit, Package, Tag, Layers, AlertCircle, Upload, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Types
 interface Variant {
   id: string;
   size: string | null;
@@ -17,6 +16,7 @@ interface Variant {
   stock_quantity: number;
   sku: string | null;
   image_url: string | null;
+  gallery_images: string[] | null;
   is_active: boolean;
   display_order: number;
 }
@@ -47,11 +47,11 @@ interface VariantFormData {
   stock_quantity: number;
   sku: string;
   image_url: string;
+  gallery_images: string[];
   is_active: boolean;
   display_order: number;
 }
 
-// Helper function to safely parse number from string or number
 function safeParseFloat(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number') return value;
@@ -126,8 +126,7 @@ export default function AdminProductEditPage() {
         setCategories(categoriesData);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Failed to fetch data:', errorMessage);
+      console.error('Failed to fetch data:', err);
       toast.error('Failed to load product data');
     } finally {
       setLoading(false);
@@ -164,8 +163,7 @@ export default function AdminProductEditPage() {
         toast.error(error.error || 'Failed to save product');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Save error:', errorMessage);
+      console.error('Save error:', err);
       toast.error('Failed to save product');
     } finally {
       setSaving(false);
@@ -191,8 +189,7 @@ export default function AdminProductEditPage() {
         toast.error(error.error || 'Failed to add variant');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Add variant error:', errorMessage);
+      console.error('Add variant error:', err);
       toast.error('Failed to add variant');
     }
   };
@@ -216,8 +213,7 @@ export default function AdminProductEditPage() {
         toast.error(error.error || 'Failed to update variant');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Update variant error:', errorMessage);
+      console.error('Update variant error:', err);
       toast.error('Failed to update variant');
     }
   };
@@ -240,8 +236,7 @@ export default function AdminProductEditPage() {
         toast.error(error.error || 'Failed to delete variant');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Delete variant error:', errorMessage);
+      console.error('Delete variant error:', err);
       toast.error('Failed to delete variant');
     } finally {
       setDeletingVariantId(null);
@@ -263,7 +258,6 @@ export default function AdminProductEditPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -273,17 +267,17 @@ export default function AdminProductEditPage() {
                 Manage product details, pricing, and inventory
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={() => router.push('/admin/products')}
-                className="px-4 py-2 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px] text-sm"
+                className="flex items-center justify-center px-4 py-2 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px] text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveProduct}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg font-medium transition disabled:opacity-50 shadow-sm min-h-[44px] text-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg font-medium transition disabled:opacity-50 shadow-sm min-h-[44px] text-sm"
               >
                 {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saving ? 'Saving...' : 'Save Product'}
@@ -295,9 +289,7 @@ export default function AdminProductEditPage() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information Card */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
@@ -429,7 +421,6 @@ export default function AdminProductEditPage() {
               </div>
             </div>
 
-            {/* Variants Section */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -444,7 +435,7 @@ export default function AdminProductEditPage() {
                     setEditingVariant(null);
                     setShowVariantModal(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[36px]"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[36px]"
                 >
                   <Plus size={14} /> Add Variant
                 </button>
@@ -460,7 +451,7 @@ export default function AdminProductEditPage() {
                       setEditingVariant(null);
                       setShowVariantModal(true);
                     }}
-                    className="mt-4 inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition"
+                    className="mt-4 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition"
                   >
                     <Plus size={14} /> Add First Variant
                   </button>
@@ -475,6 +466,7 @@ export default function AdminProductEditPage() {
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium">Price</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium">Stock</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium hidden sm:table-cell">SKU</th>
+                        <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium hidden lg:table-cell">Images</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium text-center hidden md:table-cell">Status</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs font-medium text-center">Actions</th>
                       </tr>
@@ -501,6 +493,18 @@ export default function AdminProductEditPage() {
                           <td className="px-3 sm:px-4 py-2 sm:py-3 font-mono text-xs text-[var(--foreground-muted)] hidden sm:table-cell">
                             {variant.sku || '-'}
                           </td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">
+                            {variant.gallery_images && variant.gallery_images.length > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <ImageIcon size={12} className="text-[var(--foreground-muted)]" />
+                                <span className="text-xs text-[var(--foreground-muted)]">{variant.gallery_images.length}</span>
+                              </div>
+                            ) : variant.image_url ? (
+                              <ImageIcon size={12} className="text-[var(--foreground-muted)]" />
+                            ) : (
+                              <span className="text-xs text-[var(--foreground-muted)]">-</span>
+                            )}
+                          </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3 text-center hidden md:table-cell">
                             <span className={`inline-block w-2 h-2 rounded-full ${variant.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`} />
                           </td>
@@ -511,7 +515,7 @@ export default function AdminProductEditPage() {
                                   setEditingVariant(variant);
                                   setShowVariantModal(true);
                                 }}
-                                className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition min-h-[32px] min-w-[32px]"
+                                className="flex items-center justify-center p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition min-h-[32px] min-w-[32px]"
                                 title="Edit variant"
                               >
                                 <Edit size={14} />
@@ -519,7 +523,7 @@ export default function AdminProductEditPage() {
                               <button
                                 onClick={() => handleDeleteVariant(variant.id)}
                                 disabled={deletingVariantId === variant.id}
-                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition disabled:opacity-50 min-h-[32px] min-w-[32px]"
+                                className="flex items-center justify-center p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition disabled:opacity-50 min-h-[32px] min-w-[32px]"
                                 title="Delete variant"
                               >
                                 {deletingVariantId === variant.id ? (
@@ -539,7 +543,6 @@ export default function AdminProductEditPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm p-4 sm:p-6">
               <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">Product Status</h3>
@@ -579,7 +582,6 @@ export default function AdminProductEditPage() {
         </div>
       </div>
 
-      {/* Variant Modal */}
       {showVariantModal && (
         <VariantModal
           variant={editingVariant}
@@ -600,7 +602,6 @@ export default function AdminProductEditPage() {
   );
 }
 
-// Variant Modal Component
 function VariantModal({ 
   variant, 
   onSave, 
@@ -623,9 +624,63 @@ function VariantModal({
     stock_quantity: variant?.stock_quantity || 0,
     sku: variant?.sku || '',
     image_url: variant?.image_url || '',
+    gallery_images: variant?.gallery_images || [],
     is_active: variant?.is_active !== false,
     display_order: variant?.display_order || 0,
   });
+
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      toast.error('Cloudinary not configured');
+      setUploadingImages(false);
+      return;
+    }
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.secure_url) {
+          uploadedUrls.push(data.secure_url);
+        }
+      } catch (err) {
+        console.error('Upload failed:', err);
+        toast.error('Failed to upload image');
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      gallery_images: [...prev.gallery_images, ...uploadedUrls],
+    }));
+    setUploadingImages(false);
+    toast.success(`${uploadedUrls.length} image(s) uploaded`);
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery_images: prev.gallery_images.filter((_, i) => i !== index),
+    }));
+  };
 
   const handleSubmit = () => {
     const data: Partial<Variant> = {};
@@ -642,6 +697,7 @@ function VariantModal({
     data.stock_quantity = formData.stock_quantity;
     if (formData.sku) data.sku = formData.sku;
     if (formData.image_url) data.image_url = formData.image_url;
+    if (formData.gallery_images.length > 0) data.gallery_images = formData.gallery_images;
     data.is_active = formData.is_active;
     data.display_order = formData.display_order;
     
@@ -657,7 +713,7 @@ function VariantModal({
           </h3>
           <button 
             onClick={onClose} 
-            className="p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[36px] min-w-[36px]"
+            className="flex items-center justify-center p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[36px] min-w-[36px]"
           >
             <X size={18} className="text-[var(--foreground-muted)]" />
           </button>
@@ -756,7 +812,47 @@ function VariantModal({
           
           <div>
             <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
-              Variant Image URL
+              Gallery Images
+            </label>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {formData.gallery_images.map((url, index) => (
+                  <div key={index} className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-[var(--border)] group">
+                    <Image src={url} alt={`Gallery ${index + 1}`} fill className="object-cover" />
+                    <button
+                      onClick={() => removeGalleryImage(index)}
+                      className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                <label className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-[var(--border)] rounded-lg cursor-pointer hover:border-[var(--primary)] transition">
+                  <div className="text-center">
+                    <Upload size={20} className="mx-auto text-[var(--foreground-muted)]" />
+                    <span className="text-[8px] text-[var(--foreground-muted)]">Upload</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleGalleryImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              {uploadingImages && (
+                <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                  <Loader2 className="animate-spin" size={16} /> Uploading images...
+                </div>
+              )}
+              <p className="text-[10px] text-[var(--foreground-muted)]">Upload multiple images for this variant (e.g., different angles, color swatches)</p>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+              Main Image URL
             </label>
             <input
               type="text"
@@ -786,13 +882,13 @@ function VariantModal({
         <div className="flex gap-3 p-4 sm:p-5 border-t border-[var(--border)] sticky bottom-0 bg-[var(--background-card)]">
           <button 
             onClick={onClose} 
-            className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px] text-sm"
+            className="flex-1 flex items-center justify-center px-4 py-2.5 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px] text-sm"
           >
             Cancel
           </button>
           <button 
             onClick={handleSubmit} 
-            className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2.5 rounded-lg font-medium transition min-h-[44px] text-sm"
+            className="flex-1 flex items-center justify-center bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2.5 rounded-lg font-medium transition min-h-[44px] text-sm"
           >
             {variant ? 'Update Variant' : 'Add Variant'}
           </button>
