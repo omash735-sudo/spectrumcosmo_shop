@@ -22,7 +22,8 @@ import {
   RotateCcw, 
   CheckCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check
 } from 'lucide-react';
 
 interface Product {
@@ -89,7 +90,6 @@ export default function ProductDetailPage() {
           setVariants(data.variants || []);
           setRelatedProducts(data.relatedProducts || []);
           
-          // Select first variant if available
           if (data.variants && data.variants.length > 0) {
             setSelectedVariant(data.variants[0]);
           }
@@ -156,19 +156,71 @@ export default function ProductDetailPage() {
     { icon: CheckCircle, text: 'Secure Checkout' },
   ];
 
-  // Get all images (product image + variant gallery images)
-  const allImages: string[] = [];
-  if (product.image_url) allImages.push(product.image_url);
-  
-  // Add variant gallery images
-  variants.forEach(v => {
-    if (v.gallery_images && v.gallery_images.length > 0) {
-      allImages.push(...v.gallery_images);
+  // Get all images (product image + variant images + gallery images)
+  const getAllImages = (): string[] => {
+    const images: string[] = [];
+    
+    // Add product image
+    if (product.image_url) images.push(product.image_url);
+    
+    // Add variant images
+    variants.forEach(v => {
+      // Add variant main image
+      if (v.image_url && !images.includes(v.image_url)) {
+        images.push(v.image_url);
+      }
+      // Add variant gallery images
+      if (v.gallery_images && v.gallery_images.length > 0) {
+        v.gallery_images.forEach(img => {
+          if (!images.includes(img)) {
+            images.push(img);
+          }
+        });
+      }
+    });
+    
+    return images;
+  };
+
+  const allImages = getAllImages();
+
+  // Get images for selected color
+  const getColorImages = (color: string): string[] => {
+    const images: string[] = [];
+    const colorVariants = variants.filter(v => v.color === color);
+    
+    colorVariants.forEach(v => {
+      if (v.image_url && !images.includes(v.image_url)) {
+        images.push(v.image_url);
+      }
+      if (v.gallery_images && v.gallery_images.length > 0) {
+        v.gallery_images.forEach(img => {
+          if (!images.includes(img)) {
+            images.push(img);
+          }
+        });
+      }
+    });
+    
+    return images;
+  };
+
+  // Get images based on selected color
+  const displayImages = selectedColor && getColorImages(selectedColor).length > 0
+    ? getColorImages(selectedColor)
+    : allImages;
+
+  // Ensure current image index is valid
+  useEffect(() => {
+    if (currentImageIndex >= displayImages.length) {
+      setCurrentImageIndex(0);
     }
-    if (v.image_url && !allImages.includes(v.image_url)) {
-      allImages.push(v.image_url);
-    }
-  });
+  }, [displayImages, currentImageIndex]);
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+    setCurrentImageIndex(0);
+  };
 
   const handleIncrement = () => {
     if (quantity < totalStock) {
@@ -187,14 +239,14 @@ export default function ProductDetailPage() {
   };
 
   const nextImage = () => {
-    setCurrentImageIndex(prev => (prev + 1) % allImages.length);
+    setCurrentImageIndex(prev => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+    setCurrentImageIndex(prev => (prev - 1 + displayImages.length) % displayImages.length);
   };
 
-  const currentImage = allImages[currentImageIndex] || product.image_url || '/placeholder-image.jpg';
+  const currentImage = displayImages[currentImageIndex] || product.image_url || '/placeholder-image.jpg';
 
   return (
     <>
@@ -244,8 +296,7 @@ export default function ProductDetailPage() {
                     </div>
                   )}
 
-                  {/* Navigation arrows */}
-                  {allImages.length > 1 && (
+                  {displayImages.length > 1 && (
                     <>
                       <button
                         onClick={prevImage}
@@ -263,10 +314,9 @@ export default function ProductDetailPage() {
                   )}
                 </div>
 
-                {/* Thumbnails */}
-                {allImages.length > 1 && (
+                {displayImages.length > 1 && (
                   <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-                    {allImages.map((img, index) => (
+                    {displayImages.map((img, index) => (
                       <button
                         key={index}
                         onClick={() => handleImageChange(index)}
@@ -337,25 +387,61 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Color Options */}
+              {/* Color Options - Shows available colors with preview */}
               {colors.length > 0 && (
                 <div className="mb-4 sm:mb-5">
                   <p className="text-sm font-medium text-[var(--foreground)] mb-2 sm:mb-3">Color</p>
                   <div className="flex flex-wrap gap-2 sm:gap-3">
-                    {colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-3 sm:px-5 py-1.5 sm:py-2.5 border rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] flex items-center justify-center min-h-[36px] sm:min-h-[44px] ${
-                          selectedColor === color 
-                            ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' 
-                            : 'border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    ))}
+                    {colors.map((color) => {
+                      const colorVariants = variants.filter(v => v.color === color);
+                      const hasImages = colorVariants.some(v => v.image_url || (v.gallery_images && v.gallery_images.length > 0));
+                      const isSelected = selectedColor === color;
+                      
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => handleColorSelect(color)}
+                          className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-h-[36px] sm:min-h-[44px] ${
+                            isSelected
+                              ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]'
+                              : 'border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                          }`}
+                        >
+                          <span 
+                            className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-[var(--border)] flex-shrink-0 ${
+                              color === 'White' ? 'bg-white' :
+                              color === 'Black' ? 'bg-black' :
+                              color === 'Red' ? 'bg-red-600' :
+                              color === 'Blue' ? 'bg-blue-600' :
+                              color === 'Green' ? 'bg-green-600' :
+                              color === 'Yellow' ? 'bg-yellow-400' :
+                              color === 'Purple' ? 'bg-purple-600' :
+                              color === 'Orange' ? 'bg-orange-500' :
+                              color === 'Pink' ? 'bg-pink-400' :
+                              color === 'Brown' ? 'bg-amber-800' :
+                              color === 'Gray' ? 'bg-gray-500' :
+                              color === 'Navy' ? 'bg-slate-800' :
+                              color === 'Teal' ? 'bg-teal-600' :
+                              color === 'Maroon' ? 'bg-red-800' :
+                              color === 'Gold' ? 'bg-yellow-500' :
+                              color === 'Silver' ? 'bg-gray-300' :
+                              'bg-gray-400'
+                            }`}
+                          />
+                          <span>{color}</span>
+                          {hasImages && isSelected && (
+                            <Check size={12} className="text-[var(--primary)]" />
+                          )}
+                          {hasImages && (
+                            <span className="text-[10px] text-[var(--foreground-muted)] ml-0.5">
+                              ({colorVariants.reduce((sum, v) => sum + (v.gallery_images?.length || 0) + (v.image_url ? 1 : 0), 0)})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
+                  <p className="text-[10px] text-[var(--foreground-muted)] mt-1.5">Select a color to view its images</p>
                 </div>
               )}
 
