@@ -28,15 +28,6 @@ export default function OnboardingTour() {
   const [hoveredElement, setHoveredElement] = useState<Element | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Don't render if disabled, loading, or completed
-  if (!isEnabled || isLoading || hasCompleted) return null;
-  if (!isOpen) return null;
-  if (steps.length === 0) return null;
-
-  const step = steps[currentStep];
-  if (!step) return null;
-
-  // Sound effects
   const playSound = (type: 'next' | 'back' | 'complete' | 'skip') => {
     if (!soundEnabled) return;
     try {
@@ -75,9 +66,7 @@ export default function OnboardingTour() {
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.06);
       }
-    } catch (err) {
-      // Silent fail
-    }
+    } catch (err) {}
   };
 
   const handleNextWithSound = () => {
@@ -106,10 +95,10 @@ export default function OnboardingTour() {
     }, 3000);
   };
 
-  // Find target element
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !steps.length || !steps[currentStep]) return;
     
+    const step = steps[currentStep];
     if (step.target === 'body') {
       setHoveredElement(null);
       return;
@@ -140,9 +129,8 @@ export default function OnboardingTour() {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  }, [currentStep, isOpen, step]);
+  }, [currentStep, isOpen, steps]);
 
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -153,10 +141,16 @@ export default function OnboardingTour() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
+  if (!isEnabled || isLoading || hasCompleted || !isOpen || steps.length === 0) {
+    return null;
+  }
+
+  const step = steps[currentStep];
+  if (!step) return null;
+
   const isFirst = currentStep === 0;
   const isLast = currentStep === steps.length - 1;
 
-  // Get position for tooltip
   const getPositionStyles = () => {
     if (step.target === 'body') {
       return {
@@ -198,7 +192,6 @@ export default function OnboardingTour() {
     };
   };
 
-  // Highlight overlay
   const getOverlayStyles = () => {
     if (!hoveredElement || step.target === 'body') {
       return { display: 'none' as const };
@@ -231,10 +224,8 @@ export default function OnboardingTour() {
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[9999] pointer-events-none"
       >
-        {/* Overlay */}
         <div style={getOverlayStyles()} />
 
-        {/* Tooltip */}
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -243,7 +234,6 @@ export default function OnboardingTour() {
           className="pointer-events-auto bg-[var(--background-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-6"
           style={positionStyles}
         >
-          {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
@@ -277,12 +267,10 @@ export default function OnboardingTour() {
             </div>
           </div>
 
-          {/* Description */}
           <p className="text-sm text-[var(--foreground-muted)] mb-6 leading-relaxed">
             {step.description}
           </p>
 
-          {/* Footer */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               {!isFirst && (
@@ -321,7 +309,6 @@ export default function OnboardingTour() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div className="mt-4 h-1 bg-[var(--background-secondary)] rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-[var(--primary)] rounded-full"
@@ -332,7 +319,6 @@ export default function OnboardingTour() {
           </div>
         </motion.div>
 
-        {/* Confetti */}
         {showConfetti && <Confetti />}
       </motion.div>
     </AnimatePresence>
