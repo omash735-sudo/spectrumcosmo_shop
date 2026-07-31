@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
-import { DEFAULT_STEPS, MOBILE_STEPS } from '@/lib/onboarding/steps';
+import { usePathname, useRouter } from 'next/navigation';
+import { INTELLIGENT_STEPS, MOBILE_STEPS } from '@/lib/onboarding/intelligent-steps';
 import { 
   getUserOnboardingStatus, 
   saveOnboardingProgress, 
@@ -11,10 +11,9 @@ import {
 } from '@/lib/onboarding/persistence';
 import { OnboardingStep } from '@/lib/onboarding/types';
 
-const ONBOARDING_ENABLED_KEY = 'spectrumcosmo_onboarding_enabled';
-
 export function useOnboarding() {
   const pathname = usePathname();
+  const router = useRouter();
   const [sessionId, setSessionId] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +24,7 @@ export function useOnboarding() {
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -73,7 +73,7 @@ export function useOnboarding() {
       } catch (err) {
         console.error('Failed to fetch onboarding steps:', err);
       }
-      setSteps(isMobile ? MOBILE_STEPS : DEFAULT_STEPS);
+      setSteps(isMobile ? MOBILE_STEPS : INTELLIGENT_STEPS);
     };
     loadSteps();
   }, [isMobile, isMounted]);
@@ -137,25 +137,112 @@ export function useOnboarding() {
     fetchUser();
   }, [isMounted]);
 
-  const handleNext = useCallback(() => {
-    const nextStep = currentStep + 1;
-    if (nextStep >= steps.length) {
-      handleFinish();
-    } else {
-      setCurrentStep(nextStep);
-      saveOnboardingProgress(userId, sessionId, false, nextStep);
+  const getStepTarget = useCallback((step: OnboardingStep): string => {
+    if (step.contextTargets && pathname) {
+      const contextKey = Object.keys(step.contextTargets).find(key => {
+        if (key === '[id]') {
+          return pathname.includes('/products/') && pathname !== '/products';
+        }
+        return pathname === key;
+      });
+      if (contextKey && step.contextTargets[contextKey]) {
+        return step.contextTargets[contextKey];
+      }
     }
-  }, [currentStep, steps.length, userId, sessionId]);
+    return step.target;
+  }, [pathname]);
 
-  const handleBack = useCallback(() => {
-    const prevStep = Math.max(0, currentStep - 1);
-    setCurrentStep(prevStep);
-    saveOnboardingProgress(userId, sessionId, false, prevStep);
-  }, [currentStep, userId, sessionId]);
+  const shouldShowStep = useCallback((step: OnboardingStep): boolean => {
+    if (!step.condition) return true;
+    if (step.condition.always) return true;
+    if (step.condition.isLoggedIn !== undefined && step.condition.isLoggedIn !== !!userId) return false;
+    if (step.condition.isLoggedOut !== undefined && step.condition.isLoggedOut !== !userId) return false;
+    if (step.condition.pathname) {
+      const matches = step.condition.pathname.some(pattern => {
+        if (pattern === '[id]') {
+          return pathname?.startsWith('/products/') && pathname !== '/products';
+        }
+        return pathname === pattern;
+      });
+      if (!matches) return false;
+    }
+    return true;
+  }, [pathname, userId]);
+
+  const getCurrentSteps = useCallback(() => {
+    return steps.filter(step => shouldShowStep(step));
+  }, [steps, shouldShowStep]);
+
+  const getStepIndex = useCallback(() => {
+    const filteredSteps = getCurrentSteps();
+    const currentStepId = steps[currentStep]?.id;
+    return filteredSteps.findIndex(s => s.id === currentStepId);
+  }, [steps, currentStep, getCurrentSteps]);
+
+  const getStep = useCallback(() => {
+    const filteredSteps = getCurrentSteps();
+    const index = getStepIndex();
+    return filteredSteps[index] || null;
+  }, [getCurrentSteps, getStepIndex]);
+
+  const nextStep = useCallback(async () => {
+    const filteredSteps = getCurrentSteps();
+    const currentIndex = getStepIndex();
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex >= filteredSteps.length) {
+      handleFinish();
+      return;
+    }
+
+    const nextStepData = filteredSteps[nextIndex];
+    if (!nextStepData) return;
+
+    const stepIndex = steps.findIndex(s => s.id === nextStepData.id);
+    if (stepIndex === -1) return;
+
+    setCurrentStep(stepIndex);
+    await saveOnboardingProgress(userId, sessionId, false, stepIndex);
+
+    if (nextStepData.navigateTo && pathname !== nextStepData.navigateTo) {
+      setIsNavigating(true);
+      router.push(nextStepData.navigateTo);
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 1500);
+    }
+
+    if (nextStepData.scrollTo) {
+      setTimeout(() => {
+        const target = document.querySelector(nextStepData.target);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [getCurrentSteps, getStepIndex, steps, userId, sessionId, pathname, router]);
+
+  const prevStep = useCallback(() => {
+    const filteredSteps = getCurrentSteps();
+    const currentIndex = getStepIndex();
+    const prevIndex = currentIndex - 1;
+
+    if (prevIndex < 0) return;
+
+    const prevStepData = filteredSteps[prevIndex];
+    if (!prevStepData) return;
+
+    const stepIndex = steps.findIndex(s => s.id === prevStepData.id);
+    if (stepIndex === -1) return;
+
+    setCurrentStep(stepIndex);
+    saveOnboardingProgress(userId, sessionId, false, stepIndex);
+  }, [getCurrentSteps, getStepIndex, steps, userId, sessionId]);
 
   const handleSkip = useCallback(() => {
     setIsOpen(false);
-  }, []);
+    saveOnboardingProgress(userId, sessionId, false, steps.length - 1);
+  }, [userId, sessionId, steps.length]);
 
   const handleFinish = useCallback(() => {
     setHasCompleted(true);
@@ -170,9 +257,19 @@ export function useOnboarding() {
     setIsOpen(true);
   }, [userId, sessionId]);
 
-  const getStepTarget = useCallback((step: OnboardingStep) => {
-    return step.target.split(',').map(s => s.trim());
-  }, []);
+  const getFilteredSteps = useCallback(() => {
+    return steps.filter(step => shouldShowStep(step));
+  }, [steps, shouldShowStep]);
+
+  const getCurrentStepIndex = useCallback(() => {
+    const filtered = getFilteredSteps();
+    const currentStepId = steps[currentStep]?.id;
+    return filtered.findIndex(s => s.id === currentStepId);
+  }, [getFilteredSteps, steps, currentStep]);
+
+  const getStepCount = useCallback(() => {
+    return getFilteredSteps().length;
+  }, [getFilteredSteps]);
 
   return {
     isOpen,
@@ -182,12 +279,20 @@ export function useOnboarding() {
     isLoading,
     isEnabled,
     hasCompleted,
-    handleNext,
-    handleBack,
+    handleNext: nextStep,
+    handleBack: prevStep,
     handleSkip,
     handleFinish,
     restartTour,
     getStepTarget,
     isMobile,
+    isNavigating,
+    getStep: getStep,
+    getStepIndex,
+    getCurrentSteps,
+    getFilteredSteps,
+    getCurrentStepIndex,
+    getStepCount,
+    shouldShowStep,
   };
 }
