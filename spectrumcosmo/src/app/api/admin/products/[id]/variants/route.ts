@@ -44,6 +44,14 @@ export async function POST(
   if (authError) return authError;
   
   const { id: productId } = await params;
+  const body = await req.json();
+  
+  // Check if this is a bulk request
+  if (body.bulk && body.variants && Array.isArray(body.variants)) {
+    return handleBulkCreate(productId, body.variants);
+  }
+  
+  // Single variant creation
   const { 
     size, 
     color, 
@@ -54,11 +62,10 @@ export async function POST(
     image_url,
     gallery_images,
     display_order 
-  } = await req.json();
+  } = body;
   
   const sql = getDb();
   
-  // Get the current max display order
   const [maxOrder] = await sql`
     SELECT COALESCE(MAX(display_order), -1) + 1 as next_order
     FROM product_variants
@@ -97,6 +104,76 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to create variant' }, { status: 500 });
   }
   return NextResponse.json(newVariant, { status: 201 });
+}
+
+async function handleBulkCreate(productId: string, variants: any[]) {
+  const sql = getDb();
+  const created: any[] = [];
+  const errors: any[] = [];
+
+  // Get current max display order
+  const [maxOrder] = await sql`
+    SELECT COALESCE(MAX(display_order), -1) + 1 as next_order
+    FROM product_variants
+    WHERE product_id = ${productId}
+  `;
+  let order = maxOrder?.next_order || 0;
+
+  for (const variant of variants) {
+    try {
+      const { size, color, price_override, compare_price_override, stock_quantity, sku, image_url, gallery_images, is_active } = variant;
+      
+      const newVariant = await queryOne<ProductVariant>`
+        INSERT INTO product_variants (
+          product_id, 
+          size, 
+          color, 
+          price_override, 
+          compare_price_override, 
+          stock_quantity, 
+          sku, 
+          image_url,
+          gallery_images,
+          display_order,
+          is_active
+        )
+        VALUES (
+          ${productId}, 
+          ${size || null}, 
+          ${color || null}, 
+          ${price_override ?? null}, 
+          ${compare_price_override ?? null}, 
+          ${stock_quantity || 0}, 
+          ${sku || null}, 
+          ${image_url || null},
+          ${gallery_images && gallery_images.length > 0 ? JSON.stringify(gallery_images) : null}::jsonb,
+          ${order},
+          ${is_active !== undefined ? is_active : true}
+        )
+        RETURNING *
+      `;
+      
+      if (newVariant) {
+        created.push(newVariant);
+        order++;
+      } else {
+        errors.push({ variant, error: 'Failed to create variant' });
+      }
+    } catch (err) {
+      errors.push({ 
+        variant, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      });
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    created: created,
+    errors: errors,
+    total_created: created.length,
+    total_errors: errors.length,
+  }, { status: 201 });
 }
 
 export async function PATCH(
