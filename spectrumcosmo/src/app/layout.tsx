@@ -13,10 +13,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
-
-import OnboardingTour from '@/components/onboarding/OnboardingTour';
-import FloatingHelpButton from '@/components/onboarding/FloatingHelpButton';
 import { OnboardingProvider } from '@/providers/OnboardingProvider';
+import ClientOnboarding from '@/components/onboarding/ClientOnboarding';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -81,15 +79,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <CartProvider>
                     <WishlistProvider>
                       <NotificationProvider>
-                        
                         <OnboardingProvider>
                           <TrackVisits />
                           <Suspense fallback={<LoadingSpinner />}>
                             {children}
                           </Suspense>
-                        
-                          <OnboardingTour />
-                          <FloatingHelpButton />
+                          <ClientOnboarding />
                           <Toaster
                             position="top-right"
                             toastOptions={{
