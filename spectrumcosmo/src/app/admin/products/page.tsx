@@ -705,7 +705,7 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Product Modal - IMPROVED VERSION */}
+      {/* Product Modal - FULLY SEPARATED LAYOUT */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-lg shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -791,51 +791,50 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Category</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={form.category_id}
-                      onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))}
-                      className="flex-1 px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
-                    >
-                      <option value="">Select category</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setShowCategoryModal(true)}
-                      className="flex items-center justify-center px-3 border border-[var(--border)] rounded-xl hover:bg-[var(--background-secondary)] transition min-h-[44px]"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Featured toggle - NOW ON ITS OWN ROW WITH PROPER ALIGNMENT */}
-                <div className="flex items-center gap-3">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.is_featured}
-                      onChange={e => setForm(p => ({ ...p, is_featured: e.target.checked }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <Star size={16} className={form.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'} />
-                    <span className="text-sm font-medium text-[var(--foreground)]">
-                      {form.is_featured ? 'Featured' : 'Mark as Featured'}
-                    </span>
-                  </div>
+              {/* CATEGORY - Full width row */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Category</label>
+                <div className="flex gap-2">
+                  <select
+                    value={form.category_id}
+                    onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))}
+                    className="flex-1 px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    className="flex items-center justify-center px-3 border border-[var(--border)] rounded-xl hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                  >
+                    <Plus size={16} />
+                  </button>
                 </div>
               </div>
 
-              {/* SIZES SECTION - New! */}
+              {/* FEATURED TOGGLE - Full width row, completely separate */}
+              <div className="flex items-center gap-3 py-1">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.is_featured}
+                    onChange={e => setForm(p => ({ ...p, is_featured: e.target.checked }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <Star size={16} className={form.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'} />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    {form.is_featured ? 'Featured' : 'Mark as Featured'}
+                  </span>
+                </div>
+              </div>
+
+              {/* SIZES SECTION */}
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Available Sizes</label>
                 <div className="flex flex-wrap gap-2">
