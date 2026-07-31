@@ -31,9 +31,9 @@ export default function OnboardingTour() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<Element | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({});
   const audioContextRef = useRef<AudioContext | null>(null);
   const stepRef = useRef<HTMLDivElement>(null);
+  const findElementTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const filteredSteps = getCurrentSteps();
   const currentStepIndex = getCurrentStepIndex();
@@ -108,44 +108,71 @@ export default function OnboardingTour() {
     }, 4000);
   };
 
+  // Find and highlight element with retry
   useEffect(() => {
-    if (!isOpen || !currentFilteredStep || isNavigating) return;
-    
-    if (currentFilteredStep.target === 'body') {
+    if (!isOpen || !currentFilteredStep || isNavigating) {
       setHoveredElement(null);
       return;
     }
 
-    const targetSelector = getStepTarget(currentFilteredStep);
-    const selectors = targetSelector.split(',').map(s => s.trim());
-    let element: Element | null = null;
-    
-    for (const selector of selectors) {
-      const found = document.querySelector(selector);
-      if (found) {
-        element = found;
-        break;
+    if (findElementTimeoutRef.current) {
+      clearTimeout(findElementTimeoutRef.current);
+    }
+
+    const findElement = () => {
+      if (currentFilteredStep.target === 'body') {
+        setHoveredElement(null);
+        return;
       }
-    }
 
-    if (!element && currentFilteredStep.fallbackSelector) {
-      element = document.querySelector(currentFilteredStep.fallbackSelector);
-    }
-
-    setHoveredElement(element || null);
-
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      const isVisible = 
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= window.innerHeight &&
-        rect.right <= window.innerWidth;
-
-      if (!isVisible && currentFilteredStep.scrollTo) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const targetSelector = getStepTarget(currentFilteredStep);
+      const selectors = targetSelector.split(',').map(s => s.trim());
+      let element: Element | null = null;
+      
+      for (const selector of selectors) {
+        const found = document.querySelector(selector);
+        if (found) {
+          element = found;
+          break;
+        }
       }
-    }
+
+      if (!element && currentFilteredStep.fallbackSelector) {
+        element = document.querySelector(currentFilteredStep.fallbackSelector);
+      }
+
+      setHoveredElement(element || null);
+
+      if (element && currentFilteredStep.scrollTo) {
+        const rect = element.getBoundingClientRect();
+        const isVisible = 
+          rect.top >= 0 &&
+          rect.left >= 0 &&
+          rect.bottom <= window.innerHeight &&
+          rect.right <= window.innerWidth;
+
+        if (!isVisible) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    };
+
+    // Try to find immediately, then retry after delays
+    findElement();
+
+    findElementTimeoutRef.current = setTimeout(() => {
+      findElement();
+    }, 500);
+
+    findElementTimeoutRef.current = setTimeout(() => {
+      findElement();
+    }, 1200);
+
+    return () => {
+      if (findElementTimeoutRef.current) {
+        clearTimeout(findElementTimeoutRef.current);
+      }
+    };
   }, [currentStep, isOpen, currentFilteredStep, getStepTarget, isNavigating]);
 
   if (!isEnabled || isLoading || hasCompleted || !isOpen || isNavigating) {
