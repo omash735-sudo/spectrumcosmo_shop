@@ -35,7 +35,7 @@ export default async function CategoriesSection() {
   if (categories.length === 0) return null;
 
   return (
-    <div className="relative px-4 sm:px-0" data-onboarding="categories">
+    <div className="relative px-4 sm:px-0">
       <div className="flex items-center justify-between mb-5 md:mb-8">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-1 h-5 sm:h-6 md:h-7 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
@@ -50,7 +50,11 @@ export default async function CategoriesSection() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+      {/* MOVED data-onboarding to the grid container only */}
+      <div 
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5"
+        data-onboarding="categories"
+      >
         {categories.map((category) => (
           <Link
             key={category.id}
