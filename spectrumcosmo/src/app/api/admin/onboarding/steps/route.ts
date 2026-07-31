@@ -58,4 +58,17 @@ export async function POST(request: NextRequest) {
           id, title, description, target, placement, is_active, "order", device_type
         ) VALUES (
           ${step.id}, ${step.title}, ${step.description}, ${step.target}, 
-          ${step
+          ${step.placement}, ${step.isActive}, ${step.order}, ${step.deviceType || 'both'}
+        )
+      `;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to update onboarding steps:', error);
+    return NextResponse.json(
+      { error: 'Failed to update onboarding steps' },
+      { status: 500 }
+    );
+  }
+}
