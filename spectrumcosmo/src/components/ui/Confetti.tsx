@@ -1,72 +1,89 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 
-interface ConfettiPiece {
-  id: number;
-  x: number;
-  y: number;
-  rotation: number;
-  color: string;
-  size: number;
-  delay: number;
-  duration: number;
-}
-
-const COLORS = ['#C96712', '#FF6B35', '#FFD700', '#FF4444', '#44B8FF', '#44DD88', '#FF44FF'];
+const COLORS = ['#C96712', '#FF6B35', '#FFD700', '#FF4444', '#44B8FF', '#44DD88', '#FF44FF', '#FF88FF'];
 
 export default function Confetti() {
-  const piecesRef = useRef<ConfettiPiece[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const pieces: ConfettiPiece[] = [];
-    for (let i = 0; i < 80; i++) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const pieces: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      color: string;
+      vx: number;
+      vy: number;
+      rotation: number;
+      rotationSpeed: number;
+    }[] = [];
+
+    for (let i = 0; i < 200; i++) {
       pieces.push({
-        id: i,
-        x: Math.random() * 100,
-        y: -10 - Math.random() * 20,
-        rotation: Math.random() * 360,
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: 4 + Math.random() * 8,
+        h: 6 + Math.random() * 12,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        size: 4 + Math.random() * 8,
-        delay: Math.random() * 0.5,
-        duration: 2 + Math.random() * 2,
+        vx: (Math.random() - 0.5) * 6,
+        vy: 2 + Math.random() * 5,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 8,
       });
     }
-    piecesRef.current = pieces;
+
+    let animationId: number;
+    let startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      if (elapsed > 5) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of pieces) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.08;
+        p.rotation += p.rotationSpeed;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, 1 - elapsed / 5);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[10000] overflow-hidden">
-      {piecesRef.current.map((piece) => (
-        <motion.div
-          key={piece.id}
-          className="absolute"
-          style={{
-            left: `${piece.x}%`,
-            top: `${piece.y}%`,
-            width: piece.size,
-            height: piece.size * 2,
-            backgroundColor: piece.color,
-            borderRadius: '2px',
-          }}
-          initial={{
-            y: 0,
-            rotate: 0,
-            opacity: 0,
-          }}
-          animate={{
-            y: window.innerHeight + 100,
-            rotate: piece.rotation + 720,
-            opacity: [0, 1, 1, 1, 0],
-          }}
-          transition={{
-            duration: piece.duration,
-            delay: piece.delay,
-            ease: 'easeOut',
-          }}
-        />
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-[10000]"
+    />
   );
 }
