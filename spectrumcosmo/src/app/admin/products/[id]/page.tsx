@@ -435,7 +435,7 @@ export default function AdminProductEditPage() {
                     setEditingVariant(null);
                     setShowVariantModal(true);
                   }}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[36px]"
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[36px]"
                 >
                   <Plus size={14} /> Add Variant
                 </button>
@@ -451,7 +451,7 @@ export default function AdminProductEditPage() {
                       setEditingVariant(null);
                       setShowVariantModal(true);
                     }}
-                    className="mt-4 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition"
+                    className="mt-4 flex items-center justify-center gap-1 px-3 py-1.5 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition"
                   >
                     <Plus size={14} /> Add First Variant
                   </button>
