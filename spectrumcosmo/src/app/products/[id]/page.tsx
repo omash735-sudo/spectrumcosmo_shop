@@ -103,63 +103,10 @@ export default function ProductDetailPage() {
     fetchData();
   }, [id]);
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="w-8 h-8 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!product) {
-    notFound();
-  }
-
-  const basePrice = Number(product.price ?? 0);
-  const baseComparePrice = product.compare_price ? Number(product.compare_price) : null;
-  const hasVariants = variants.length > 0;
-  const totalStock = hasVariants 
-    ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
-    : (product.stock_quantity || 0);
-  const isInStock = totalStock > 0;
-
-  const totalReviews = reviews.length;
-  const avgRating = totalReviews > 0
-    ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
-    : 0;
-
-  const sizes = [...new Set(variants.map(v => v.size).filter((s): s is string => s !== null))];
-  const colors = [...new Set(variants.map(v => v.color).filter((c): c is string => c !== null))];
-
-  const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  reviews.forEach((r) => {
-    const star = Math.floor(r.rating);
-    if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
-  });
-
-  const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
-  const productForTracking = {
-    id: product.id,
-    name: product.name,
-    price: basePrice,
-    image_url: product.image_url || '',
-  };
-
-  const trustBadges = [
-    { icon: Shield, text: 'Quality Guaranteed' },
-    { icon: Truck, text: 'Free Shipping Over 50,000 MWK' },
-    { icon: RotateCcw, text: '30-Day Returns' },
-    { icon: CheckCircle, text: 'Secure Checkout' },
-  ];
-
-  const getAllImages = (): string[] => {
+  const getDisplayImages = (): string[] => {
     const images: string[] = [];
     
-    if (product.image_url) images.push(product.image_url);
+    if (product?.image_url) images.push(product.image_url);
     
     variants.forEach(v => {
       if (v.image_url && !images.includes(v.image_url)) {
@@ -197,15 +144,18 @@ export default function ProductDetailPage() {
     return images;
   };
 
-  const displayImages = selectedColor && getColorImages(selectedColor).length > 0
-    ? getColorImages(selectedColor)
-    : getAllImages();
+  const getTotalStock = (): number => {
+    return variants.length > 0 
+      ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
+      : (product?.stock_quantity || 0);
+  };
 
   useEffect(() => {
-    if (currentImageIndex >= displayImages.length) {
+    const displayImages = getDisplayImages();
+    if (currentImageIndex >= displayImages.length && displayImages.length > 0) {
       setCurrentImageIndex(0);
     }
-  }, [displayImages, currentImageIndex]);
+  }, [currentImageIndex, product, variants, selectedColor]);
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
@@ -213,6 +163,7 @@ export default function ProductDetailPage() {
   };
 
   const handleIncrement = () => {
+    const totalStock = getTotalStock();
     if (quantity < totalStock) {
       setQuantity(prev => prev + 1);
     }
@@ -229,12 +180,69 @@ export default function ProductDetailPage() {
   };
 
   const nextImage = () => {
+    const displayImages = getDisplayImages();
     setCurrentImageIndex(prev => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
+    const displayImages = getDisplayImages();
     setCurrentImageIndex(prev => (prev - 1 + displayImages.length) % displayImages.length);
   };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <div className="w-8 h-8 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!product) {
+    notFound();
+  }
+
+  const basePrice = Number(product.price ?? 0);
+  const baseComparePrice = product.compare_price ? Number(product.compare_price) : null;
+  const hasVariants = variants.length > 0;
+  const totalStock = getTotalStock();
+  const isInStock = totalStock > 0;
+
+  const totalReviews = reviews.length;
+  const avgRating = totalReviews > 0
+    ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
+    : 0;
+
+  const sizes = [...new Set(variants.map(v => v.size).filter((s): s is string => s !== null))];
+  const colors = [...new Set(variants.map(v => v.color).filter((c): c is string => c !== null))];
+
+  const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach((r) => {
+    const star = Math.floor(r.rating);
+    if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
+  });
+
+  const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
+  const productForTracking = {
+    id: product.id,
+    name: product.name,
+    price: basePrice,
+    image_url: product.image_url || '',
+  };
+
+  const trustBadges = [
+    { icon: Shield, text: 'Quality Guaranteed' },
+    { icon: Truck, text: 'Free Shipping Over 50,000 MWK' },
+    { icon: RotateCcw, text: '30-Day Returns' },
+    { icon: CheckCircle, text: 'Secure Checkout' },
+  ];
+
+  const displayImages = selectedColor && getColorImages(selectedColor).length > 0
+    ? getColorImages(selectedColor)
+    : getDisplayImages();
 
   const currentImage = displayImages[currentImageIndex] || product.image_url || '/placeholder-image.jpg';
 
