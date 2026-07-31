@@ -19,6 +19,8 @@ const STATUS_OPTIONS = [
   { value: 'pre_order', label: 'Pre-Order', color: 'bg-blue-100 text-blue-700', icon: AlertCircle },
 ];
 
+const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+
 const EMPTY = {
   name: '',
   description: '',
@@ -29,6 +31,7 @@ const EMPTY = {
   status: 'in_stock',
   stock_quantity: 0,
   is_featured: false,
+  sizes: [] as string[],
 };
 
 export default function AdminProductsPage() {
@@ -77,7 +80,7 @@ export default function AdminProductsPage() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm(EMPTY);
+    setForm({ ...EMPTY, sizes: [] });
     setImagePreview('');
     setError('');
     setShowModal(true);
@@ -95,6 +98,7 @@ export default function AdminProductsPage() {
       status: p.status || 'in_stock',
       stock_quantity: p.stock_quantity || 0,
       is_featured: p.is_featured || false,
+      sizes: [],
     });
     setImagePreview(p.image_url || '');
     setError('');
@@ -157,6 +161,15 @@ export default function AdminProductsPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) uploadToCloudinary(file);
+  };
+
+  const toggleSize = (size: string) => {
+    setForm(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size]
+    }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -300,7 +313,6 @@ export default function AdminProductsPage() {
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="max-w-[1400px] mx-auto">
           
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Products</h1>
@@ -314,7 +326,7 @@ export default function AdminProductsPage() {
             </button>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - unchanged */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between">
@@ -384,7 +396,7 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
-          {/* Filters Bar */}
+          {/* Filters Bar - unchanged */}
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -460,7 +472,7 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
-          {/* Bulk Actions */}
+          {/* Bulk Actions - unchanged */}
           {selectedProducts.length > 0 && (
             <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -495,7 +507,7 @@ export default function AdminProductsPage() {
             </div>
           )}
 
-          {/* Products Display */}
+          {/* Products Display - unchanged */}
           {loading ? (
             <div className="flex items-center justify-center py-16 sm:py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
               <Loader2 className="animate-spin text-[var(--primary)]" size={40} />
@@ -802,7 +814,9 @@ export default function AdminProductsPage() {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center">
+                
+                {/* Featured toggle - NOW ON ITS OWN ROW WITH PROPER ALIGNMENT */}
+                <div className="flex items-center gap-3">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -812,13 +826,35 @@ export default function AdminProductsPage() {
                     />
                     <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
                   </label>
-                  <div className="flex items-center gap-1.5 ml-3">
+                  <div className="flex items-center gap-1.5">
                     <Star size={16} className={form.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'} />
                     <span className="text-sm font-medium text-[var(--foreground)]">
                       {form.is_featured ? 'Featured' : 'Mark as Featured'}
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* SIZES SECTION - New! */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Available Sizes</label>
+                <div className="flex flex-wrap gap-2">
+                  {SIZES.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => toggleSize(size)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition min-h-[36px] ${
+                        form.sizes.includes(size)
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--foreground-muted)] mt-1.5">Select sizes that will be available. You can add more in Manage Variants.</p>
               </div>
 
               <div>
@@ -833,7 +869,7 @@ export default function AdminProductsPage() {
                           setImagePreview('');
                           setForm(p => ({ ...p, image_url: '' }));
                         }}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition flex items-center justify-center min-h-[24px] min-w-[24px]"
                       >
                         <X size={12} />
                       </button>
@@ -889,7 +925,7 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Add Category Modal */}
+      {/* Add Category Modal - unchanged */}
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-md p-4 sm:p-6 shadow-xl">
