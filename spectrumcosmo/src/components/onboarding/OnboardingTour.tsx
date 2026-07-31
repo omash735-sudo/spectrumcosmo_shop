@@ -309,7 +309,7 @@ export default function OnboardingTour() {
                   onClick={handleFinishWithSound}
                   className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition shadow-md min-h-[36px]"
                 >
-                  Finish 🎉
+                  Finish 
                 </button>
               ) : (
                 <button
