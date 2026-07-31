@@ -2,11 +2,21 @@ export interface OnboardingStep {
   id: string;
   title: string;
   description: string;
-  target: string; // CSS selector
+  target: string;
   placement: 'top' | 'bottom' | 'left' | 'right' | 'center';
   isActive: boolean;
   order: number;
   deviceType?: 'desktop' | 'mobile' | 'both';
+  condition?: {
+    always?: boolean;
+    isLoggedIn?: boolean;
+    isLoggedOut?: boolean;
+    pathname?: string[];
+  };
+  navigateTo?: string;
+  scrollTo?: boolean;
+  fallbackSelector?: string;
+  contextTargets?: Record<string, string>;
 }
 
 export interface UserOnboardingProgress {
