@@ -143,6 +143,9 @@ export function useOnboarding() {
         if (key === '[id]') {
           return pathname.includes('/products/') && pathname !== '/products';
         }
+        if (key === '[/products/[id]]') {
+          return pathname.includes('/products/') && pathname !== '/products';
+        }
         return pathname === key;
       });
       if (contextKey && step.contextTargets[contextKey]) {
@@ -159,7 +162,7 @@ export function useOnboarding() {
     if (step.condition.isLoggedOut !== undefined && step.condition.isLoggedOut !== !userId) return false;
     if (step.condition.pathname) {
       const matches = step.condition.pathname.some(pattern => {
-        if (pattern === '[id]') {
+        if (pattern === '[id]' || pattern === '[/products/[id]]') {
           return pathname?.startsWith('/products/') && pathname !== '/products';
         }
         return pathname === pattern;
@@ -185,6 +188,27 @@ export function useOnboarding() {
     return filteredSteps[index] || null;
   }, [getCurrentSteps, getStepIndex]);
 
+  const waitForElement = useCallback((selector: string, timeout: number = 3000): Promise<Element | null> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const checkInterval = 100;
+
+      const check = () => {
+        const element = document.querySelector(selector);
+        if (element) {
+          resolve(element);
+          return;
+        }
+        if (Date.now() - startTime > timeout) {
+          resolve(null);
+          return;
+        }
+        setTimeout(check, checkInterval);
+      };
+      check();
+    });
+  }, []);
+
   const nextStep = useCallback(async () => {
     const filteredSteps = getCurrentSteps();
     const currentIndex = getStepIndex();
@@ -207,20 +231,19 @@ export function useOnboarding() {
     if (nextStepData.navigateTo && pathname !== nextStepData.navigateTo) {
       setIsNavigating(true);
       router.push(nextStepData.navigateTo);
-      setTimeout(() => {
-        setIsNavigating(false);
-      }, 1500);
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setIsNavigating(false);
     }
 
     if (nextStepData.scrollTo) {
-      setTimeout(() => {
-        const target = document.querySelector(nextStepData.target);
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const targetSelector = nextStepData.target;
+      const element = await waitForElement(targetSelector, 2000);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
-  }, [getCurrentSteps, getStepIndex, steps, userId, sessionId, pathname, router]);
+  }, [getCurrentSteps, getStepIndex, steps, userId, sessionId, pathname, router, waitForElement]);
 
   const prevStep = useCallback(() => {
     const filteredSteps = getCurrentSteps();
