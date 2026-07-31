@@ -300,6 +300,7 @@ export default function AdminProductsPage() {
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="max-w-[1400px] mx-auto">
           
+          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Products</h1>
@@ -313,6 +314,7 @@ export default function AdminProductsPage() {
             </button>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between">
@@ -382,6 +384,7 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
+          {/* Filters Bar */}
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -457,6 +460,7 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
+          {/* Bulk Actions */}
           {selectedProducts.length > 0 && (
             <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -491,6 +495,7 @@ export default function AdminProductsPage() {
             </div>
           )}
 
+          {/* Products Display */}
           {loading ? (
             <div className="flex items-center justify-center py-16 sm:py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
               <Loader2 className="animate-spin text-[var(--primary)]" size={40} />
@@ -593,7 +598,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-3 sm:px-4 py-3 hidden 2xl:table-cell">
                           <Link
-                            href={`/admin/products/${p.id}/variants`}
+                            href={`/admin/products/${p.id}`}
                             className="inline-flex items-center justify-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/50 transition min-h-[32px]"
                           >
                             <Grid3X3 size={12} /> {p.variant_count || 0}
@@ -612,7 +617,7 @@ export default function AdminProductsPage() {
                                 <Link href={`/products/${p.id}`} target="_blank" className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition">
                                   <ExternalLink size={14} /> View on Store
                                 </Link>
-                                <Link href={`/admin/products/${p.id}/variants`} className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition">
+                                <Link href={`/admin/products/${p.id}`} className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition">
                                   <Grid3X3 size={14} /> Manage Variants
                                 </Link>
                                 <button onClick={() => { openEdit(p); setActionMenuOpen(null); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition">
@@ -688,6 +693,7 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+      {/* Product Modal - IMPROVED VERSION */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-lg shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -700,12 +706,12 @@ export default function AdminProductsPage() {
 
             <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Product Name *</label>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Product Name <span className="text-red-500">*</span></label>
                 <input
                   value={form.name}
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                   required
-                  className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                  className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                   placeholder="e.g., Anime Hoodie - Gojo Edition"
                 />
               </div>
@@ -716,14 +722,14 @@ export default function AdminProductsPage() {
                   value={form.description}
                   onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                   rows={3}
-                  className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm resize-none"
+                  className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm resize-none"
                   placeholder="Product description..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Price (MWK) *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">Price (MWK) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     step="100"
@@ -731,7 +737,7 @@ export default function AdminProductsPage() {
                     value={form.price_mwk}
                     onChange={e => setForm(p => ({ ...p, price_mwk: e.target.value }))}
                     required
-                    className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                   />
                 </div>
                 <div>
@@ -742,7 +748,7 @@ export default function AdminProductsPage() {
                     min="0"
                     value={form.compare_price_mwk}
                     onChange={e => setForm(p => ({ ...p, compare_price_mwk: e.target.value }))}
-                    className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                     placeholder="Original price"
                   />
                 </div>
@@ -756,7 +762,7 @@ export default function AdminProductsPage() {
                     min="0"
                     value={form.stock_quantity}
                     onChange={e => setForm(p => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))}
-                    className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                   />
                 </div>
                 <div>
@@ -764,7 +770,7 @@ export default function AdminProductsPage() {
                   <select
                     value={form.status}
                     onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                    className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                   >
                     {STATUS_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -780,7 +786,7 @@ export default function AdminProductsPage() {
                     <select
                       value={form.category_id}
                       onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))}
-                      className="flex-1 p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                      className="flex-1 px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
                     >
                       <option value="">Select category</option>
                       {categories.map(c => (
@@ -797,17 +803,21 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.is_featured}
                       onChange={e => setForm(p => ({ ...p, is_featured: e.target.checked }))}
-                      className="w-4 h-4 text-[var(--primary)] rounded focus:ring-[var(--primary)]"
+                      className="sr-only peer"
                     />
-                    <span className="text-xs sm:text-sm text-[var(--foreground)] flex items-center gap-1">
-                      <Star size={14} /> Featured
-                    </span>
+                    <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary)]"></div>
                   </label>
+                  <div className="flex items-center gap-1.5 ml-3">
+                    <Star size={16} className={form.is_featured ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'} />
+                    <span className="text-sm font-medium text-[var(--foreground)]">
+                      {form.is_featured ? 'Featured' : 'Mark as Featured'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -817,6 +827,16 @@ export default function AdminProductsPage() {
                   {imagePreview && (
                     <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-[var(--background-secondary)] shadow-sm">
                       <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview('');
+                          setForm(p => ({ ...p, image_url: '' }));
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                      >
+                        <X size={12} />
+                      </button>
                     </div>
                   )}
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -834,7 +854,7 @@ export default function AdminProductsPage() {
                         setForm(p => ({ ...p, image_url: e.target.value }));
                         setImagePreview(e.target.value);
                       }}
-                      className="flex-1 p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+                      className="flex-1 px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
                       placeholder="Or paste image URL"
                     />
                   </div>
@@ -869,6 +889,7 @@ export default function AdminProductsPage() {
         </div>
       )}
 
+      {/* Add Category Modal */}
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-md p-4 sm:p-6 shadow-xl">
@@ -878,7 +899,7 @@ export default function AdminProductsPage() {
               value={newCategory}
               onChange={e => setNewCategory(e.target.value)}
               placeholder="Category name"
-              className="w-full p-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+              className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
             />
             <div className="flex gap-3">
               <button 
