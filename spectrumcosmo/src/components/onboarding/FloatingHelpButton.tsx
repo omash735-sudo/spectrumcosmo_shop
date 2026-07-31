@@ -1,26 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useOnboardingContext } from '@/providers/OnboardingProvider';
 
-interface FloatingHelpButtonProps {
-  onClick: () => void;
-  isVisible?: boolean;
-}
-
-export default function FloatingHelpButton({ onClick, isVisible = true }: FloatingHelpButtonProps) {
+export default function FloatingHelpButton() {
+  const { restartTour, hasCompleted } = useOnboardingContext();
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowTooltip(true);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
+    // Only show tooltip if user has completed the tour
+    if (hasCompleted) {
+      const timer = setTimeout(() => {
+        setShowTooltip(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasCompleted]);
 
-  if (!isVisible) return null;
+  const handleClick = () => {
+    setShowTooltip(false);
+    restartTour();
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -39,7 +42,7 @@ export default function FloatingHelpButton({ onClick, isVisible = true }: Floati
       </AnimatePresence>
 
       <motion.button
-        onClick={onClick}
+        onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className="relative w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
