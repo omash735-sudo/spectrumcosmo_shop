@@ -13,7 +13,6 @@ interface Product {
   currency?: string;
 }
 
-// Local storage keys
 const RECENT_SEARCHES_KEY = 'spectrumcosmo_recent_searches';
 const MAX_RECENT_SEARCHES = 5;
 
@@ -29,7 +28,6 @@ export default function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Load recent searches from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
     if (saved) {
@@ -41,7 +39,6 @@ export default function SearchBar() {
     }
   }, []);
 
-  // Save recent searches to localStorage
   const saveRecentSearch = useCallback((searchTerm: string) => {
     if (!searchTerm.trim()) return;
     
@@ -53,13 +50,11 @@ export default function SearchBar() {
     });
   }, []);
 
-  // Clear all recent searches
   const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);
     localStorage.removeItem(RECENT_SEARCHES_KEY);
   }, []);
 
-  // Remove a single recent search
   const removeRecentSearch = useCallback((searchTerm: string) => {
     setRecentSearches(prev => {
       const updated = prev.filter(s => s !== searchTerm);
@@ -68,7 +63,6 @@ export default function SearchBar() {
     });
   }, []);
 
-  // Fetch trending products when search bar opens (no query)
   const fetchTrendingProducts = useCallback(async () => {
     try {
       const res = await fetch('/api/search', {
@@ -85,7 +79,6 @@ export default function SearchBar() {
     }
   }, []);
 
-  // Search with debouncing and caching (handled by API)
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setResults([]);
@@ -109,7 +102,6 @@ export default function SearchBar() {
     }
   }, []);
 
-  // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
@@ -131,7 +123,6 @@ export default function SearchBar() {
     }
   };
 
-  // Handle search submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -142,7 +133,6 @@ export default function SearchBar() {
     }
   };
 
-  // Handle clicking a recent search
   const handleRecentSearchClick = (searchTerm: string) => {
     setQuery(searchTerm);
     saveRecentSearch(searchTerm);
@@ -151,15 +141,13 @@ export default function SearchBar() {
     setQuery('');
   };
 
-  // Handle clicking a product result
   const handleProductClick = (productId: string, productName: string) => {
     saveRecentSearch(productName);
     setIsOpen(false);
     setQuery('');
-    router.push(`/product/${productId}`);
+    router.push(`/products/${productId}`);
   };
 
-  // Open search bar
   const openSearch = () => {
     setIsOpen(true);
     setShowRecent(true);
@@ -168,7 +156,6 @@ export default function SearchBar() {
     fetchTrendingProducts();
   };
 
-  // Close search bar
   const closeSearch = () => {
     setIsOpen(false);
     setShowRecent(false);
@@ -179,7 +166,6 @@ export default function SearchBar() {
     }
   };
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -188,19 +174,17 @@ export default function SearchBar() {
 
   return (
     <>
-      {/* Search button */}
       <button
         onClick={openSearch}
         className="p-2 hover:bg-[var(--background-secondary)] rounded-full transition min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Search"
+        data-onboarding="search"
       >
         <Search size={20} className="text-[var(--foreground)]" />
       </button>
 
-      {/* Search modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-[var(--background-card)] z-50 flex flex-col">
-          {/* Header */}
           <div className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border-b border-[var(--border)]">
             <form onSubmit={handleSubmit} className="flex-1 relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]" />
@@ -227,9 +211,7 @@ export default function SearchBar() {
             </button>
           </div>
 
-          {/* Results body */}
           <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-            {/* Show search results when query exists */}
             {query.length >= 2 && (
               <>
                 {results.length === 0 && !loading && (
@@ -284,10 +266,8 @@ export default function SearchBar() {
               </>
             )}
 
-            {/* Show recent searches and trending when no query */}
             {query.length < 2 && (
               <>
-                {/* Recent Searches */}
                 {recentSearches.length > 0 && (
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -326,7 +306,6 @@ export default function SearchBar() {
                   </div>
                 )}
 
-                {/* Trending Products */}
                 {trendingProducts.length > 0 && (
                   <div>
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 text-[var(--foreground-muted)]">
