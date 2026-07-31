@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useOnboardingContext } from '@/providers/OnboardingProvider';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 export default function FloatingHelpButton() {
-  const { restartTour, hasCompleted } = useOnboardingContext();
+  const { restartTour, hasCompleted } = useOnboarding();
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
-    // Only show tooltip if user has completed the tour
     if (hasCompleted) {
       const timer = setTimeout(() => {
         setShowTooltip(true);
@@ -41,25 +40,14 @@ export default function FloatingHelpButton() {
         )}
       </AnimatePresence>
 
-      <motion.button
+      <button
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{
-          scale: [1, 1.05, 1],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          repeatDelay: 3,
-        }}
+        className="relative w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95"
       >
         <HelpCircle size={24} className="relative z-10" />
-        <div className="absolute inset-0 rounded-full bg-[var(--primary)] opacity-20 animate-ping" />
-      </motion.button>
+      </button>
     </div>
   );
 }
