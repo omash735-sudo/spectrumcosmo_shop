@@ -132,8 +132,8 @@ export default function ProductDetailPage() {
     ? reviews.reduce((s, r) => s + r.rating, 0) / totalReviews
     : 0;
 
-  const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
-  const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+  const sizes = [...new Set(variants.map(v => v.size).filter((s): s is string => s !== null))];
+  const colors = [...new Set(variants.map(v => v.color).filter((c): c is string => c !== null))];
 
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
   reviews.forEach((r) => {
@@ -156,20 +156,15 @@ export default function ProductDetailPage() {
     { icon: CheckCircle, text: 'Secure Checkout' },
   ];
 
-  // Get all images (product image + variant images + gallery images)
   const getAllImages = (): string[] => {
     const images: string[] = [];
     
-    // Add product image
     if (product.image_url) images.push(product.image_url);
     
-    // Add variant images
     variants.forEach(v => {
-      // Add variant main image
       if (v.image_url && !images.includes(v.image_url)) {
         images.push(v.image_url);
       }
-      // Add variant gallery images
       if (v.gallery_images && v.gallery_images.length > 0) {
         v.gallery_images.forEach(img => {
           if (!images.includes(img)) {
@@ -182,9 +177,6 @@ export default function ProductDetailPage() {
     return images;
   };
 
-  const allImages = getAllImages();
-
-  // Get images for selected color
   const getColorImages = (color: string): string[] => {
     const images: string[] = [];
     const colorVariants = variants.filter(v => v.color === color);
@@ -205,12 +197,10 @@ export default function ProductDetailPage() {
     return images;
   };
 
-  // Get images based on selected color
   const displayImages = selectedColor && getColorImages(selectedColor).length > 0
     ? getColorImages(selectedColor)
-    : allImages;
+    : getAllImages();
 
-  // Ensure current image index is valid
   useEffect(() => {
     if (currentImageIndex >= displayImages.length) {
       setCurrentImageIndex(0);
@@ -265,7 +255,6 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 sm:gap-10 lg:gap-16">
-            {/* Left - Image Gallery */}
             <div className="relative">
               <div className="sticky top-24">
                 <div className="relative h-[300px] sm:h-[400px] lg:h-[550px] rounded-xl sm:rounded-2xl overflow-hidden bg-[var(--background-secondary)]">
@@ -332,7 +321,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Right - Product Info */}
             <div className="flex flex-col">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--foreground)] mb-2 sm:mb-3">
                 {product.name}
@@ -365,7 +353,6 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Size Options */}
               {sizes.length > 0 && (
                 <div className="mb-4 sm:mb-5">
                   <p className="text-sm font-medium text-[var(--foreground)] mb-2 sm:mb-3">Size</p>
@@ -387,7 +374,6 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Color Options - Shows available colors with preview */}
               {colors.length > 0 && (
                 <div className="mb-4 sm:mb-5">
                   <p className="text-sm font-medium text-[var(--foreground)] mb-2 sm:mb-3">Color</p>
@@ -504,7 +490,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Reviews Section */}
           <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-[var(--border)]">
             <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
               <div className="md:col-span-1">
@@ -546,7 +531,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-12 sm:mt-16">
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-4 sm:mb-6">You May Also Like</h2>
