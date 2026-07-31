@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryMany, queryOne } from '@/lib/db';
-import { DEFAULT_STEPS } from '@/lib/onboarding/steps';
+import { INTELLIGENT_STEPS } from '@/lib/onboarding/intelligent-steps';
 
-// Get all steps
 export async function GET() {
   try {
-    // Try to get from database first
     const steps = await queryMany`
       SELECT 
         id,
@@ -15,14 +13,18 @@ export async function GET() {
         placement,
         is_active as "isActive",
         "order",
-        device_type as "deviceType"
+        device_type as "deviceType",
+        condition,
+        navigate_to as "navigateTo",
+        scroll_to as "scrollTo",
+        fallback_selector as "fallbackSelector",
+        context_targets as "contextTargets"
       FROM onboarding_steps
       ORDER BY "order" ASC
     `;
 
     if (steps.length === 0) {
-      // Return defaults if no steps in DB
-      return NextResponse.json({ steps: DEFAULT_STEPS });
+      return NextResponse.json({ steps: INTELLIGENT_STEPS });
     }
 
     return NextResponse.json({ steps });
@@ -35,7 +37,6 @@ export async function GET() {
   }
 }
 
-// Update steps (admin only)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -48,17 +49,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clear existing steps
     await queryOne`TRUNCATE onboarding_steps CASCADE`;
 
-    // Insert new steps
     for (const step of steps) {
       await queryOne`
         INSERT INTO onboarding_steps (
-          id, title, description, target, placement, is_active, "order", device_type
+          id, 
+          title, 
+          description, 
+          target, 
+          placement, 
+          is_active, 
+          "order", 
+          device_type,
+          condition,
+          navigate_to,
+          scroll_to,
+          fallback_selector,
+          context_targets
         ) VALUES (
-          ${step.id}, ${step.title}, ${step.description}, ${step.target}, 
-          ${step.placement}, ${step.isActive}, ${step.order}, ${step.deviceType || 'both'}
+          ${step.id}, 
+          ${step.title}, 
+          ${step.description}, 
+          ${step.target}, 
+          ${step.placement}, 
+          ${step.isActive}, 
+          ${step.order}, 
+          ${step.deviceType || 'both'},
+          ${step.condition ? JSON.stringify(step.condition) : null},
+          ${step.navigateTo || null},
+          ${step.scrollTo || false},
+          ${step.fallbackSelector || null},
+          ${step.contextTargets ? JSON.stringify(step.contextTargets) : null}
         )
       `;
     }
