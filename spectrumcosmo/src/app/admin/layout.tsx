@@ -67,16 +67,15 @@ const navItems = [
   { name: 'Notifications', href: '/admin/notifications', icon: Bell, section: 'CORE' },
   { name: 'Top Banner', href: '/admin/banner', icon: Megaphone, section: 'CORE' },
   { name: 'Events', href: '/admin/events', icon: CalendarDays, section: 'CORE' },
+  { name: 'Onboarding', href: '/admin/onboarding', icon: HelpCircle, section: 'CORE' },
   
   { name: 'Delivery Areas', href: '/admin/delivery-areas', icon: MapPin, section: 'DELIVERY' },
   { name: 'Delivery Quotes', href: '/admin/delivery-quotes', icon: Send, section: 'DELIVERY' },
   
-  // ===== UPDATED SECURITY SECTION =====
   { name: 'Security Overview', href: '/admin/security', icon: Shield, section: 'SECURITY' },
   { name: 'Security Logs', href: '/admin/security/logs', icon: Eye, section: 'SECURITY' },
   { name: 'Blocked IPs', href: '/admin/security/blocked', icon: Ban, section: 'SECURITY' },
   { name: 'Protection', href: '/admin/security/protection', icon: Lock, section: 'SECURITY' },
-  // REMOVED: Security Dashboard, Security Center, Threat Logs, Protection Rules, 2FA Settings
   
   { name: 'Payment Verifications', href: '/admin/payment-verifications', icon: CheckCircle, section: 'OPERATIONS' },
   { name: 'Payment Settings', href: '/admin/payment-settings', icon: Wallet, section: 'OPERATIONS' },
@@ -383,7 +382,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-[var(--background-card)] border-b border-[var(--border)] z-50 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <img
@@ -406,7 +404,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           <div
@@ -429,7 +426,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      {/* Desktop Layout */}
       <div className="hidden md:flex">
         <aside className="w-64 lg:w-72 flex-shrink-0 bg-[var(--background-card)] border-r border-[var(--border)] min-h-screen sticky top-0 flex flex-col p-4 lg:p-5 shadow-sm">
           <NavContent />
@@ -440,7 +436,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      {/* Mobile Main Content */}
       <div className="md:hidden pt-14 sm:pt-16">
         <main className="p-3 sm:p-4">
           <div className="max-w-7xl mx-auto">{children}</div>
