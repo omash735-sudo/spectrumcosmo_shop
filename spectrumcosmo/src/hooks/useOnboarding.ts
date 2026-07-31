@@ -9,23 +9,13 @@ import {
   resetOnboarding,
   generateSessionId 
 } from '@/lib/onboarding/persistence';
-import { OnboardingStep, OnboardingConfig } from '@/lib/onboarding/types';
+import { OnboardingStep } from '@/lib/onboarding/types';
 
 const ONBOARDING_ENABLED_KEY = 'spectrumcosmo_onboarding_enabled';
 
 export function useOnboarding() {
   const pathname = usePathname();
-  const [sessionId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('spectrumcosmo_session');
-      if (stored) return stored;
-      const newId = generateSessionId();
-      localStorage.setItem('spectrumcosmo_session', newId);
-      return newId;
-    }
-    return generateSessionId();
-  });
-
+  const [sessionId, setSessionId] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -34,9 +24,25 @@ export function useOnboarding() {
   const [isEnabled, setIsEnabled] = useState(true);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Check if tour is enabled
   useEffect(() => {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('spectrumcosmo_session');
+      if (stored) {
+        setSessionId(stored);
+      } else {
+        const newId = generateSessionId();
+        localStorage.setItem('spectrumcosmo_session', newId);
+        setSessionId(newId);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || !sessionId) return;
+
     const checkEnabled = async () => {
       try {
         const res = await fetch('/api/admin/onboarding/config');
@@ -49,10 +55,11 @@ export function useOnboarding() {
       }
     };
     checkEnabled();
-  }, []);
+  }, [isMounted, sessionId]);
 
-  // Load steps from API or use defaults
   useEffect(() => {
+    if (!isMounted) return;
+
     const loadSteps = async () => {
       try {
         const res = await fetch('/api/admin/onboarding/steps');
@@ -66,31 +73,33 @@ export function useOnboarding() {
       } catch (err) {
         console.error('Failed to fetch onboarding steps:', err);
       }
-      // Fallback to defaults
       setSteps(isMobile ? MOBILE_STEPS : DEFAULT_STEPS);
     };
     loadSteps();
-  }, [isMobile]);
+  }, [isMobile, isMounted]);
 
-  // Check if user has seen the tour
   useEffect(() => {
+    if (!isMounted || !sessionId) return;
+
     const checkStatus = async () => {
       setIsLoading(true);
       try {
+        if (pathname?.startsWith('/admin')) {
+          setIsOpen(false);
+          setIsLoading(false);
+          return;
+        }
+
         const status = await getUserOnboardingStatus(userId, sessionId);
         if (status) {
           setHasCompleted(status.hasCompleted);
           setCurrentStep(status.currentStep);
           
-          // Only show if not completed and on a valid page
-          if (!status.hasCompleted && !pathname?.startsWith('/admin')) {
+          if (!status.hasCompleted && isEnabled) {
             setIsOpen(true);
           }
-        } else {
-          // First time user - show tour
-          if (!pathname?.startsWith('/admin')) {
-            setIsOpen(true);
-          }
+        } else if (isEnabled) {
+          setIsOpen(true);
         }
       } catch (err) {
         console.error('Failed to check onboarding status:', err);
@@ -100,20 +109,20 @@ export function useOnboarding() {
     };
 
     checkStatus();
-  }, [userId, sessionId, pathname]);
+  }, [userId, sessionId, pathname, isEnabled, isMounted]);
 
-  // Detect mobile
   useEffect(() => {
+    if (!isMounted) return;
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [isMounted]);
 
-  // Get user ID from auth
   useEffect(() => {
+    if (!isMounted) return;
     const fetchUser = async () => {
       try {
         const res = await fetch('/api/auth/me');
@@ -126,7 +135,7 @@ export function useOnboarding() {
       }
     };
     fetchUser();
-  }, []);
+  }, [isMounted]);
 
   const handleNext = useCallback(() => {
     const nextStep = currentStep + 1;
@@ -162,9 +171,7 @@ export function useOnboarding() {
   }, [userId, sessionId]);
 
   const getStepTarget = useCallback((step: OnboardingStep) => {
-    // Handle multiple selectors
-    const selectors = step.target.split(',').map(s => s.trim());
-    return selectors;
+    return step.target.split(',').map(s => s.trim());
   }, []);
 
   return {
