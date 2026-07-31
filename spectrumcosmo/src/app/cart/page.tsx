@@ -22,7 +22,6 @@ export default function CartPage() {
       <main className="min-h-screen bg-[var(--background)] py-4 sm:py-6 md:py-10">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           
-          {/* Header with back button */}
           <div className="flex items-center gap-3 mb-4 sm:mb-6">
             <Link 
               href="/products" 
@@ -32,14 +31,15 @@ export default function CartPage() {
               <ArrowLeft size={20} className="text-[var(--foreground-muted)]" />
             </Link>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-              Shopping Cart
-            </h1>
+              Shopping Cart            </h1>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
             
-            {/* LEFT - Cart Items */}
-            <div className="flex-1 lg:col-span-2 bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
+            <div 
+              className="flex-1 lg:col-span-2 bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-3 sm:p-4 md:p-5 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto"
+              data-onboarding="cart"
+            >
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mb-3 sm:mb-4">
@@ -58,7 +58,6 @@ export default function CartPage() {
               )}
             </div>
 
-            {/* RIGHT - Order Summary */}
             <div className="w-full lg:w-80 xl:w-96 bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] p-4 sm:p-5 md:p-6 h-fit shadow-sm sticky top-24">
               <h2 className="font-semibold text-base sm:text-lg text-[var(--foreground)] mb-3 sm:mb-4">
                 Order Summary
@@ -96,7 +95,6 @@ export default function CartPage() {
                 Proceed to Checkout
               </Link>
 
-              {/* Trust badges for mobile */}
               <div className="mt-4 pt-3 sm:pt-4 border-t border-[var(--border)]">
                 <p className="text-[10px] sm:text-xs text-center text-[var(--foreground-muted)]">
                   Secure checkout • 100% Authentic • Fast Delivery
