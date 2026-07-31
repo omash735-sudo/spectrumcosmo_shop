@@ -142,6 +142,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       className="group relative bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
       onMouseEnter={() => setShowQuickView(true)}
       onMouseLeave={() => setShowQuickView(false)}
+      data-onboarding="product-card"
     >
       {/* Image Container */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-[var(--background-secondary)]">
@@ -192,6 +193,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           disabled={loading}
           className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20 min-h-[32px] min-w-[32px] flex items-center justify-center"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          data-onboarding="wishlist-grid"
         >
           <Heart
             size={14}
