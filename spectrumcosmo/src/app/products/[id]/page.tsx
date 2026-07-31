@@ -1,4 +1,3 @@
-// app/products/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -465,7 +464,10 @@ export default function ProductDetailPage() {
                   quantity={quantity}
                   className="flex-1"
                 />
-                <button className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-[var(--border)] rounded-xl font-medium text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition min-h-[44px]">
+                <button 
+                  className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-[var(--border)] rounded-xl font-medium text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition min-h-[44px]"
+                  data-onboarding="wishlist-detail"
+                >
                   <Heart size={18} />
                   Wishlist
                 </button>
