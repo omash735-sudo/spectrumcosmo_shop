@@ -56,6 +56,15 @@ export async function POST(
     display_order 
   } = await req.json();
   
+  const sql = getDb();
+  
+  // Get the current max display order
+  const [maxOrder] = await sql`
+    SELECT COALESCE(MAX(display_order), -1) + 1 as next_order
+    FROM product_variants
+    WHERE product_id = ${productId}
+  `;
+  
   const newVariant = await queryOne<ProductVariant>`
     INSERT INTO product_variants (
       product_id, 
@@ -78,8 +87,8 @@ export async function POST(
       ${stock_quantity || 0}, 
       ${sku || null}, 
       ${image_url || null},
-      ${gallery_images ? JSON.stringify(gallery_images) : null}::jsonb,
-      ${display_order ?? 0}
+      ${gallery_images && gallery_images.length > 0 ? JSON.stringify(gallery_images) : null}::jsonb,
+      ${display_order !== undefined ? display_order : maxOrder?.next_order || 0}
     )
     RETURNING *
   `;
@@ -125,7 +134,7 @@ export async function PATCH(
       stock_quantity = COALESCE(${stock_quantity ?? null}, stock_quantity),
       sku = COALESCE(${sku ?? null}, sku),
       image_url = COALESCE(${image_url ?? null}, image_url),
-      gallery_images = COALESCE(${gallery_images ? JSON.stringify(gallery_images) : null}::jsonb, gallery_images),
+      gallery_images = COALESCE(${gallery_images && gallery_images.length > 0 ? JSON.stringify(gallery_images) : null}::jsonb, gallery_images),
       is_active = COALESCE(${is_active ?? null}, is_active),
       display_order = COALESCE(${display_order ?? null}, display_order),
       updated_at = NOW()
