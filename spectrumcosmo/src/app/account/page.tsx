@@ -16,7 +16,6 @@ import {
   User,
   Settings,
   Calendar,
-  // DollarSign removed
   ArrowRight,
   TrendingUp,
   Gift,
@@ -104,17 +103,13 @@ export default function AccountOverview() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6 md:space-y-8">
+    <div className="space-y-5 sm:space-y-6 md:space-y-8" data-onboarding="account">
       
-      {/* ============================================
-          WELCOME BANNER - With Manga Panel
-          ============================================ */}
       <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
         <div className="relative z-10 bg-[var(--primary)]/95 p-5 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 bg-[var(--background-card)]/20 backdrop-blur-sm px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
-                {/* Sparkles removed */}
                 <span className="text-[10px] sm:text-xs font-bold text-white">Welcome Back</span>
               </div>
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--foreground)]">
@@ -132,9 +127,6 @@ export default function AccountOverview() {
         </div>
       </div>
 
-      {/* ============================================
-          STATS CARDS - Clean (No Manga)
-          ============================================ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
@@ -169,9 +161,6 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      {/* ============================================
-          RECENT ORDERS SECTION - Clean (No Manga)
-          ============================================ */}
       <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <div className="flex justify-between items-center">
@@ -226,7 +215,6 @@ export default function AccountOverview() {
                           <Calendar size={10} className="sm:w-3 sm:h-3" />
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
-                        {/* DollarSign removed - now just the amount */}
                         <span className="font-medium text-[var(--foreground)]">
                           MWK {totalAmount.toLocaleString()}
                         </span>
@@ -246,9 +234,6 @@ export default function AccountOverview() {
         )}
       </div>
 
-      {/* ============================================
-          QUICK LINKS - Clean (No Manga)
-          ============================================ */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Link href="/account/profile" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
@@ -266,9 +251,6 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      {/* ============================================
-          BENEFITS BANNER - Clean (No Manga)
-          ============================================ */}
       <div className="bg-[var(--background-secondary)] rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-[var(--border)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
