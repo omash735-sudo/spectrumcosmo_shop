@@ -1,6 +1,4 @@
-// app/products/page.tsx
 export const dynamic = 'force-dynamic';
-
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,7 +10,6 @@ import HeroCarousel from '@/components/storefront/HeroCarousel';
 import { getDb, queryMany } from '@/lib/db';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
-// Types
 interface Category {
   name: string;
   slug: string;
@@ -150,7 +147,6 @@ export default async function ProductsPage({
       <Navbar />
       <main className="min-h-screen bg-[var(--background)]">
         
-        {/* HERO CAROUSEL - No manga panel */}
         <HeroCarousel
           titleColor={heroSettings.titleColor}
           subtitleColor={heroSettings.subtitleColor}
@@ -161,14 +157,12 @@ export default async function ProductsPage({
           buttonTextColor={heroSettings.buttonTextColor}
         />
 
-        {/* FEATURED PRODUCTS - No manga panel, just background color */}
         <div className="bg-[var(--background-secondary)] py-8 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FeaturedProducts />
           </div>
         </div>
 
-        {/* PRODUCTS GRID - With manga panel */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 manga-bg hero-manga">
           <div className="relative z-10">
             
@@ -276,7 +270,10 @@ export default async function ProductsPage({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div 
+                className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+                data-onboarding="product-grid"
+              >
                 {productCardProps.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
