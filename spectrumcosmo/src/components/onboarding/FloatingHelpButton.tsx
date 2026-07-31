@@ -10,20 +10,26 @@ export default function FloatingHelpButton() {
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  useEffect(() => {
-    if (hasCompleted) {
-      const timer = setTimeout(() => {
-        setShowTooltip(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasCompleted]);
+  // TEMPORARILY DISABLED - Uncomment to re-enable
+  // useEffect(() => {
+  //   if (hasCompleted) {
+  //     const timer = setTimeout(() => {
+  //       setShowTooltip(true);
+  //     }, 5000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [hasCompleted]);
 
   const handleClick = () => {
     setShowTooltip(false);
     restartTour();
   };
 
+  // TEMPORARILY DISABLED - Return null to hide the button
+  return null;
+
+  // UNCOMMENT BELOW TO RE-ENABLE
+  /*
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <AnimatePresence>
@@ -50,4 +56,5 @@ export default function FloatingHelpButton() {
       </button>
     </div>
   );
+  */
 }
