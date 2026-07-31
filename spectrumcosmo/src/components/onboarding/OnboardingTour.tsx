@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Volume2, VolumeX } from 'lucide-react';
-import { useOnboardingContext } from '@/providers/OnboardingProvider';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import Confetti from '@/components/ui/Confetti';
 
 export default function OnboardingTour() {
@@ -21,12 +21,25 @@ export default function OnboardingTour() {
     hasCompleted,
     isLoading,
     isEnabled,
-  } = useOnboardingContext();
+    isNavigating,
+    getCurrentSteps,
+    getCurrentStepIndex,
+    getStepCount,
+    shouldShowStep,
+  } = useOnboarding();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<Element | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({});
   const audioContextRef = useRef<AudioContext | null>(null);
+  const stepRef = useRef<HTMLDivElement>(null);
+
+  const filteredSteps = getCurrentSteps();
+  const currentStepIndex = getCurrentStepIndex();
+  const totalSteps = getStepCount();
+
+  const currentFilteredStep = filteredSteps[currentStepIndex] || null;
 
   const playSound = (type: 'next' | 'back' | 'complete' | 'skip') => {
     if (!soundEnabled) return;
@@ -92,19 +105,19 @@ export default function OnboardingTour() {
       setShowConfetti(false);
       setIsOpen(false);
       handleFinish();
-    }, 3000);
+    }, 4000);
   };
 
   useEffect(() => {
-    if (!isOpen || !steps.length || !steps[currentStep]) return;
+    if (!isOpen || !currentFilteredStep || isNavigating) return;
     
-    const step = steps[currentStep];
-    if (step.target === 'body') {
+    if (currentFilteredStep.target === 'body') {
       setHoveredElement(null);
       return;
     }
 
-    const selectors = step.target.split(',').map(s => s.trim());
+    const targetSelector = getStepTarget(currentFilteredStep);
+    const selectors = targetSelector.split(',').map(s => s.trim());
     let element: Element | null = null;
     
     for (const selector of selectors) {
@@ -113,6 +126,10 @@ export default function OnboardingTour() {
         element = found;
         break;
       }
+    }
+
+    if (!element && currentFilteredStep.fallbackSelector) {
+      element = document.querySelector(currentFilteredStep.fallbackSelector);
     }
 
     setHoveredElement(element || null);
@@ -125,61 +142,56 @@ export default function OnboardingTour() {
         rect.bottom <= window.innerHeight &&
         rect.right <= window.innerWidth;
 
-      if (!isVisible) {
+      if (!isVisible && currentFilteredStep.scrollTo) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  }, [currentStep, isOpen, steps]);
+  }, [currentStep, isOpen, currentFilteredStep, getStepTarget, isNavigating]);
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        handleSkipWithSound();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
-
-  if (!isEnabled || isLoading || hasCompleted || !isOpen || steps.length === 0) {
+  if (!isEnabled || isLoading || hasCompleted || !isOpen || isNavigating) {
     return null;
   }
 
-  const step = steps[currentStep];
-  if (!step) return null;
+  if (!currentFilteredStep || totalSteps === 0) {
+    return null;
+  }
 
-  const isFirst = currentStep === 0;
-  const isLast = currentStep === steps.length - 1;
+  const isFirst = currentStepIndex === 0;
+  const isLast = currentStepIndex === totalSteps - 1;
 
   const getPositionStyles = () => {
-    if (step.target === 'body') {
+    if (currentFilteredStep.target === 'body') {
       return {
         position: 'fixed' as const,
-        top: '50%',
+        top: isMobile ? '10%' : '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
         maxWidth: isMobile ? '90%' : '500px',
+        width: isMobile ? '90%' : 'auto',
       };
     }
 
     if (hoveredElement) {
       const rect = hoveredElement.getBoundingClientRect();
-      const placement = isMobile ? 'bottom' : step.placement;
+      const placement = isMobile ? 'bottom' : currentFilteredStep.placement;
 
       const positions = {
-        top: { bottom: window.innerHeight - rect.top + 20, left: rect.left + rect.width / 2 },
-        bottom: { top: rect.bottom + 20, left: rect.left + rect.width / 2 },
-        left: { top: rect.top + rect.height / 2, right: window.innerWidth - rect.left + 20 },
-        right: { top: rect.top + rect.height / 2, left: rect.right + 20 },
+        top: { bottom: window.innerHeight - rect.top + 16, left: rect.left + rect.width / 2 },
+        bottom: { top: rect.bottom + 16, left: rect.left + rect.width / 2 },
+        left: { top: rect.top + rect.height / 2, right: window.innerWidth - rect.left + 16 },
+        right: { top: rect.top + rect.height / 2, left: rect.right + 16 },
         center: { top: '50%', left: '50%' },
       };
 
       const pos = positions[placement as keyof typeof positions] || positions.bottom;
+      const transform = placement === 'center' ? 'translate(-50%, -50%)' : 'translate(-50%, 0)';
+      
       return {
         position: 'fixed' as const,
         ...pos,
-        transform: placement === 'center' ? 'translate(-50%, -50%)' : 'translate(-50%, 0)',
+        transform,
         maxWidth: isMobile ? '85%' : '400px',
+        width: isMobile ? '85%' : 'auto',
       };
     }
 
@@ -189,11 +201,12 @@ export default function OnboardingTour() {
       left: '50%',
       transform: 'translate(-50%, -50%)',
       maxWidth: isMobile ? '90%' : '400px',
+      width: isMobile ? '90%' : 'auto',
     };
   };
 
   const getOverlayStyles = () => {
-    if (!hoveredElement || step.target === 'body') {
+    if (!hoveredElement || currentFilteredStep.target === 'body') {
       return { display: 'none' as const };
     }
 
@@ -227,39 +240,40 @@ export default function OnboardingTour() {
         <div style={getOverlayStyles()} />
 
         <motion.div
+          ref={stepRef}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="pointer-events-auto bg-[var(--background-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-6"
+          className="pointer-events-auto bg-[var(--background-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-4 sm:p-6"
           style={positionStyles}
         >
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-medium text-[var(--primary)]">
-                  {currentStep + 1} / {steps.length}
+                  {currentStepIndex + 1} / {totalSteps}
                 </span>
                 <span className="text-xs text-[var(--foreground-muted)]">•</span>
                 <span className="text-xs text-[var(--foreground-muted)]">
-                  {Math.round(((currentStep + 1) / steps.length) * 100)}%
+                  {Math.round(((currentStepIndex + 1) / totalSteps) * 100)}%
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-[var(--foreground)]">
-                {step.title}
+              <h3 className="text-base sm:text-lg font-bold text-[var(--foreground)] break-words">
+                {currentFilteredStep.title}
               </h3>
             </div>
-            <div className="flex items-center gap-1 ml-4">
+            <div className="flex items-center gap-1 ml-2 flex-shrink-0">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-1.5 rounded-lg hover:bg-[var(--background-secondary)] transition"
+                className="p-1.5 rounded-lg hover:bg-[var(--background-secondary)] transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                 aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
               >
                 {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
               </button>
               <button
                 onClick={handleSkipWithSound}
-                className="p-1.5 rounded-lg hover:bg-[var(--background-secondary)] transition"
+                className="p-1.5 rounded-lg hover:bg-[var(--background-secondary)] transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                 aria-label="Skip tour"
               >
                 <X size={18} />
@@ -267,16 +281,16 @@ export default function OnboardingTour() {
             </div>
           </div>
 
-          <p className="text-sm text-[var(--foreground-muted)] mb-6 leading-relaxed">
-            {step.description}
+          <p className="text-sm text-[var(--foreground-muted)] mb-4 sm:mb-6 leading-relaxed">
+            {currentFilteredStep.description}
           </p>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
               {!isFirst && (
                 <button
                   onClick={handleBackWithSound}
-                  className="px-3 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition border border-[var(--border)] rounded-lg hover:border-[var(--primary)]"
+                  className="px-3 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition border border-[var(--border)] rounded-lg hover:border-[var(--primary)] min-h-[36px]"
                 >
                   <ChevronLeft size={16} className="inline mr-1" />
                   Back
@@ -286,21 +300,21 @@ export default function OnboardingTour() {
             <div className="flex gap-2">
               <button
                 onClick={handleSkipWithSound}
-                className="px-3 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition"
+                className="px-3 py-2 text-sm font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition min-h-[36px]"
               >
                 Skip
               </button>
               {isLast ? (
                 <button
                   onClick={handleFinishWithSound}
-                  className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition shadow-md"
+                  className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition shadow-md min-h-[36px]"
                 >
                   Finish 🎉
                 </button>
               ) : (
                 <button
                   onClick={handleNextWithSound}
-                  className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition shadow-md flex items-center gap-1"
+                  className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition shadow-md flex items-center gap-1 min-h-[36px]"
                 >
                   Next
                   <ChevronRight size={16} />
@@ -313,7 +327,7 @@ export default function OnboardingTour() {
             <motion.div
               className="h-full bg-[var(--primary)] rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              animate={{ width: `${((currentStepIndex + 1) / totalSteps) * 100}%` }}
               transition={{ duration: 0.4 }}
             />
           </div>
