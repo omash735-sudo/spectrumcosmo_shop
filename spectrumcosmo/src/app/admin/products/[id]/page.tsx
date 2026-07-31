@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2, Plus, Trash2, Save, X, Edit, Package, Tag, Layers, AlertCircle, Upload, Image as ImageIcon, Star } from 'lucide-react';
+import { Loader2, Plus, Trash2, Save, X, Edit, Package, Tag, Layers, AlertCircle, Upload, Image as ImageIcon, Star, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Variant {
@@ -57,6 +57,8 @@ const COLOR_OPTIONS = [
   'Pink', 'Brown', 'Gray', 'Navy', 'Teal', 'Maroon', 'Gold', 'Silver',
 ];
 
+const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+
 function safeParseFloat(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number') return value;
@@ -91,6 +93,12 @@ export default function AdminProductEditPage() {
   const [editingVariant, setEditingVariant] = useState<Variant | null>(null);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
+  const [showBulkVariantModal, setShowBulkVariantModal] = useState(false);
+  const [bulkSizes, setBulkSizes] = useState<string[]>([]);
+  const [bulkColors, setBulkColors] = useState<string[]>([]);
+  const [bulkPriceOverride, setBulkPriceOverride] = useState('');
+  const [bulkStockQuantity, setBulkStockQuantity] = useState(0);
+  const [isBulkCreating, setIsBulkCreating] = useState(false);
   
   const [product, setProduct] = useState<Product>({
     name: '',
@@ -248,6 +256,75 @@ export default function AdminProductEditPage() {
     }
   };
 
+  const toggleBulkSize = (size: string) => {
+    setBulkSizes(prev =>
+      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
+    );
+  };
+
+  const toggleBulkColor = (color: string) => {
+    setBulkColors(prev =>
+      prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
+    );
+  };
+
+  const handleBulkCreateVariants = async () => {
+    if (bulkSizes.length === 0) {
+      toast.error('Select at least one size');
+      return;
+    }
+    if (bulkColors.length === 0) {
+      toast.error('Select at least one color');
+      return;
+    }
+
+    setIsBulkCreating(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const size of bulkSizes) {
+      for (const color of bulkColors) {
+        try {
+          const res = await fetch(`/api/admin/products/${productId}/variants`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              size,
+              color,
+              price_override: bulkPriceOverride ? parseFloat(bulkPriceOverride) : null,
+              stock_quantity: bulkStockQuantity || 0,
+              gallery_images: [],
+              is_active: true,
+            }),
+          });
+          
+          if (res.ok) {
+            const newVariant = await res.json();
+            setVariants(prev => [...prev, newVariant]);
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (err) {
+          errorCount++;
+        }
+      }
+    }
+
+    setIsBulkCreating(false);
+    setShowBulkVariantModal(false);
+    setBulkSizes([]);
+    setBulkColors([]);
+    setBulkPriceOverride('');
+    setBulkStockQuantity(0);
+    
+    if (successCount > 0) {
+      toast.success(`Added ${successCount} variants${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+    } else {
+      toast.error('Failed to create variants');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
@@ -396,34 +473,7 @@ export default function AdminProductEditPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
-                    Product Image
-                  </label>
-                  <div className="space-y-3">
-                    {product.image_url && (
-                      <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-[var(--border)]">
-                        <Image src={product.image_url} alt="Preview" fill className="object-cover" />
-                        <button
-                          onClick={() => {
-                            setProduct({ ...product, image_url: '' });
-                          }}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )}
-                    <input
-                      type="text"
-                      value={product.image_url}
-                      onChange={(e) => setProduct({ ...product, image_url: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-
+                {/* FEATURED TOGGLE - Own row */}
                 <div className="flex items-center gap-3 pt-2">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -441,9 +491,38 @@ export default function AdminProductEditPage() {
                     </span>
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                    Product Image
+                  </label>
+                  <div className="space-y-3">
+                    {product.image_url && (
+                      <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden border border-[var(--border)]">
+                        <Image src={product.image_url} alt="Preview" fill className="object-cover" />
+                        <button
+                          onClick={() => {
+                            setProduct({ ...product, image_url: '' });
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition flex items-center justify-center min-h-[24px] min-w-[24px]"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      value={product.image_url}
+                      onChange={(e) => setProduct({ ...product, image_url: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* Variants Section */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -454,15 +533,23 @@ export default function AdminProductEditPage() {
                       {variants.length}
                     </span>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditingVariant(null);
-                      setShowVariantModal(true);
-                    }}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[44px]"
-                  >
-                    <Plus size={16} /> Add Variant
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingVariant(null);
+                        setShowVariantModal(true);
+                      }}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition min-h-[44px]"
+                    >
+                      <Plus size={16} /> Add Variant
+                    </button>
+                    <button
+                      onClick={() => setShowBulkVariantModal(true)}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg text-sm font-medium transition min-h-[44px]"
+                    >
+                      <Check size={16} /> Bulk Add
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -471,15 +558,23 @@ export default function AdminProductEditPage() {
                   <Package className="w-10 h-10 sm:w-12 sm:h-12 text-[var(--foreground-muted)] opacity-30 mx-auto mb-3" />
                   <p className="text-sm text-[var(--foreground-muted)]">No variants yet</p>
                   <p className="text-xs text-[var(--foreground-muted)] mt-1">Add size, color, or other variations</p>
-                  <button
-                    onClick={() => {
-                      setEditingVariant(null);
-                      setShowVariantModal(true);
-                    }}
-                    className="mt-4 flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition min-h-[44px]"
-                  >
-                    <Plus size={16} /> Add First Variant
-                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                    <button
+                      onClick={() => {
+                        setEditingVariant(null);
+                        setShowVariantModal(true);
+                      }}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--primary)] text-white rounded-lg text-sm hover:bg-[var(--primary-hover)] transition min-h-[44px]"
+                    >
+                      <Plus size={16} /> Add Single Variant
+                    </button>
+                    <button
+                      onClick={() => setShowBulkVariantModal(true)}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg text-sm transition min-h-[44px]"
+                    >
+                      <Check size={16} /> Bulk Add (Size x Color)
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -507,7 +602,7 @@ export default function AdminProductEditPage() {
                                 {formatCurrency(variant.price_override)}
                               </span>
                             ) : (
-                              <span className="text-[var(--foreground-muted)] text-xs">Default</span>
+                              <span className="text-[var(--foreground-muted)] text-xs">Uses base price</span>
                             )}
                           </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3">
@@ -622,6 +717,143 @@ export default function AdminProductEditPage() {
             setEditingVariant(null);
           }}
         />
+      )}
+
+      {/* Bulk Variant Modal */}
+      {showBulkVariantModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[var(--background-card)] rounded-xl max-w-md w-full shadow-xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 sm:p-5 border-b border-[var(--border)] sticky top-0 bg-[var(--background-card)] z-10">
+              <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)]">
+                Bulk Add Variants
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowBulkVariantModal(false);
+                  setBulkSizes([]);
+                  setBulkColors([]);
+                  setBulkPriceOverride('');
+                  setBulkStockQuantity(0);
+                }} 
+                className="flex items-center justify-center p-1.5 hover:bg-[var(--background-secondary)] rounded-lg transition min-h-[36px] min-w-[36px]"
+              >
+                <X size={18} className="text-[var(--foreground-muted)]" />
+              </button>
+            </div>
+            
+            <div className="p-4 sm:p-5 space-y-4">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                  Select Sizes
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {SIZES.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => toggleBulkSize(size)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition min-h-[36px] ${
+                        bulkSizes.includes(size)
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--foreground-muted)] mt-1.5">{bulkSizes.length} sizes selected</p>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                  Select Colors
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_OPTIONS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => toggleBulkColor(color)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition min-h-[36px] ${
+                        bulkColors.includes(color)
+                          ? 'bg-[var(--primary)] text-white'
+                          : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--foreground-muted)] mt-1.5">{bulkColors.length} colors selected</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                    Price Override
+                  </label>
+                  <input
+                    type="number"
+                    value={bulkPriceOverride}
+                    onChange={(e) => setBulkPriceOverride(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    placeholder="Leave empty for default"
+                    step="100"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={bulkStockQuantity}
+                    onChange={(e) => setBulkStockQuantity(parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2.5 bg-[var(--background-secondary)] border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition text-sm"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3">
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  <strong>Preview:</strong> This will create <strong>{bulkSizes.length * bulkColors.length}</strong> variants 
+                  ({bulkSizes.length} sizes × {bulkColors.length} colors)
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 p-4 sm:p-5 border-t border-[var(--border)] sticky bottom-0 bg-[var(--background-card)]">
+              <button 
+                onClick={() => {
+                  setShowBulkVariantModal(false);
+                  setBulkSizes([]);
+                  setBulkColors([]);
+                  setBulkPriceOverride('');
+                  setBulkStockQuantity(0);
+                }} 
+                className="flex-1 flex items-center justify-center px-4 py-2.5 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition min-h-[44px] text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBulkCreateVariants}
+                disabled={isBulkCreating || bulkSizes.length === 0 || bulkColors.length === 0}
+                className="flex-1 flex items-center justify-center bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-2.5 rounded-lg font-medium transition min-h-[44px] text-sm disabled:opacity-50"
+              >
+                {isBulkCreating ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" /> Creating...
+                  </>
+                ) : (
+                  `Create ${bulkSizes.length * bulkColors.length} Variants`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
