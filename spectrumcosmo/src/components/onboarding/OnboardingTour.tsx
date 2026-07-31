@@ -3,18 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Volume2, VolumeX } from 'lucide-react';
-import { useOnboarding } from '@/hooks/useOnboarding';
-import { OnboardingStep } from '@/lib/onboarding/types';
+import { useOnboardingContext } from '@/providers/OnboardingProvider';
 import Confetti from '@/components/ui/Confetti';
 
-interface OnboardingTourProps {
-  onSkip?: () => void;
-  onFinish?: () => void;
-}
-
-export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps) {
+export default function OnboardingTour() {
   const {
     isOpen,
+    setIsOpen,
     currentStep,
     steps,
     handleNext,
@@ -24,12 +19,22 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
     getStepTarget,
     isMobile,
     hasCompleted,
-  } = useOnboarding();
+    isLoading,
+    isEnabled,
+  } = useOnboardingContext();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<Element | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Don't render if disabled, loading, or completed
+  if (!isEnabled || isLoading || hasCompleted) return null;
+  if (!isOpen) return null;
+  if (steps.length === 0) return null;
+
+  const step = steps[currentStep];
+  if (!step) return null;
 
   // Sound effects
   const playSound = (type: 'next' | 'back' | 'complete' | 'skip') => {
@@ -54,7 +59,6 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.08);
       } else if (type === 'complete') {
-        // Simple happy sound
         [523, 659, 784].forEach((freq, i) => {
           const o = ctx.createOscillator();
           const g = ctx.createGain();
@@ -72,7 +76,7 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
         osc.stop(ctx.currentTime + 0.06);
       }
     } catch (err) {
-      // Silent fail if audio not available
+      // Silent fail
     }
   };
 
@@ -88,8 +92,8 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
 
   const handleSkipWithSound = () => {
     playSound('skip');
+    setIsOpen(false);
     handleSkip();
-    onSkip?.();
   };
 
   const handleFinishWithSound = () => {
@@ -97,8 +101,8 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
     setShowConfetti(true);
     setTimeout(() => {
       setShowConfetti(false);
+      setIsOpen(false);
       handleFinish();
-      onFinish?.();
     }, 3000);
   };
 
@@ -106,10 +110,12 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
   useEffect(() => {
     if (!isOpen) return;
     
-    const step = steps[currentStep];
-    if (!step || step.target === 'body') return;
+    if (step.target === 'body') {
+      setHoveredElement(null);
+      return;
+    }
 
-    const selectors = getStepTarget(step);
+    const selectors = step.target.split(',').map(s => s.trim());
     let element: Element | null = null;
     
     for (const selector of selectors) {
@@ -122,7 +128,6 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
 
     setHoveredElement(element || null);
 
-    // Scroll to element if not in view
     if (element) {
       const rect = element.getBoundingClientRect();
       const isVisible = 
@@ -135,7 +140,7 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  }, [currentStep, isOpen, steps, getStepTarget]);
+  }, [currentStep, isOpen, step]);
 
   // Handle escape key
   useEffect(() => {
@@ -146,13 +151,7 @@ export default function OnboardingTour({ onSkip, onFinish }: OnboardingTourProps
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, handleSkipWithSound]);
-
-  if (!isOpen || hasCompleted) return null;
-  if (steps.length === 0) return null;
-
-  const step = steps[currentStep];
-  if (!step) return null;
+  }, [isOpen]);
 
   const isFirst = currentStep === 0;
   const isLast = currentStep === steps.length - 1;
