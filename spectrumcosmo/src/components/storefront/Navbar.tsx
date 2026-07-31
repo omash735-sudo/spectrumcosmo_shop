@@ -1,4 +1,3 @@
-// components/storefront/Navbar.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -388,6 +387,7 @@ export default function Navbar() {
                   onClick={openCart} 
                   className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                   aria-label="Cart"
+                  data-onboarding="cart"
                 >
                   <ShoppingCart size={20} className="text-[var(--foreground-muted)]" />
                   {totalItems > 0 && (
@@ -433,7 +433,12 @@ export default function Navbar() {
               </nav>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
-                <button onClick={openCart} className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]" aria-label="Cart">
+                <button 
+                  onClick={openCart} 
+                  className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]" 
+                  aria-label="Cart"
+                  data-onboarding="cart"
+                >
                   <ShoppingCart size={18} className="text-[var(--foreground-muted)]" />
                   {totalItems > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[9px] font-bold min-w-[16px] h-3.5 px-1 rounded-full flex items-center justify-center shadow-sm">
@@ -471,6 +476,7 @@ export default function Navbar() {
                 onClick={openCart} 
                 className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                 aria-label="Cart"
+                data-onboarding="cart"
               >
                 <ShoppingCart size={19} className="text-[var(--foreground-muted)]" />
                 {totalItems > 0 && (
