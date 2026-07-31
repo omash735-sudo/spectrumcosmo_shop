@@ -300,7 +300,6 @@ export default function AdminProductsPage() {
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="max-w-[1400px] mx-auto">
           
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Products</h1>
@@ -314,7 +313,6 @@ export default function AdminProductsPage() {
             </button>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between">
@@ -384,7 +382,6 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
-          {/* Filters Bar */}
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -460,7 +457,6 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
-          {/* Bulk Actions Bar */}
           {selectedProducts.length > 0 && (
             <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-3 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -495,7 +491,6 @@ export default function AdminProductsPage() {
             </div>
           )}
 
-          {/* Products Display */}
           {loading ? (
             <div className="flex items-center justify-center py-16 sm:py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
               <Loader2 className="animate-spin text-[var(--primary)]" size={40} />
@@ -509,7 +504,6 @@ export default function AdminProductsPage() {
               </button>
             </div>
           ) : viewMode === 'table' ? (
-            /* Table View */
             <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px]">
@@ -639,7 +633,6 @@ export default function AdminProductsPage() {
               </div>
             </div>
           ) : (
-            /* Grid View */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
               {filteredProducts.map((p) => (
                 <div key={p.id} className="group bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -695,7 +688,6 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Product Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-lg shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -877,7 +869,6 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Add Category Modal */}
       {showCategoryModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-2xl w-full max-w-md p-4 sm:p-6 shadow-xl">
