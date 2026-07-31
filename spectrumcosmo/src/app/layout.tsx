@@ -1,4 +1,3 @@
-// app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
@@ -14,6 +13,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
+
+import OnboardingTour from '@/components/onboarding/OnboardingTour';
+import FloatingHelpButton from '@/components/onboarding/FloatingHelpButton';
+import { OnboardingProvider } from '@/providers/OnboardingProvider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -78,20 +81,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <CartProvider>
                     <WishlistProvider>
                       <NotificationProvider>
-                        <TrackVisits />
-                        <Suspense fallback={<LoadingSpinner />}>
-                          {children}
-                        </Suspense>
-                        <Toaster
-                          position="top-right"
-                          toastOptions={{
-                            duration: 4000,
-                            style: { background: '#363636', color: '#fff', borderRadius: '12px' },
-                            success: { duration: 3000, iconTheme: { primary: '#22C55E', secondary: '#fff' } },
-                            error: { duration: 4000, iconTheme: { primary: '#EF4444', secondary: '#fff' } },
-                            loading: { duration: 3000, iconTheme: { primary: '#F97316', secondary: '#fff' } },
-                          }}
-                        />
+                        
+                        <OnboardingProvider>
+                          <TrackVisits />
+                          <Suspense fallback={<LoadingSpinner />}>
+                            {children}
+                          </Suspense>
+                        
+                          <OnboardingTour />
+                          <FloatingHelpButton />
+                          <Toaster
+                            position="top-right"
+                            toastOptions={{
+                              duration: 4000,
+                              style: { background: '#363636', color: '#fff', borderRadius: '12px' },
+                              success: { duration: 3000, iconTheme: { primary: '#22C55E', secondary: '#fff' } },
+                              error: { duration: 4000, iconTheme: { primary: '#EF4444', secondary: '#fff' } },
+                              loading: { duration: 3000, iconTheme: { primary: '#F97316', secondary: '#fff' } },
+                            }}
+                          />
+                        </OnboardingProvider>
                       </NotificationProvider>
                     </WishlistProvider>
                   </CartProvider>
