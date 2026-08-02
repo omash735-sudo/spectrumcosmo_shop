@@ -279,8 +279,11 @@ export default function Footer() {
               </div>
             </div>
 
+            {/* SHOP SECTION - BOLD */}
             <div className="lg:col-span-2">
-              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Shop</h3>
+              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+                Shop
+              </h3>
               <ul className="space-y-1.5 sm:space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link.href}>
@@ -292,8 +295,11 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* SUPPORT SECTION - BOLD */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Support</h3>
+              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+                Support
+              </h3>
               <ul className="space-y-1.5 sm:space-y-2">
                 <li>
                   <Link href="/shipping" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
@@ -323,8 +329,11 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* CONTACT US SECTION - BOLD */}
             <div className="lg:col-span-3">
-              <h3 className="font-semibold text-xs sm:text-sm uppercase text-[var(--foreground-muted)] mb-3 sm:mb-4">Contact Us</h3>
+              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+                Contact Us
+              </h3>
               <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                 <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
                   <Mail size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
