@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { Mail, Lock } from 'lucide-react';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
@@ -35,11 +37,15 @@ export default function AuthLanding({
       </div>
 
       <div className="space-y-4">
-        <GoogleSignInButton 
-          isDark={isDark}
-          onSuccess={onGoogleSuccess}
-          onError={onGoogleError}
-        />
+        <div className="flex justify-center">
+          <div className="w-full max-w-sm">
+            <GoogleSignInButton 
+              isDark={isDark}
+              onSuccess={onGoogleSuccess}
+              onError={onGoogleError}
+            />
+          </div>
+        </div>
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
@@ -52,19 +58,19 @@ export default function AuthLanding({
           </div>
         </div>
 
-        <motion.button
-          onClick={onEmailClick}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200 ${
-            isDark
-              ? 'border-gray-700 hover:border-orange-500 text-gray-300 hover:text-orange-400'
-              : 'border-gray-300 hover:border-orange-500 text-gray-700 hover:text-orange-500'
-          }`}
-        >
-          <Mail size={18} />
-          Continue with Email
-        </motion.button>
+        <div className="flex justify-center">
+          <motion.button
+            onClick={onEmailClick}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full max-w-sm flex items-center justify-center gap-2 py-3 rounded-xl border-2 transition-all duration-200 
+              dark:border-gray-700 dark:hover:border-orange-500 dark:text-gray-300 dark:hover:text-orange-400
+              border-gray-300 hover:border-orange-500 text-gray-700 hover:text-orange-500"
+          >
+            <Mail size={18} className="flex-shrink-0" />
+            <span>Continue with Email</span>
+          </motion.button>
+        </div>
 
         <div className="mt-4 text-center">
           <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
