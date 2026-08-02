@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -126,12 +128,10 @@ export default function LoginForm({
       const data = await res.json();
 
       if (res.ok) {
-        onError(''); // Clear error
-        // Show success through parent
+        onError('');
         setNeedsVerification(false);
-        // We'll trigger a success message via the parent
         setTimeout(() => {
-          onError(''); // Clear any errors
+          onError('');
         }, 100);
       } else {
         onError(data.error || 'Failed to send verification email');
@@ -222,7 +222,7 @@ export default function LoginForm({
               } transition-colors flex items-center gap-1`}
             >
               <ArrowLeft size={14} />
-              Back
+              <span>Back</span>
             </button>
             <Link
               href="/auth/forgot-password"
@@ -252,15 +252,17 @@ export default function LoginForm({
             disabled={loading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 
+              disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm
+              flex items-center justify-center gap-2"
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
+              <>
                 <Loader2 className="animate-spin" size={18} />
-                Signing in...
-              </span>
+                <span>Signing in...</span>
+              </>
             ) : (
-              'Sign In'
+              <span>Sign In</span>
             )}
           </motion.button>
         </form>
