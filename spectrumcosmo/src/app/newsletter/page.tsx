@@ -5,25 +5,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Mail, CheckCircle, Loader2, Newspaper, Bell, Tag, Shield, X, Heart, 
-  Sparkles, ArrowRight, Zap, Send, Gift, BookOpen, Crown, Rocket
+  Mail, CheckCircle, Loader2, X, ArrowRight, Send, 
+  Users, Bell, Tag, Rocket
 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import ContentBlockRenderer from '@/components/storefront/ContentBlockRenderer';
-import RequestCarousel from '@/components/storefront/RequestCarousel';
-import RequestSubmitForm from '@/components/storefront/RequestSubmitForm';
 import toast from 'react-hot-toast';
 
-interface ContentBlock {
-  id: string;
-  type: string;
-  title: string;
-  description: string;
-  content: any;
-  display_order: number;
-  is_active: boolean;
-}
+const MANGA_BG = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775798/9b8e69a00494ab278c6f3f1e8d1a4f0c_vkjyhx.jpg';
 
 export default function NewsletterPage() {
   const router = useRouter();
@@ -31,15 +20,16 @@ export default function NewsletterPage() {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [blocks, setBlocks] = useState<ContentBlock[]>([]);
-  const [blocksLoading, setBlocksLoading] = useState(true);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackReason, setFeedbackReason] = useState('');
   const [feedbackDetails, setFeedbackDetails] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [countLoading, setCountLoading] = useState(true);
 
+  // Load user data
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -53,32 +43,35 @@ export default function NewsletterPage() {
         setUser(data.user);
         setEmailInput(data.user?.email || '');
         
-        await checkSubscriptionStatus(data.user?.email);
+        if (data.user?.email) {
+          await checkSubscriptionStatus(data.user.email);
+        }
       } catch (err) {
         console.error('Failed to load user:', err);
-        setLoading(false);
       } finally {
         setLoading(false);
       }
     };
     loadUser();
+    loadSubscriberCount();
+  }, []);
 
-    const loadBlocks = async () => {
-      try {
-        const res = await fetch('/api/content-blocks');
-        if (!res.ok) throw new Error('Failed to load blocks');
+  // Load subscriber count
+  const loadSubscriberCount = async () => {
+    try {
+      const res = await fetch('/api/subscribe/count');
+      if (res.ok) {
         const data = await res.json();
-        setBlocks(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error('Failed to load blocks:', err);
-        setBlocks([]);
-      } finally {
-        setBlocksLoading(false);
+        setSubscriberCount(data.count || 0);
       }
-    };
-    loadBlocks();
-  }, [router]);
+    } catch (err) {
+      console.error('Failed to load subscriber count:', err);
+    } finally {
+      setCountLoading(false);
+    }
+  };
 
+  // Check subscription status
   const checkSubscriptionStatus = async (email: string) => {
     if (!email) return;
     setCheckingSubscription(true);
@@ -95,42 +88,7 @@ export default function NewsletterPage() {
     }
   };
 
-  const performUnsubscribe = async () => {
-    if (!user?.email) {
-      toast.error('No email found to unsubscribe');
-      return;
-    }
-    
-    setSaving(true);
-    try {
-      const res = await fetch('/api/subscribe/unsubscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: user.email,
-          reason: feedbackReason || 'No reason provided',
-          details: feedbackDetails || '',
-        }),
-      });
-      
-      if (res.ok) {
-        setSubscribed(false);
-        toast.success('You have been unsubscribed. We\'re sad to see you go! 💔');
-        setShowFeedback(false);
-        setFeedbackReason('');
-        setFeedbackDetails('');
-      } else {
-        const data = await res.json();
-        toast.error(data.error || 'Failed to unsubscribe');
-      }
-    } catch (error) {
-      console.error('Failed to unsubscribe', error);
-      toast.error('Something went wrong');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // Subscribe
   const performSubscribe = async (email: string) => {
     if (!email.trim()) {
       toast.error('Please enter your email address');
@@ -155,9 +113,9 @@ export default function NewsletterPage() {
       const data = await res.json();
       
       if (res.ok) {
-        setSubscribed(true);
         toast.success(data.message || 'Check your email to confirm subscription! 📧');
         await checkSubscriptionStatus(email);
+        await loadSubscriberCount();
       } else {
         toast.error(data.error || 'Failed to subscribe');
       }
@@ -169,27 +127,60 @@ export default function NewsletterPage() {
     }
   };
 
-  const handleSubscribe = async () => {
-    await performSubscribe(emailInput);
+  // Unsubscribe
+  const performUnsubscribe = async () => {
+    if (!user?.email) {
+      toast.error('No email found to unsubscribe');
+      return;
+    }
+    
+    setSubmittingFeedback(true);
+    try {
+      const res = await fetch('/api/subscribe/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: user.email,
+          reason: feedbackReason || 'No reason provided',
+          details: feedbackDetails || '',
+        }),
+      });
+      
+      if (res.ok) {
+        setSubscribed(false);
+        toast.success('You have been unsubscribed. We\'re sad to see you go! 💔');
+        setShowFeedback(false);
+        setFeedbackReason('');
+        setFeedbackDetails('');
+        await loadSubscriberCount();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to unsubscribe');
+      }
+    } catch (error) {
+      console.error('Failed to unsubscribe', error);
+      toast.error('Something went wrong');
+    } finally {
+      setSubmittingFeedback(false);
+    }
   };
 
-  const handleUnsubscribeClick = () => {
-    setShowFeedback(true);
-  };
-
-  const submitFeedbackAndUnsubscribe = async () => {
-    await performUnsubscribe();
-  };
-
+  // Toggle subscription
   const toggleSubscription = async () => {
     if (subscribed) {
-      handleUnsubscribeClick();
+      setShowFeedback(true);
     } else {
       await performSubscribe(emailInput);
     }
   };
 
-  if (loading || blocksLoading || checkingSubscription) {
+  // Submit feedback and unsubscribe
+  const submitFeedbackAndUnsubscribe = async () => {
+    await performUnsubscribe();
+  };
+
+  // Render loading state
+  if (loading || checkingSubscription) {
     return (
       <>
         <Navbar />
@@ -210,250 +201,218 @@ export default function NewsletterPage() {
       <main className="min-h-screen bg-[var(--background)]">
         
         {/* ============================================
-            HERO SECTION - Clean (No Manga)
+            HERO SECTION - manga-bg + hero-manga
             ============================================ */}
-        <div className="relative bg-[var(--primary)] overflow-hidden">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                <Sparkles size={16} className="text-yellow-300" />
-                <span className="text-white text-sm font-medium">Join Our Community</span>
+        <section 
+          className="relative min-h-[60vh] md:min-h-[70vh] flex items-center overflow-x-hidden manga-bg hero-manga py-8 md:py-12"
+          style={{
+            backgroundImage: `url(${MANGA_BG})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-white/80 dark:bg-black/70" />
+          
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mx-auto text-center">
+              
+              {/* Badge - Join Our Community (bold, no sparkles) */}
+              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-4 py-2 rounded-full mb-6">
+                <span className="text-sm font-bold text-[var(--primary)]">Join Our Community</span>
               </div>
-              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4">
+              
+              {/* Heading */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[var(--foreground)] mb-3">
                 The SpectrumCosmo
               </h1>
-              <p className="text-3xl lg:text-5xl font-bold text-yellow-200 mb-6">
+              <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--primary)] mb-4">
                 Newsletter
               </p>
-              <p className="text-white/90 text-lg max-w-2xl mx-auto mb-8">
+              <p className="text-base md:text-lg text-[var(--foreground-muted)] max-w-xl mx-auto mb-6">
                 Get the latest anime merch drops, exclusive offers, and community updates delivered to your inbox.
               </p>
               
-              <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
+              {/* Live Subscriber Counter */}
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <Users size={18} className="text-[var(--foreground-muted)]" />
+                <span className="text-sm text-[var(--foreground-muted)]">
+                  {countLoading ? (
+                    <Loader2 size={14} className="animate-spin inline" />
+                  ) : (
+                    `${subscriberCount.toLocaleString()} fans subscribed`
+                  )}
+                </span>
+              </div>
+              
+              {/* Subscription Form */}
+              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="Your email address"
-                  className="flex-1 px-5 py-3 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition"
+                  className="flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition min-h-[48px]"
                 />
                 <button
-                  onClick={handleSubscribe}
+                  onClick={toggleSubscription}
                   disabled={saving}
-                  className="bg-white text-[var(--primary)] px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all inline-flex items-center gap-2 justify-center disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                  className={`min-w-[140px] px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all min-h-[48px] ${
+                    subscribed
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
+                  }`}
                 >
-                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                  Subscribe
+                  {saving ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : subscribed ? (
+                    <>
+                      <X size={18} />
+                      <span>Unsubscribe</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      <span>Subscribe</span>
+                    </>
+                  )}
                 </button>
               </div>
-              <p className="text-white/70 text-xs mt-4">No spam. Unsubscribe anytime.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================
-            BENEFITS SECTION - With Manga Panel
-            ============================================ */}
-        <div className="py-20 manga-bg hero-manga">
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
-                <Crown size={14} className="text-[var(--primary)]" />
-                <span className="text-xs font-medium text-[var(--primary)]">Why Subscribe</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mt-2">What You'll Get</h2>
-              <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">Exclusive benefits for our newsletter subscribers</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Zap size={28} className="text-[var(--primary)]" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Early Access</h3>
-                <p className="text-[var(--foreground-muted)] text-sm">Be the first to know about new drops and restocks before everyone else.</p>
-              </div>
-              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Gift size={28} className="text-[var(--primary)]" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Exclusive Discounts</h3>
-                <p className="text-[var(--foreground-muted)] text-sm">Get subscriber-only promo codes and special offers.</p>
-              </div>
-              <div className="group bg-[var(--background-card)] rounded-2xl p-6 text-center border border-[var(--border)] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <BookOpen size={28} className="text-[var(--primary)]" />
-                </div>
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">VIP News</h3>
-                <p className="text-[var(--foreground-muted)] text-sm">Weekly anime updates, merch news, and community highlights.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================
-            COMMUNITY WISHLIST SECTION - With Manga Panel
-            ============================================ */}
-        <div className="py-20 manga-bg cards-manga">
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-4 py-2 rounded-full mb-4">
-                <Heart size={18} className="text-[var(--primary)]" />
-                <span className="text-sm font-medium text-[var(--primary)]">Community Driven</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-3">Community Wishlist</h2>
-              <p className="text-[var(--foreground-muted)] max-w-2xl mx-auto">
-                Request products you want to see. Submit your ideas with images and descriptions. 
-                Trending requests with high demand become reality.
-              </p>
-            </div>
-
-            <div className="mb-16">
-              <RequestCarousel />
-            </div>
-
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-8 shadow-sm hover:shadow-md transition">
-                <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">Submit Your Request</h3>
-                <p className="text-[var(--foreground-muted)] text-sm mb-5">
-                  Have a product in mind? Tell us what you want – upload reference images and describe your idea.
-                  Our team will review it and if there's enough interest, we'll make it.
-                </p>
-                <RequestSubmitForm />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================
-            CONTENT BLOCKS - With Manga Panel
-            ============================================ */}
-        <div className="py-20 manga-bg hero-manga">
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-            {blocks.map((block) => (
-              <ContentBlockRenderer key={block.id} block={block} />
-            ))}
-          </div>
-        </div>
-
-        {/* ============================================
-            NEWSLETTER SUBSCRIPTION CARD - Clean (No Manga)
-            ============================================ */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-          <div className="bg-[var(--primary)] rounded-3xl shadow-xl overflow-hidden transform hover:scale-[1.01] transition-transform duration-300">
-            <div className="p-8 md:p-12 text-center">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Mail size={40} className="text-white" />
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Stay Updated</h2>
-              <p className="text-orange-100 mb-8 max-w-md mx-auto">
-                Get the latest anime merch drops and exclusive offers.
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-2xl mx-auto">
-                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
-                  <Rocket size={18} />
-                  <span className="text-sm font-medium">Early access</span>
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
-                  <Tag size={18} />
-                  <span className="text-sm font-medium">Exclusive offers</span>
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-white/10 rounded-xl text-white">
-                  <Shield size={18} />
-                  <span className="text-sm font-medium">Unsubscribe anytime</span>
-                </div>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <Mail size={24} className="text-white" />
-                    <div>
-                      <p className="font-medium text-white">{user?.email || 'Your email'}</p>
-                      <p className="text-sm text-orange-200">
-                        {subscribed ? 'Subscribed' : 'Not subscribed'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={toggleSubscription}
-                    disabled={saving}
-                    className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 ${
-                      subscribed
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-white text-[var(--primary)] hover:bg-gray-100'
-                    } disabled:opacity-50 shadow-md`}
-                  >
-                    {saving ? <Loader2 className="animate-spin inline mr-1" size={18} /> : null}
-                    {subscribed ? 'Unsubscribe' : 'Subscribe'}
-                  </button>
-                </div>
-              </div>
-
+              
+              {/* Status Indicator */}
               {subscribed && (
-                <div className="mt-6 flex items-center justify-center gap-2 text-white bg-green-500/20 py-2 px-4 rounded-full max-w-xs mx-auto">
+                <div className="mt-4 flex items-center justify-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 py-1.5 px-4 rounded-full max-w-xs mx-auto">
                   <CheckCircle size={16} />
-                  <span className="text-sm">You're subscribed! Check your inbox.</span>
+                  <span className="text-sm font-medium">You're subscribed! ✓</span>
                 </div>
               )}
 
-              <div className="mt-6 text-center">
-                <Link href="/newsletter/preferences" className="text-sm text-white/80 hover:text-white underline inline-flex items-center gap-1">
-                  Customize your preferences <ArrowRight size={14} />
-                </Link>
-              </div>
+              <p className="text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================
+            BOTTOM SUBSCRIPTION CARD - bg-[#111111]
+            ============================================ */}
+        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Mail size={28} className="text-[var(--primary)]" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#F5F5F5] mb-4">
+              Join Our Newsletter
+            </h2>
+            <p className="text-[#9A9A9A] mb-8 max-w-lg mx-auto">
+              Get exclusive offers, early access to new drops, and anime news delivered to your inbox.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="Your email address"
+                className="flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition min-h-[48px]"
+              />
+              <button
+                onClick={toggleSubscription}
+                disabled={saving}
+                className={`min-w-[140px] px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all min-h-[48px] ${
+                  subscribed
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
+                }`}
+              >
+                {saving ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : subscribed ? (
+                  <>
+                    <X size={18} />
+                    <span>Unsubscribe</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    <span>Subscribe</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            <p className="text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
+            
+            {/* Preferences Link */}
+            <div className="mt-6">
+              <Link 
+                href="/newsletter/preferences" 
+                className="text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition inline-flex items-center gap-1"
+              >
+                Customize your preferences <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         </div>
       </main>
       <Footer />
 
-      {/* Feedback Modal */}
+      {/* ============================================
+          UNSUBSCRIBE FEEDBACK MODAL
+          ============================================ */}
       {showFeedback && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
-          <div className="bg-[var(--background-card)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" 
+          onClick={() => setShowFeedback(false)}
+        >
+          <div 
+            className="bg-[var(--background-card)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border)]" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-[var(--border)]">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-[var(--foreground)]">We're sad to see you go</h3>
-                <button onClick={() => setShowFeedback(false)} className="p-1 hover:bg-[var(--background-secondary)] rounded-lg">
+                <button 
+                  onClick={() => setShowFeedback(false)} 
+                  className="p-1 hover:bg-[var(--background-secondary)] rounded-lg transition"
+                >
                   <X size={20} className="text-[var(--foreground-muted)]" />
                 </button>
               </div>
               <p className="text-sm text-[var(--foreground-muted)] mt-1">Help us improve by sharing your reason</p>
             </div>
+            
             <div className="p-6">
               <select
                 value={feedbackReason}
                 onChange={(e) => setFeedbackReason(e.target.value)}
-                className="w-full p-3 border border-[var(--border)] bg-[var(--background-card)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)]"
+                className="w-full p-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
               >
                 <option value="">Select a reason...</option>
-                <option>Too many emails</option>
-                <option>Content not relevant</option>
-                <option>Didn't sign up for this</option>
-                <option>Other</option>
+                <option value="Too many emails">Too many emails</option>
+                <option value="Content not relevant">Content not relevant</option>
+                <option value="Didn't sign up for this">Didn't sign up for this</option>
+                <option value="Other">Other</option>
               </select>
+              
               <textarea
                 value={feedbackDetails}
                 onChange={(e) => setFeedbackDetails(e.target.value)}
                 placeholder="Any additional feedback (optional)"
                 rows={3}
-                className="w-full p-3 border border-[var(--border)] bg-[var(--background-card)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)]"
+                className="w-full p-3 border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-xl mb-4 focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition resize-none"
               />
+              
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowFeedback(false)}
-                  className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition"
+                  className="flex-1 px-4 py-2.5 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--background-secondary)] transition font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={submitFeedbackAndUnsubscribe}
                   disabled={submittingFeedback}
-                  className="flex-1 bg-red-600 text-white rounded-xl py-2.5 hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 bg-red-600 text-white rounded-xl py-2.5 hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
                 >
                   {submittingFeedback ? <Loader2 className="animate-spin" size={18} /> : <X size={18} />}
                   Unsubscribe
