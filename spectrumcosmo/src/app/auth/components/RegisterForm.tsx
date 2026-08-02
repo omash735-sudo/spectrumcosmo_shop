@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -77,7 +79,6 @@ export default function RegisterForm({
       }
 
       if (!res.ok) {
-        // Handle race condition where email was taken after check
         if (res.status === 409) {
           onError('An account with this email already exists. Please sign in instead.');
         } else {
@@ -281,7 +282,7 @@ export default function RegisterForm({
               id="terms"
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+              className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 flex-shrink-0"
             />
             <label htmlFor="terms" className={`text-sm leading-relaxed ${
               isDark ? 'text-gray-400' : 'text-gray-600'
@@ -301,29 +302,30 @@ export default function RegisterForm({
             <button
               type="button"
               onClick={onBack}
-              className={`flex-1 py-3 rounded-xl border-2 transition-all duration-200 ${
-                isDark
-                  ? 'border-gray-700 hover:border-gray-600 text-gray-300'
-                  : 'border-gray-300 hover:border-gray-400 text-gray-700'
-              }`}
+              className="flex-1 py-3 rounded-xl border-2 transition-all duration-200 
+                dark:border-gray-700 dark:hover:border-gray-600 dark:text-gray-300
+                border-gray-300 hover:border-gray-400 text-gray-700
+                flex items-center justify-center gap-1"
             >
-              <ArrowLeft size={18} className="inline mr-1" />
-              Back
+              <ArrowLeft size={18} className="flex-shrink-0" />
+              <span>Back</span>
             </button>
             <motion.button
               type="submit"
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+              className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 
+                disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm
+                flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <Loader2 className="animate-spin" size={18} />
-                  Creating account...
-                </span>
+                  <span>Creating account...</span>
+                </>
               ) : (
-                'Create Account'
+                <span>Create Account</span>
               )}
             </motion.button>
           </div>
