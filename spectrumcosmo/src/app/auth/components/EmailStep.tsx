@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
@@ -113,29 +115,30 @@ export default function EmailStep({
           <button
             type="button"
             onClick={onBack}
-            className={`flex-1 py-3 rounded-xl border-2 transition-all duration-200 ${
-              isDark
-                ? 'border-gray-700 hover:border-gray-600 text-gray-300'
-                : 'border-gray-300 hover:border-gray-400 text-gray-700'
-            }`}
+            className="flex-1 py-3 rounded-xl border-2 transition-all duration-200 
+              dark:border-gray-700 dark:hover:border-gray-600 dark:text-gray-300
+              border-gray-300 hover:border-gray-400 text-gray-700
+              flex items-center justify-center gap-1"
           >
-            <ArrowLeft size={18} className="inline mr-1" />
-            Back
+            <ArrowLeft size={18} className="flex-shrink-0" />
+            <span>Back</span>
           </button>
           <motion.button
             type="submit"
             disabled={loading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm"
+            className="flex-[2] bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 
+              disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm
+              flex items-center justify-center gap-2"
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
+              <>
                 <Loader2 className="animate-spin" size={18} />
-                Checking...
-              </span>
+                <span>Checking...</span>
+              </>
             ) : (
-              'Continue'
+              <span>Continue</span>
             )}
           </motion.button>
         </div>
