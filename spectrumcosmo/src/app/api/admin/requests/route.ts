@@ -1,5 +1,3 @@
-// app/api/admin/product-requests/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
@@ -13,6 +11,7 @@ interface ProductRequest {
   like_count: number;
   created_at: Date;
   user_id: string;
+  category_name: string | null;
 }
 
 interface UserInfo {
@@ -35,6 +34,8 @@ interface AdminProductRequest {
   user_email: string;
   image_count: number;
   category_name: string | null;
+  images: Array<{ id: string; image_url: string; display_order: number }>;
+  admin_notes: string | null;
 }
 
 interface PatchBody {
@@ -53,6 +54,9 @@ function safeParseCount(count: string | number | undefined | null): number {
   return 0;
 }
 
+// All 6 statuses matching customer-facing pages
+const validStatuses = ['pending', 'reviewing', 'approved', 'rejected', 'sourcing', 'available'];
+
 export async function GET(req: NextRequest) {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -61,13 +65,12 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get('status') || 'pending';
   
   // Validate status parameter
-  const validStatuses = ['pending', 'approved', 'declined', 'in_progress', 'completed'];
   const sanitizedStatus = validStatuses.includes(status) ? status : 'pending';
 
   const sql = getDb();
 
   try {
-    // Simple query without complex joins
+    // Query with category name
     const requests = await sql`
       SELECT 
         r.id,
@@ -76,8 +79,11 @@ export async function GET(req: NextRequest) {
         r.status,
         r.like_count,
         r.created_at,
-        r.user_id
+        r.user_id,
+        r.admin_notes,
+        c.name as category_name
       FROM product_requests r
+      LEFT JOIN categories c ON c.id = r.category_id
       WHERE r.status = ${sanitizedStatus}
       ORDER BY r.created_at DESC
     ` as ProductRequest[];
@@ -87,7 +93,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Get user info for each request
+    // Get user info, images, and like count for each request
     const results: AdminProductRequest[] = [];
     for (const request of requests) {
       const [user] = await sql`
@@ -102,6 +108,14 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(*) as count FROM request_likes WHERE request_id = ${request.id}
       ` as CountResult[];
 
+      // Get images with display_order
+      const images = await sql`
+        SELECT id, image_url, display_order
+        FROM request_images
+        WHERE request_id = ${request.id}
+        ORDER BY display_order ASC
+      ` as { id: string; image_url: string; display_order: number }[];
+
       results.push({
         id: request.id,
         title: request.title,
@@ -112,7 +126,9 @@ export async function GET(req: NextRequest) {
         user_name: user?.name || 'Unknown',
         user_email: user?.email || '',
         image_count: safeParseCount(imageCount?.count),
-        category_name: null,
+        category_name: request.category_name || null,
+        images: images || [],
+        admin_notes: request.admin_notes || null,
       });
     }
 
@@ -137,7 +153,6 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Validate status
-    const validStatuses = ['pending', 'approved', 'declined', 'in_progress', 'completed'];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
     }
