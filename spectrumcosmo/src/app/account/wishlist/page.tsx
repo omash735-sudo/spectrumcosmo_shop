@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Star, ShoppingCart, Heart, Loader2, Trash2, ArrowLeft, Package, 
-  Calendar, MessageSquare, X, CheckCircle, Clock, AlertCircle
+  MessageSquare, X, CheckCircle, Clock, AlertCircle
 } from 'lucide-react';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useWishlist } from '@/components/storefront/WishlistProvider';
@@ -38,12 +38,6 @@ export default function WishlistPage() {
   const [loadingRequests, setLoadingRequests] = useState(false);
 
   // Load my requests when tab switches
-  useEffect(() => {
-    if (activeTab === 'requests') {
-      loadMyRequests();
-    }
-  }, [activeTab]);
-
   const loadMyRequests = async () => {
     setLoadingRequests(true);
     try {
@@ -143,7 +137,9 @@ export default function WishlistPage() {
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6 w-full sm:w-auto">
         <button
-          onClick={() => setActiveTab('saved')}
+          onClick={() => {
+            setActiveTab('saved');
+          }}
           className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition ${
             activeTab === 'saved'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -153,7 +149,10 @@ export default function WishlistPage() {
           Saved Items
         </button>
         <button
-          onClick={() => setActiveTab('requests')}
+          onClick={() => {
+            setActiveTab('requests');
+            loadMyRequests();
+          }}
           className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-sm font-medium transition ${
             activeTab === 'requests'
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
@@ -258,14 +257,6 @@ export default function WishlistPage() {
                           amountUsd={item.price} 
                           className="text-orange-500 dark:text-orange-400 font-bold text-base sm:text-lg md:text-xl mt-2 sm:mt-3 inline-block"
                         />
-
-                        {/* Date Added */}
-                        {item.created_at && (
-                          <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-                            <Calendar size={12} />
-                            Added {new Date(item.created_at).toLocaleDateString()}
-                          </p>
-                        )}
 
                         {/* Stock status */}
                         <p
@@ -384,7 +375,7 @@ export default function WishlistPage() {
                       {req.like_count} votes
                     </span>
                     <span className="flex items-center gap-1">
-                      <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
+                      <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                       {new Date(req.created_at).toLocaleDateString()}
                     </span>
                     {req.image_count > 0 && (
