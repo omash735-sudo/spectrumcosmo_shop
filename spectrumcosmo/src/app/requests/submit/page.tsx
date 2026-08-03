@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, CheckCircle, ArrowUp, ArrowDown, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/storefront/storefront/Footer';
+import Footer from '@/components/storefront/Footer';
 import toast from 'react-hot-toast';
 
 interface Category {
@@ -173,13 +173,13 @@ export default function RequestSubmitPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => router.push('/requests')}
-                className="px-6 py-2.5 bg-[var(--primary)] text-white rounded-xl font-medium hover:bg-[var(--primary-hover)] transition min-h-[44px]"
+                className="px-6 py-2.5 bg-[var(--primary)] text-white rounded-xl font-medium hover:bg-[var(--primary-hover)] transition min-h-[44px] flex items-center justify-center"
               >
                 Browse Community Requests
               </button>
               <button
                 onClick={() => router.push('/wishlist')}
-                className="px-6 py-2.5 border border-[var(--border)] rounded-xl font-medium hover:bg-[var(--background-secondary)] transition min-h-[44px]"
+                className="px-6 py-2.5 border border-[var(--border)] rounded-xl font-medium hover:bg-[var(--background-secondary)] transition min-h-[44px] flex items-center justify-center"
               >
                 View My Requests
               </button>
