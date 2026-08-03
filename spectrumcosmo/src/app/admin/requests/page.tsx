@@ -1,20 +1,27 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { 
   Loader2, Eye, CheckCircle, XCircle, Clock, RefreshCw, 
   TrendingUp, Users, Package, Filter, ChevronDown, 
   Calendar, MessageSquare, Heart, Image as ImageIcon,
   AlertCircle, Search, Sparkles, ArrowRight, X
 } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
+import toast from 'react-hot-toast';
+
+interface RequestImage {
+  id: string;
+  image_url: string;
+  display_order: number;
+}
 
 interface Request {
   id: string;
   title: string;
   description: string;
-  category_name: string;
+  category_name: string | null;
   category_id: number | null;
   status: string;
   user_name: string;
@@ -22,8 +29,11 @@ interface Request {
   like_count: number;
   image_count: number;
   created_at: string;
+  images: RequestImage[];
+  admin_notes: string | null;
 }
 
+// Status configuration matching API
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: 'Pending', color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30', icon: Clock },
   reviewing: { label: 'Reviewing', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30', icon: AlertCircle },
@@ -91,7 +101,7 @@ export default function AdminRequestsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/requests?status=${filter}`);
+      const res = await fetch(`/api/admin/product-requests?status=${filter}`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -113,18 +123,24 @@ export default function AdminRequestsPage() {
   const updateStatus = async (id: string, newStatus: string) => {
     setProcessing(true);
     try {
-      const res = await fetch('/api/admin/requests', {
+      const res = await fetch('/api/admin/product-requests', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus, admin_notes: adminNote }),
       });
-      if (!res.ok) throw new Error('Update failed');
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Update failed');
+      }
+      
+      toast.success(`Request ${newStatus === 'approved' ? 'approved' : newStatus === 'rejected' ? 'rejected' : 'updated'} successfully!`);
       setSelectedRequest(null);
       setAdminNote('');
       await fetchRequests();
     } catch (err) {
       console.error('Failed to update status:', err);
-      alert('Failed to update status');
+      toast.error(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setProcessing(false);
     }
@@ -142,8 +158,11 @@ export default function AdminRequestsPage() {
   const stats = {
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending').length,
+    reviewing: requests.filter(r => r.status === 'reviewing').length,
     approved: requests.filter(r => r.status === 'approved').length,
     rejected: requests.filter(r => r.status === 'rejected').length,
+    sourcing: requests.filter(r => r.status === 'sourcing').length,
+    available: requests.filter(r => r.status === 'available').length,
     totalLikes: requests.reduce((sum, r) => sum + (r.like_count || 0), 0),
   };
 
@@ -169,32 +188,35 @@ export default function AdminRequestsPage() {
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Product Requests</h1>
             </div>
-            <Sparkles size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
           </div>
           <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">Review and manage community product submissions</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
+        {/* Stats Cards - 6 cards for all statuses */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
             <p className="text-lg sm:text-2xl font-bold text-[var(--foreground)]">{stats.total}</p>
-            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Total Requests</p>
+            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Total</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200 dark:border-yellow-800 p-3 sm:p-4 shadow-sm">
             <p className="text-lg sm:text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.pending}</p>
-            <p className="text-[10px] sm:text-xs text-yellow-600 dark:text-yellow-500">Pending Review</p>
+            <p className="text-[10px] sm:text-xs text-yellow-600 dark:text-yellow-500">Pending</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.reviewing}</p>
+            <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-500">Reviewing</p>
           </div>
           <div className="bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800 p-3 sm:p-4 shadow-sm">
             <p className="text-lg sm:text-2xl font-bold text-green-700 dark:text-green-400">{stats.approved}</p>
             <p className="text-[10px] sm:text-xs text-green-600 dark:text-green-500">Approved</p>
           </div>
-          <div className="bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800 p-3 sm:p-4 shadow-sm">
-            <p className="text-lg sm:text-2xl font-bold text-red-700 dark:text-red-400">{stats.rejected}</p>
-            <p className="text-[10px] sm:text-xs text-red-600 dark:text-red-500">Rejected</p>
+          <div className="bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.sourcing}</p>
+            <p className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-500">Sourcing</p>
           </div>
-          <div className="bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-200 dark:border-orange-800 p-3 sm:p-4 shadow-sm">
-            <p className="text-lg sm:text-2xl font-bold text-[var(--primary)]">{stats.totalLikes}</p>
-            <p className="text-[10px] sm:text-xs text-orange-600 dark:text-orange-500">Total Votes</p>
+          <div className="bg-teal-50 dark:bg-teal-950/20 rounded-xl border border-teal-200 dark:border-teal-800 p-3 sm:p-4 shadow-sm">
+            <p className="text-lg sm:text-2xl font-bold text-teal-700 dark:text-teal-400">{stats.available}</p>
+            <p className="text-[10px] sm:text-xs text-teal-600 dark:text-teal-500">Available</p>
           </div>
         </div>
 
@@ -204,9 +226,7 @@ export default function AdminRequestsPage() {
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {statuses.map((s) => {
                 const isActive = filter === s;
-                const count = s === 'pending' ? stats.pending : 
-                             s === 'approved' ? stats.approved : 
-                             s === 'rejected' ? stats.rejected : 0;
+                const count = stats[s as keyof typeof stats] || 0;
                 const status = statusConfig[s];
                 return (
                   <button
@@ -267,7 +287,7 @@ export default function AdminRequestsPage() {
                 <Package size={24} className="sm:w-8 sm:h-8 text-[var(--foreground-muted)] opacity-50" />
               </div>
               <h3 className="text-base sm:text-lg font-medium text-[var(--foreground)] mb-1">
-                No {filter} requests
+                No {statusConfig[filter]?.label || filter} requests
               </h3>
               <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
                 {filter === 'pending' 
@@ -416,6 +436,27 @@ export default function AdminRequestsPage() {
                 <p className="text-[var(--foreground-muted)] text-sm mt-1 whitespace-pre-wrap">{selectedRequest.description}</p>
               </div>
 
+              {/* Images Section */}
+              {selectedRequest.images && selectedRequest.images.length > 0 && (
+                <div>
+                  <label className="text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider mb-1.5 block">
+                    Reference Images ({selectedRequest.images.length})
+                  </label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {selectedRequest.images.map((img) => (
+                      <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)] border border-[var(--border)]">
+                        <Image
+                          src={img.image_url}
+                          alt="Reference"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">Category</label>
@@ -429,8 +470,20 @@ export default function AdminRequestsPage() {
                 </div>
               </div>
 
+              {/* Admin Notes - Show existing notes if any */}
+              {selectedRequest.admin_notes && (
+                <div>
+                  <label className="text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">Existing Admin Notes</label>
+                  <div className="mt-1 p-3 bg-[var(--background-secondary)] rounded-xl text-sm text-[var(--foreground-muted)]">
+                    {selectedRequest.admin_notes}
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label className="text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider mb-1.5 block">Admin Notes</label>
+                <label className="text-[10px] sm:text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider mb-1.5 block">
+                  Admin Notes {selectedRequest.admin_notes && '(Update)'}
+                </label>
                 <textarea
                   rows={3}
                   value={adminNote}
@@ -461,6 +514,24 @@ export default function AdminRequestsPage() {
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-2.5 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm min-h-[44px]"
                 >
                   <Clock size={16} className="sm:w-[18px] sm:h-[18px]" /> Start Review
+                </button>
+              </div>
+
+              {/* Additional status buttons for advanced workflow */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => updateStatus(selectedRequest.id, 'sourcing')}
+                  disabled={processing}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 sm:py-2.5 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm min-h-[44px]"
+                >
+                  <Package size={16} className="sm:w-[18px] sm:h-[18px]" /> Mark Sourcing
+                </button>
+                <button
+                  onClick={() => updateStatus(selectedRequest.id, 'available')}
+                  disabled={processing}
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 sm:py-2.5 rounded-xl font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm min-h-[44px]"
+                >
+                  <TrendingUp size={16} className="sm:w-[18px] sm:h-[18px]" /> Mark Available
                 </button>
               </div>
             </div>
