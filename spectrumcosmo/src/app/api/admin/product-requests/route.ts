@@ -12,6 +12,7 @@ interface ProductRequest {
   created_at: Date;
   user_id: string;
   category_name: string | null;
+  admin_notes: string | null;
 }
 
 interface UserInfo {
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
   const sql = getDb();
 
   try {
-    // Query with category name
+    // Query with category name and admin_notes
     const requests = await sql`
       SELECT 
         r.id,
