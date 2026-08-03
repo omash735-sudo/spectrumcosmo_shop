@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, X, Loader2, CheckCircle, ArrowUp, ArrowDown, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/storefront/Footer';
+import Footer from '@/storefront/storefront/Footer';
 import toast from 'react-hot-toast';
 
 interface Category {
