@@ -1,11 +1,19 @@
-// app/requests/[id]/page.tsx
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getDb, queryOne, queryMany } from '@/lib/db';
-import { ArrowLeft, Heart, Calendar, Share2 } from 'lucide-react';
+import { 
+  ArrowLeft, Heart, Calendar, Share2, Loader2, 
+  User, ThumbsUp, CheckCircle, Clock, XCircle,
+  AlertCircle, Package, TrendingUp
+} from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
+import RequestStatusBadge from '@/components/requests/RequestStatusBadge';
+import RequestProgress from '@/components/requests/RequestProgress';
+import toast from 'react-hot-toast';
 
 interface RequestDetail {
   id: string;
@@ -16,207 +24,275 @@ interface RequestDetail {
   created_at: string;
   category_name: string;
   user_name?: string;
+  user_liked: number;
   images: Array<{ id: string; image_url: string; display_order: number }>;
 }
 
-interface RequestRow {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  like_count: number;
-  created_at: string;
-  category_name: string;
-  user_name?: string;
-}
+export default function RequestDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+  
+  const [request, setRequest] = useState<RequestDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [liking, setLiking] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
-interface ImageRow {
-  id: string;
-  image_url: string;
-  display_order: number;
-}
+  useEffect(() => {
+    const loadRequest = async () => {
+      try {
+        const res = await fetch(`/api/requests/${id}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            router.push('/requests');
+            return;
+          }
+          throw new Error('Failed to load request');
+        }
+        const data = await res.json();
+        setRequest(data.data);
+      } catch (err) {
+        console.error('Failed to load request:', err);
+        toast.error('Failed to load request');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadRequest();
+  }, [id, router]);
 
-async function getRequest(id: string): Promise<RequestDetail | null> {
-  const sql = getDb();
+  const handleLike = async () => {
+    if (!request) return;
+    setLiking(true);
+    
+    try {
+      const res = await fetch(`/api/requests/${id}/like`, {
+        method: 'POST',
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to like');
+      }
+      
+      const data = await res.json();
+      
+      setRequest(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          like_count: data.liked ? prev.like_count + 1 : prev.like_count - 1,
+          user_liked: data.liked ? 1 : 0,
+        };
+      });
+      
+      toast.success(data.liked ? 'Liked!' : 'Unliked');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to like');
+    } finally {
+      setLiking(false);
+    }
+  };
 
-  // Use queryOne to get a single row (or null)
-  const request = await queryOne<RequestRow>`
-    SELECT 
-      r.id,
-      r.title,
-      r.description,
-      r.status,
-      r.like_count,
-      r.created_at,
-      c.name as category_name,
-      u.name as user_name
-    FROM product_requests r
-    LEFT JOIN categories c ON c.id = r.category_id
-    LEFT JOIN users u ON u.id = r.user_id
-    WHERE r.id = ${id}
-  `;
+  const handleShare = async () => {
+    setSharing(true);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy link');
+    } finally {
+      setSharing(false);
+    }
+  };
 
-  if (!request) return null;
-
-  // Use queryMany to get the images array with proper typing
-  const images = await queryMany<ImageRow>`
-    SELECT id, image_url, display_order
-    FROM request_images
-    WHERE request_id = ${id}
-    ORDER BY display_order ASC
-  `;
-
-  return { ...request, images };
-}
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-function getStatusMessage(status: string): string {
-  switch (status) {
-    case 'approved':
-      return 'This request is approved and will be considered for production';
-    case 'pending':
-      return 'This request is under review by our team';
-    default:
-      return 'This request was not approved';
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 size={36} className="animate-spin text-[var(--primary)]" />
+        </div>
+        <Footer />
+      </>
+    );
   }
-}
-
-export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const request = await getRequest(id);
 
   if (!request) {
-    notFound();
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <XCircle size={48} className="text-[var(--foreground-muted)] mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Request not found</h2>
+            <Link href="/requests" className="text-[var(--primary)] hover:underline mt-4 inline-block">
+              Browse all requests →
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
   }
 
-  const statusMessage = getStatusMessage(request.status);
-  const statusIcon = request.status === 'approved' ? '✓' : request.status === 'pending' ? '⏳' : '✗';
+  const isRejected = request.status === 'rejected';
+  const isAvailable = request.status === 'available';
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-12">
+      <main className="min-h-screen bg-[var(--background)] py-8 md:py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          
           {/* Back Button */}
           <Link
-            href="/newsletter"
-            className="inline-flex items-center gap-2 text-gray-500 hover:text-orange-600 mb-6 transition group"
+            href="/requests"
+            className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--primary)] mb-6 transition group"
           >
             <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition" />
-            Back to Community Wishlist
+            Back to Requests
           </Link>
 
-          {/* Request Header */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          {/* Request Card */}
+          <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
             <div className="p-6 md:p-8">
+              {/* Header */}
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                      Request
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatDate(request.created_at)}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-3">
+                    <RequestStatusBadge status={request.status} size="lg" />
+                    {request.user_name && (
+                      <span className="text-xs text-[var(--foreground-muted)] flex items-center gap-1">
+                        <User size={14} />
+                        by {request.user_name}
+                      </span>
+                    )}
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
                     {request.title}
                   </h1>
-                  <p className="text-gray-500 mt-2">
-                    Category: {request.category_name || 'General'}
-                  </p>
+                  {request.category_name && (
+                    <p className="text-sm text-[var(--foreground-muted)] mt-1">
+                      Category: {request.category_name}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-3 py-1.5 bg-red-50 rounded-full">
-                    <Heart size={16} className="text-red-500" />
-                    <span className="font-semibold text-red-600">{request.like_count}</span>
-                    <span className="text-xs text-red-500">votes</span>
-                  </div>
+                  <button
+                    onClick={handleLike}
+                    disabled={liking}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
+                      request.user_liked
+                        ? 'bg-red-50 dark:bg-red-950/30 text-red-500'
+                        : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)] hover:bg-[var(--background)]'
+                    }`}
+                  >
+                    <Heart 
+                      size={18} 
+                      className={request.user_liked ? 'fill-red-500' : ''}
+                    />
+                    <span className="font-semibold">{request.like_count}</span>
+                    <span className="text-xs hidden sm:inline">votes</span>
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className="p-2.5 rounded-xl bg-[var(--background-secondary)] hover:bg-[var(--background)] transition"
+                    aria-label="Share"
+                  >
+                    <Share2 size={18} />
+                  </button>
                 </div>
               </div>
+
+              {/* Status Progression */}
+              {!isRejected && (
+                <div className="mb-6">
+                  <RequestProgress status={request.status} />
+                </div>
+              )}
+
+              {/* Rejected State */}
+              {isRejected && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-3">
+                    <XCircle size={24} className="text-red-500" />
+                    <div>
+                      <p className="font-medium text-red-700 dark:text-red-400">Request Not Approved</p>
+                      <p className="text-sm text-red-600 dark:text-red-300">
+                        This request was not approved for production at this time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Available State */}
+              {isAvailable && (
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-3">
+                    <Package size={24} className="text-green-500" />
+                    <div>
+                      <p className="font-medium text-green-700 dark:text-green-400">Now Available!</p>
+                      <p className="text-sm text-green-600 dark:text-green-300">
+                        This request has been made into a real product.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
-              <div className="prose prose-sm max-w-none text-gray-600 mt-4">
-                <p>{request.description}</p>
+              <div className="prose prose-sm max-w-none text-[var(--foreground)] mt-4">
+                <p className="whitespace-pre-wrap">{request.description}</p>
+              </div>
+
+              {/* Images Gallery */}
+              {request.images.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-[var(--border)]">
+                  <h3 className="font-semibold text-[var(--foreground)] mb-3">Reference Images</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {request.images.map((image) => (
+                      <div
+                        key={image.id}
+                        className="relative aspect-square rounded-xl overflow-hidden bg-[var(--background-secondary)] group"
+                      >
+                        <Image
+                          src={image.image_url}
+                          alt="Request reference"
+                          fill
+                          className="object-cover group-hover:scale-105 transition duration-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer - Date */}
+              <div className="mt-6 pt-4 border-t border-[var(--border)]">
+                <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
+                  <Calendar size={16} />
+                  <span>Submitted on {new Date(request.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Images Gallery */}
-          {request.images.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-800">Reference Images</h2>
-                <p className="text-sm text-gray-500 mt-1">Visual inspiration for this request</p>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {request.images.map((image) => (
-                    <div
-                      key={image.id}
-                      className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group"
-                    >
-                      <Image
-                        src={image.image_url}
-                        alt="Request reference"
-                        fill
-                        className="object-cover group-hover:scale-105 transition duration-500"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-6">
-              <h2 className="font-semibold text-gray-800 mb-4">Request Statistics</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <Heart size={20} className="text-red-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{request.like_count}</p>
-                    <p className="text-xs text-gray-500">Total Votes</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <Calendar size={20} className="text-gray-500" />
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{formatDate(request.created_at)}</p>
-                    <p className="text-xs text-gray-500">Submitted On</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-500 text-center">
-                  {statusIcon} {statusMessage}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Share Section */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard');
-              }}
-              className="inline-flex items-center gap-2 text-gray-500 hover:text-orange-600 transition text-sm"
+          {/* Actions */}
+          <div className="mt-6 flex flex-wrap gap-3 justify-between">
+            <Link
+              href="/requests"
+              className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--primary)] transition"
             >
-              <Share2 size={16} />
-              Share this request
-            </button>
+              <ArrowLeft size={16} />
+              Browse all requests
+            </Link>
           </div>
         </div>
       </main>
