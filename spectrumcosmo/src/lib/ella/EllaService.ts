@@ -4,6 +4,15 @@ import { getSystemPrompt } from './prompts/systemPrompt';
 import { searchProducts, formatProductForResponse } from './tools/ProductSearchTool';
 import { searchFAQs } from './tools/FAQSearchTool';
 import { SessionManager } from './memory/SessionManager';
+import { checkStock, searchStockByQuery, formatStockResponse } from './tools/StockCheckTool';
+import { 
+  lookupOrderByNumberAndEmail, 
+  lookupOrdersByUserId,
+  lookupOrderByEmail,
+  formatOrderResponse,
+  formatMultipleOrdersResponse
+} from './tools/OrderLookupTool';
+import { sendEscalationEmail } from './escalation/EmailNotifier';
 
 const ADMIN_EMAIL = 'spectrumcosmo01@gmail.com';
 const OMASH_EMAIL = 'omash735@gmail.com';
@@ -14,6 +23,7 @@ interface ChatRequest {
   sessionId: string;
   customerEmail?: string;
   customerName?: string;
+  userId?: string;
 }
 
 interface ChatResponse {
@@ -31,7 +41,7 @@ export class EllaService {
   }
 
   async processMessage(request: ChatRequest): Promise<ChatResponse> {
-    const { message, sessionId, customerEmail, customerName } = request;
+    const { message, sessionId, customerEmail, customerName, userId } = request;
 
     const session = new SessionManager(sessionId);
     const conversationId = await session.getOrCreateConversation(customerEmail, customerName);
@@ -39,6 +49,11 @@ export class EllaService {
     await session.addMessage('user', message);
 
     const history = await session.getHistory(10);
+
+    const systemPrompt = getSystemPrompt();
+    let context = systemPrompt;
+
+    let extractedOrderNumber: string | null = null;
 
     const productIntent = this.detectProductIntent(message);
     let productResponse: string | null = null;
@@ -54,6 +69,54 @@ export class EllaService {
       }
     }
 
+    const stockIntent = this.detectStockIntent(message);
+    let stockResponse: string | null = null;
+
+    if (stockIntent) {
+      const searchQuery = this.extractProductQuery(message);
+      const stockResults = await searchStockByQuery(searchQuery);
+
+      if (stockResults.length > 0) {
+        stockResponse = `Stock information:\n\n${stockResults.map(formatStockResponse).join('\n\n---\n\n')}`;
+      } else {
+        stockResponse = "I couldn't find stock information for that product. Please try a different search.";
+      }
+    }
+
+    const orderIntent = this.detectOrderIntent(message);
+    let orderResponse: string | null = null;
+
+    if (orderIntent) {
+      if (userId) {
+        const orders = await lookupOrdersByUserId(userId);
+        if (orders.length > 0) {
+          orderResponse = formatMultipleOrdersResponse(orders);
+        } else {
+          orderResponse = "I couldn't find any orders for your account. If you have placed an order, please check your email for confirmation.";
+        }
+      } else if (customerEmail) {
+        const extractedNumber = this.extractOrderNumber(message);
+        if (extractedNumber) {
+          extractedOrderNumber = extractedNumber;
+          const result = await lookupOrderByNumberAndEmail(extractedNumber, customerEmail);
+          if (result.order) {
+            orderResponse = formatOrderResponse(result.order);
+          } else {
+            orderResponse = result.error || "I couldn't find an order matching that number and email. Please check and try again.";
+          }
+        } else {
+          const orders = await lookupOrderByEmail(customerEmail);
+          if (orders.length > 0) {
+            orderResponse = formatMultipleOrdersResponse(orders);
+          } else {
+            orderResponse = "I couldn't find any orders associated with this email address. If you have placed an order recently, please check your email for confirmation.";
+          }
+        }
+      } else {
+        orderResponse = "I need your email address to look up your order. Could you please provide the email you used when placing the order?";
+      }
+    }
+
     const faqIntent = this.detectFAQIntent(message);
     let faqResponse: string | null = null;
 
@@ -64,12 +127,16 @@ export class EllaService {
       }
     }
 
-    const systemPrompt = getSystemPrompt();
-
-    let context = systemPrompt;
-
     if (productResponse) {
       context += `\n\nProduct search results:\n${productResponse}`;
+    }
+
+    if (stockResponse) {
+      context += `\n\nStock information:\n${stockResponse}`;
+    }
+
+    if (orderResponse) {
+      context += `\n\nOrder information:\n${orderResponse}`;
     }
 
     if (faqResponse) {
@@ -102,12 +169,23 @@ export class EllaService {
     await session.addMessage('assistant', aiResponse);
 
     if (requiresEscalation) {
-      await this.createEscalation(conversationId, escalationReason!, {
+      const escalationData = {
         customerName: customerName || 'Unknown',
-        customerEmail: customerEmail || 'Unknown',
-        message,
-        aiResponse,
-      });
+        customerEmail: customerEmail || 'Not provided',
+        orderNumber: extractedOrderNumber || undefined,
+        reason: escalationReason,
+        conversationSummary: `Customer: ${customerName || 'Unknown'}\nEmail: ${customerEmail || 'Not provided'}\n\nCustomer message: ${message}\n\nElla response: ${aiResponse}`,
+        conversationId: conversationId,
+        timestamp: new Date(),
+      };
+
+      await this.createEscalation(conversationId, escalationReason, escalationData);
+
+      try {
+        await sendEscalationEmail(escalationData);
+      } catch (error) {
+        console.error('Failed to send escalation email:', error);
+      }
     }
 
     return {
@@ -126,6 +204,29 @@ export class EllaService {
     ];
     const lower = message.toLowerCase();
     return keywords.some(k => lower.includes(k));
+  }
+
+  private detectStockIntent(message: string): boolean {
+    const keywords = [
+      'stock', 'in stock', 'available', 'quantity', 'have any',
+      'do you have', 'is there', 'any left', 'available stock'
+    ];
+    const lower = message.toLowerCase();
+    return keywords.some(k => lower.includes(k));
+  }
+
+  private detectOrderIntent(message: string): boolean {
+    const keywords = [
+      'order', 'orders', 'purchased', 'bought', 'placed order',
+      'my order', 'order status', 'where is my order'
+    ];
+    const lower = message.toLowerCase();
+    return keywords.some(k => lower.includes(k));
+  }
+
+  private extractOrderNumber(message: string): string | null {
+    const match = message.match(/#?\s*([A-Za-z0-9]{6,12})/);
+    return match ? match[1] : null;
   }
 
   private extractProductQuery(message: string): string {
@@ -178,6 +279,6 @@ export class EllaService {
       VALUES (${conversationId}, ${reason}, ${JSON.stringify(context)})
     `;
 
-    console.log(`ESCALATION: ${reason}`, context);
+    console.log(`Escalation created: ${reason}`);
   }
 }
