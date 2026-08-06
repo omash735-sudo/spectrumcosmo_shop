@@ -95,7 +95,7 @@ export async function lookupOrderByEmail(email: string): Promise<Order[]> {
       deliveryAddress: order.delivery_address,
       deliveryMethod: order.delivery_method,
       createdAt: order.created_at,
-      items: items || [],
+      items: (items || []) as OrderItem[],
     });
   }
 
@@ -160,7 +160,7 @@ export async function lookupOrderByNumberAndEmail(
       deliveryAddress: order.delivery_address,
       deliveryMethod: order.delivery_method,
       createdAt: order.created_at,
-      items: items || [],
+      items: (items || []) as OrderItem[],
     },
     error: null,
   };
@@ -217,7 +217,7 @@ export async function lookupOrdersByUserId(userId: string): Promise<Order[]> {
       deliveryAddress: order.delivery_address,
       deliveryMethod: order.delivery_method,
       createdAt: order.created_at,
-      items: items || [],
+      items: (items || []) as OrderItem[],
     });
   }
 
