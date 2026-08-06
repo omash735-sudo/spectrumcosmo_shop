@@ -13,7 +13,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
-import ClientOnboarding from '@/components/onboarding/ClientOnboarding';
+// import ClientOnboarding from '@/components/onboarding/ClientOnboarding'; // DISABLED - Onboarding turned off
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -82,7 +82,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <Suspense fallback={<LoadingSpinner />}>
                           {children}
                         </Suspense>
-                        <ClientOnboarding />
+                        {/* ClientOnboarding DISABLED - Onboarding tour turned off */}
+                        {/* <ClientOnboarding /> */}
                         <Toaster
                           position="top-right"
                           toastOptions={{
