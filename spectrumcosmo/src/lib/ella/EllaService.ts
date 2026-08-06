@@ -4,7 +4,7 @@ import { getSystemPrompt } from './prompts/systemPrompt';
 import { searchProducts, formatProductForResponse } from './tools/ProductSearchTool';
 import { searchFAQs } from './tools/FAQSearchTool';
 import { SessionManager } from './memory/SessionManager';
-import { checkStock, searchStockByQuery, formatStockResponse } from './tools/StockCheckTool';
+import { searchStockByQuery, formatStockResponse } from './tools/StockCheckTool';
 import { 
   lookupOrderByNumberAndEmail, 
   lookupOrdersByUserId,
@@ -13,10 +13,16 @@ import {
   formatMultipleOrdersResponse
 } from './tools/OrderLookupTool';
 import { sendEscalationEmail } from './escalation/EmailNotifier';
+import { 
+  CurrencyCode, 
+  DEFAULT_CURRENCY, 
+  detectCurrencyFromLocale, 
+  getExchangeRate,
+  COUNTRY_CURRENCY_MAP
+} from './types/currency';
 
 const ADMIN_EMAIL = 'spectrumcosmo01@gmail.com';
 const OMASH_EMAIL = 'omash735@gmail.com';
-const OMASH_PHONE = '+265893160202';
 
 interface ChatRequest {
   message: string;
@@ -24,6 +30,9 @@ interface ChatRequest {
   customerEmail?: string;
   customerName?: string;
   userId?: string;
+  currency?: CurrencyCode;
+  locale?: string;
+  countryCode?: string;
 }
 
 interface ChatResponse {
@@ -40,8 +49,30 @@ export class EllaService {
     this.groqProvider = new GroqProvider(groqApiKey);
   }
 
+  private detectCurrency(request: ChatRequest): CurrencyCode {
+    if (request.currency) {
+      return request.currency;
+    }
+    
+    if (request.countryCode) {
+      const countryUpper = request.countryCode.toUpperCase();
+      if (COUNTRY_CURRENCY_MAP[countryUpper]) {
+        return COUNTRY_CURRENCY_MAP[countryUpper].currency as CurrencyCode;
+      }
+    }
+    
+    if (request.locale) {
+      return detectCurrencyFromLocale(request.locale);
+    }
+    
+    return DEFAULT_CURRENCY as CurrencyCode;
+  }
+
   async processMessage(request: ChatRequest): Promise<ChatResponse> {
     const { message, sessionId, customerEmail, customerName, userId } = request;
+
+    const currency = this.detectCurrency(request);
+    const exchangeRate = getExchangeRate(currency);
 
     const session = new SessionManager(sessionId);
     const conversationId = await session.getOrCreateConversation(customerEmail, customerName);
@@ -50,49 +81,50 @@ export class EllaService {
 
     const history = await session.getHistory(10);
 
-    const systemPrompt = getSystemPrompt();
-    let context = systemPrompt;
-
     let extractedOrderNumber: string | null = null;
+    let toolResponse: string | null = null;
+    let toolType: string | null = null;
 
     const productIntent = this.detectProductIntent(message);
-    let productResponse: string | null = null;
+    const stockIntent = this.detectStockIntent(message);
+    const orderIntent = this.detectOrderIntent(message);
+    const faqIntent = this.detectFAQIntent(message);
 
     if (productIntent) {
       const searchQuery = this.extractProductQuery(message);
       const products = await searchProducts(searchQuery, 5);
 
       if (products.length > 0) {
-        productResponse = `I found these products:\n\n${products.map(formatProductForResponse).join('\n\n---\n\n')}`;
+        toolResponse = `PRODUCT SEARCH RESULTS (REAL DATA FROM DATABASE):\n\n${products.map(p => formatProductForResponse(p, currency, exchangeRate)).join('\n\n---\n\n')}`;
+        toolType = 'product';
       } else {
-        productResponse = "I couldn't find any products matching your search. Could you try different keywords?";
+        toolResponse = `PRODUCT SEARCH RESULTS (REAL DATA FROM DATABASE):\n\nNo products found matching "${searchQuery}". Please suggest they try different keywords or check the spelling.`;
+        toolType = 'product';
       }
     }
 
-    const stockIntent = this.detectStockIntent(message);
-    let stockResponse: string | null = null;
-
-    if (stockIntent) {
+    if (stockIntent && !toolResponse) {
       const searchQuery = this.extractProductQuery(message);
       const stockResults = await searchStockByQuery(searchQuery);
 
       if (stockResults.length > 0) {
-        stockResponse = `Stock information:\n\n${stockResults.map(formatStockResponse).join('\n\n---\n\n')}`;
+        toolResponse = `STOCK INFORMATION (REAL DATA FROM DATABASE):\n\n${stockResults.map(s => formatStockResponse(s, currency, exchangeRate)).join('\n\n---\n\n')}`;
+        toolType = 'stock';
       } else {
-        stockResponse = "I couldn't find stock information for that product. Please try a different search.";
+        toolResponse = `STOCK INFORMATION (REAL DATA FROM DATABASE):\n\nNo stock information found for "${searchQuery}". The product may not exist in the database.`;
+        toolType = 'stock';
       }
     }
 
-    const orderIntent = this.detectOrderIntent(message);
-    let orderResponse: string | null = null;
-
-    if (orderIntent) {
+    if (orderIntent && !toolResponse) {
       if (userId) {
         const orders = await lookupOrdersByUserId(userId);
         if (orders.length > 0) {
-          orderResponse = formatMultipleOrdersResponse(orders);
+          toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\n${formatMultipleOrdersResponse(orders)}`;
+          toolType = 'order';
         } else {
-          orderResponse = "I couldn't find any orders for your account. If you have placed an order, please check your email for confirmation.";
+          toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\nNo orders found for this account.`;
+          toolType = 'order';
         }
       } else if (customerEmail) {
         const extractedNumber = this.extractOrderNumber(message);
@@ -100,51 +132,86 @@ export class EllaService {
           extractedOrderNumber = extractedNumber;
           const result = await lookupOrderByNumberAndEmail(extractedNumber, customerEmail);
           if (result.order) {
-            orderResponse = formatOrderResponse(result.order);
+            toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\n${formatOrderResponse(result.order)}`;
+            toolType = 'order';
           } else {
-            orderResponse = result.error || "I couldn't find an order matching that number and email. Please check and try again.";
+            toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\n${result.error || 'No order found matching that number and email.'}`;
+            toolType = 'order';
           }
         } else {
           const orders = await lookupOrderByEmail(customerEmail);
           if (orders.length > 0) {
-            orderResponse = formatMultipleOrdersResponse(orders);
+            toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\n${formatMultipleOrdersResponse(orders)}`;
+            toolType = 'order';
           } else {
-            orderResponse = "I couldn't find any orders associated with this email address. If you have placed an order recently, please check your email for confirmation.";
+            toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\nNo orders found for this email address.`;
+            toolType = 'order';
           }
         }
       } else {
-        orderResponse = "I need your email address to look up your order. Could you please provide the email you used when placing the order?";
+        toolResponse = `ORDER INFORMATION (REAL DATA FROM DATABASE):\n\nCustomer needs to provide their email address to look up orders. Please ask them for the email they used when placing the order.`;
+        toolType = 'order';
       }
     }
 
-    const faqIntent = this.detectFAQIntent(message);
-    let faqResponse: string | null = null;
-
-    if (faqIntent) {
+    if (faqIntent && !toolResponse) {
       const faqs = await searchFAQs(message);
       if (faqs.length > 0) {
-        faqResponse = faqs.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n');
+        toolResponse = `FAQ INFORMATION (REAL DATA FROM DATABASE):\n\n${faqs.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n')}`;
+        toolType = 'faq';
+      } else {
+        toolResponse = `FAQ INFORMATION (REAL DATA FROM DATABASE):\n\nNo FAQs found matching this question.`;
+        toolType = 'faq';
       }
     }
 
-    if (productResponse) {
-      context += `\n\nProduct search results:\n${productResponse}`;
-    }
+    const systemPrompt = getSystemPrompt();
 
-    if (stockResponse) {
-      context += `\n\nStock information:\n${stockResponse}`;
-    }
-
-    if (orderResponse) {
-      context += `\n\nOrder information:\n${orderResponse}`;
-    }
-
-    if (faqResponse) {
-      context += `\n\nFAQ results:\n${faqResponse}`;
-    }
+    let context = systemPrompt;
+    context += `\n\nCurrency Information:\n- The customer's currency is ${currency}.\n- All prices should be shown in ${currency}.\n- The base currency is MWK (Malawian Kwacha).\n- Exchange rate from MWK to ${currency}: ${exchangeRate}`;
 
     const shippingInfo = `SpectrumCosmo shipping: Nationwide delivery within 3-7 business days. Costs depend on location. Contact us for a quote.`;
     context += `\n\nShipping Information:\n${shippingInfo}`;
+
+    if (toolResponse) {
+      context += `\n\n${toolResponse}`;
+    }
+
+    let instruction = "";
+
+    if (toolResponse && toolType) {
+      instruction = `
+CRITICAL INSTRUCTION:
+- The tool response above contains REAL DATA from the SpectrumCosmo database.
+- You MUST ONLY use the data provided in the tool response to answer the customer.
+- DO NOT make up prices, products, stock levels, or order information.
+- DO NOT use your training data or general knowledge about anime merchandise.
+- If the tool response says "No products found", tell the customer honestly that you couldn't find what they're looking for.
+- If the tool response shows specific products, prices, and stock levels, present exactly that data.
+- Be honest: if you don't have information about something, say you don't have that information.
+- All prices are already shown in the customer's currency (${currency}). Use the prices as shown.
+
+Customer question: ${message}
+
+Respond based ONLY on the tool data above. DO NOT add information that isn't in the tool response.`;
+    } else {
+      const generalIntent = this.detectGeneralIntent(message);
+      if (generalIntent) {
+        instruction = `
+Customer question: ${message}
+
+This is a general question about SpectrumCosmo. Use your knowledge of the business (anime merchandise, hoodies, jerseys, accessories, collectibles) to answer naturally.
+- If you don't know something, say you'll check and get back to them.
+- Never make up specific prices or product details.
+- For product-specific questions, ask them to specify what they're looking for.
+- If they ask about prices, tell them you'll check and get back to them.`;
+      } else {
+        instruction = `
+Customer question: ${message}
+
+Respond naturally. You are Ella, the SpectrumCosmo AI assistant. Be helpful, friendly, and professional.`;
+      }
+    }
 
     const escalationReason = this.detectEscalationNeeded(message);
     const requiresEscalation = !!escalationReason;
@@ -152,7 +219,7 @@ export class EllaService {
     let aiResponse: string;
 
     if (requiresEscalation) {
-      const escalationContext = `${context}\n\nIMPORTANT: The customer has requested something that requires human approval (${escalationReason}). Acknowledge their request, explain you'll escalate it, and collect necessary details. Do NOT approve it yourself.`;
+      const escalationContext = `${context}\n\nIMPORTANT: The customer has requested something that requires human approval (${escalationReason}). Acknowledge their request, explain you'll escalate it, and collect necessary details. Do NOT approve it yourself.\n\n${instruction}`;
       aiResponse = await this.groqProvider.sendMessageWithContext(
         message,
         escalationContext,
@@ -161,7 +228,7 @@ export class EllaService {
     } else {
       aiResponse = await this.groqProvider.sendMessageWithContext(
         message,
-        context,
+        context + '\n\n' + instruction,
         history
       );
     }
@@ -174,7 +241,7 @@ export class EllaService {
         customerEmail: customerEmail || 'Not provided',
         orderNumber: extractedOrderNumber || undefined,
         reason: escalationReason,
-        conversationSummary: `Customer: ${customerName || 'Unknown'}\nEmail: ${customerEmail || 'Not provided'}\n\nCustomer message: ${message}\n\nElla response: ${aiResponse}`,
+        conversationSummary: `Customer: ${customerName || 'Unknown'}\nEmail: ${customerEmail || 'Not provided'}\nCurrency: ${currency}\n\nCustomer message: ${message}\n\nElla response: ${aiResponse}`,
         conversationId: conversationId,
         timestamp: new Date(),
       };
@@ -224,18 +291,6 @@ export class EllaService {
     return keywords.some(k => lower.includes(k));
   }
 
-  private extractOrderNumber(message: string): string | null {
-    const match = message.match(/#?\s*([A-Za-z0-9]{6,12})/);
-    return match ? match[1] : null;
-  }
-
-  private extractProductQuery(message: string): string {
-    const stopWords = ['have', 'do', 'you', 'is', 'are', 'there', 'any', 'with', 'for', 'from', 'on', 'at'];
-    const words = message.toLowerCase().split(' ');
-    const filtered = words.filter(w => !stopWords.includes(w) && w.length > 2);
-    return filtered.join(' ') || message;
-  }
-
   private detectFAQIntent(message: string): boolean {
     const keywords = [
       'how', 'what', 'when', 'where', 'why', 'can', 'will',
@@ -244,6 +299,27 @@ export class EllaService {
     ];
     const lower = message.toLowerCase();
     return keywords.some(k => lower.includes(k));
+  }
+
+  private detectGeneralIntent(message: string): boolean {
+    const keywords = [
+      'who', 'are', 'you', 'what', 'is', 'company',
+      'about', 'history', 'mission', 'vision'
+    ];
+    const lower = message.toLowerCase();
+    return keywords.some(k => lower.includes(k)) && !this.detectProductIntent(message);
+  }
+
+  private extractOrderNumber(message: string): string | null {
+    const match = message.match(/#?\s*([A-Za-z0-9]{6,12})/);
+    return match ? match[1] : null;
+  }
+
+  private extractProductQuery(message: string): string {
+    const stopWords = ['have', 'do', 'you', 'is', 'are', 'there', 'any', 'with', 'for', 'from', 'on', 'at', 'the', 'a', 'an'];
+    const words = message.toLowerCase().split(' ');
+    const filtered = words.filter(w => !stopWords.includes(w) && w.length > 2);
+    return filtered.join(' ') || message;
   }
 
   private detectEscalationNeeded(message: string): string | null {
