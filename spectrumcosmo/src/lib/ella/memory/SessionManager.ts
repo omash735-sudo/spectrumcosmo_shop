@@ -84,7 +84,8 @@ export class SessionManager {
       LIMIT ${limit}
     `;
 
-    return messages && messages.length > 0 ? messages.reverse() : [];
+    // Cast the results to Message[] since we know the shape from the query
+    return (messages && messages.length > 0 ? messages.reverse() : []) as Message[];
   }
 
   async getLastUserMessage(): Promise<string | null> {
