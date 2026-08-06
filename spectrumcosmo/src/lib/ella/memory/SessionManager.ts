@@ -16,15 +16,19 @@ export class SessionManager {
   async getOrCreateConversation(customerEmail?: string, customerName?: string): Promise<string> {
     const sql = getDb();
 
-    const existing = await sql`
+    const existing = await sql<{ id: string }[]>`
       SELECT id FROM ella_conversations 
       WHERE session_id = ${this.sessionId}
       ORDER BY created_at DESC
       LIMIT 1
     `;
 
+    let conversationId: string;
+
     if (existing.length > 0) {
-      this.conversationId = existing[0].id;
+      conversationId = existing[0].id;
+      this.conversationId = conversationId;
+      
       if (customerEmail || customerName) {
         await sql`
           UPDATE ella_conversations 
@@ -32,25 +36,26 @@ export class SessionManager {
             customer_email = COALESCE(${customerEmail}, customer_email),
             customer_name = COALESCE(${customerName}, customer_name),
             updated_at = NOW()
-          WHERE id = ${this.conversationId}
+          WHERE id = ${conversationId}
         `;
       }
-      return this.conversationId;
+    } else {
+      const result = await sql<{ id: string }[]>`
+        INSERT INTO ella_conversations (session_id, customer_email, customer_name)
+        VALUES (${this.sessionId}, ${customerEmail || null}, ${customerName || null})
+        RETURNING id
+      `;
+      
+      conversationId = result[0].id;
+      this.conversationId = conversationId;
     }
 
-    const result = await sql`
-      INSERT INTO ella_conversations (session_id, customer_email, customer_name)
-      VALUES (${this.sessionId}, ${customerEmail || null}, ${customerName || null})
-      RETURNING id
-    `;
-
-    this.conversationId = result[0].id;
-    return this.conversationId;
+    return conversationId;
   }
 
   async addMessage(role: 'user' | 'assistant' | 'system', content: string): Promise<void> {
     if (!this.conversationId) {
-      throw new Error('Conversation not initialized');
+      throw new Error('Conversation not initialized. Call getOrCreateConversation first.');
     }
 
     const sql = getDb();
