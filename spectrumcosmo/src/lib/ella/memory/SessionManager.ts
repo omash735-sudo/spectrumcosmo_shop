@@ -16,7 +16,7 @@ export class SessionManager {
   async getOrCreateConversation(customerEmail?: string, customerName?: string): Promise<string> {
     const sql = getDb();
 
-    const existing = await sql<{ id: string }[]>`
+    const existing = await sql`
       SELECT id FROM ella_conversations 
       WHERE session_id = ${this.sessionId}
       ORDER BY created_at DESC
@@ -25,7 +25,7 @@ export class SessionManager {
 
     let conversationId: string;
 
-    if (existing.length > 0) {
+    if (existing && existing.length > 0) {
       conversationId = existing[0].id;
       this.conversationId = conversationId;
       
@@ -40,7 +40,7 @@ export class SessionManager {
         `;
       }
     } else {
-      const result = await sql<{ id: string }[]>`
+      const result = await sql`
         INSERT INTO ella_conversations (session_id, customer_email, customer_name)
         VALUES (${this.sessionId}, ${customerEmail || null}, ${customerName || null})
         RETURNING id
@@ -76,7 +76,7 @@ export class SessionManager {
     }
 
     const sql = getDb();
-    const messages = await sql<{ role: string; content: string }[]>`
+    const messages = await sql`
       SELECT role, content 
       FROM ella_messages 
       WHERE conversation_id = ${this.conversationId}
@@ -84,7 +84,7 @@ export class SessionManager {
       LIMIT ${limit}
     `;
 
-    return messages.reverse();
+    return messages && messages.length > 0 ? messages.reverse() : [];
   }
 
   async getLastUserMessage(): Promise<string | null> {
@@ -93,7 +93,7 @@ export class SessionManager {
     }
 
     const sql = getDb();
-    const result = await sql<{ content: string }[]>`
+    const result = await sql`
       SELECT content 
       FROM ella_messages 
       WHERE conversation_id = ${this.conversationId} AND role = 'user'
@@ -101,7 +101,7 @@ export class SessionManager {
       LIMIT 1
     `;
 
-    return result[0]?.content || null;
+    return result && result.length > 0 ? result[0].content : null;
   }
 
   async hasUnresolvedIssue(): Promise<boolean> {
