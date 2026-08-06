@@ -1,8 +1,10 @@
 import { getDb } from '@/lib/db';
+import { CurrencyCode, formatPrice, getExchangeRate } from '../types/currency';
 
 interface StockResult {
   productId: string;
   name: string;
+  price: number;
   stockQuantity: number;
   reservedStock: number;
   availableStock: number;
@@ -18,12 +20,13 @@ export async function checkStock(productId: string): Promise<StockResult | null>
     SELECT 
       id,
       name,
+      price,
       stock_quantity,
       reserved_stock,
       size_options,
       color_options
     FROM products 
-    WHERE id = ${productId} AND status = 'active'
+    WHERE id = ${productId} AND status = 'in_stock'
     LIMIT 1
   `;
 
@@ -39,6 +42,7 @@ export async function checkStock(productId: string): Promise<StockResult | null>
   return {
     productId: product.id,
     name: product.name,
+    price: Number(product.price) || 0,
     stockQuantity,
     reservedStock,
     availableStock,
@@ -50,19 +54,22 @@ export async function checkStock(productId: string): Promise<StockResult | null>
 
 export async function searchStockByQuery(query: string): Promise<StockResult[]> {
   const sql = getDb();
+  
+  const searchPattern = `%${query}%`;
 
   const results = await sql`
     SELECT 
       id,
       name,
+      price,
       stock_quantity,
       reserved_stock,
       size_options,
       color_options
     FROM products 
     WHERE 
-      status = 'active' 
-      AND name ILIKE ${'%' + query + '%'}
+      status = 'in_stock' 
+      AND name ILIKE ${searchPattern}
     LIMIT 10
   `;
 
@@ -78,6 +85,7 @@ export async function searchStockByQuery(query: string): Promise<StockResult[]> 
     return {
       productId: product.id,
       name: product.name,
+      price: Number(product.price) || 0,
       stockQuantity,
       reservedStock,
       availableStock,
@@ -88,8 +96,13 @@ export async function searchStockByQuery(query: string): Promise<StockResult[]> 
   });
 }
 
-export function formatStockResponse(stock: StockResult): string {
+export function formatStockResponse(
+  stock: StockResult, 
+  currency: CurrencyCode,
+  exchangeRate: number = 1
+): string {
   let response = `${stock.name}\n`;
+  response += `Price: ${formatPrice(stock.price, currency, exchangeRate)}\n`;
   response += `Availability: ${stock.availableStock > 0 ? 'In Stock' : 'Out of Stock'}\n`;
   
   if (stock.availableStock > 0) {
