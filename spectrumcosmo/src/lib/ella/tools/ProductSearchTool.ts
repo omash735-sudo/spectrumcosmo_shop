@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db';
+import { CurrencyCode, formatPrice, getExchangeRate } from '../types/currency';
 
 interface Product {
   id: string;
@@ -16,7 +17,6 @@ export async function searchProducts(query: string, limit: number = 10): Promise
   const sql = getDb();
   
   const searchPattern = `%${query}%`;
-  const startsWithPattern = `${query}%`;
 
   const products = await sql`
     SELECT 
@@ -31,7 +31,7 @@ export async function searchProducts(query: string, limit: number = 10): Promise
       image_url
     FROM products 
     WHERE 
-      status = 'active' 
+      status = 'in_stock' 
       AND (
         name ILIKE ${searchPattern} 
         OR description ILIKE ${searchPattern}
@@ -59,16 +59,20 @@ export async function getProductById(productId: string): Promise<Product | null>
       category_id,
       image_url
     FROM products 
-    WHERE id = ${productId} AND status = 'active'
+    WHERE id = ${productId} AND status = 'in_stock'
     LIMIT 1
   `;
   
   return (products && products.length > 0) ? products[0] as Product : null;
 }
 
-export function formatProductForResponse(product: Product): string {
+export function formatProductForResponse(
+  product: Product, 
+  currency: CurrencyCode,
+  exchangeRate: number = 1
+): string {
   let response = `${product.name}\n`;
-  response += `Price: MK${product.price.toLocaleString()}\n`;
+  response += `Price: ${formatPrice(product.price, currency, exchangeRate)}\n`;
   response += `Stock: ${product.stock_quantity} available\n`;
   if (product.size_options?.length) {
     response += `Sizes: ${product.size_options.join(', ')}\n`;
@@ -79,5 +83,19 @@ export function formatProductForResponse(product: Product): string {
   if (product.description) {
     response += `\n${product.description}`;
   }
+  return response;
+}
+
+export function formatMultipleProductsResponse(
+  products: Product[], 
+  currency: CurrencyCode,
+  exchangeRate: number = 1
+): string {
+  if (products.length === 0) {
+    return 'No products found.';
+  }
+  
+  let response = `I found ${products.length} product(s):\n\n`;
+  response += products.map(p => formatProductForResponse(p, currency, exchangeRate)).join('\n\n---\n\n');
   return response;
 }
