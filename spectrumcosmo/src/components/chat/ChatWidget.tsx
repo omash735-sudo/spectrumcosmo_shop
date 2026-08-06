@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
-import { MessageCircle, Bot, Headphones, X, MessageSquare } from 'lucide-react';
+import { MessageCircle, Bot, Headphones, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -115,7 +115,7 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
       {!isOpen && (
         <button
           onClick={toggleChat}
-          className="bg-[#F97316] text-white rounded-full p-4 shadow-lg hover:bg-[#e86a0d] transition-all duration-200 flex items-center justify-center min-h-[56px] min-w-[56px] chat-bubble-float"
+          className="bg-[#C96712] text-white rounded-full p-4 shadow-lg hover:bg-[#E27716] transition-all duration-200 flex items-center justify-center w-14 h-14 chat-bubble-float"
           aria-label="Chat with Ella"
         >
           <MessageCircle size={24} />
@@ -124,8 +124,8 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
 
       {isOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed bottom-20 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[600px] h-[500px]">
-            <div className="bg-[#F97316] text-white p-4 rounded-t-2xl flex justify-between items-center flex-shrink-0">
+          <div className="bg-[var(--background-card)] dark:bg-[var(--background-card)] rounded-2xl shadow-2xl border border-[var(--border)] flex flex-col max-h-[600px] h-[500px] overflow-hidden manga-bg cards-manga">
+            <div className="bg-[#C96712] text-white p-4 rounded-t-2xl flex justify-between items-center flex-shrink-0 relative z-10">
               <div className="flex items-center gap-2">
                 <Bot size={20} />
                 <div>
@@ -135,18 +135,18 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
               </div>
               <button
                 onClick={toggleChat}
-                className="hover:bg-[#e86a0d] p-1.5 rounded-full transition-colors"
+                className="hover:bg-[#E27716] p-1.5 rounded-full transition-colors flex items-center justify-center w-8 h-8"
                 aria-label="Close chat"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--background)] dark:bg-[var(--background)] relative z-10">
               {messages.length === 0 && (
-                <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
-                  <Bot size={40} className="mx-auto text-[#F97316] mb-3" />
-                  <p className="text-lg font-medium">Hi 👋</p>
+                <div className="text-center text-[var(--foreground-muted)] mt-8">
+                  <Bot size={40} className="mx-auto text-[#C96712] mb-3" />
+                  <p className="text-lg font-medium text-[var(--foreground)]">Hi 👋</p>
                   <p className="mt-2">I'm Ella, your SpectrumCosmo assistant.</p>
                   <p className="text-sm">How can I help you today?</p>
                 </div>
@@ -156,7 +156,7 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm border border-gray-200 dark:border-gray-600">
+                  <div className="bg-[var(--background-card)] dark:bg-[var(--background-card)] text-[var(--foreground)] rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm border border-[var(--border)]">
                     <span className="inline-block animate-pulse">...</span>
                   </div>
                 </div>
@@ -164,13 +164,13 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-b-2xl flex-shrink-0">
-              <div className="flex gap-2 mb-2">
+            <div className="p-3 border-t border-[var(--border)] bg-[var(--background-card)] dark:bg-[var(--background-card)] rounded-b-2xl flex-shrink-0 relative z-10">
+              <div className="flex justify-center mb-2">
                 <a
                   href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
+                  className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-6 rounded-full transition-colors min-h-[44px] min-w-[44px] w-full max-w-[200px]"
                 >
                   <Headphones size={16} />
                   Chat with Team
