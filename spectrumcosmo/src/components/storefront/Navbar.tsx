@@ -31,6 +31,10 @@ import {
   CalendarDays,
   Gift,
   Zap,
+  MessageCircle,
+  MessageSquare,
+  Headphones,
+  Bot,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -43,6 +47,7 @@ import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
 import { useUser } from '@/components/storefront/UserProvider';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 const categories = [
   { name: 'T-Shirts', href: '/products?category=T-Shirts' },
@@ -61,10 +66,10 @@ const desktopLinks = [
 ];
 
 const WHATSAPP_NUMBER = '265893160202';
-const WHATSAPP_MESSAGE = 'Hi, I am interested in purchasing products from SpectrumCosmo. Kindly assist me with catalog and ordering details.';
+const WHATSAPP_MESSAGE = 'Hi, I need assistance with SpectrumCosmo.';
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
-const HIDE_WHATSAPP_PATHS = [
+const HIDE_CHAT_PATHS = [
   '/checkout', '/login', '/register', '/admin', '/dashboard',
   '/account/payments', '/account/settings', '/account/profile',
 ];
@@ -107,6 +112,7 @@ export default function Navbar() {
   const [bannerData, setBannerData] = useState<BannerData | null>(null);
   const [bannerLoading, setBannerLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatOpen, setChatOpen] = useState(false);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
   const { resolvedTheme } = useSettings();
@@ -176,10 +182,10 @@ export default function Navbar() {
     }, 200);
   };
 
-  const showWhatsApp = !HIDE_WHATSAPP_PATHS.some(path => pathname?.startsWith(path));
+  const showChat = !HIDE_CHAT_PATHS.some(path => pathname?.startsWith(path));
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
-  
+
   const logoSrc = currentTheme === 'dark'
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
@@ -195,25 +201,29 @@ export default function Navbar() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const profileImage = user?.profileImage;
 
-  const showBanner = bannerData?.is_active !== false && 
-    bannerData?.items && 
+  const showBanner = bannerData?.is_active !== false &&
+    bannerData?.items &&
     bannerData.items.length > 0;
   const bgColor = bannerData?.background_color || 'var(--primary)';
   const textColor = bannerData?.text_color || '#FFFFFF';
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { 
+      await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
     } catch (error) {
       console.error('Logout error:', error);
     }
-    
+
     localStorage.clear();
     sessionStorage.clear();
     window.location.replace('/?t=' + Date.now());
+  };
+
+  const toggleChat = () => {
+    setChatOpen(!chatOpen);
   };
 
   return (
@@ -251,6 +261,10 @@ export default function Navbar() {
             transform: translateX(0);
           }
         }
+        @keyframes float-bot {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-4px); }
+        }
         .whatsapp-float { animation: float 2s ease-in-out infinite; }
         .whatsapp-pulse { animation: pulse-ring 1.5s infinite; }
         .dropdown-content {
@@ -262,21 +276,24 @@ export default function Navbar() {
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
         }
+        .chat-bubble-float {
+          animation: float-bot 2.5s ease-in-out infinite;
+        }
       `}</style>
 
       <header className={clsx(
         'sticky top-0 z-50 transition-all duration-300',
-        scrolled 
-          ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md' 
+        scrolled
+          ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md'
           : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
       )}>
-        
+
         {showBanner && !bannerLoading && (
-          <div 
+          <div
             className="hidden md:block text-center py-2 text-sm overflow-hidden"
-            style={{ 
-              backgroundColor: bgColor, 
-              color: textColor 
+            style={{
+              backgroundColor: bgColor,
+              color: textColor
             }}
           >
             <div className="flex items-center justify-center gap-6 whitespace-nowrap">
@@ -294,11 +311,11 @@ export default function Navbar() {
         )}
 
         {showBanner && !bannerLoading && (
-          <div 
+          <div
             className="md:hidden py-1.5 text-xs overflow-hidden"
-            style={{ 
-              backgroundColor: bgColor, 
-              color: textColor 
+            style={{
+              backgroundColor: bgColor,
+              color: textColor
             }}
           >
             <div className="flex whitespace-nowrap banner-marquee">
@@ -328,7 +345,7 @@ export default function Navbar() {
               <nav className="flex items-center gap-1">
                 {desktopLinks.map(link => {
                   const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
-                  
+
                   return (
                     <div
                       key={link.href}
@@ -348,7 +365,7 @@ export default function Navbar() {
                         {link.label}
                         {link.hasDropdown && <ChevronDown size={14} className={clsx('transition-transform', openDropdown === link.label && 'rotate-180')} />}
                       </Link>
-                      
+
                       {link.hasDropdown && openDropdown === link.label && (
                         <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--background-card)] rounded-xl shadow-lg border border-[var(--border)] py-2 z-50 dropdown-content">
                           <div className="px-4 py-2 border-b border-[var(--border)]">
@@ -366,7 +383,7 @@ export default function Navbar() {
                           ))}
                           <div className="border-t border-[var(--border)] mt-2 pt-2">
                             <Link href="/products" className="flex items-center justify-between px-4 py-2.5 text-sm text-[var(--primary)] hover:bg-[var(--primary)]/10 transition group">
-                              View All Products 
+                              View All Products
                               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition" />
                             </Link>
                           </div>
@@ -380,11 +397,11 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <CurrencySelector />
                 <SearchBar />
-                
+
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
-                
-                <button 
-                  onClick={openCart} 
+
+                <button
+                  onClick={openCart}
                   className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                   aria-label="Cart"
                   data-onboarding="cart"
@@ -433,9 +450,9 @@ export default function Navbar() {
               </nav>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
-                <button 
-                  onClick={openCart} 
-                  className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]" 
+                <button
+                  onClick={openCart}
+                  className="relative p-1.5 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                   aria-label="Cart"
                   data-onboarding="cart"
                 >
@@ -454,8 +471,8 @@ export default function Navbar() {
 
         <div className="md:hidden px-3 py-2.5">
           <div className="flex items-center justify-between gap-1 min-w-0">
-            <button 
-              onClick={() => setMobileMenuOpen(true)} 
+            <button
+              onClick={() => setMobileMenuOpen(true)}
               className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
               aria-label="Menu"
             >
@@ -472,8 +489,8 @@ export default function Navbar() {
             <div className="flex items-center gap-0.5 flex-shrink-0">
               {isLoggedIn && unreadCount > 0 && <NotificationBell />}
               <UserMenu />
-              <button 
-                onClick={openCart} 
+              <button
+                onClick={openCart}
                 className="relative p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
                 aria-label="Cart"
                 data-onboarding="cart"
@@ -519,9 +536,9 @@ export default function Navbar() {
                   </div>
                 </div>
                 {isLoggedIn ? (
-                  <Link 
-                    href="/account/profile" 
-                    onClick={closeMobileMenu} 
+                  <Link
+                    href="/account/profile"
+                    onClick={closeMobileMenu}
                     className="bg-[var(--primary)] text-white font-bold text-sm px-4 py-2 rounded-full hover:bg-[var(--primary-hover)] transition-colors shadow-sm flex items-center justify-center min-h-[44px]"
                   >
                     Profile
@@ -564,7 +581,7 @@ export default function Navbar() {
 
             <div className="p-5 border-t border-[var(--border)]">
               {isLoggedIn ? (
-                <button 
+                <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-3 py-2.5 w-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition min-h-[44px]"
                 >
@@ -583,22 +600,10 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {showWhatsApp && (
-        <a 
-          href={WHATSAPP_URL} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="fixed bottom-12 right-6 z-[9999] whatsapp-float md:bottom-14 md:right-8"
-        >
-          <div className="relative">
-            <div className="whatsapp-pulse absolute inset-0 rounded-full"></div>
-            <div className="bg-green-500 rounded-full p-3 shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center min-h-[48px] min-w-[48px] md:p-3.5">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-5 h-5 md:w-6 md:h-6">
-                <path d="M12.032 2.5C6.49 2.5 2 6.99 2 12.532c0 2.12.65 4.09 1.76 5.73L2 21.5l3.42-.98c1.57.93 3.4 1.48 5.36 1.48 5.54 0 10.03-4.49 10.03-10.03S17.57 2.5 12.032 2.5zm0 18.48c-1.75 0-3.38-.5-4.78-1.38l-.34-.2-2.03.58.58-2.02-.22-.35a7.86 7.86 0 0 1-1.4-4.44c0-4.33 3.53-7.85 7.85-7.85 4.33 0 7.85 3.52 7.85 7.85-.01 4.32-3.53 7.85-7.86 7.85zm4.21-5.88c-.23-.12-1.38-.68-1.6-.76-.21-.08-.37-.12-.52.12-.15.24-.59.76-.72.92-.13.15-.27.17-.5.05-.23-.12-.97-.36-1.85-1.14-.68-.6-1.14-1.34-1.28-1.57-.13-.23-.01-.36.1-.48.1-.1.23-.26.34-.39.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.39-.06-.11-.52-1.26-.72-1.73-.18-.45-.37-.37-.52-.38-.13-.01-.29-.01-.44-.01s-.4.06-.61.29c-.21.23-.8.78-.8 1.9s.82 2.2.93 2.36c.11.15 1.6 2.44 3.88 3.42.54.23.96.37 1.29.47.54.17 1.03.14 1.42.09.43-.05 1.38-.56 1.57-1.11.19-.54.19-1 .13-1.1-.06-.1-.22-.16-.46-.28z" />
-              </svg>
-            </div>
-          </div>
-        </a>
+      {showChat && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+          <ChatWidget />
+        </div>
       )}
     </>
   );
