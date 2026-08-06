@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { EllaService } from '@/lib/ella/EllaService';
+import { detectCurrencyFromLocale, COUNTRY_CURRENCY_MAP } from '@/lib/ella/types/currency';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -13,7 +14,7 @@ const ellaService = new EllaService(GROQ_API_KEY);
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, sessionId, customerEmail, customerName } = body;
+    const { message, sessionId, customerEmail, customerName, countryCode } = body;
 
     if (!message || !sessionId) {
       return NextResponse.json(
@@ -22,11 +23,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const acceptLanguage = req.headers.get('accept-language') || '';
+    const locale = acceptLanguage.split(',')[0] || 'en-US';
+    
+    let currency = undefined;
+    
+    if (countryCode) {
+      const upper = countryCode.toUpperCase();
+      if (COUNTRY_CURRENCY_MAP[upper]) {
+        currency = COUNTRY_CURRENCY_MAP[upper].currency;
+      }
+    }
+    
+    if (!currency) {
+      currency = detectCurrencyFromLocale(locale);
+    }
+
     const response = await ellaService.processMessage({
       message,
       sessionId,
       customerEmail,
       customerName,
+      currency,
+      locale,
+      countryCode,
     });
 
     return NextResponse.json(response);
