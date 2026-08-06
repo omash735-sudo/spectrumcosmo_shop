@@ -1,0 +1,55 @@
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.3-70b-versatile';
+
+interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export class GroqProvider {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async sendMessageWithContext(
+    message: string,
+    context: string,
+    conversationHistory: Message[] = []
+  ): Promise<string> {
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: context,
+      },
+      ...conversationHistory,
+      {
+        role: 'user',
+        content: message,
+      },
+    ];
+
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Groq API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
+  }
+}
