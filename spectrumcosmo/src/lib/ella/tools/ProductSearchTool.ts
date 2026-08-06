@@ -14,8 +14,11 @@ interface Product {
 
 export async function searchProducts(query: string, limit: number = 10): Promise<Product[]> {
   const sql = getDb();
+  
+  const searchPattern = `%${query}%`;
+  const startsWithPattern = `${query}%`;
 
-  const products = await sql<Product[]>`
+  const products = await sql`
     SELECT 
       id, 
       name, 
@@ -30,22 +33,21 @@ export async function searchProducts(query: string, limit: number = 10): Promise
     WHERE 
       status = 'active' 
       AND (
-        name ILIKE ${'%' + query + '%'} 
-        OR description ILIKE ${'%' + query + '%'}
-        OR tags::text ILIKE ${'%' + query + '%'}
+        name ILIKE ${searchPattern} 
+        OR description ILIKE ${searchPattern}
+        OR tags::text ILIKE ${searchPattern}
       )
     ORDER BY 
-      CASE WHEN name ILIKE ${query + '%'} THEN 1 ELSE 2 END,
       name
     LIMIT ${limit}
   `;
 
-  return products;
+  return products as Product[];
 }
 
 export async function getProductById(productId: string): Promise<Product | null> {
   const sql = getDb();
-  const products = await sql<Product[]>`
+  const products = await sql`
     SELECT 
       id, 
       name, 
@@ -60,7 +62,8 @@ export async function getProductById(productId: string): Promise<Product | null>
     WHERE id = ${productId} AND status = 'active'
     LIMIT 1
   `;
-  return products[0] || null;
+  
+  return (products && products.length > 0) ? products[0] as Product : null;
 }
 
 export function formatProductForResponse(product: Product): string {
