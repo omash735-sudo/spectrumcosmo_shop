@@ -85,17 +85,3 @@ export function formatProductForResponse(
   }
   return response;
 }
-
-export function formatMultipleProductsResponse(
-  products: Product[], 
-  currency: CurrencyCode,
-  exchangeRate: number = 1
-): string {
-  if (products.length === 0) {
-    return 'No products found.';
-  }
-  
-  let response = `I found ${products.length} product(s):\n\n`;
-  response += products.map(p => formatProductForResponse(p, currency, exchangeRate)).join('\n\n---\n\n');
-  return response;
-}
