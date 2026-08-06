@@ -25,6 +25,7 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [countryCode, setCountryCode] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -37,6 +38,19 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
       localStorage.setItem('ella_session_id', id);
     }
     setSessionId(id);
+
+    const detectCountry = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        if (data.country_code) {
+          setCountryCode(data.country_code);
+        }
+      } catch (error) {
+        console.log('Could not detect country, using default');
+      }
+    };
+    detectCountry();
   }, []);
 
   useEffect(() => {
@@ -70,6 +84,8 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
         body: JSON.stringify({
           message: content,
           sessionId,
+          countryCode,
+          locale: navigator.language || 'en-US',
         }),
       });
 
