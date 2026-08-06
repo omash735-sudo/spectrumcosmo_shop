@@ -1,7 +1,6 @@
 import { sendMail } from '@/lib/mailer';
 
 const OMASH_EMAIL = 'omash735@gmail.com';
-const COMPANY_EMAIL = 'spectrumcosmo01@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://spectrumcosmo.com';
 
 interface EscalationData {
@@ -84,7 +83,6 @@ export async function sendEscalationEmail(data: EscalationData): Promise<void> {
       subject: `Escalation: ${reason} - ${customerName || 'Customer'}`,
       text,
       html,
-      from: COMPANY_EMAIL,
     });
     
     console.log(`Escalation email sent to ${OMASH_EMAIL}`);
@@ -102,7 +100,7 @@ export async function sendOrderConfirmationEmail(data: {
   totalAmount: number;
   currency: string;
 }): Promise<void> {
-  const { customerName, customerEmail, orderNumber, orderId, totalAmount, currency } = data;
+  const { customerName, customerEmail, orderNumber, totalAmount, currency } = data;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px;">
@@ -145,7 +143,6 @@ export async function sendOrderConfirmationEmail(data: {
       subject: `Order Confirmation #${orderNumber} - SpectrumCosmo`,
       text,
       html,
-      from: COMPANY_EMAIL,
     });
     
     console.log(`Order confirmation sent to ${customerEmail}`);
