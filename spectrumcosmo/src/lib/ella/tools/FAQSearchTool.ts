@@ -8,22 +8,23 @@ interface FAQ {
 
 export async function searchFAQs(query: string): Promise<FAQ[]> {
   const sql = getDb();
-
-  const faqs = await sql<FAQ[]>`
+  
+  const searchPattern = `%${query}%`;
+  
+  const faqs = await sql`
     SELECT id, question, answer 
     FROM faqs 
     WHERE 
       is_published = true 
       AND is_answered = true
       AND (
-        question ILIKE ${'%' + query + '%'} 
-        OR answer ILIKE ${'%' + query + '%'}
+        question ILIKE ${searchPattern} 
+        OR answer ILIKE ${searchPattern}
       )
     ORDER BY 
-      CASE WHEN question ILIKE ${query + '%'} THEN 1 ELSE 2 END,
       created_at DESC
     LIMIT 5
   `;
-
-  return faqs;
+  
+  return faqs as FAQ[];
 }
