@@ -115,40 +115,40 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
       {!isOpen && (
         <button
           onClick={toggleChat}
-          className="bg-[#C96712] text-white rounded-full p-4 shadow-lg hover:bg-[#E27716] transition-all duration-200 flex items-center justify-center w-14 h-14 chat-bubble-float"
+          className="bg-[#C96712] text-white rounded-full p-4 shadow-lg hover:bg-[#E27716] transition-all duration-200 flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 chat-bubble-float"
           aria-label="Chat with Ella"
         >
-          <MessageCircle size={24} />
+          <MessageCircle size={24} className="w-6 h-6 sm:w-7 sm:h-7" />
         </button>
       )}
 
       {isOpen && typeof window !== 'undefined' && createPortal(
-        <div className="fixed bottom-20 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)]">
-          <div className="bg-[var(--background-card)] dark:bg-[var(--background-card)] rounded-2xl shadow-2xl border border-[var(--border)] flex flex-col max-h-[600px] h-[500px] overflow-hidden manga-bg cards-manga">
+        <div className="fixed bottom-20 right-4 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-[400px] max-w-[400px]">
+          <div className="bg-[var(--background-card)] dark:bg-[var(--background-card)] rounded-2xl shadow-2xl border border-[var(--border)] flex flex-col max-h-[80vh] sm:max-h-[600px] h-[500px] sm:h-[550px] overflow-hidden manga-bg cards-manga">
             <div className="bg-[#C96712] text-white p-4 rounded-t-2xl flex justify-between items-center flex-shrink-0 relative z-10">
-              <div className="flex items-center gap-2">
-                <Bot size={20} />
-                <div>
-                  <h3 className="font-bold">Ella</h3>
-                  <p className="text-xs opacity-80">SpectrumCosmo AI Assistant</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <Bot size={20} className="flex-shrink-0" />
+                <div className="truncate">
+                  <h3 className="font-bold text-sm sm:text-base">Ella</h3>
+                  <p className="text-xs opacity-80 truncate">SpectrumCosmo AI Assistant</p>
                 </div>
               </div>
               <button
                 onClick={toggleChat}
-                className="hover:bg-[#E27716] p-1.5 rounded-full transition-colors flex items-center justify-center w-8 h-8"
+                className="hover:bg-[#E27716] p-1.5 rounded-full transition-colors flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0"
                 aria-label="Close chat"
               >
-                <X size={18} />
+                <X size={18} className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--background)] dark:bg-[var(--background)] relative z-10">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[var(--background)] dark:bg-[var(--background)] relative z-10 custom-scrollbar">
               {messages.length === 0 && (
-                <div className="text-center text-[var(--foreground-muted)] mt-8">
+                <div className="text-center text-[var(--foreground-muted)] mt-8 sm:mt-12">
                   <Bot size={40} className="mx-auto text-[#C96712] mb-3" />
                   <p className="text-lg font-medium text-[var(--foreground)]">Hi 👋</p>
-                  <p className="mt-2">I'm Ella, your SpectrumCosmo assistant.</p>
-                  <p className="text-sm">How can I help you today?</p>
+                  <p className="mt-2 text-sm sm:text-base">I'm Ella, your SpectrumCosmo assistant.</p>
+                  <p className="text-xs sm:text-sm">How can I help you today?</p>
                 </div>
               )}
               {messages.map((msg, idx) => (
@@ -164,19 +164,21 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 border-t border-[var(--border)] bg-[var(--background-card)] dark:bg-[var(--background-card)] rounded-b-2xl flex-shrink-0 relative z-10">
-              <div className="flex justify-center mb-2">
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-6 rounded-full transition-colors min-h-[44px] min-w-[44px] w-full max-w-[200px]"
-                >
-                  <Headphones size={16} />
-                  Chat with Team
-                </a>
+            <div className="flex-shrink-0 relative z-10">
+              <div className="p-2 sm:p-3 border-t border-[var(--border)] bg-[var(--background-card)] dark:bg-[var(--background-card)]">
+                <div className="flex justify-center mb-2">
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-4 sm:px-6 rounded-full transition-colors min-h-[44px] w-full max-w-[200px] sm:max-w-[220px]"
+                  >
+                    <Headphones size={16} className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Chat with Team
+                  </a>
+                </div>
+                <ChatInput onSend={sendMessage} disabled={isLoading} />
               </div>
-              <ChatInput onSend={sendMessage} disabled={isLoading} />
             </div>
           </div>
         </div>,
