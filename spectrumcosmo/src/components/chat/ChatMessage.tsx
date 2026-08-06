@@ -9,12 +9,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} w-full`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2 whitespace-pre-wrap ${
+        className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap break-words ${
           isUser
-            ? 'bg-[#F97316] text-white rounded-tr-none'
-            : 'bg-white text-gray-800 rounded-tl-none shadow-sm border border-gray-200'
+            ? 'bg-[#C96712] text-white rounded-tr-none'
+            : 'bg-[var(--background-card)] dark:bg-[var(--background-card)] text-[var(--foreground)] rounded-tl-none shadow-sm border border-[var(--border)]'
         }`}
       >
         {message.content}
