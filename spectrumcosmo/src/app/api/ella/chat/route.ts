@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { EllaService } from '@/lib/ella/EllaService';
-import { detectCurrencyFromLocale, COUNTRY_CURRENCY_MAP } from '@/lib/ella/types/currency';
+import { detectCurrencyFromLocale, COUNTRY_CURRENCY_MAP, CurrencyCode } from '@/lib/ella/types/currency';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
     const acceptLanguage = req.headers.get('accept-language') || '';
     const locale = acceptLanguage.split(',')[0] || 'en-US';
     
-    let currency = undefined;
+    let currency: CurrencyCode | undefined = undefined;
     
     if (countryCode) {
       const upper = countryCode.toUpperCase();
       if (COUNTRY_CURRENCY_MAP[upper]) {
-        currency = COUNTRY_CURRENCY_MAP[upper].currency;
+        currency = COUNTRY_CURRENCY_MAP[upper].currency as CurrencyCode;
       }
     }
     
