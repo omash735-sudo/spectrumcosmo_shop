@@ -12,7 +12,6 @@ import {
   Music2, 
   Send, 
   Loader2, 
-  ArrowUp,
   Heart,
   Shield,
   Truck,
@@ -50,7 +49,6 @@ export default function Footer() {
   const [subStatus, setSubStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const [checking, setChecking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [showBackToTop, setShowBackToTop] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -61,18 +59,6 @@ export default function Footer() {
   const logoSrc = currentTheme === 'dark'
     ? settings?.company_logo_dark || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : settings?.company_logo || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 500)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
 
   useEffect(() => {
     fetch('/api/admin/social-links')
@@ -381,16 +367,6 @@ export default function Footer() {
           </div>
         </div>
       </footer>
-
-      {showBackToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 bg-[var(--primary)] text-white p-2.5 sm:p-3 rounded-full shadow-lg hover:bg-[var(--primary-hover)] transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2"
-          aria-label="Back to top"
-        >
-          <ArrowUp size={16} className="sm:w-5 sm:h-5" />
-        </button>
-      )}
     </>
   )
 }
