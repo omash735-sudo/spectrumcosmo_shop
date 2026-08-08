@@ -35,6 +35,7 @@ import {
   MessageSquare,
   Headphones,
   Bot,
+  ArrowUp,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -113,6 +114,7 @@ export default function Navbar() {
   const [bannerLoading, setBannerLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
   const { resolvedTheme } = useSettings();
@@ -166,6 +168,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
+      setShowScrollTop(window.scrollY > 500);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -224,6 +227,10 @@ export default function Navbar() {
 
   const toggleChat = () => {
     setChatOpen(!chatOpen);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -601,8 +608,17 @@ export default function Navbar() {
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
       {showChat && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-center gap-4">
           <ChatWidget />
+          {showScrollTop && (
+            <button
+              onClick={scrollToTop}
+              className="w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-hover)] hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110"
+              aria-label="Back to top"
+            >
+              <ArrowUp size={24} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
+            </button>
+          )}
         </div>
       )}
     </>
