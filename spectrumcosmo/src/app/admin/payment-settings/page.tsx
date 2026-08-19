@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Loader2, Save, Zap, FileText, Smartphone, 
   Banknote, Clock, Shield, CheckCircle, AlertCircle,
   Wallet, TrendingUp, Globe, Lock, Sparkles,
-  Wifi, WifiOff, CreditCard, Coins
+  Wifi, WifiOff, CreditCard, Coins, Plus, Edit, 
+  Trash2, XCircle, RefreshCw, Search, Filter, 
+  ChevronDown, ChevronUp, Building
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -122,18 +125,109 @@ function StatCard({ title, value, icon: Icon, color, trend }: {
 }
 
 // ============================================
+// ROUTE TABLE COMPONENT
+// ============================================
+
+interface Route {
+  id: number;
+  provider_id: number;
+  provider_name: string;
+  provider_type: string;
+  provider_category: string;
+  sending_country: string;
+  sending_currency: string;
+  receiving_country: string;
+  receiving_currency: string;
+  min_amount: number;
+  max_amount: number | null;
+  fee_percentage: number;
+  fee_fixed: number;
+  is_active: boolean;
+  requires_quote: boolean;
+  verification_status: 'unverified' | 'verified' | 'failed';
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Provider {
+  id: number;
+  name: string;
+  type: string;
+  category: string;
+  is_enabled: boolean;
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'verified':
+      return <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 flex items-center gap-1"><CheckCircle size={12} /> Verified</span>;
+    case 'unverified':
+      return <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 flex items-center gap-1"><AlertCircle size={12} /> Unverified</span>;
+    case 'failed':
+      return <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 flex items-center gap-1"><XCircle size={12} /> Failed</span>;
+    default:
+      return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{status}</span>;
+  }
+}
+
+function getActiveBadge(isActive: boolean) {
+  return isActive
+    ? <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400">Active</span>
+    : <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Inactive</span>;
+}
+
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case 'mobile_wallet':
+      return <Smartphone size={16} className="text-[var(--foreground-muted)]" />;
+    case 'bank':
+      return <Building size={16} className="text-[var(--foreground-muted)]" />;
+    default:
+      return <Banknote size={16} className="text-[var(--foreground-muted)]" />;
+  }
+}
+
+function getCountryFlag(country: string) {
+  const flags: Record<string, string> = {
+    MW: '🇲🇼',
+    NG: '🇳🇬',
+    ZA: '🇿🇦',
+    KE: '🇰🇪',
+    TZ: '🇹🇿',
+    ZM: '🇿🇲',
+    ZW: '🇿🇼',
+    UG: '🇺🇬',
+    GH: '🇬🇭',
+    US: '🇺🇸',
+    GB: '🇬🇧',
+    EU: '🇪🇺'
+  };
+  return flags[country] || '🌍';
+}
+
+// ============================================
 // MAIN PAGE
 // ============================================
 
 export default function PaymentSettingsPage() {
+  const router = useRouter();
+  
+  // Payment settings state
   const [automaticEnabled, setAutomaticEnabled] = useState(true);
   const [manualEnabled, setManualEnabled] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalSettings, setOriginalSettings] = useState({ automaticEnabled: true, manualEnabled: true });
 
-  // Fetch current settings
+  // Routes state
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loadingRoutes, setLoadingRoutes] = useState(true);
+  const [filterProvider, setFilterProvider] = useState<string>('');
+
+  // Fetch payment settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -150,13 +244,47 @@ export default function PaymentSettingsPage() {
       } catch (err) {
         toast.error('Failed to load settings');
       } finally {
-        setLoading(false);
+        setLoadingSettings(false);
       }
     };
     fetchSettings();
   }, []);
 
-  // Track changes
+  // Fetch routes and providers
+  const fetchRoutes = async () => {
+    setLoadingRoutes(true);
+    try {
+      const url = `/api/admin/payment/routes${filterProvider ? `?providerId=${filterProvider}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch routes');
+      const data = await res.json();
+      setRoutes(data.routes || []);
+    } catch (error) {
+      toast.error('Failed to load payment routes');
+      console.error(error);
+    } finally {
+      setLoadingRoutes(false);
+    }
+  };
+
+  const fetchProviders = async () => {
+    try {
+      const res = await fetch('/api/payment-providers');
+      if (!res.ok) throw new Error('Failed to fetch providers');
+      const data = await res.json();
+      const allProviders = [...(data.automatic || []), ...(data.manual || [])];
+      setProviders(allProviders);
+    } catch (error) {
+      console.error('Failed to load providers:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoutes();
+    fetchProviders();
+  }, [filterProvider]);
+
+  // Track changes for settings
   useEffect(() => {
     setHasChanges(
       automaticEnabled !== originalSettings.automaticEnabled ||
@@ -213,6 +341,52 @@ export default function PaymentSettingsPage() {
     setManualEnabled(!manualEnabled);
   };
 
+  // Route actions
+  const handleToggleActive = async (routeId: number, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/admin/payment/routes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ routeId, is_active: !currentStatus })
+      });
+      if (!res.ok) throw new Error('Failed to update route');
+      toast.success(`Route ${!currentStatus ? 'activated' : 'deactivated'}`);
+      fetchRoutes();
+    } catch (error) {
+      toast.error('Failed to update route');
+    }
+  };
+
+  const handleToggleVerification = async (routeId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'verified' ? 'unverified' : 'verified';
+    try {
+      const res = await fetch('/api/admin/payment/routes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ routeId, verification_status: newStatus })
+      });
+      if (!res.ok) throw new Error('Failed to update route');
+      toast.success(`Route ${newStatus === 'verified' ? 'verified' : 'unverified'}`);
+      fetchRoutes();
+    } catch (error) {
+      toast.error('Failed to update route');
+    }
+  };
+
+  const handleDelete = async (routeId: number) => {
+    if (!confirm('Are you sure you want to delete this route?')) return;
+    try {
+      const res = await fetch(`/api/admin/payment/routes?routeId=${routeId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete route');
+      toast.success('Route deleted');
+      fetchRoutes();
+    } catch (error) {
+      toast.error('Failed to delete route');
+    }
+  };
+
   // Calculate overall system status
   const getOverallStatus = () => {
     const onlineCount = (automaticEnabled ? 1 : 0) + (manualEnabled ? 1 : 0);
@@ -224,7 +398,6 @@ export default function PaymentSettingsPage() {
   const overallStatus = getOverallStatus();
   const StatusIcon = overallStatus.icon;
 
-  // Status for individual payment methods
   const automaticStatus = automaticEnabled 
     ? { text: 'Online', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: Wifi }
     : { text: 'Offline', color: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400', icon: WifiOff };
@@ -233,7 +406,9 @@ export default function PaymentSettingsPage() {
     ? { text: 'Online', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: Wifi }
     : { text: 'Offline', color: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400', icon: WifiOff };
 
-  if (loading) {
+  const isLoading = loadingSettings || loadingRoutes;
+
+  if (isLoading) {
     return (
       <div className="min-h-[50vh] sm:min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -248,7 +423,7 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-8 sm:pb-10 max-w-4xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 pb-8 sm:pb-10 max-w-6xl mx-auto">
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] rounded-xl sm:rounded-2xl p-4 sm:p-6">
         <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -259,9 +434,9 @@ export default function PaymentSettingsPage() {
             <Wallet className="w-4 h-4 text-white/80" />
             <span className="text-white/80 text-[10px] sm:text-xs font-medium">Payment Configuration</span>
           </div>
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white mb-1">Payment Settings</h1>
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white mb-1">Payment Settings & Corridors</h1>
           <p className="text-orange-100 text-xs sm:text-sm max-w-2xl">
-            Control which payment categories are available to customers during checkout.
+            Control payment categories and manage country-specific payment corridors.
           </p>
         </div>
       </div>
@@ -313,7 +488,7 @@ export default function PaymentSettingsPage() {
         />
       </div>
 
-      {/* Main Settings Card */}
+      {/* Payment Settings Section */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -338,7 +513,6 @@ export default function PaymentSettingsPage() {
         </div>
         
         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-          {/* Automatic Payments Toggle */}
           <ToggleSwitch
             enabled={automaticEnabled}
             onChange={toggleAutomatic}
@@ -352,7 +526,6 @@ export default function PaymentSettingsPage() {
             ] : undefined}
           />
 
-          {/* Manual Payments Toggle */}
           <ToggleSwitch
             enabled={manualEnabled}
             onChange={toggleManual}
@@ -367,7 +540,6 @@ export default function PaymentSettingsPage() {
           />
         </div>
 
-        {/* Save Button Area */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[var(--background-secondary)] border-t border-[var(--border)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -397,6 +569,158 @@ export default function PaymentSettingsPage() {
                 </>
               )}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Corridors Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
+              <Globe size={18} className="text-[var(--primary)]" />
+              Payment Corridors
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)]">Manage payment routes by country and currency</p>
+          </div>
+          <button
+            onClick={() => toast('Add corridor modal coming soon')}
+            className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 shadow-sm text-sm"
+          >
+            <Plus size={18} /> Add Corridor
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-[var(--foreground-muted)] mb-1">Filter by Provider</label>
+              <select
+                value={filterProvider}
+                onChange={(e) => setFilterProvider(e.target.value)}
+                className="w-full border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition"
+              >
+                <option value="">All Providers</option>
+                {providers.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={fetchRoutes}
+                className="bg-[var(--background-secondary)] hover:bg-[var(--background)] text-[var(--foreground)] px-4 py-2 rounded-lg border border-[var(--border)] transition flex items-center gap-2"
+              >
+                <RefreshCw size={16} /> Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Routes Table */}
+        <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[var(--background-secondary)] border-b border-[var(--border)]">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Provider</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Corridor</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Fees</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Verification</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {routes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-[var(--foreground-muted)]">
+                      No payment routes configured yet
+                    </td>
+                  </tr>
+                ) : (
+                  routes.map((route) => (
+                    <tr key={route.id} className="hover:bg-[var(--background-secondary)] transition">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {getCategoryIcon(route.provider_category)}
+                          <div>
+                            <p className="font-medium text-[var(--foreground)] text-sm">{route.provider_name}</p>
+                            <p className="text-xs text-[var(--foreground-muted)] capitalize">{route.provider_category?.replace('_', ' ')}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <span className="text-lg">{getCountryFlag(route.sending_country)}</span>
+                          <span className="text-sm font-mono font-medium text-[var(--foreground)]">{route.sending_currency}</span>
+                          <span className="text-[var(--foreground-muted)] mx-1">→</span>
+                          <span className="text-lg">{getCountryFlag(route.receiving_country)}</span>
+                          <span className="text-sm font-mono font-medium text-[var(--foreground)]">{route.receiving_currency}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--foreground)]">
+                        {route.min_amount > 0 && `MWK ${route.min_amount.toLocaleString()}`}
+                        {route.min_amount > 0 && route.max_amount && ' - '}
+                        {route.max_amount && `MWK ${route.max_amount.toLocaleString()}`}
+                        {route.min_amount === 0 && !route.max_amount && 'No limits'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--foreground)]">
+                        {route.fee_percentage > 0 && `${route.fee_percentage}%`}
+                        {route.fee_percentage > 0 && route.fee_fixed > 0 && ' + '}
+                        {route.fee_fixed > 0 && `MWK ${route.fee_fixed}`}
+                        {route.fee_percentage === 0 && route.fee_fixed === 0 && 'No fees'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getActiveBadge(route.is_active)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(route.verification_status)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleToggleActive(route.id, route.is_active)}
+                            className="p-1.5 rounded-lg hover:bg-[var(--background)] transition text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                            title={route.is_active ? 'Deactivate' : 'Activate'}
+                          >
+                            {route.is_active ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleToggleVerification(route.id, route.verification_status)}
+                            className="p-1.5 rounded-lg hover:bg-[var(--background)] transition text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                            title={route.verification_status === 'verified' ? 'Mark as unverified' : 'Mark as verified'}
+                          >
+                            <Shield size={16} />
+                          </button>
+                          <button
+                            onClick={() => toast('Edit corridor coming soon')}
+                            className="p-1.5 rounded-lg hover:bg-[var(--background)] transition text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(route.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition text-[var(--foreground-muted)] hover:text-red-600 dark:hover:text-red-400"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-3 border-t border-[var(--border)] bg-[var(--background-secondary)]">
+            <p className="text-xs text-[var(--foreground-muted)]">
+              {routes.length} route{routes.length !== 1 ? 's' : ''} configured
+            </p>
           </div>
         </div>
       </div>
