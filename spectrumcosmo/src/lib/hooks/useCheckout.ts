@@ -37,11 +37,28 @@ const initialState: CheckoutState = {
   error: null,
 };
 
+// Currency to country mapping
+const currencyToCountry: Record<string, string> = {
+  MWK: 'MW',
+  USD: 'US',
+  ZAR: 'ZA',
+  EUR: 'EU',
+  NGN: 'NG',
+  GBP: 'GB',
+  KES: 'KE',
+  TZS: 'TZ',
+  ZMW: 'ZM',
+  ZWL: 'ZW',
+};
+
 export function useCheckout() {
   const router = useRouter();
   const [state, setState] = useState<CheckoutState>(initialState);
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<{ automatic: any[]; manual: any[] } | null>(null);
+  const [filteredPaymentProviders, setFilteredPaymentProviders] = useState<{ automatic: any[]; manual: any[] } | null>(null);
+  const [isFilteringProviders, setIsFilteringProviders] = useState(false);
+  const [providerRouteMessage, setProviderRouteMessage] = useState<string | null>(null);
 
   // Step navigation
   const goToStep = useCallback((step: 1 | 2 | 3 | 4) => {
@@ -86,6 +103,65 @@ export function useCheckout() {
       selectedPaymentProvider: provider,
     }));
   }, []);
+
+  // Fetch filtered payment providers
+  const fetchFilteredProviders = useCallback(async (params: {
+    currency: string;
+    amount: number;
+  }) => {
+    const { currency, amount } = params;
+    
+    if (!currency || amount <= 0) {
+      return;
+    }
+
+    setIsFilteringProviders(true);
+    setProviderRouteMessage(null);
+
+    try {
+      const country = currencyToCountry[currency] || 'MW';
+      
+      const res = await fetch(
+        `/api/payment-providers?country=${country}&currency=${currency}&amount=${amount}`
+      );
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch filtered providers');
+      }
+
+      const data = await res.json();
+      
+      const automatic = data.automatic || [];
+      const manual = data.manual || [];
+      
+      setFilteredPaymentProviders({ automatic, manual });
+      
+      // Store route message if no routes available
+      if (data.no_route_message) {
+        setProviderRouteMessage(data.no_route_message);
+      } else {
+        setProviderRouteMessage(null);
+      }
+
+      // Auto-select first available provider
+      if (automatic.length > 0) {
+        selectPaymentProvider(automatic[0]);
+      } else if (manual.length > 0) {
+        selectPaymentProvider(manual[0]);
+      } else {
+        // Clear selected provider if none available
+        selectPaymentProvider(null as any);
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Error fetching filtered providers:', err);
+      setProviderRouteMessage('Unable to load payment methods. Please try again.');
+      return null;
+    } finally {
+      setIsFilteringProviders(false);
+    }
+  }, [selectPaymentProvider]);
 
   // Check serviceability
   const checkServiceability = useCallback(async (location: string, deliveryMethodId: number) => {
@@ -215,7 +291,14 @@ export function useCheckout() {
   // Reset
   const resetCheckout = useCallback(() => {
     setState(initialState);
+    setFilteredPaymentProviders(null);
+    setProviderRouteMessage(null);
   }, []);
+
+  // Get display providers (filtered first, then fallback)
+  const displayProviders = useMemo(() => {
+    return filteredPaymentProviders || paymentProviders;
+  }, [filteredPaymentProviders, paymentProviders]);
 
   // Computed values
   const deliveryFee = useMemo(() => {
@@ -235,7 +318,7 @@ export function useCheckout() {
     
     switch (step) {
       case 1:
-        return true; // Cart review always has items
+        return true;
       case 2:
         return !!(form.name && form.email && form.phone && form.location && selectedDeliveryMethodId);
       case 3:
@@ -254,6 +337,11 @@ export function useCheckout() {
     setDeliveryMethods,
     paymentProviders,
     setPaymentProviders,
+    filteredPaymentProviders,
+    setFilteredPaymentProviders,
+    displayProviders,
+    isFilteringProviders,
+    providerRouteMessage,
     deliveryFee,
     canProceed,
     // Actions
@@ -263,6 +351,7 @@ export function useCheckout() {
     updateForm,
     selectDeliveryMethod,
     selectPaymentProvider,
+    fetchFilteredProviders,
     checkServiceability,
     applyPromo,
     removePromo,
