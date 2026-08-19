@@ -277,54 +277,45 @@ export class PaymentRouter {
   }): Promise<boolean> {
     const sql = getDb();
     
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
+    const updates: string[] = [];
+    
     if (params.is_active !== undefined) {
-      setClauses.push(`is_active = $${paramIndex++}`);
-      values.push(params.is_active);
+      updates.push(`is_active = ${params.is_active}`);
     }
     if (params.verification_status !== undefined) {
-      setClauses.push(`verification_status = $${paramIndex++}`);
-      values.push(params.verification_status);
+      updates.push(`verification_status = '${params.verification_status}'`);
     }
     if (params.fee_percentage !== undefined) {
-      setClauses.push(`fee_percentage = $${paramIndex++}`);
-      values.push(params.fee_percentage);
+      updates.push(`fee_percentage = ${params.fee_percentage}`);
     }
     if (params.fee_fixed !== undefined) {
-      setClauses.push(`fee_fixed = $${paramIndex++}`);
-      values.push(params.fee_fixed);
+      updates.push(`fee_fixed = ${params.fee_fixed}`);
     }
     if (params.min_amount !== undefined) {
-      setClauses.push(`min_amount = $${paramIndex++}`);
-      values.push(params.min_amount);
+      updates.push(`min_amount = ${params.min_amount}`);
     }
     if (params.max_amount !== undefined) {
-      setClauses.push(`max_amount = $${paramIndex++}`);
-      values.push(params.max_amount);
+      updates.push(`max_amount = ${params.max_amount}`);
     }
     if (params.provider_config !== undefined) {
-      setClauses.push(`provider_config = $${paramIndex++}::jsonb`);
-      values.push(JSON.stringify(params.provider_config));
+      updates.push(`provider_config = '${JSON.stringify(params.provider_config)}'::jsonb`);
     }
 
-    setClauses.push(`updated_at = NOW()`);
+    updates.push(`updated_at = NOW()`);
 
-    if (setClauses.length === 0) {
+    if (updates.length === 0) {
       return false;
     }
 
-    values.push(params.routeId);
-    
-    const query = `
+    // Build the complete SQL query string
+    const queryString = `
       UPDATE payment_routes
-      SET ${setClauses.join(', ')}
-      WHERE id = $${paramIndex}
+      SET ${updates.join(', ')}
+      WHERE id = ${params.routeId}
     `;
 
-    await sql.query(query, values);
+    // Execute using the sql client directly
+    await sql`${queryString}`;
 
     return true;
   }
@@ -385,7 +376,7 @@ export class PaymentRouter {
       RETURNING id
     `;
 
-    return result.id;
+    return result[0]?.id;
   }
 
   /**
@@ -400,7 +391,7 @@ export class PaymentRouter {
       RETURNING id
     `;
 
-    return result !== null && result.id !== undefined;
+    return result !== null && result.length > 0 && result[0]?.id !== undefined;
   }
 
   /**
