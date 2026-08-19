@@ -44,9 +44,26 @@ export default function CheckoutPage() {
   const [loadingPaymentProviders, setLoadingPaymentProviders] = useState(true);
   const [loadingTax, setLoadingTax] = useState(true);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [filteredPaymentProviders, setFilteredPaymentProviders] = useState<{
+    automatic: any[];
+    manual: any[];
+  } | null>(null);
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
+  // Calculate tax and total
+  const taxAmount = useMemo(() => {
+    const taxableAmount = subtotal + deliveryFee - state.discountAmount;
+    return (taxableAmount * taxRate) / 100;
+  }, [subtotal, deliveryFee, state.discountAmount, taxRate]);
+
+  const finalTotal = useMemo(() => {
+    return subtotal + deliveryFee - state.discountAmount + taxAmount;
+  }, [subtotal, deliveryFee, state.discountAmount, taxAmount]);
+
+  const selectedPaymentProvider = state.selectedPaymentProvider;
+
+  // Load delivery methods
   useEffect(() => {
     const loadDeliveryMethods = async () => {
       try {
@@ -64,27 +81,90 @@ export default function CheckoutPage() {
     loadDeliveryMethods();
   }, []);
 
+  // Load payment providers with country/currency filtering
   useEffect(() => {
     const loadPaymentProviders = async () => {
+      setLoadingPaymentProviders(true);
       try {
-        const providers = await orderService.fetchPaymentProviders();
-        if (providers) {
-          setPaymentProviders(providers);
-          if (providers.automatic?.length > 0) {
-            selectPaymentProvider(providers.automatic[0]);
-          } else if (providers.manual?.length > 0) {
-            selectPaymentProvider(providers.manual[0]);
+        // Map currency to country code
+        const currencyToCountry: Record<string, string> = {
+          MWK: 'MW',
+          USD: 'US',
+          ZAR: 'ZA',
+          EUR: 'EU',
+          NGN: 'NG',
+          GBP: 'GB',
+          KES: 'KE',
+          TZS: 'TZ',
+          ZMW: 'ZM',
+          ZWL: 'ZW',
+        };
+        
+        const country = currencyToCountry[currency] || 'MW';
+        const amount = finalTotal || 1000;
+
+        // Fetch filtered providers
+        const res = await fetch(
+          `/api/payment-providers?country=${country}&currency=${currency}&amount=${amount}`
+        );
+        
+        if (res.ok) {
+          const data = await res.json();
+          
+          // Combine providers
+          const automatic = data.automatic || [];
+          const manual = data.manual || [];
+          
+          setFilteredPaymentProviders({ automatic, manual });
+          setPaymentProviders({ automatic, manual });
+          
+          // Auto-select first available provider
+          if (automatic.length > 0) {
+            selectPaymentProvider(automatic[0]);
+          } else if (manual.length > 0) {
+            selectPaymentProvider(manual[0]);
+          }
+        } else {
+          // Fallback to unfiltered providers
+          const providers = await orderService.fetchPaymentProviders();
+          if (providers) {
+            setFilteredPaymentProviders(providers);
+            setPaymentProviders(providers);
+            if (providers.automatic?.length > 0) {
+              selectPaymentProvider(providers.automatic[0]);
+            } else if (providers.manual?.length > 0) {
+              selectPaymentProvider(providers.manual[0]);
+            }
           }
         }
       } catch (err) {
         console.error('Failed to load payment providers:', err);
+        // Fallback to original fetch
+        try {
+          const providers = await orderService.fetchPaymentProviders();
+          if (providers) {
+            setFilteredPaymentProviders(providers);
+            setPaymentProviders(providers);
+            if (providers.automatic?.length > 0) {
+              selectPaymentProvider(providers.automatic[0]);
+            } else if (providers.manual?.length > 0) {
+              selectPaymentProvider(providers.manual[0]);
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback provider fetch failed:', fallbackErr);
+        }
       } finally {
         setLoadingPaymentProviders(false);
       }
     };
-    loadPaymentProviders();
-  }, []);
 
+    if (currency && finalTotal > 0) {
+      loadPaymentProviders();
+    }
+  }, [currency, finalTotal]);
+
+  // Load tax rate
   useEffect(() => {
     const loadTax = async () => {
       try {
@@ -102,17 +182,6 @@ export default function CheckoutPage() {
     };
     loadTax();
   }, []);
-
-  const taxAmount = useMemo(() => {
-    const taxableAmount = subtotal + deliveryFee - state.discountAmount;
-    return (taxableAmount * taxRate) / 100;
-  }, [subtotal, deliveryFee, state.discountAmount, taxRate]);
-
-  const finalTotal = useMemo(() => {
-    return subtotal + deliveryFee - state.discountAmount + taxAmount;
-  }, [subtotal, deliveryFee, state.discountAmount, taxAmount]);
-
-  const selectedPaymentProvider = state.selectedPaymentProvider;
 
   const handleConfirmOrder = useCallback(async () => {
     const { form, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
@@ -173,6 +242,9 @@ export default function CheckoutPage() {
 
   const isEmpty = items.length === 0;
 
+  // Use filtered providers if available, otherwise fallback to original
+  const displayProviders = filteredPaymentProviders || paymentProviders;
+
   return (
     <>
       <Navbar />
@@ -220,13 +292,14 @@ export default function CheckoutPage() {
                   onUpdateForm={updateForm}
                   preferredCourier={preferredCourier}
                   onPreferredCourierChange={setPreferredCourier}
-                  paymentProviders={paymentProviders}
+                  paymentProviders={displayProviders}
                   selectedPaymentProvider={selectedPaymentProvider}
                   onSelectPaymentProvider={selectPaymentProvider}
                   onNext={nextStep}
                   onPrev={prevStep}
                   isSubmitting={state.isSubmitting}
                   error={state.error}
+                  orderTotal={finalTotal}
                 />
               )}
 
