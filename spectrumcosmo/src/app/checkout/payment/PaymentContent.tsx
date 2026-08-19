@@ -1,4 +1,3 @@
-// app/checkout/payment/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,7 +8,7 @@ import {
   Tag, Gift, ChevronDown, ChevronUp, Copy, Check, 
   CreditCard, CalendarClock, MessageCircle, HelpCircle,
   Shield, Banknote, Image as ImageIcon, X, Eye,
-  Zap, Smartphone, Lock, Sparkles, AlertTriangle, Send, RefreshCw,
+  Zap, Smartphone, Lock, AlertTriangle, Send, RefreshCw,
   DollarSign, Timer, FileCheck, Building, User, Mail, MapPin
 } from 'lucide-react';
 import Image from 'next/image';
@@ -40,6 +39,10 @@ type PaymentData = {
     expires_at: string;
     delivery_quote_status?: 'pending' | 'quoted' | 'paid' | null;
     quoted_delivery_fee?: number | null;
+    currency: string;
+    display_amount: number;
+    receiving_currency: string;
+    receiving_amount: number;
   };
   provider: {
     name: string;
@@ -322,6 +325,10 @@ export default function PaymentPage() {
     return `${minutes}m remaining`;
   };
 
+  const formatCurrency = (amount: number, currency: string) => {
+    return `${currency} ${amount.toLocaleString()}`;
+  };
+
   if (loading) {
     return (
       <>
@@ -367,6 +374,12 @@ export default function PaymentPage() {
   }
 
   const { order, provider, existing_proof, existing_note, existing_transaction_ref, items } = paymentData;
+  
+  const displayCurrency = order.currency || 'MWK';
+  const displayAmount = order.display_amount || order.total_amount;
+  const receivingCurrency = order.receiving_currency || 'MWK';
+  const receivingAmount = order.receiving_amount || order.total_amount;
+  
   const isPaid = order.payment_status === 'paid';
   const isAwaiting = order.payment_status === 'awaiting_verification';
   const isPendingProducts = order.payment_status === 'pending_products';
@@ -374,6 +387,7 @@ export default function PaymentPage() {
   const isQuoteOrder = order.delivery_quote_status === 'quoted';
   const canUpload = !isPaid && !isAwaiting && !isCancelled && !isQuoteOrder && !isPendingProducts;
   const hasExpiry = order.expires_at && new Date(order.expires_at) > new Date();
+  const needsConversion = displayCurrency !== receivingCurrency;
 
   const orderStatusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
@@ -441,21 +455,21 @@ export default function PaymentPage() {
               )}
 
               {isQuoteOrder && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-[var(--primary)] rounded-full flex items-center justify-center">
                       <Send size={24} className="text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-blue-800 dark:text-blue-400">Delivery Quote Accepted</h2>
-                      <p className="text-sm text-blue-600 dark:text-blue-500">Quoted delivery fee: MWK {order.quoted_delivery_fee?.toLocaleString()}</p>
+                      <h2 className="text-lg font-bold text-[var(--foreground)]">Delivery Quote Accepted</h2>
+                      <p className="text-sm text-[var(--foreground-muted)]">Quoted delivery fee: {formatCurrency(order.quoted_delivery_fee || 0, displayCurrency)}</p>
                     </div>
                   </div>
-                  <div className="bg-[var(--background-card)] rounded-xl p-4 mb-4 border border-[var(--border)]">
+                  <div className="bg-[var(--background-secondary)] rounded-xl p-4 mb-4 border border-[var(--border)]">
                     <p className="text-sm text-[var(--foreground-muted)] mb-2">Your delivery fee has been quoted by our team. Complete the payment below to confirm your order.</p>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]">
                       <span className="text-sm font-medium text-[var(--foreground)]">Amount to Pay:</span>
-                      <span className="text-2xl font-bold text-[var(--primary)]">MWK {order.quoted_delivery_fee?.toLocaleString()}</span>
+                      <span className="text-2xl font-bold text-[var(--primary)]">{formatCurrency(order.quoted_delivery_fee || 0, displayCurrency)}</span>
                     </div>
                   </div>
                   {isPendingProducts && (
@@ -471,7 +485,7 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
                 <button
                   onClick={() => setShowOrderItems(!showOrderItems)}
                   className="w-full px-6 py-4 flex items-center justify-between bg-[var(--background-secondary)] hover:bg-[var(--background-secondary)] transition"
@@ -500,7 +514,7 @@ export default function PaymentPage() {
                           <p className="text-xs text-[var(--foreground-muted)] mt-1">Qty: {item.quantity}</p>
                         </div>
                         <p className="font-medium text-[var(--foreground)] text-sm whitespace-nowrap">
-                          MWK {item.total_price.toLocaleString()}
+                          {formatCurrency(item.total_price, displayCurrency)}
                         </p>
                       </div>
                     ))}
@@ -509,7 +523,8 @@ export default function PaymentPage() {
               </div>
 
               {provider && !isPaid && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                  {/* Header - Burnt Orange */}
                   <div className="bg-[var(--primary)] px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Banknote size={20} />
@@ -517,9 +532,11 @@ export default function PaymentPage() {
                     </h2>
                     <p className="text-orange-100 text-xs mt-1">Follow these steps to complete your payment</p>
                   </div>
+                  
                   <div className="p-6 space-y-5">
-                    <div className="flex items-center gap-4 p-4 bg-[var(--background-secondary)] rounded-xl">
-                      <div className="w-12 h-12 bg-[var(--background-card)] rounded-full flex items-center justify-center shadow-sm">
+                    {/* Provider Info */}
+                    <div className="flex items-center gap-4 p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
+                      <div className="w-12 h-12 bg-[var(--background-card)] rounded-full flex items-center justify-center border border-[var(--border)]">
                         {provider.category === 'mobile_money' ? (
                           <Smartphone className="text-[var(--primary)]" size={24} />
                         ) : (
@@ -533,9 +550,10 @@ export default function PaymentPage() {
                       </div>
                     </div>
 
+                    {/* Account Details */}
                     <div className="space-y-3">
                       {provider.category === 'mobile_money' && provider.account_number && (
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                        <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                           <p className="text-xs text-[var(--foreground-muted)] mb-1 flex items-center gap-1">
                             <Smartphone size={12} className="text-[var(--primary)]" /> Mobile Money Number
                           </p>
@@ -543,7 +561,7 @@ export default function PaymentPage() {
                             <code className="text-xl font-mono font-bold text-[var(--foreground)]">{provider.account_number}</code>
                             <button
                               onClick={() => copyToClipboard(provider.account_number!)}
-                              className="p-2 hover:bg-[var(--background-secondary)] rounded-lg transition"
+                              className="p-2 hover:bg-[var(--background)] rounded-lg transition"
                             >
                               {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-[var(--foreground-muted)]" />}
                             </button>
@@ -554,7 +572,7 @@ export default function PaymentPage() {
                       {provider.category === 'bank' && (
                         <>
                           {provider.account_number && (
-                            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                               <p className="text-xs text-[var(--foreground-muted)] mb-1 flex items-center gap-1">
                                 <CreditCard size={12} className="text-[var(--primary)]" /> Account Number
                               </p>
@@ -562,7 +580,7 @@ export default function PaymentPage() {
                                 <code className="text-xl font-mono font-bold text-[var(--foreground)]">{provider.account_number}</code>
                                 <button
                                   onClick={() => copyToClipboard(provider.account_number!)}
-                                  className="p-2 hover:bg-[var(--background-secondary)] rounded-lg transition"
+                                  className="p-2 hover:bg-[var(--background)] rounded-lg transition"
                                 >
                                   {copied === provider.account_number ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-[var(--foreground-muted)]" />}
                                 </button>
@@ -570,13 +588,13 @@ export default function PaymentPage() {
                             </div>
                           )}
                           {provider.account_name && (
-                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl">
+                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                               <p className="text-xs text-[var(--foreground-muted)] mb-1">Account Name</p>
                               <p className="font-medium text-[var(--foreground)]">{provider.account_name}</p>
                             </div>
                           )}
                           {provider.branch && (
-                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl">
+                            <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                               <p className="text-xs text-[var(--foreground-muted)] mb-1">Branch</p>
                               <p className="text-[var(--foreground)]">{provider.branch}</p>
                             </div>
@@ -585,22 +603,32 @@ export default function PaymentPage() {
                       )}
                     </div>
 
+                    {/* INSTRUCTIONS - Updated styling */}
                     {provider.instructions && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800">
-                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
-                          <FileText size={14} /> Important Instructions
+                      <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)] space-y-3">
+                        <p className="font-bold text-[var(--foreground)] flex items-center gap-2">
+                          <FileText size={14} className="text-[var(--primary)]" /> Important Instructions
                         </p>
-                        <div className="prose prose-sm max-w-none text-blue-700 dark:text-blue-300" dangerouslySetInnerHTML={{ __html: provider.instructions }} />
+                        <div className="text-[var(--foreground)] space-y-3 [&>p]:space-y-2 [&>ul]:space-y-2 [&>ol]:space-y-2 [&>li]:space-y-2 [&>p]:leading-relaxed [&>li]:leading-relaxed" 
+                             dangerouslySetInnerHTML={{ __html: provider.instructions }} />
                       </div>
                     )}
 
+                    {/* Total Amount */}
                     <div className="border-t border-[var(--border)] pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-[var(--foreground-muted)]">Total Amount to Pay</span>
-                        <div>
-                          <span className="text-2xl font-bold text-[var(--primary)]">MWK {order.total_amount.toLocaleString()}</span>
+                        <div className="text-right">
+                          <span className="text-2xl font-bold text-[var(--primary)]">
+                            {formatCurrency(displayAmount, displayCurrency)}
+                          </span>
+                          {needsConversion && (
+                            <p className="text-xs text-[var(--foreground-muted)]">
+                              ≈ {formatCurrency(receivingAmount, receivingCurrency)} (we receive in {receivingCurrency})
+                            </p>
+                          )}
                           {order.discount_amount > 0 && (
-                            <p className="text-xs text-green-600 dark:text-green-400 text-right">Includes {order.discount_amount.toLocaleString()} MWK discount</p>
+                            <p className="text-xs text-green-600 dark:text-green-400">Includes {formatCurrency(order.discount_amount, displayCurrency)} discount</p>
                           )}
                         </div>
                       </div>
@@ -610,7 +638,7 @@ export default function PaymentPage() {
               )}
 
               {provider?.type === 'automatic' && !isPaid && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
                   <div className="bg-green-600 px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Zap size={20} />
@@ -636,7 +664,7 @@ export default function PaymentPage() {
               )}
 
               {canUpload && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
                   <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
                     <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
                       <Upload size={18} className="text-[var(--primary)]" />
@@ -653,10 +681,10 @@ export default function PaymentPage() {
                           onDragOver={handleDrag}
                           onDrop={handleDrop}
                           className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer
-                            ${dragActive ? 'border-[var(--primary)] bg-[var(--primary)]/10 scale-[1.02]' : 'border-[var(--border)] hover:border-[var(--primary)] bg-[var(--background-secondary)] hover:bg-[var(--background)]'}`}
+                            ${dragActive ? 'border-[var(--primary)] bg-[var(--primary)]/10' : 'border-[var(--border)] hover:border-[var(--primary)] bg-[var(--background-secondary)] hover:bg-[var(--background)]'}`}
                           onClick={() => document.getElementById('file-input')?.click()}
                         >
-                          <Upload className={`w-10 h-10 mx-auto mb-3 transition ${dragActive ? 'text-[var(--primary)] scale-110' : 'text-[var(--foreground-muted)]'}`} />
+                          <Upload className={`w-10 h-10 mx-auto mb-3 transition ${dragActive ? 'text-[var(--primary)]' : 'text-[var(--foreground-muted)]'}`} />
                           <p className="text-sm text-[var(--foreground-muted)]">Drag and drop your receipt here, or click to browse</p>
                           <p className="text-xs text-[var(--foreground-muted)] mt-1">PNG, JPG, WEBP up to 5MB</p>
                           <input
@@ -736,7 +764,7 @@ export default function PaymentPage() {
               )}
 
               {existing_proof && (
-                <div className="bg-[var(--background-card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
                   <div className={`px-6 py-4 border-b border-[var(--border)] ${isAwaiting ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
                     <h2 className={`font-semibold flex items-center gap-2 ${isAwaiting ? 'text-blue-700 dark:text-blue-400' : 'text-green-700 dark:text-green-400'}`}>
                       {isAwaiting ? <Clock size={18} /> : <CheckCircle size={18} />}
@@ -751,7 +779,7 @@ export default function PaymentPage() {
                       </a>
                     </div>
                     {existing_transaction_ref && (
-                      <div className="mb-3 p-3 bg-[var(--background-secondary)] rounded-lg">
+                      <div className="mb-3 p-3 bg-[var(--background-secondary)] rounded-lg border border-[var(--border)]">
                         <p className="text-xs text-[var(--foreground-muted)]">Transaction Reference</p>
                         <p className="text-sm font-mono font-medium text-[var(--foreground)]">{existing_transaction_ref}</p>
                       </div>
@@ -763,7 +791,7 @@ export default function PaymentPage() {
                       </div>
                     )}
                     {isAwaiting && (
-                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl flex items-start gap-2 border border-blue-100 dark:border-blue-800">
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800 flex items-start gap-2">
                         <Clock size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Your payment is being reviewed</p>
@@ -787,7 +815,7 @@ export default function PaymentPage() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="bg-[var(--background-card)] rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden sticky top-24">
+              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden sticky top-24">
                 <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
                   <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
                     <ReceiptText size={18} className="text-[var(--primary)]" />
@@ -801,16 +829,16 @@ export default function PaymentPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--foreground-muted)]">Subtotal</span>
-                    <span className="text-[var(--foreground)]">MWK {order.subtotal?.toLocaleString() || order.total_amount.toLocaleString()}</span>
+                    <span className="text-[var(--foreground)]">{formatCurrency(order.subtotal || order.total_amount, displayCurrency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--foreground-muted)]">Shipping</span>
-                    <span className="text-[var(--foreground)]">MWK {order.shipping_cost?.toLocaleString() || '0'}</span>
+                    <span className="text-[var(--foreground)]">{formatCurrency(order.shipping_cost || 0, displayCurrency)}</span>
                   </div>
                   {order.discount_amount > 0 && (
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>Discount</span>
-                      <span>- MWK {order.discount_amount.toLocaleString()}</span>
+                      <span>- {formatCurrency(order.discount_amount, displayCurrency)}</span>
                     </div>
                   )}
                   {order.promo_code && (
@@ -828,9 +856,17 @@ export default function PaymentPage() {
                       </span>
                     </div>
                   )}
-                  <div className="border-t border-[var(--border)] pt-3 flex justify-between font-bold">
-                    <span className="text-[var(--foreground)]">Total</span>
-                    <span className="text-[var(--primary)] text-xl">MWK {order.total_amount.toLocaleString()}</span>
+                  <div className="border-t border-[var(--border)] pt-3 flex flex-col">
+                    <div className="flex justify-between font-bold">
+                      <span className="text-[var(--foreground)]">Total</span>
+                      <span className="text-[var(--primary)] text-xl">{formatCurrency(displayAmount, displayCurrency)}</span>
+                    </div>
+                    {needsConversion && (
+                      <div className="flex justify-between text-xs text-[var(--foreground-muted)] mt-1">
+                        <span>We receive in {receivingCurrency}</span>
+                        <span>{formatCurrency(receivingAmount, receivingCurrency)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className={`mt-4 p-3 rounded-xl text-center ${orderStatusConfig.bg}`}>
@@ -889,12 +925,13 @@ export default function PaymentPage() {
                 </div>
               </div>
 
-              <div className="mt-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+              {/* Payment Tips - No gradients, simple border */}
+              <div className="mt-4 bg-[var(--background-secondary)] rounded-xl p-4 border border-[var(--border)]">
                 <div className="flex items-start gap-3">
-                  <Sparkles size={16} className="text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <FileCheck size={16} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-amber-800 dark:text-amber-400">Payment Tips</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+                    <p className="text-xs font-medium text-[var(--foreground)]">Payment Tips</p>
+                    <p className="text-xs text-[var(--foreground-muted)] mt-1">
                       Include your order number as reference when making payment for faster verification.
                     </p>
                   </div>
