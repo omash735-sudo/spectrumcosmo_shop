@@ -4,7 +4,10 @@ import { getDb, queryOne, queryAsArray } from '@/lib/db';
 interface OrderWithProvider {
   id: string;
   customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
   total_amount: number;
+  currency: string;
   payment_status: string;
   payment_method: string;
   payment_provider_id: string | null;
@@ -40,12 +43,14 @@ export async function GET(
     const { orderId } = await params;
     const sql = getDb();
 
-    // Get order with payment info – use queryOne for single row
     const order = await queryOne<OrderWithProvider>`
       SELECT 
         o.id,
         o.customer_name,
+        o.customer_email,
+        o.customer_phone,
         o.total_amount,
+        o.currency,
         o.payment_status,
         o.payment_method,
         o.payment_provider_id,
@@ -67,7 +72,6 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get payment confirmations – use queryAsArray to get a real array
     let confirmations: PaymentConfirmation[] = [];
     try {
       confirmations = await queryAsArray<PaymentConfirmation>`
@@ -79,13 +83,81 @@ export async function GET(
       console.log('payment_confirmations table not yet created:', err);
     }
 
+    const items = await queryAsArray<{
+      id: string;
+      product_name: string;
+      quantity: number;
+      unit_price: number;
+      total_price: number;
+      image_url: string | null;
+    }>`
+      SELECT 
+        oi.id,
+        oi.product_name,
+        oi.quantity,
+        oi.unit_price_usd as unit_price,
+        oi.subtotal_usd as total_price,
+        p.image_url
+      FROM order_items oi
+      LEFT JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = ${orderId}
+    `;
+
+    const orderDetails = await queryOne<{
+      subtotal: number;
+      shipping_cost: number;
+      discount_amount: number;
+      promo_code: string | null;
+      promo_discount: number | null;
+      referral_code: string | null;
+      created_at: string;
+      expires_at: string;
+      delivery_quote_status: string | null;
+      quoted_delivery_fee: number | null;
+      status: string;
+    }>`
+      SELECT 
+        subtotal,
+        shipping_cost,
+        discount_amount,
+        promo_code,
+        promo_discount,
+        referral_code,
+        created_at,
+        expires_at,
+        delivery_quote_status,
+        quoted_delivery_fee,
+        status
+      FROM orders
+      WHERE id = ${orderId}
+    `;
+
+    const displayCurrency = order.currency || 'MWK';
+
     return NextResponse.json({
       order: {
         id: order.id,
         customer_name: order.customer_name,
+        customer_email: order.customer_email,
+        customer_phone: order.customer_phone,
         total_amount: order.total_amount,
+        subtotal: orderDetails?.subtotal || 0,
+        shipping_cost: orderDetails?.shipping_cost || 0,
+        discount_amount: orderDetails?.discount_amount || 0,
         payment_status: order.payment_status,
         payment_method: order.payment_method,
+        status: orderDetails?.status || 'pending',
+        promo_code: orderDetails?.promo_code || null,
+        promo_discount: orderDetails?.promo_discount || null,
+        referral_code: orderDetails?.referral_code || null,
+        created_at: orderDetails?.created_at || new Date().toISOString(),
+        expires_at: orderDetails?.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        delivery_quote_status: orderDetails?.delivery_quote_status || null,
+        quoted_delivery_fee: orderDetails?.quoted_delivery_fee || null,
+        currency: displayCurrency,
+        display_amount: order.total_amount,
+        receiving_currency: 'MWK',
+        receiving_amount: order.total_amount,
       },
       provider: order.provider_name ? {
         name: order.provider_name,
@@ -95,9 +167,19 @@ export async function GET(
         account_number: order.account_number,
         branch: order.branch,
         instructions: order.instructions,
+        logo_url: null,
       } : null,
       existing_proof: order.proof_of_payment_url,
       existing_note: order.payment_note,
+      existing_transaction_ref: null,
+      items: items.map(item => ({
+        id: item.id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price,
+        image_url: item.image_url || '',
+      })),
       confirmations,
     });
   } catch (err) {
