@@ -18,6 +18,7 @@ interface Step2CustomerInfoProps {
   onPrev: () => void;
   isSubmitting: boolean;
   error: string | null;
+  orderTotal?: number; // Add optional prop
 }
 
 // Map currency to country code
@@ -46,23 +47,20 @@ export default function Step2CustomerInfo({
   onPrev,
   isSubmitting,
   error,
+  orderTotal = 0, // Add with default
 }: Step2CustomerInfoProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [filteredProviders, setFilteredProviders] = useState<PaymentProvider[]>([]);
   const [loadingFiltered, setLoadingFiltered] = useState(false);
   const [routeMessage, setRouteMessage] = useState<string | null>(null);
-  const [orderTotal, setOrderTotal] = useState(0);
   
   const { currency } = useCurrency();
 
   // Get customer country from currency
   const customerCountry = currencyToCountry[currency] || 'MW';
 
-  // Get order total from cart (you'll need to pass this as a prop or get from context)
-  // For now, we'll use a placeholder - you should pass this from parent component
-
-  // Fetch filtered providers when currency changes
+  // Fetch filtered providers when currency or orderTotal changes
   useEffect(() => {
     const fetchFilteredProviders = async () => {
       if (!currency) return;
@@ -71,8 +69,6 @@ export default function Step2CustomerInfo({
       setRouteMessage(null);
       
       try {
-        // Get the order total from the cart (you need to pass this from parent)
-        // For now, we'll use a default value - you should pass this as a prop
         const amount = orderTotal || 1000;
         
         const res = await fetch(
@@ -109,7 +105,7 @@ export default function Step2CustomerInfo({
     };
     
     fetchFilteredProviders();
-  }, [currency, customerCountry, orderTotal]);
+  }, [currency, customerCountry, orderTotal, selectedPaymentProvider, paymentProviders, onSelectPaymentProvider]);
 
   const validateField = (field: string, value: string): string => {
     switch (field) {
