@@ -59,8 +59,6 @@ export class PaymentRouter {
     routes: AvailableRoute[];
     noRouteMessage?: string;
   }> {
-    const sql = getDb();
-
     const routes = await queryAsArray<PaymentRoute>`
       SELECT 
         pr.*,
@@ -118,8 +116,6 @@ export class PaymentRouter {
     currency: string;
     amount: number;
   }): Promise<PaymentProviderWithRoutes[]> {
-    const sql = getDb();
-
     const results = await queryAsArray<{
       id: number;
       name: string;
@@ -243,8 +239,6 @@ export class PaymentRouter {
     currency: string;
     amount: number;
   }): Promise<PaymentRoute | null> {
-    const sql = getDb();
-
     const route = await queryOne<PaymentRoute>`
       SELECT 
         pr.*,
@@ -401,17 +395,16 @@ export class PaymentRouter {
     const result = await sql`
       DELETE FROM payment_routes
       WHERE id = ${routeId}
+      RETURNING id
     `;
 
-    return true;
+    return result !== null && result.id !== undefined;
   }
 
   /**
    * Get all routes (admin)
    */
   async getAllRoutes(): Promise<PaymentRoute[]> {
-    const sql = getDb();
-
     const routes = await queryAsArray<PaymentRoute>`
       SELECT 
         pr.*,
