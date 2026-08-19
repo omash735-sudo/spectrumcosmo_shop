@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Mail, Phone, MapPin, MessageSquare, Truck, CreditCard, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Mail, Phone, MapPin, MessageSquare, Truck, CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CheckoutFormData, PaymentProvider } from '@/lib/types/order';
+import { useCurrency } from '@/components/storefront/CurrencyProvider';
 
 interface Step2CustomerInfoProps {
   form: CheckoutFormData;
@@ -18,6 +19,20 @@ interface Step2CustomerInfoProps {
   isSubmitting: boolean;
   error: string | null;
 }
+
+// Map currency to country code
+const currencyToCountry: Record<string, string> = {
+  MWK: 'MW',
+  USD: 'US',
+  ZAR: 'ZA',
+  EUR: 'EU',
+  NGN: 'NG',
+  GBP: 'GB',
+  KES: 'KE',
+  TZS: 'TZ',
+  ZMW: 'ZM',
+  ZWL: 'ZW',
+};
 
 export default function Step2CustomerInfo({
   form,
@@ -34,6 +49,67 @@ export default function Step2CustomerInfo({
 }: Step2CustomerInfoProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [filteredProviders, setFilteredProviders] = useState<PaymentProvider[]>([]);
+  const [loadingFiltered, setLoadingFiltered] = useState(false);
+  const [routeMessage, setRouteMessage] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState(0);
+  
+  const { currency } = useCurrency();
+
+  // Get customer country from currency
+  const customerCountry = currencyToCountry[currency] || 'MW';
+
+  // Get order total from cart (you'll need to pass this as a prop or get from context)
+  // For now, we'll use a placeholder - you should pass this from parent component
+
+  // Fetch filtered providers when currency changes
+  useEffect(() => {
+    const fetchFilteredProviders = async () => {
+      if (!currency) return;
+      
+      setLoadingFiltered(true);
+      setRouteMessage(null);
+      
+      try {
+        // Get the order total from the cart (you need to pass this from parent)
+        // For now, we'll use a default value - you should pass this as a prop
+        const amount = orderTotal || 1000;
+        
+        const res = await fetch(
+          `/api/payment-providers?country=${customerCountry}&currency=${currency}&amount=${amount}`
+        );
+        
+        if (!res.ok) throw new Error('Failed to fetch payment providers');
+        const data = await res.json();
+        
+        // Combine automatic and manual providers
+        const allProviders = [...(data.automatic || []), ...(data.manual || [])];
+        setFilteredProviders(allProviders);
+        
+        // Store route message if no routes available
+        if (data.no_route_message) {
+          setRouteMessage(data.no_route_message);
+        }
+        
+        // If there's a provider selected that's no longer available, clear it
+        if (selectedPaymentProvider && !allProviders.some(p => p.id === selectedPaymentProvider.id)) {
+          onSelectPaymentProvider(null as any);
+        }
+      } catch (err) {
+        console.error('Error fetching filtered providers:', err);
+        // Fallback to all providers if filtering fails
+        const allProviders = [
+          ...(paymentProviders?.automatic || []),
+          ...(paymentProviders?.manual || [])
+        ];
+        setFilteredProviders(allProviders);
+      } finally {
+        setLoadingFiltered(false);
+      }
+    };
+    
+    fetchFilteredProviders();
+  }, [currency, customerCountry, orderTotal]);
 
   const validateField = (field: string, value: string): string => {
     switch (field) {
@@ -108,13 +184,15 @@ export default function Step2CustomerInfo({
     focus:outline-none bg-[var(--background)] text-[var(--foreground)]
   `;
 
-  // Combine all providers with proper fallback
-  const allProviders = [
-    ...(paymentProviders?.automatic || []),
-    ...(paymentProviders?.manual || [])
-  ];
+  // Use filtered providers if available, otherwise fallback to all providers
+  const displayProviders = filteredProviders.length > 0 || loadingFiltered 
+    ? filteredProviders 
+    : [
+        ...(paymentProviders?.automatic || []),
+        ...(paymentProviders?.manual || [])
+      ];
 
-  const isLoadingProviders = paymentProviders === null;
+  const isLoadingProviders = paymentProviders === null || loadingFiltered;
 
   return (
     <div className="space-y-6">
@@ -255,29 +333,53 @@ export default function Step2CustomerInfo({
         </div>
       </div>
 
-      {/* Payment Method - Always Visible */}
+      {/* Payment Method - With Route Filtering */}
       <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
-          <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
-            <CreditCard size={18} className="text-[var(--primary)]" />
-            Payment Method
-          </h2>
-          <p className="text-xs text-[var(--foreground-muted)] mt-1">Select how you want to pay</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
+                <CreditCard size={18} className="text-[var(--primary)]" />
+                Payment Method
+              </h2>
+              <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                Select how you want to pay
+                {currency && customerCountry && (
+                  <span className="ml-1">
+                    ({currency} · {customerCountry})
+                  </span>
+                )}
+              </p>
+            </div>
+            {currency && customerCountry && (
+              <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] border border-[var(--border)]">
+                {currency} · {customerCountry}
+              </span>
+            )}
+          </div>
         </div>
         <div className="p-4 sm:p-6">
+          {/* Route Message */}
+          {routeMessage && (
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl flex items-start gap-2">
+              <AlertCircle size={16} className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-yellow-700 dark:text-yellow-400">{routeMessage}</p>
+            </div>
+          )}
+
           {isLoadingProviders ? (
             <div className="flex items-center justify-center py-6">
               <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
               <span className="ml-2 text-[var(--foreground-muted)]">Loading payment methods...</span>
             </div>
-          ) : allProviders.length === 0 ? (
+          ) : displayProviders.length === 0 ? (
             <div className="text-center py-6">
-              <p className="text-[var(--foreground-muted)]">No payment methods available</p>
-              <p className="text-xs text-[var(--foreground-muted)] mt-1">Please contact support</p>
+              <p className="text-[var(--foreground-muted)]">No payment methods available for your region</p>
+              <p className="text-xs text-[var(--foreground-muted)] mt-1">Please contact support for assistance</p>
             </div>
           ) : (
             <div className="grid gap-3">
-              {allProviders.map(provider => (
+              {displayProviders.map(provider => (
                 <label
                   key={provider.id}
                   className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
