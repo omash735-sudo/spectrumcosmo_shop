@@ -277,52 +277,54 @@ export class PaymentRouter {
   }): Promise<boolean> {
     const sql = getDb();
     
-    const updates: string[] = [];
+    const setClauses: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
 
     if (params.is_active !== undefined) {
-      updates.push(`is_active = $${paramIndex++}`);
+      setClauses.push(`is_active = $${paramIndex++}`);
       values.push(params.is_active);
     }
     if (params.verification_status !== undefined) {
-      updates.push(`verification_status = $${paramIndex++}`);
+      setClauses.push(`verification_status = $${paramIndex++}`);
       values.push(params.verification_status);
     }
     if (params.fee_percentage !== undefined) {
-      updates.push(`fee_percentage = $${paramIndex++}`);
+      setClauses.push(`fee_percentage = $${paramIndex++}`);
       values.push(params.fee_percentage);
     }
     if (params.fee_fixed !== undefined) {
-      updates.push(`fee_fixed = $${paramIndex++}`);
+      setClauses.push(`fee_fixed = $${paramIndex++}`);
       values.push(params.fee_fixed);
     }
     if (params.min_amount !== undefined) {
-      updates.push(`min_amount = $${paramIndex++}`);
+      setClauses.push(`min_amount = $${paramIndex++}`);
       values.push(params.min_amount);
     }
     if (params.max_amount !== undefined) {
-      updates.push(`max_amount = $${paramIndex++}`);
+      setClauses.push(`max_amount = $${paramIndex++}`);
       values.push(params.max_amount);
     }
     if (params.provider_config !== undefined) {
-      updates.push(`provider_config = $${paramIndex++}::jsonb`);
+      setClauses.push(`provider_config = $${paramIndex++}::jsonb`);
       values.push(JSON.stringify(params.provider_config));
     }
 
-    updates.push(`updated_at = NOW()`);
+    setClauses.push(`updated_at = NOW()`);
 
-    if (updates.length === 0) {
+    if (setClauses.length === 0) {
       return false;
     }
 
     values.push(params.routeId);
     
-    const result = await sql`
+    const query = `
       UPDATE payment_routes
-      SET ${sql.raw(updates.join(', '))}
+      SET ${setClauses.join(', ')}
       WHERE id = $${paramIndex}
     `;
+
+    await sql.query(query, values);
 
     return true;
   }
