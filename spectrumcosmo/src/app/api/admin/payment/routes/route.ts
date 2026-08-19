@@ -1,3 +1,4 @@
+// app/api/admin/payment/routes/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryAsArray } from '@/lib/db';
 import { paymentRouter } from '@/lib/payment-routing';
@@ -27,14 +28,14 @@ export async function GET(req: NextRequest) {
       JOIN payment_providers p ON p.id = pr.provider_id
     `;
 
-    const params: any[] = [];
     if (providerId) {
-      query += ` WHERE pr.provider_id = $1`;
-      params.push(parseInt(providerId));
+      query += ` WHERE pr.provider_id = ${parseInt(providerId)}`;
     }
     query += ` ORDER BY p.name ASC, pr.sending_country ASC, pr.sending_currency ASC`;
 
-    const routes = await queryAsArray<any>(query, params);
+    const routes = await queryAsArray<any>`
+      ${query}
+    `;
 
     return NextResponse.json({ routes });
 
@@ -170,7 +171,14 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await paymentRouter.deleteRoute(parseInt(routeId));
+    const result = await paymentRouter.deleteRoute(parseInt(routeId));
+
+    if (!result) {
+      return NextResponse.json(
+        { error: 'Route not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
