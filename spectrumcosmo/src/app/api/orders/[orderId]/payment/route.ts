@@ -2,6 +2,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 
+interface PaymentConfirmation {
+  id: number;
+  order_id: string;
+  proof_image_url: string;
+  transaction_reference: string | null;
+  notes: string | null;
+  status: string;
+  submitted_at: Date;
+  reviewed_at: Date | null;
+  reviewed_by: number | null;
+  rejection_reason: string | null;
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -57,6 +70,18 @@ export async function GET(
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Get payment confirmations - FIXED: using correct table name
+    let confirmations: PaymentConfirmation[] = [];
+    try {
+      confirmations = await queryAsArray<PaymentConfirmation>`
+        SELECT * FROM payment_confirmation
+        WHERE order_id = ${orderId}
+        ORDER BY submitted_at DESC
+      `;
+    } catch (err) {
+      console.log('payment_confirmation query error:', err);
     }
 
     // Get order items
@@ -161,6 +186,7 @@ export async function GET(
         image_url: '',
         custom_details: item.custom_details,
       })),
+      confirmations,
     });
   } catch (err) {
     console.error('Payment status error:', err);
