@@ -1,39 +1,6 @@
+// app/api/orders/[orderId]/payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
-
-interface OrderWithProvider {
-  id: string;
-  customer_name: string;
-  customer_email?: string;
-  customer_phone?: string;
-  total_amount: number;
-  currency: string;
-  payment_status: string;
-  payment_method: string;
-  payment_provider_id: string | null;
-  proof_of_payment_url: string | null;
-  payment_note: string | null;
-  provider_name: string | null;
-  provider_type: string | null;
-  provider_category: string | null;
-  account_name: string | null;
-  account_number: string | null;
-  branch: string | null;
-  instructions: string | null;
-}
-
-interface PaymentConfirmation {
-  id: string;
-  order_id: string;
-  proof_image_url: string;
-  transaction_reference: string | null;
-  notes: string | null;
-  status: string;
-  submitted_at: Date;
-  reviewed_at: Date | null;
-  reviewed_by: string | null;
-  rejection_reason: string | null;
-}
 
 export async function GET(
   req: NextRequest,
@@ -43,12 +10,32 @@ export async function GET(
     const { orderId } = await params;
     const sql = getDb();
 
-    const order = await queryOne<OrderWithProvider>`
+    // Get order with payment info
+    const order = await queryOne<{
+      id: string;
+      customer_name: string;
+      customer_email: string;
+      phone_number: string;
+      total_amount: number;
+      currency: string;
+      payment_status: string;
+      payment_method: string;
+      payment_provider_id: string | null;
+      proof_of_payment_url: string | null;
+      payment_note: string | null;
+      provider_name: string | null;
+      provider_type: string | null;
+      provider_category: string | null;
+      account_name: string | null;
+      account_number: string | null;
+      branch: string | null;
+      instructions: string | null;
+    }>`
       SELECT 
-        o.id,
+        o.id::text,
         o.customer_name,
         o.customer_email,
-        o.customer_phone,
+        o.phone_number,
         o.total_amount,
         o.currency,
         o.payment_status,
@@ -72,37 +59,27 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    let confirmations: PaymentConfirmation[] = [];
-    try {
-      confirmations = await queryAsArray<PaymentConfirmation>`
-        SELECT * FROM payment_confirmations
-        WHERE order_id = ${orderId}
-        ORDER BY submitted_at DESC
-      `;
-    } catch (err) {
-      console.log('payment_confirmations table not yet created:', err);
-    }
-
+    // Get order items
     const items = await queryAsArray<{
-      id: string;
+      id: number;
       product_name: string;
       quantity: number;
       unit_price: number;
-      total_price: number;
-      image_url: string | null;
+      subtotal: number;
+      custom_details: string | null;
     }>`
       SELECT 
-        oi.id,
-        oi.product_name,
-        oi.quantity,
-        oi.unit_price_usd as unit_price,
-        oi.subtotal_usd as total_price,
-        p.image_url
-      FROM order_items oi
-      LEFT JOIN products p ON p.id = oi.product_id
-      WHERE oi.order_id = ${orderId}
+        id,
+        product_name,
+        quantity,
+        unit_price_usd as unit_price,
+        subtotal_usd as subtotal,
+        custom_details
+      FROM order_items
+      WHERE order_id::text = ${orderId}
     `;
 
+    // Get additional order details
     const orderDetails = await queryOne<{
       subtotal: number;
       shipping_cost: number;
@@ -115,6 +92,7 @@ export async function GET(
       delivery_quote_status: string | null;
       quoted_delivery_fee: number | null;
       status: string;
+      delivery_method: string | null;
     }>`
       SELECT 
         subtotal,
@@ -127,9 +105,10 @@ export async function GET(
         expires_at,
         delivery_quote_status,
         quoted_delivery_fee,
-        status
+        status,
+        delivery_method
       FROM orders
-      WHERE id = ${orderId}
+      WHERE id::text = ${orderId}
     `;
 
     const displayCurrency = order.currency || 'MWK';
@@ -139,7 +118,7 @@ export async function GET(
         id: order.id,
         customer_name: order.customer_name,
         customer_email: order.customer_email,
-        customer_phone: order.customer_phone,
+        customer_phone: order.phone_number,
         total_amount: order.total_amount,
         subtotal: orderDetails?.subtotal || 0,
         shipping_cost: orderDetails?.shipping_cost || 0,
@@ -154,6 +133,7 @@ export async function GET(
         expires_at: orderDetails?.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         delivery_quote_status: orderDetails?.delivery_quote_status || null,
         quoted_delivery_fee: orderDetails?.quoted_delivery_fee || null,
+        delivery_method: orderDetails?.delivery_method || null,
         currency: displayCurrency,
         display_amount: order.total_amount,
         receiving_currency: 'MWK',
@@ -173,14 +153,14 @@ export async function GET(
       existing_note: order.payment_note,
       existing_transaction_ref: null,
       items: items.map(item => ({
-        id: item.id,
+        id: String(item.id),
         product_name: item.product_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        total_price: item.total_price,
-        image_url: item.image_url || '',
+        total_price: item.subtotal,
+        image_url: '',
+        custom_details: item.custom_details,
       })),
-      confirmations,
     });
   } catch (err) {
     console.error('Payment status error:', err);
