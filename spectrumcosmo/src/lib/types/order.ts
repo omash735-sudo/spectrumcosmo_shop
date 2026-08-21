@@ -95,7 +95,17 @@ export type Order = {
   quote_requested_at?: string | null;
   items: OrderItem[];
   custom_delivery_method?: string | null;
-  currency?: string; // ADDED: Customer's selected currency
+  
+  // Currency fields
+  currency?: string; // Original field - customer's selected currency
+  mwk_amount?: number; // MWK equivalent (what you receive)
+  
+  // New checkout currency fields (immutable - set at checkout)
+  checkout_currency?: string; // The currency the customer checked out in
+  checkout_amount?: number; // The amount in checkout currency
+  expected_mwk_amount?: number; // Expected MWK at checkout time
+  actual_mwk_amount?: number; // Actual MWK received (from payment provider)
+  exchange_rate_used?: number; // Exchange rate at checkout time
 };
 
 export type PromoCode = {
