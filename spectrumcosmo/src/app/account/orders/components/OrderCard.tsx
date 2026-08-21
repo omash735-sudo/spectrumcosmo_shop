@@ -18,12 +18,7 @@ import OrderTimeline from './OrderTimeline';
 interface OrderCardProps {
   order: Order;
   onRefresh: () => void;
-  exchangeRates?: Record<string, number>;
-  userCurrency?: string;
 }
-
-const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
 
 // Helper function to parse amount
 function parseAmount(amount: any): number {
@@ -44,32 +39,7 @@ function formatCurrency(amount: number, currency: string = 'MWK'): string {
   return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Get display amount with conversion
-function getDisplayAmount(order: Order, rates: Record<string, number>, userCurrency: string): { amount: number; currency: string } {
-  const mwkAmount = parseAmount(order.total_amount);
-  
-  // If user prefers MWK or no conversion needed
-  if (userCurrency === 'MWK' || !rates || !rates[userCurrency]) {
-    return {
-      amount: mwkAmount,
-      currency: 'MWK'
-    };
-  }
-  
-  // Convert MWK to user's preferred currency
-  const convertedAmount = mwkAmount / rates[userCurrency];
-  return {
-    amount: convertedAmount,
-    currency: userCurrency
-  };
-}
-
-export default function OrderCard({ 
-  order, 
-  onRefresh,
-  exchangeRates = { MWK: 1 },
-  userCurrency = 'MWK'
-}: OrderCardProps) {
+export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -83,38 +53,9 @@ export default function OrderCard({
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   
-  const display = getDisplayAmount(order, exchangeRates, userCurrency);
-  const mwkAmount = parseAmount(order.total_amount);
-
-  const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadData.secure_url) throw new Error('Upload failed');
-
-      await orderService.uploadPaymentProof(
-        order.id,
-        uploadData.secure_url,
-        note,
-        transactionRef
-      );
-
-      toast.success('Payment proof submitted! Admin will review shortly.');
-      onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  };
+  // Use the currency the order was saved in (user's selected currency at checkout)
+  const displayCurrency = order.currency || 'MWK';
+  const totalAmount = parseAmount(order.total_amount);
 
   return (
     <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
@@ -171,13 +112,8 @@ export default function OrderCard({
           <div className="text-right flex-shrink-0">
             <p className="text-xs text-[var(--foreground-muted)]">Total</p>
             <p className="text-base sm:text-lg font-bold text-[var(--primary)]">
-              {formatCurrency(display.amount, display.currency)}
+              {formatCurrency(totalAmount, displayCurrency)}
             </p>
-            {display.currency !== 'MWK' && (
-              <p className="text-[10px] text-[var(--foreground-muted)]/60">
-                MWK {mwkAmount.toLocaleString()}
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -204,7 +140,7 @@ export default function OrderCard({
                       <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-[var(--foreground)]">
-                      {formatCurrency(itemTotal, display.currency)}
+                      {formatCurrency(itemTotal, displayCurrency)}
                     </p>
                   </div>
                 );
