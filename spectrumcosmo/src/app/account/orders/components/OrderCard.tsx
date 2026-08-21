@@ -56,9 +56,9 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   
-  // Use the currency the order was saved in (user's selected currency at checkout)
-  const displayCurrency = order.currency || 'MWK';
-  const totalAmount = parseAmount(order.total_amount);
+  // Use checkout currency (what customer paid in)
+  const displayCurrency = order.checkout_currency || order.currency || 'MWK';
+  const totalAmount = parseAmount(order.checkout_amount || order.total_amount);
 
   const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
     setUploading(true);
@@ -160,12 +160,17 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             <div className="space-y-2">
               <p className="font-medium text-sm text-[var(--foreground)]">Items</p>
               {order.items.map((item, idx) => {
-                const itemTotal = parseAmount(item.total_price);
+                // Use total_price from API (mapped from subtotal_usd)
+                const itemTotal = parseAmount(item.total_price || 0);
                 return (
                   <div key={idx} className="flex items-center gap-3 text-sm py-1 border-b border-[var(--border)] last:border-0">
                     <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
-                      {item.image_url && (
+                      {item.image_url ? (
                         <Image src={item.image_url} alt={item.product_name} width={40} height={40} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[var(--background)] flex items-center justify-center">
+                          <Package size={16} className="text-[var(--foreground-muted)]" />
+                        </div>
                       )}
                     </div>
                     <div className="flex-1">
