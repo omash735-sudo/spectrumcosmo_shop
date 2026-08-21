@@ -87,6 +87,7 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [retryingPayment, setRetryingPayment] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
 
   const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
   const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
@@ -118,6 +119,43 @@ export default function PaymentPage() {
     };
     load();
   }, [orderId]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!paymentData?.order?.expires_at) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      const expiry = new Date(paymentData.order.expires_at);
+      const diff = expiry.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeRemaining('Expired');
+        // Redirect to orders if expired
+        toast.error('Payment deadline has passed. Please check your orders.');
+        setTimeout(() => router.push('/account/orders'), 2000);
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      if (hours > 24) {
+        const days = Math.floor(hours / 24);
+        setTimeRemaining(`${days}d ${hours % 24}h remaining`);
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours}h ${minutes}m ${seconds}s remaining`);
+      } else {
+        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    
+    return () => clearInterval(interval);
+  }, [paymentData?.order?.expires_at, router]);
 
   const startPolling = () => {
     setPolling(true);
@@ -309,37 +347,88 @@ export default function PaymentPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const getTimeRemaining = (expiresAt: string) => {
-    const now = new Date();
-    const expiry = new Date(expiresAt);
-    const diff = expiry.getTime() - now.getTime();
-    
-    if (diff <= 0) return 'Expired';
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 2) return `${days} days remaining`;
-    if (hours > 0) return `${hours}h ${minutes}m remaining`;
-    return `${minutes}m remaining`;
-  };
-
   const formatCurrency = (amount: number, currency: string) => {
     return `${currency} ${amount.toLocaleString()}`;
   };
 
+  // Loading state with skeleton cards
   if (loading) {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="text-center">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
-              <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--primary)] w-6 h-6 animate-pulse" />
+        <main className="min-h-screen bg-[var(--background)] py-8 sm:py-12">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            {/* Skeleton Header */}
+            <div className="text-center mb-8">
+              <div className="h-8 w-48 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto mb-2" />
+              <div className="h-4 w-64 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto" />
             </div>
-            <p className="text-[var(--foreground-muted)] mt-4">Loading payment details...</p>
+
+            {/* Skeleton Steps */}
+            <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-[var(--background-secondary)] rounded-full animate-pulse" />
+                  <div className="h-3 w-16 bg-[var(--background-secondary)] rounded animate-pulse hidden sm:block" />
+                  {i < 2 && <div className="w-8 sm:w-12 h-0.5 bg-[var(--background-secondary)] animate-pulse" />}
+                </div>
+              ))}
+            </div>
+
+            {/* Skeleton Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Skeleton Order Summary */}
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                  <div className="px-6 py-4 bg-[var(--background-secondary)]">
+                    <div className="h-5 w-32 bg-[var(--background)] rounded animate-pulse" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex gap-3">
+                        <div className="w-14 h-14 bg-[var(--background-secondary)] rounded-lg animate-pulse" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-3/4 bg-[var(--background-secondary)] rounded animate-pulse" />
+                          <div className="h-3 w-1/4 bg-[var(--background-secondary)] rounded animate-pulse" />
+                        </div>
+                        <div className="h-4 w-16 bg-[var(--background-secondary)] rounded animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Skeleton Payment Instructions */}
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                  <div className="px-6 py-4 bg-[var(--primary)]/20">
+                    <div className="h-5 w-40 bg-[var(--background-secondary)] rounded animate-pulse" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-16 bg-[var(--background-secondary)] rounded-xl animate-pulse" />
+                    <div className="h-12 bg-[var(--background-secondary)] rounded-xl animate-pulse" />
+                    <div className="h-24 bg-[var(--background-secondary)] rounded-xl animate-pulse" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Skeleton Sidebar */}
+              <div className="lg:col-span-1">
+                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                  <div className="px-6 py-4 bg-[var(--background-secondary)]">
+                    <div className="h-5 w-32 bg-[var(--background)] rounded animate-pulse" />
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="space-y-2">
+                      <div className="h-4 w-full bg-[var(--background-secondary)] rounded animate-pulse" />
+                      <div className="h-4 w-3/4 bg-[var(--background-secondary)] rounded animate-pulse" />
+                      <div className="h-4 w-1/2 bg-[var(--background-secondary)] rounded animate-pulse" />
+                    </div>
+                    <div className="h-px bg-[var(--border)]" />
+                    <div className="h-8 w-full bg-[var(--background-secondary)] rounded animate-pulse" />
+                    <div className="h-12 w-full bg-[var(--background-secondary)] rounded animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
         <Footer />
@@ -353,7 +442,7 @@ export default function PaymentPage() {
         <Navbar />
         <main className="min-h-screen bg-[var(--background)] py-12">
           <div className="max-w-md mx-auto px-4">
-            <div className="bg-[var(--background-card)] rounded-2xl shadow-xl p-8 text-center border border-[var(--border)]">
+            <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-8 text-center">
               <div className="w-20 h-20 bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="text-red-500 w-10 h-10" />
               </div>
@@ -361,7 +450,7 @@ export default function PaymentPage() {
               <p className="text-[var(--foreground-muted)] mb-6">We couldn't find your payment details. Please check your order number.</p>
               <button 
                 onClick={() => router.push('/account/orders')} 
-                className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-3 rounded-xl font-medium transition shadow-sm"
+                className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-6 py-3 rounded-xl font-medium transition"
               >
                 View My Orders
               </button>
@@ -388,14 +477,15 @@ export default function PaymentPage() {
   const canUpload = !isPaid && !isAwaiting && !isCancelled && !isQuoteOrder && !isPendingProducts;
   const hasExpiry = order.expires_at && new Date(order.expires_at) > new Date();
   const needsConversion = displayCurrency !== receivingCurrency;
+  const isExpired = timeRemaining === 'Expired';
 
   const orderStatusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
 
+  // Simplified steps - only Order Placed and Payment Submitted
   const steps = [
-    { label: 'Order Placed', status: order.payment_status !== 'pending' || isPaid || isAwaiting },
-    { label: isQuoteOrder ? 'Quote Received' : 'Payment Submitted', status: isQuoteOrder || isAwaiting || isPaid },
-    { label: 'Confirmed', status: isPaid },
+    { label: 'Order Placed', status: true },
+    { label: 'Payment Submitted', status: isAwaiting || isPaid },
   ];
 
   return (
@@ -422,7 +512,7 @@ export default function PaymentPage() {
                   <div className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                       step.status 
-                        ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20' 
+                        ? 'bg-[var(--primary)] text-white' 
                         : 'bg-[var(--background-secondary)] text-[var(--foreground-muted)]'
                     }`}>
                       {step.status ? <CheckCircle size={16} /> : idx + 1}
@@ -443,19 +533,31 @@ export default function PaymentPage() {
             
             <div className="lg:col-span-2 space-y-6">
               
-              {hasExpiry && canUpload && (
-                <div className="bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-500 rounded-xl p-4 flex items-start gap-3">
-                  <Timer className="text-yellow-600 dark:text-yellow-400 w-5 h-5 flex-shrink-0 mt-0.5" />
+              {/* Timer Card - Simple square with curved corners */}
+              {hasExpiry && canUpload && !isExpired && (
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 flex items-center gap-3">
+                  <div className="p-2 bg-[var(--background-secondary)] rounded-lg">
+                    <Timer className="text-[var(--foreground-muted)] w-5 h-5" />
+                  </div>
                   <div>
-                    <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">Payment Deadline</p>
-                    <p className="text-xs text-yellow-700 dark:text-yellow-500">Complete your payment before {new Date(order.expires_at).toLocaleString()} to avoid order cancellation.</p>
-                    <p className="text-xs font-medium text-yellow-800 dark:text-yellow-400 mt-1">{getTimeRemaining(order.expires_at)}</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">Payment Deadline</p>
+                    <p className="text-sm text-[var(--primary)] font-semibold">{timeRemaining}</p>
+                  </div>
+                </div>
+              )}
+
+              {isExpired && (
+                <div className="bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-800 p-4 flex items-center gap-3">
+                  <AlertTriangle className="text-red-500 w-5 h-5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700 dark:text-red-400">Payment Deadline Passed</p>
+                    <p className="text-xs text-red-600 dark:text-red-500">Redirecting to orders...</p>
                   </div>
                 </div>
               )}
 
               {isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] p-6">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-[var(--primary)] rounded-full flex items-center justify-center">
                       <Send size={24} className="text-white" />
@@ -476,7 +578,7 @@ export default function PaymentPage() {
                     <button
                       onClick={handleRetryPayment}
                       disabled={retryingPayment}
-                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2"
                     >
                       {retryingPayment ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
                       Pay Delivery Fee via Mobile Money
@@ -485,7 +587,7 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+              <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
                 <button
                   onClick={() => setShowOrderItems(!showOrderItems)}
                   className="w-full px-6 py-4 flex items-center justify-between bg-[var(--background-secondary)] hover:bg-[var(--background-secondary)] transition"
@@ -523,8 +625,7 @@ export default function PaymentPage() {
               </div>
 
               {provider && !isPaid && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
-                  {/* Header - Burnt Orange */}
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
                   <div className="bg-[var(--primary)] px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Banknote size={20} />
@@ -534,7 +635,6 @@ export default function PaymentPage() {
                   </div>
                   
                   <div className="p-6 space-y-5">
-                    {/* Provider Info */}
                     <div className="flex items-center gap-4 p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                       <div className="w-12 h-12 bg-[var(--background-card)] rounded-full flex items-center justify-center border border-[var(--border)]">
                         {provider.category === 'mobile_money' ? (
@@ -550,7 +650,6 @@ export default function PaymentPage() {
                       </div>
                     </div>
 
-                    {/* Account Details */}
                     <div className="space-y-3">
                       {provider.category === 'mobile_money' && provider.account_number && (
                         <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
@@ -590,20 +689,19 @@ export default function PaymentPage() {
                           {provider.account_name && (
                             <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                               <p className="text-xs text-[var(--foreground-muted)] mb-1">Account Name</p>
-                              <p className="font-medium text-[var(--foreground)]">{provider.account_name}</p>
+                              <p className="font-bold text-[var(--foreground)]">{provider.account_name}</p>
                             </div>
                           )}
                           {provider.branch && (
                             <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)]">
                               <p className="text-xs text-[var(--foreground-muted)] mb-1">Branch</p>
-                              <p className="text-[var(--foreground)]">{provider.branch}</p>
+                              <p className="font-bold text-[var(--foreground)]">{provider.branch}</p>
                             </div>
                           )}
                         </>
                       )}
                     </div>
 
-                    {/* INSTRUCTIONS - Updated styling */}
                     {provider.instructions && (
                       <div className="p-4 bg-[var(--background-secondary)] rounded-xl border border-[var(--border)] space-y-3">
                         <p className="font-bold text-[var(--foreground)] flex items-center gap-2">
@@ -614,7 +712,6 @@ export default function PaymentPage() {
                       </div>
                     )}
 
-                    {/* Total Amount */}
                     <div className="border-t border-[var(--border)] pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-[var(--foreground-muted)]">Total Amount to Pay</span>
@@ -638,7 +735,7 @@ export default function PaymentPage() {
               )}
 
               {provider?.type === 'automatic' && !isPaid && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
                   <div className="bg-green-600 px-6 py-4">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Zap size={20} />
@@ -654,7 +751,7 @@ export default function PaymentPage() {
                     <button
                       onClick={handleRetryPayment}
                       disabled={retryingPayment}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2"
                     >
                       {retryingPayment ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
                       Pay with {provider.name}
@@ -664,7 +761,7 @@ export default function PaymentPage() {
               )}
 
               {canUpload && !isQuoteOrder && (
-                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
                   <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
                     <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
                       <Upload size={18} className="text-[var(--primary)]" />
@@ -744,7 +841,7 @@ export default function PaymentPage() {
                       <button
                         type="submit"
                         disabled={uploading || !proofFile}
-                        className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm shadow-[var(--primary)]/20"
+                        className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {uploading ? (
                           <>
@@ -764,7 +861,7 @@ export default function PaymentPage() {
               )}
 
               {existing_proof && (
-                <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
+                <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
                   <div className={`px-6 py-4 border-b border-[var(--border)] ${isAwaiting ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
                     <h2 className={`font-semibold flex items-center gap-2 ${isAwaiting ? 'text-blue-700 dark:text-blue-400' : 'text-green-700 dark:text-green-400'}`}>
                       {isAwaiting ? <Clock size={18} /> : <CheckCircle size={18} />}
@@ -815,7 +912,7 @@ export default function PaymentPage() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden sticky top-24">
+              <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden sticky top-24">
                 <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
                   <h2 className="font-semibold text-[var(--foreground)] flex items-center gap-2">
                     <ReceiptText size={18} className="text-[var(--primary)]" />
@@ -925,7 +1022,6 @@ export default function PaymentPage() {
                 </div>
               </div>
 
-              {/* Payment Tips - No gradients, simple border */}
               <div className="mt-4 bg-[var(--background-secondary)] rounded-xl p-4 border border-[var(--border)]">
                 <div className="flex items-start gap-3">
                   <FileCheck size={16} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
