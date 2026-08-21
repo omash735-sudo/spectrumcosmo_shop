@@ -66,16 +66,6 @@ export default function OrdersPage() {
     return true;
   });
 
-  const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    awaitingVerification: orders.filter(o => o.status === 'awaiting_verification').length,
-    processing: orders.filter(o => o.status === 'processing').length,
-    shipped: orders.filter(o => o.status === 'shipped').length,
-    delivered: orders.filter(o => o.status === 'delivered').length,
-    cancelled: orders.filter(o => o.status === 'cancelled').length,
-  };
-
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -94,12 +84,10 @@ export default function OrdersPage() {
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="w-1 h-5 sm:h-7 bg-[var(--primary)] rounded-full"></div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--foreground)]">My Orders</h1>
-              {/* Sparkles removed */}
             </div>
-            <p className="text-[var(--foreground-muted)] text-xs sm:text-sm">Track your orders, view payment status, and manage deliveries</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -113,30 +101,21 @@ export default function OrdersPage() {
               href="/products"
               className="inline-flex items-center gap-2 bg-[var(--primary)] text-white px-4 py-2 rounded-xl font-medium text-sm hover:bg-[var(--primary-hover)] transition"
             >
-              <ShoppingBag size={16} />
               Shop Now
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-        <StatCard label="Total" value={stats.total} color="bg-[var(--background-card)] border-[var(--border)] text-[var(--foreground)]" />
-        <StatCard label="Pending" value={stats.pending} color="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-100 dark:border-yellow-900 text-yellow-700 dark:text-yellow-400" />
-        <StatCard label="Verifying" value={stats.awaitingVerification} color="bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-900 text-orange-700 dark:text-orange-400" />
-        <StatCard label="Processing" value={stats.processing} color="bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-900 text-purple-700 dark:text-purple-400" />
-        <StatCard label="Delivered" value={stats.delivered} color="bg-green-50 dark:bg-green-950/30 border-green-100 dark:border-green-900 text-green-700 dark:text-green-400" />
-        <StatCard label="Cancelled" value={stats.cancelled} color="bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900 text-red-700 dark:text-red-400" />
+      {/* Filters - Rectangular with curved corners */}
+      <div className="mb-6">
+        <OrderFilters
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+        />
       </div>
-
-      {/* Filters */}
-      <OrderFilters
-        filterStatus={filterStatus}
-        onFilterChange={setFilterStatus}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-      />
 
       {/* Orders List */}
       {filteredOrders.length === 0 ? (
@@ -151,16 +130,6 @@ export default function OrdersPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// Stat Card Component
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className={`rounded-xl border p-3 text-center shadow-sm ${color}`}>
-      <p className="text-xl font-bold">{value}</p>
-      <p className="text-[10px] sm:text-xs truncate">{label}</p>
     </div>
   );
 }
