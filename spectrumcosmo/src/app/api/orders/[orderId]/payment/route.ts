@@ -2,19 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryOne, queryAsArray } from '@/lib/db';
 
-interface PaymentConfirmation {
-  id: number;
-  order_id: string;
-  proof_image_url: string;
-  transaction_reference: string | null;
-  notes: string | null;
-  status: string;
-  submitted_at: Date;
-  reviewed_at: Date | null;
-  reviewed_by: number | null;
-  rejection_reason: string | null;
-}
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -72,10 +59,10 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get payment confirmations
-    let confirmations: PaymentConfirmation[] = [];
+    // Get payment confirmations - use any[] to avoid type mismatch
+    let confirmations: any[] = [];
     try {
-      confirmations = await queryAsArray<PaymentConfirmation>`
+      confirmations = await queryAsArray`
         SELECT * FROM payment_confirmation
         WHERE order_id = ${orderId}
         ORDER BY submitted_at DESC
