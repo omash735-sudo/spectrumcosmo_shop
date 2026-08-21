@@ -139,7 +139,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div 
-      className="group relative bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+      className="group relative bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden hover:border-[var(--primary)]/30 transition-all duration-300 hover:-translate-y-1"
       onMouseEnter={() => setShowQuickView(true)}
       onMouseLeave={() => setShowQuickView(false)}
       data-onboarding="product-card"
@@ -160,38 +160,38 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {/* Sale Badge */}
+        {/* Sale Badge - Removed shadow */}
         {hasDiscount && !isOutOfStock && !isComingSoon && (
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 shadow-md">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-anton font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
             -{discountPercent}%
           </div>
         )}
 
-        {/* Status Badge */}
+        {/* Status Badge - Removed shadow */}
         {statusBadge && StatusIcon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
-            <span className={`${statusBadge.color} text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md flex items-center gap-1`}>
+            <span className={`${statusBadge.color} text-[10px] sm:text-xs font-anton font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-1`}>
               <StatusIcon size={10} className="sm:w-3 sm:h-3" />
               <span>{statusBadge.text}</span>
             </span>
           </div>
         )}
 
-        {/* Quick View Overlay - Hide on mobile */}
+        {/* Quick View Overlay - Removed shadow */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
           <div className="hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            <button className="bg-[var(--background-card)] text-[var(--foreground)] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-[var(--primary)] hover:text-white transition shadow-lg flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            <button className="bg-[var(--background-card)] text-[var(--foreground)] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-kanit font-medium hover:bg-[var(--primary)] hover:text-white transition flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
               <Eye size={14} className="sm:w-4 sm:h-4" />
               Quick View
             </button>
           </div>
         )}
 
-        {/* Wishlist Button */}
+        {/* Wishlist Button - Removed shadow */}
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-md hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20 min-h-[32px] min-w-[32px] flex items-center justify-center"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[var(--background-card)]/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 hover:bg-[var(--background-card)] hover:scale-110 transition-all duration-200 disabled:opacity-50 z-20 min-h-[32px] min-w-[32px] flex items-center justify-center"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           data-onboarding="wishlist-grid"
         >
@@ -202,7 +202,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
 
         {/* Category Tag */}
-        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 max-w-[80px] sm:max-w-[120px] truncate">
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs font-kanit px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 max-w-[80px] sm:max-w-[120px] truncate">
           {categoryName}
         </div>
       </div>
@@ -210,7 +210,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Info */}
       <div className="p-2.5 sm:p-4">
         <Link href={`/products/${product.id}`} onClick={handleProductClick}>
-          <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
+          <h3 className="font-kanit font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
             {productName}
           </h3>
         </Link>
@@ -219,7 +219,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {reviewCount > 0 ? (
           <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
             <StarRating rating={avgRating} size={12} />
-            <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">({reviewCount})</span>
+            <span className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)]">({reviewCount})</span>
           </div>
         ) : (
           <div className="flex items-center gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
@@ -228,36 +228,36 @@ export default function ProductCard({ product }: ProductCardProps) {
             <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
             <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
             <Star size={10} className="text-[var(--border)] sm:w-3 sm:h-3" />
-            <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)] ml-0.5 sm:ml-1">No reviews</span>
+            <span className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)] ml-0.5 sm:ml-1">No reviews</span>
           </div>
         )}
         
-        {/* Price */}
+        {/* Price - Uses foreground color for dark/light mode */}
         <div className="mt-1 sm:mt-2 flex items-baseline gap-1 sm:gap-2 flex-wrap">
-          <span className="text-base sm:text-xl font-bold text-[var(--primary)]">
+          <span className="text-base sm:text-xl font-anton font-bold text-[var(--foreground)]">
             <CurrencyPrice amountUsd={priceMwk} />
           </span>
           {hasDiscount && product.compare_price && (
-            <span className="text-xs sm:text-sm text-[var(--foreground-muted)] line-through">
+            <span className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] line-through">
               <CurrencyPrice amountUsd={Number(product.compare_price)} />
             </span>
           )}
         </div>
 
-        {/* Stock Warning */}
+        {/* Stock Warning - Removed shadow */}
         {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
-          <p className="text-[10px] sm:text-xs text-[var(--primary)] mt-0.5 sm:mt-1">
+          <p className="text-[10px] sm:text-xs font-kanit text-[var(--primary)] mt-0.5 sm:mt-1">
             Only {product.stock_quantity} left
           </p>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Removed shadow from Add to Cart */}
         <div className="mt-2 sm:mt-4 flex gap-1.5 sm:gap-2">
           {!isOutOfStock && !isComingSoon ? (
             <>
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]"
+                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-anton font-semibold transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]"
               >
                 <ShoppingCart size={12} className="sm:w-4 sm:h-4" />
                 <span className="hidden xs:inline">Add to Cart</span>
@@ -272,12 +272,12 @@ export default function ProductCard({ product }: ProductCardProps) {
               </Link>
             </>
           ) : isComingSoon ? (
-            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-kanit font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
               <Clock size={12} className="sm:w-4 sm:h-4" />
               <span>Coming Soon</span>
             </button>
           ) : (
-            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
+            <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-kanit font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
               <Ban size={12} className="sm:w-4 sm:h-4" />
               <span>Out of Stock</span>
             </button>
