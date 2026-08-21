@@ -9,7 +9,7 @@ import {
   AlertCircle, Download, Eye, MapPin, Phone, Calendar, 
   DollarSign, CreditCard, ShoppingBag, Heart, Shield,
   ChevronRight, ArrowLeft, Printer, MessageCircle, Star,
-  TrendingUp, Sparkles
+  TrendingUp
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -37,6 +37,7 @@ interface Order {
   referral_code: string | null;
   custom_delivery_method: string | null;
   delivery_fee: number | null;
+  currency: string | null;
   items: Array<{ 
     product_name: string; 
     quantity: number; 
@@ -56,6 +57,11 @@ interface StatusHistory {
   status_name: string;
   color: string;
 }
+
+// Helper function to format amounts with currency
+const formatAmount = (amount: number, currency: string) => {
+  return `${currency} ${amount?.toLocaleString() || '0'}`;
+};
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any; step: number }> = {
   pending: { label: 'Order Placed', color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30', icon: Clock, step: 1 },
@@ -168,6 +174,8 @@ export default function OrderDetailPage() {
     );
   }
 
+  const displayCurrency = order.currency || 'MWK';
+
   const currentStatus = statusConfig[order.status] || statusConfig.pending;
   const CurrentIcon = currentStatus.icon;
   const showConfirmButton = order.status === 'delivered' && !order.delivered_at;
@@ -175,13 +183,13 @@ export default function OrderDetailPage() {
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   const deliveryFeeDisplay = order.delivery_fee && order.delivery_fee > 0 
-    ? `MWK ${order.delivery_fee.toLocaleString()}`
+    ? formatAmount(order.delivery_fee, displayCurrency)
     : 'To be confirmed';
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
       
-      {/* Header - With Manga Panel */}
+      {/* Header */}
       <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-5 sm:mb-6">
         <div className="relative z-10 p-4 sm:p-5 md:p-6 bg-[var(--background-card)]/95">
           <Link href="/account/orders" className="inline-flex items-center gap-0.5 sm:gap-1 text-[var(--foreground-muted)] hover:text-[var(--primary)] text-xs sm:text-sm mb-3 sm:mb-4 transition group">
@@ -372,8 +380,8 @@ export default function OrderDetailPage() {
                 <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-semibold text-[var(--foreground)] text-xs sm:text-sm">MWK {item.total_price?.toLocaleString()}</p>
-                <p className="text-[9px] sm:text-xs text-[var(--foreground-muted)]">MWK {item.unit_price?.toLocaleString()} each</p>
+                <p className="font-semibold text-[var(--foreground)] text-xs sm:text-sm">{formatAmount(item.total_price, displayCurrency)}</p>
+                <p className="text-[9px] sm:text-xs text-[var(--foreground-muted)]">{formatAmount(item.unit_price, displayCurrency)} each</p>
               </div>
             </div>
           ))}
@@ -381,7 +389,7 @@ export default function OrderDetailPage() {
             <div className="space-y-1.5 sm:space-y-2 max-w-xs ml-auto">
               <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-[var(--foreground-muted)]">Subtotal</span>
-                <span className="text-[var(--foreground)]">MWK {order.subtotal?.toLocaleString() || order.total_amount?.toLocaleString()}</span>
+                <span className="text-[var(--foreground)]">{formatAmount(order.subtotal || order.total_amount, displayCurrency)}</span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-[var(--foreground-muted)]">Delivery Fee</span>
@@ -390,19 +398,19 @@ export default function OrderDetailPage() {
               {order.discount_amount > 0 && (
                 <div className="flex justify-between text-xs sm:text-sm text-green-600 dark:text-green-400">
                   <span>Discount</span>
-                  <span>- MWK {order.discount_amount?.toLocaleString()}</span>
+                  <span>- {formatAmount(order.discount_amount, displayCurrency)}</span>
                 </div>
               )}
               <div className="border-t border-[var(--border)] pt-1.5 sm:pt-2 flex justify-between font-bold">
                 <span className="text-[var(--foreground)] text-sm sm:text-base">Total</span>
-                <span className="text-[var(--primary)] text-base sm:text-lg">MWK {order.total_amount?.toLocaleString()}</span>
+                <span className="text-[var(--primary)] text-base sm:text-lg">{formatAmount(order.total_amount, displayCurrency)}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Order Timeline - With Manga Panel */}
+      {/* Order Timeline */}
       {history.length > 0 && (
         <div className="manga-bg cards-manga rounded-xl border border-[var(--border)] overflow-hidden mb-6 sm:mb-8 shadow-sm">
           <div className="relative z-10 bg-[var(--background-card)] p-4 sm:p-5">
