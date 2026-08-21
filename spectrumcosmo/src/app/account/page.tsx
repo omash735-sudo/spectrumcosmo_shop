@@ -48,36 +48,39 @@ function parseAmount(amount: any): number {
   return 0
 }
 
-// Currency formatter helper
 function formatCurrency(amount: number, currency: string = 'MWK'): string {
   if (currency === 'MWK') {
     return `MWK ${amount.toLocaleString()}`
   }
-  return `${currency} ${amount.toLocaleString()}`
+  return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-// Get display amount from order
-function getDisplayAmount(order: any): { amount: number; currency: string } {
-  // Check if order has display_amount and display_currency from conversion
-  if (order.display_amount && order.display_currency) {
+// Get display amount from order with conversion
+function getDisplayAmount(order: any, rates: Record<string, number>, userCurrency: string): { amount: number; currency: string } {
+  const mwkAmount = parseAmount(order.total_amount)
+  
+  // If user prefers MWK or no conversion needed
+  if (userCurrency === 'MWK') {
     return {
-      amount: parseAmount(order.display_amount),
-      currency: order.display_currency
+      amount: mwkAmount,
+      currency: 'MWK'
     }
   }
   
-  // Check if order has receiving_amount and receiving_currency
-  if (order.receiving_amount && order.receiving_currency) {
+  // Check if we have the conversion rate for this currency
+  if (rates && rates[userCurrency]) {
+    // Convert MWK to user's preferred currency
+    const convertedAmount = mwkAmount / rates[userCurrency]
     return {
-      amount: parseAmount(order.receiving_amount),
-      currency: order.receiving_currency
+      amount: convertedAmount,
+      currency: userCurrency
     }
   }
   
-  // Fallback to total_amount with MWK
+  // Fallback to MWK
   return {
-    amount: parseAmount(order.total_amount),
-    currency: order.currency || 'MWK'
+    amount: mwkAmount,
+    currency: 'MWK'
   }
 }
 
@@ -88,6 +91,28 @@ export default function AccountOverview() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [userCurrency, setUserCurrency] = useState('MWK')
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ MWK: 1 })
+  const [ratesLoaded, setRatesLoaded] = useState(false)
+
+  // Fetch exchange rates
+  useEffect(() => {
+    async function fetchRates() {
+      try {
+        const res = await fetch('/api/exchange-rates')
+        if (res.ok) {
+          const data = await res.json()
+          setExchangeRates(data)
+          setRatesLoaded(true)
+        }
+      } catch (error) {
+        console.error('Failed to fetch exchange rates:', error)
+        // Fallback rates
+        setExchangeRates({ MWK: 1, USD: 1, EUR: 0.92, GBP: 0.75, ZAR: 18.5 })
+        setRatesLoaded(true)
+      }
+    }
+    fetchRates()
+  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -97,7 +122,6 @@ export default function AccountOverview() {
         if (userRes.ok) {
           const userData = await userRes.json()
           setUser(userData.user)
-          // Set user's preferred currency if available
           if (userData.user?.preferred_currency) {
             setUserCurrency(userData.user.preferred_currency)
           }
@@ -128,19 +152,20 @@ export default function AccountOverview() {
     o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
   ).length
   
-  // Calculate total spent with currency awareness
+  // Calculate total spent with proper currency conversion
   const totalSpent = orders.reduce((sum, o) => {
-    const display = getDisplayAmount(o)
-    // Only sum if currency matches user's preferred currency
-    // Or if it's the same currency type
-    if (display.currency === userCurrency || display.currency === 'MWK') {
-      return sum + display.amount
+    const mwkAmount = parseAmount(o.total_amount)
+    if (userCurrency === 'MWK') {
+      return sum + mwkAmount
     }
-    // If different currency, we'd need conversion rate - skip or add raw
-    return sum + parseAmount(o.total_amount)
+    // Convert MWK to user's currency if rates are available
+    if (exchangeRates && exchangeRates[userCurrency]) {
+      return sum + (mwkAmount / exchangeRates[userCurrency])
+    }
+    return sum + mwkAmount
   }, 0)
 
-  if (loading) {
+  if (loading || !ratesLoaded) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -154,7 +179,7 @@ export default function AccountOverview() {
   return (
     <div className="space-y-5 sm:space-y-6 md:space-y-8" data-onboarding="account">
       
-      {/* Hero Header - Removed shadow-lg */}
+      {/* Hero Header */}
       <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden border border-[var(--border)]">
         <div className="relative z-10 bg-[var(--primary)]/95 p-5 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -177,7 +202,7 @@ export default function AccountOverview() {
         </div>
       </div>
 
-      {/* Stats Cards - Removed shadows */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
@@ -212,7 +237,7 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      {/* Recent Orders - Removed shadow */}
+      {/* Recent Orders */}
       <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <div className="flex justify-between items-center">
@@ -243,7 +268,8 @@ export default function AccountOverview() {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
               const orderDisplayNumber = formatOrderNumber(order)
-              const display = getDisplayAmount(order)
+              const display = getDisplayAmount(order, exchangeRates, userCurrency)
+              const mwkAmount = parseAmount(order.total_amount)
               
               return (
                 <Link 
@@ -270,9 +296,9 @@ export default function AccountOverview() {
                         <span className="font-medium text-[var(--foreground)]">
                           {formatCurrency(display.amount, display.currency)}
                         </span>
-                        {display.currency !== 'MWK' && order.total_amount && (
+                        {display.currency !== 'MWK' && (
                           <span className="text-[10px] text-[var(--foreground-muted)]/60">
-                            (MWK {parseAmount(order.total_amount).toLocaleString()})
+                            (MWK {mwkAmount.toLocaleString()})
                           </span>
                         )}
                       </div>
@@ -291,7 +317,7 @@ export default function AccountOverview() {
         )}
       </div>
 
-      {/* Quick Actions - Removed shadows */}
+      {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Link href="/account/profile" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
@@ -309,7 +335,7 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      {/* Rewards Banner - Removed shadow */}
+      {/* Rewards Banner */}
       <div className="bg-[var(--background-secondary)] rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-[var(--border)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
