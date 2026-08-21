@@ -97,10 +97,9 @@ export default function AccountOverview() {
     o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
   ).length
   
-  // Calculate total spent - just sum all orders in their original currency
-  // This is a raw sum, not converted
+  // Calculate total spent in MWK (what you receive)
   const totalSpent = orders.reduce((sum, o) => {
-    return sum + parseAmount(o.total_amount)
+    return sum + parseAmount(o.mwk_amount || o.total_amount)
   }, 0)
 
   if (loading) {
@@ -206,8 +205,9 @@ export default function AccountOverview() {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
               const orderDisplayNumber = formatOrderNumber(order)
-              const currency = order.currency || 'MWK'
-              const amount = parseAmount(order.total_amount)
+              // Use checkout currency (what customer paid in)
+              const currency = order.checkout_currency || order.currency || 'MWK'
+              const amount = parseAmount(order.checkout_amount || order.total_amount)
               
               return (
                 <Link 
