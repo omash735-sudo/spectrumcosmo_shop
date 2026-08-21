@@ -23,9 +23,16 @@ interface OrderCardProps {
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
 
+// Helper function to format amounts with currency
+const formatAmount = (amount: number, currency: string) => {
+  return `${currency} ${amount?.toLocaleString() || '0'}`;
+};
+
 export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const displayCurrency = order.currency || 'MWK';
 
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
@@ -37,9 +44,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   
-  // Safely format total amount
   const totalAmount = order.total_amount ?? 0;
-  const formattedTotal = totalAmount.toLocaleString();
 
   const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
     setUploading(true);
@@ -126,7 +131,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
           <div className="text-right flex-shrink-0">
             <p className="text-xs text-[var(--foreground-muted)]">Total</p>
             <p className="text-base sm:text-lg font-bold text-[var(--primary)]">
-              MWK {formattedTotal}
+              {formatAmount(totalAmount, displayCurrency)}
             </p>
           </div>
         </div>
@@ -154,7 +159,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
                       <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-[var(--foreground)]">
-                      MWK {itemTotal.toLocaleString()}
+                      {formatAmount(itemTotal, displayCurrency)}
                     </p>
                   </div>
                 );
