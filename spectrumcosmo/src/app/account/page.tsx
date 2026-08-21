@@ -55,64 +55,12 @@ function formatCurrency(amount: number, currency: string = 'MWK'): string {
   return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-// Get display amount from order with conversion
-function getDisplayAmount(order: any, rates: Record<string, number>, userCurrency: string): { amount: number; currency: string } {
-  const mwkAmount = parseAmount(order.total_amount)
-  
-  // If user prefers MWK or no conversion needed
-  if (userCurrency === 'MWK') {
-    return {
-      amount: mwkAmount,
-      currency: 'MWK'
-    }
-  }
-  
-  // Check if we have the conversion rate for this currency
-  if (rates && rates[userCurrency]) {
-    // Convert MWK to user's preferred currency
-    const convertedAmount = mwkAmount / rates[userCurrency]
-    return {
-      amount: convertedAmount,
-      currency: userCurrency
-    }
-  }
-  
-  // Fallback to MWK
-  return {
-    amount: mwkAmount,
-    currency: 'MWK'
-  }
-}
-
 export default function AccountOverview() {
   const [orders, setOrders] = useState<any[]>([])
   const [wishlistCount, setWishlistCount] = useState(0)
   const [addressesCount, setAddressesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
-  const [userCurrency, setUserCurrency] = useState('MWK')
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ MWK: 1 })
-  const [ratesLoaded, setRatesLoaded] = useState(false)
-
-  // Fetch exchange rates
-  useEffect(() => {
-    async function fetchRates() {
-      try {
-        const res = await fetch('/api/exchange-rates')
-        if (res.ok) {
-          const data = await res.json()
-          setExchangeRates(data)
-          setRatesLoaded(true)
-        }
-      } catch (error) {
-        console.error('Failed to fetch exchange rates:', error)
-        // Fallback rates
-        setExchangeRates({ MWK: 1, USD: 1, EUR: 0.92, GBP: 0.75, ZAR: 18.5 })
-        setRatesLoaded(true)
-      }
-    }
-    fetchRates()
-  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -122,9 +70,6 @@ export default function AccountOverview() {
         if (userRes.ok) {
           const userData = await userRes.json()
           setUser(userData.user)
-          if (userData.user?.preferred_currency) {
-            setUserCurrency(userData.user.preferred_currency)
-          }
         }
 
         const ordersRes = await fetch('/api/account/orders')
@@ -152,20 +97,13 @@ export default function AccountOverview() {
     o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
   ).length
   
-  // Calculate total spent with proper currency conversion
+  // Calculate total spent - just sum all orders in their original currency
+  // This is a raw sum, not converted
   const totalSpent = orders.reduce((sum, o) => {
-    const mwkAmount = parseAmount(o.total_amount)
-    if (userCurrency === 'MWK') {
-      return sum + mwkAmount
-    }
-    // Convert MWK to user's currency if rates are available
-    if (exchangeRates && exchangeRates[userCurrency]) {
-      return sum + (mwkAmount / exchangeRates[userCurrency])
-    }
-    return sum + mwkAmount
+    return sum + parseAmount(o.total_amount)
   }, 0)
 
-  if (loading || !ratesLoaded) {
+  if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -194,8 +132,8 @@ export default function AccountOverview() {
             </div>
             <div className="flex items-center gap-2">
               <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-center">
-                <p className="text-lg sm:text-2xl font-bold text-white">{formatCurrency(totalSpent, userCurrency)}</p>
-                <p className="text-[10px] sm:text-xs text-white/70">Lifetime Spent</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{formatCurrency(totalSpent, 'MWK')}</p>
+                <p className="text-[10px] sm:text-xs text-white/70">Lifetime Spent (MWK)</p>
               </div>
             </div>
           </div>
@@ -268,8 +206,8 @@ export default function AccountOverview() {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
               const orderDisplayNumber = formatOrderNumber(order)
-              const display = getDisplayAmount(order, exchangeRates, userCurrency)
-              const mwkAmount = parseAmount(order.total_amount)
+              const currency = order.currency || 'MWK'
+              const amount = parseAmount(order.total_amount)
               
               return (
                 <Link 
@@ -294,13 +232,8 @@ export default function AccountOverview() {
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
                         <span className="font-medium text-[var(--foreground)]">
-                          {formatCurrency(display.amount, display.currency)}
+                          {formatCurrency(amount, currency)}
                         </span>
-                        {display.currency !== 'MWK' && (
-                          <span className="text-[10px] text-[var(--foreground-muted)]/60">
-                            (MWK {mwkAmount.toLocaleString()})
-                          </span>
-                        )}
                       </div>
                       {order.items && order.items.length > 0 && (
                         <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]/60 mt-1 line-clamp-1">
