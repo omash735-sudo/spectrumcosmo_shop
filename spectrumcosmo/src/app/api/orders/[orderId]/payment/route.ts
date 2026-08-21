@@ -7,96 +7,68 @@ export async function GET(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    console.log('========================================');
-    console.log('PAYMENT API DEBUG - START');
-    console.log('========================================');
-    
     const { orderId } = await params;
-    console.log('1. Order ID received:', orderId);
-
     const sql = getDb();
-    console.log('2. Database connected');
 
     // STEP 1: Check if order exists
-    console.log('3. Checking if order exists...');
-    try {
-      const orderCheck = await queryOne<{ id: string }>`
-        SELECT id::text FROM orders WHERE id::text = ${orderId}
-      `;
-      console.log('4. Order exists:', orderCheck ? 'YES' : 'NO');
-      
-      if (!orderCheck) {
-        console.log('ERROR: Order not found in database');
-        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-      }
-    } catch (err) {
-      console.error('ERROR in step 4 - Order check failed:', err);
-      throw err;
+    const orderCheck = await queryOne<{ id: string }>`
+      SELECT id::text FROM orders WHERE id::text = ${orderId}
+    `;
+
+    if (!orderCheck) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     // STEP 2: Get order with provider info
-    console.log('5. Fetching order with provider info...');
-    let order;
-    try {
-      order = await queryOne<{
-        id: string;
-        customer_name: string;
-        customer_email: string;
-        phone_number: string;
-        total_amount: number;
-        currency: string;
-        payment_status: string;
-        payment_method: string;
-        payment_provider_id: string | null;
-        proof_of_payment_url: string | null;
-        payment_note: string | null;
-        provider_name: string | null;
-        provider_type: string | null;
-        provider_category: string | null;
-        account_name: string | null;
-        account_number: string | null;
-        branch: string | null;
-        instructions: string | null;
-      }>`
-        SELECT 
-          o.id::text,
-          o.customer_name,
-          o.customer_email,
-          o.phone_number,
-          o.total_amount,
-          o.currency,
-          o.payment_status,
-          o.payment_method,
-          o.payment_provider_id,
-          o.proof_of_payment_url,
-          o.payment_note,
-          p.name as provider_name,
-          p.type as provider_type,
-          p.category as provider_category,
-          p.account_name,
-          p.account_number,
-          p.branch,
-          p.instructions
-        FROM orders o
-        LEFT JOIN payment_providers p ON p.id = o.payment_provider_id
-        WHERE o.id::text = ${orderId}
-      `;
-      console.log('6. Order fetched:', order ? 'YES' : 'NO');
-      
-      if (!order) {
-        console.log('ERROR: Order is null after query');
-        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-      }
-      console.log('   - Order total:', order.total_amount);
-      console.log('   - Order currency:', order.currency);
-      console.log('   - Payment status:', order.payment_status);
-    } catch (err) {
-      console.error('ERROR in step 6 - Order fetch failed:', err);
-      throw err;
+    const order = await queryOne<{
+      id: string;
+      customer_name: string;
+      customer_email: string;
+      phone_number: string;
+      total_amount: number;
+      currency: string;
+      payment_status: string;
+      payment_method: string;
+      payment_provider_id: string | null;
+      proof_of_payment_url: string | null;
+      payment_note: string | null;
+      provider_name: string | null;
+      provider_type: string | null;
+      provider_category: string | null;
+      account_name: string | null;
+      account_number: string | null;
+      branch: string | null;
+      instructions: string | null;
+    }>`
+      SELECT 
+        o.id::text,
+        o.customer_name,
+        o.customer_email,
+        o.phone_number,
+        o.total_amount,
+        o.currency,
+        o.payment_status,
+        o.payment_method,
+        o.payment_provider_id,
+        o.proof_of_payment_url,
+        o.payment_note,
+        p.name as provider_name,
+        p.type as provider_type,
+        p.category as provider_category,
+        p.account_name,
+        p.account_number,
+        p.branch,
+        p.instructions
+      FROM orders o
+      LEFT JOIN payment_providers p ON p.id = o.payment_provider_id
+      WHERE o.id::text = ${orderId}
+    `;
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     // STEP 3: Get order items
-    console.log('7. Fetching order items...');
     let items: any[] = [];
     try {
       items = await queryAsArray<{
@@ -117,15 +89,11 @@ export async function GET(
         FROM order_items
         WHERE order_id::text = ${orderId}
       `;
-      console.log('8. Items fetched successfully:', items.length, 'items');
     } catch (err) {
-      console.error('ERROR in step 8 - Items fetch failed:', err);
-      console.log('   Continuing without items...');
       items = [];
     }
 
     // STEP 4: Get order details
-    console.log('9. Fetching order details...');
     let orderDetails: any = null;
     try {
       orderDetails = await queryOne<{
@@ -158,19 +126,11 @@ export async function GET(
         FROM orders
         WHERE id::text = ${orderId}
       `;
-      console.log('10. Order details fetched:', orderDetails ? 'YES' : 'NO');
-      if (orderDetails) {
-        console.log('    - Status:', orderDetails.status);
-        console.log('    - Subtotal:', orderDetails.subtotal);
-      }
     } catch (err) {
-      console.error('ERROR in step 10 - Order details fetch failed:', err);
-      console.log('   Continuing without order details...');
       orderDetails = null;
     }
 
     // STEP 5: Get payment confirmations
-    console.log('11. Fetching payment confirmations...');
     let confirmations: any[] = [];
     try {
       confirmations = await queryAsArray<any>`
@@ -178,99 +138,71 @@ export async function GET(
         WHERE order_id = ${orderId}
         ORDER BY submitted_at DESC
       `;
-      console.log('12. Payment confirmations fetched:', confirmations.length, 'records');
     } catch (err) {
-      console.error('ERROR in step 12 - Payment confirmations fetch failed:', err);
-      console.log('   Continuing without confirmations...');
       confirmations = [];
     }
 
     // STEP 6: Build response
-    console.log('13. Building response...');
     const displayCurrency = order.currency || 'MWK';
-    
-    try {
-      const responseData = {
-        order: {
-          id: order.id,
-          customer_name: order.customer_name,
-          customer_email: order.customer_email,
-          customer_phone: order.phone_number,
-          total_amount: order.total_amount,
-          subtotal: orderDetails?.subtotal || 0,
-          shipping_cost: orderDetails?.shipping_cost || 0,
-          discount_amount: orderDetails?.discount_amount || 0,
-          payment_status: order.payment_status,
-          payment_method: order.payment_method,
-          status: orderDetails?.status || 'pending',
-          promo_code: orderDetails?.promo_code || null,
-          promo_discount: orderDetails?.promo_discount || null,
-          referral_code: orderDetails?.referral_code || null,
-          created_at: orderDetails?.created_at || new Date().toISOString(),
-          expires_at: orderDetails?.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-          delivery_quote_status: orderDetails?.delivery_quote_status || null,
-          quoted_delivery_fee: orderDetails?.quoted_delivery_fee || null,
-          delivery_method: orderDetails?.delivery_method || null,
-          currency: displayCurrency,
-          display_amount: order.total_amount,
-          receiving_currency: 'MWK',
-          receiving_amount: order.total_amount,
-        },
-        provider: order.provider_name ? {
-          name: order.provider_name,
-          type: order.provider_type,
-          category: order.provider_category,
-          account_name: order.account_name,
-          account_number: order.account_number,
-          branch: order.branch,
-          instructions: order.instructions,
-          logo_url: null,
-        } : null,
-        existing_proof: order.proof_of_payment_url,
-        existing_note: order.payment_note,
-        existing_transaction_ref: null,
-        items: items.map(item => ({
-          id: String(item.id),
-          product_name: item.product_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.subtotal,
-          image_url: '',
-          custom_details: item.custom_details,
-        })),
-        confirmations: confirmations,
-      };
 
-      console.log('14. Response built successfully');
-      console.log('========================================');
-      console.log('PAYMENT API DEBUG - SUCCESS');
-      console.log('========================================');
-      
-      return NextResponse.json(responseData);
-    } catch (err) {
-      console.error('ERROR in step 14 - Building response failed:', err);
-      throw err;
-    }
+    const responseData = {
+      order: {
+        id: order.id,
+        customer_name: order.customer_name,
+        customer_email: order.customer_email,
+        customer_phone: order.phone_number,
+        total_amount: order.total_amount,
+        subtotal: orderDetails?.subtotal || 0,
+        shipping_cost: orderDetails?.shipping_cost || 0,
+        discount_amount: orderDetails?.discount_amount || 0,
+        payment_status: order.payment_status,
+        payment_method: order.payment_method,
+        status: orderDetails?.status || 'pending',
+        promo_code: orderDetails?.promo_code || null,
+        promo_discount: orderDetails?.promo_discount || null,
+        referral_code: orderDetails?.referral_code || null,
+        created_at: orderDetails?.created_at || new Date().toISOString(),
+        expires_at: orderDetails?.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        delivery_quote_status: orderDetails?.delivery_quote_status || null,
+        quoted_delivery_fee: orderDetails?.quoted_delivery_fee || null,
+        delivery_method: orderDetails?.delivery_method || null,
+        currency: displayCurrency,
+        display_amount: order.total_amount,
+        receiving_currency: 'MWK',
+        receiving_amount: order.total_amount,
+      },
+      provider: order.provider_name ? {
+        name: order.provider_name,
+        type: order.provider_type,
+        category: order.provider_category,
+        account_name: order.account_name,
+        account_number: order.account_number,
+        branch: order.branch,
+        instructions: order.instructions,
+        logo_url: null,
+      } : null,
+      existing_proof: order.proof_of_payment_url,
+      existing_note: order.payment_note,
+      existing_transaction_ref: null,
+      items: items.map(item => ({
+        id: String(item.id),
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.subtotal,
+        image_url: '',
+        custom_details: item.custom_details,
+      })),
+      confirmations: confirmations,
+    };
+
+    return NextResponse.json(responseData);
 
   } catch (err) {
-    console.error('========================================');
-    console.error('PAYMENT API DEBUG - FATAL ERROR');
-    console.error('========================================');
-    console.error('Error object:', err);
-    console.error('Error message:', err instanceof Error ? err.message : 'Unknown error');
-    console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
-    console.error('========================================');
-    
     const errorMessage = process.env.NODE_ENV === 'production'
       ? 'Internal server error'
       : err instanceof Error ? err.message : 'Unknown error';
-    
-    return NextResponse.json({ 
-      error: errorMessage,
-      debug: process.env.NODE_ENV !== 'production' ? {
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : 'No stack'
-      } : undefined
-    }, { status: 500 });
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
