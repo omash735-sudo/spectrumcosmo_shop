@@ -39,18 +39,19 @@ export default async function CategoriesSection() {
       <div className="flex items-center justify-between mb-5 md:mb-8">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-1 h-5 sm:h-6 md:h-7 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-          <h2 className="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white">Shop by Category</h2>
+          <h2 className="text-base sm:text-lg md:text-2xl font-bold font-kanit text-gray-900 dark:text-white">
+            Shop by Category
+          </h2>
         </div>
         <Link 
           href="/products" 
-          className="text-xs md:text-sm text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-medium flex items-center gap-1 group"
+          className="text-xs md:text-sm text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-kanit font-medium flex items-center gap-1 group"
         >
           View all
           <ArrowRight size={12} className="md:w-[14px] md:h-[14px] group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
 
-      {/* MOVED data-onboarding to the grid container only */}
       <div 
         className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5"
         data-onboarding="categories"
@@ -80,7 +81,7 @@ export default async function CategoriesSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block" />
                 
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 hidden md:flex">
-                  <span className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold shadow-lg flex items-center gap-1">
+                  <span className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-anton font-semibold shadow-lg flex items-center gap-1 tracking-wider">
                     Shop <ArrowRight size={10} className="sm:w-3 sm:h-3" />
                   </span>
                 </div>
@@ -88,10 +89,10 @@ export default async function CategoriesSection() {
             </div>
             
             <div className="text-center mt-1.5 sm:mt-2 md:mt-3">
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] sm:text-xs md:text-sm lg:text-base group-hover:text-orange-500 transition-colors line-clamp-1">
+              <h3 className="font-kanit font-semibold text-gray-800 dark:text-gray-200 text-[11px] sm:text-xs md:text-sm lg:text-base group-hover:text-orange-500 transition-colors line-clamp-1">
                 {category.name}
               </h3>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              <p className="font-kanit text-[9px] sm:text-[10px] md:text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {category.product_count || 0} items
               </p>
             </div>
