@@ -48,12 +48,46 @@ function parseAmount(amount: any): number {
   return 0
 }
 
+// Currency formatter helper
+function formatCurrency(amount: number, currency: string = 'MWK'): string {
+  if (currency === 'MWK') {
+    return `MWK ${amount.toLocaleString()}`
+  }
+  return `${currency} ${amount.toLocaleString()}`
+}
+
+// Get display amount from order
+function getDisplayAmount(order: any): { amount: number; currency: string } {
+  // Check if order has display_amount and display_currency from conversion
+  if (order.display_amount && order.display_currency) {
+    return {
+      amount: parseAmount(order.display_amount),
+      currency: order.display_currency
+    }
+  }
+  
+  // Check if order has receiving_amount and receiving_currency
+  if (order.receiving_amount && order.receiving_currency) {
+    return {
+      amount: parseAmount(order.receiving_amount),
+      currency: order.receiving_currency
+    }
+  }
+  
+  // Fallback to total_amount with MWK
+  return {
+    amount: parseAmount(order.total_amount),
+    currency: order.currency || 'MWK'
+  }
+}
+
 export default function AccountOverview() {
   const [orders, setOrders] = useState<any[]>([])
   const [wishlistCount, setWishlistCount] = useState(0)
   const [addressesCount, setAddressesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [userCurrency, setUserCurrency] = useState('MWK')
 
   useEffect(() => {
     async function fetchData() {
@@ -63,6 +97,10 @@ export default function AccountOverview() {
         if (userRes.ok) {
           const userData = await userRes.json()
           setUser(userData.user)
+          // Set user's preferred currency if available
+          if (userData.user?.preferred_currency) {
+            setUserCurrency(userData.user.preferred_currency)
+          }
         }
 
         const ordersRes = await fetch('/api/account/orders')
@@ -89,7 +127,18 @@ export default function AccountOverview() {
   const activeOrdersCount = orders.filter(o => 
     o.status === 'shipped' || o.status === 'processing' || o.status === 'pending'
   ).length
-  const totalSpent = orders.reduce((sum, o) => sum + parseAmount(o.total_amount), 0)
+  
+  // Calculate total spent with currency awareness
+  const totalSpent = orders.reduce((sum, o) => {
+    const display = getDisplayAmount(o)
+    // Only sum if currency matches user's preferred currency
+    // Or if it's the same currency type
+    if (display.currency === userCurrency || display.currency === 'MWK') {
+      return sum + display.amount
+    }
+    // If different currency, we'd need conversion rate - skip or add raw
+    return sum + parseAmount(o.total_amount)
+  }, 0)
 
   if (loading) {
     return (
@@ -105,30 +154,32 @@ export default function AccountOverview() {
   return (
     <div className="space-y-5 sm:space-y-6 md:space-y-8" data-onboarding="account">
       
-      <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
+      {/* Hero Header - Removed shadow-lg */}
+      <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden border border-[var(--border)]">
         <div className="relative z-10 bg-[var(--primary)]/95 p-5 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 bg-[var(--background-card)]/20 backdrop-blur-sm px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
                 <span className="text-[10px] sm:text-xs font-bold text-white">Welcome Back</span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--foreground)]">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                 Hello, {user?.name || user?.email?.split('@')[0] || 'Guest'}
               </h1>
-              <p className="text-[var(--foreground-muted)] text-xs sm:text-sm mt-1">Track your orders and manage your account</p>
+              <p className="text-white/70 text-xs sm:text-sm mt-1">Track your orders and manage your account</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="bg-white/20 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-center">
-                <p className="text-lg sm:text-2xl font-bold text-[var(--foreground)]">{totalSpent.toLocaleString()} MWK</p>
-                <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">Lifetime Spent</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{formatCurrency(totalSpent, userCurrency)}</p>
+                <p className="text-[10px] sm:text-xs text-white/70">Lifetime Spent</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Stats Cards - Removed shadows */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
             <ShoppingBag size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
@@ -136,7 +187,7 @@ export default function AccountOverview() {
           <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Total Orders</p>
         </Link>
         
-        <Link href="/account/wishlist" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+        <Link href="/account/wishlist" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
             <Heart size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
@@ -144,7 +195,7 @@ export default function AccountOverview() {
           <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Wishlist Items</p>
         </Link>
         
-        <Link href="/account/addresses" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+        <Link href="/account/addresses" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
             <MapPin size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
@@ -152,7 +203,7 @@ export default function AccountOverview() {
           <p className="text-[11px] sm:text-sm text-[var(--foreground-muted)]">Saved Addresses</p>
         </Link>
         
-        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-sm border border-[var(--border)] hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
+        <Link href="/account/orders" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 hover:-translate-y-0.5">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--primary)]/10 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition">
             <PackageSearch size={18} className="text-[var(--primary)] sm:w-5 sm:h-5" />
           </div>
@@ -161,7 +212,8 @@ export default function AccountOverview() {
         </Link>
       </div>
 
-      <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
+      {/* Recent Orders - Removed shadow */}
+      <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -191,7 +243,7 @@ export default function AccountOverview() {
               const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
               const StatusIcon = statusConfig.icon
               const orderDisplayNumber = formatOrderNumber(order)
-              const totalAmount = parseAmount(order.total_amount)
+              const display = getDisplayAmount(order)
               
               return (
                 <Link 
@@ -216,8 +268,13 @@ export default function AccountOverview() {
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
                         <span className="font-medium text-[var(--foreground)]">
-                          MWK {totalAmount.toLocaleString()}
+                          {formatCurrency(display.amount, display.currency)}
                         </span>
+                        {display.currency !== 'MWK' && order.total_amount && (
+                          <span className="text-[10px] text-[var(--foreground-muted)]/60">
+                            (MWK {parseAmount(order.total_amount).toLocaleString()})
+                          </span>
+                        )}
                       </div>
                       {order.items && order.items.length > 0 && (
                         <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)]/60 mt-1 line-clamp-1">
@@ -234,15 +291,16 @@ export default function AccountOverview() {
         )}
       </div>
 
+      {/* Quick Actions - Removed shadows */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        <Link href="/account/profile" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
+        <Link href="/account/profile" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
             <User size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition sm:w-5 sm:h-5" />
           </div>
           <h3 className="font-semibold text-[var(--foreground)] group-hover:text-[var(--primary)] transition text-sm sm:text-base">Profile</h3>
           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Manage your info</p>
         </Link>
-        <Link href="/account/settings" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
+        <Link href="/account/settings" className="group bg-[var(--background-card)] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[var(--border)] hover:border-[var(--primary)]/30 transition-all duration-200 text-center">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[var(--background-secondary)] rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 group-hover:bg-[var(--primary)]/10 transition">
             <Settings size={18} className="text-[var(--foreground-muted)] group-hover:text-[var(--primary)] transition sm:w-5 sm:h-5" />
           </div>
@@ -251,6 +309,7 @@ export default function AccountOverview() {
         </Link>
       </div>
 
+      {/* Rewards Banner - Removed shadow */}
       <div className="bg-[var(--background-secondary)] rounded-lg sm:rounded-xl p-3.5 sm:p-5 border border-[var(--border)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
