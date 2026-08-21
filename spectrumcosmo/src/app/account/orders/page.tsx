@@ -24,46 +24,6 @@ export default function OrdersPage() {
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ MWK: 1 });
-  const [userCurrency, setUserCurrency] = useState('MWK');
-  const [ratesLoaded, setRatesLoaded] = useState(false);
-
-  // Fetch exchange rates
-  useEffect(() => {
-    async function fetchRates() {
-      try {
-        const res = await fetch('/api/exchange-rates');
-        if (res.ok) {
-          const data = await res.json();
-          setExchangeRates(data);
-          setRatesLoaded(true);
-        }
-      } catch (error) {
-        console.error('Failed to fetch exchange rates:', error);
-        setExchangeRates({ MWK: 1 });
-        setRatesLoaded(true);
-      }
-    }
-    fetchRates();
-  }, []);
-
-  // Fetch user currency preference
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.preferred_currency) {
-            setUserCurrency(data.user.preferred_currency);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
-      }
-    }
-    fetchUser();
-  }, []);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -106,7 +66,7 @@ export default function OrdersPage() {
     return true;
   });
 
-  if (loading || !ratesLoaded) {
+  if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -166,13 +126,7 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <OrderCard 
-              key={order.id} 
-              order={order} 
-              onRefresh={loadOrders}
-              exchangeRates={exchangeRates}
-              userCurrency={userCurrency}
-            />
+            <OrderCard key={order.id} order={order} onRefresh={loadOrders} />
           ))}
         </div>
       )}
