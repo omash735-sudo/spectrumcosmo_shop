@@ -26,7 +26,7 @@ import TrackVisits from '@/components/TrackVisits';
 
 const mPlus1p = M_PLUS_1p({
   weight: ['400', '700', '800', '900'],
-  subsets: ['latin', 'japanese', 'cyrillic'],
+  subsets: ['latin', 'cyrillic', 'latin-ext'],
   variable: '--font-mplus',
   display: 'swap',
 });
@@ -61,7 +61,7 @@ const trainOne = Train_One({
 
 const dotGothic = DotGothic16({
   weight: ['400'],
-  subsets: ['latin', 'japanese', 'cyrillic'],
+  subsets: ['latin', 'cyrillic', 'latin-ext'],
   variable: '--font-dot-gothic',
   display: 'swap',
 });
