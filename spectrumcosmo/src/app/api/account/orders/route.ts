@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         phone_number,
         delivery_address, 
         total_amount, 
+        currency,
         status, 
         payment_method, 
         payment_status,
@@ -163,7 +164,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Checking order existence for ID:', id);
     const [existingOrder] = await sql`
-      SELECT id, status, payment_status, customer_name, total_amount, customer_email
+      SELECT id, status, payment_status, customer_name, total_amount, customer_email, currency
       FROM orders 
       WHERE id = ${id}::uuid AND (user_id = ${user.id} OR customer_email = ${user.email})
     `;
@@ -217,7 +218,7 @@ export async function POST(req: NextRequest) {
       await sendMail({
         to: adminEmail,
         subject: `Payment Proof Uploaded - Order ${id.slice(-8)}`,
-        text: `Customer: ${existingOrder.customer_name}\nAmount: MWK ${existingOrder.total_amount}\nTransaction Ref: ${transactionReference || 'N/A'}\nProof: ${proofOfPaymentUrl}`,
+        text: `Customer: ${existingOrder.customer_name}\nAmount: ${existingOrder.currency || 'MWK'} ${existingOrder.total_amount}\nTransaction Ref: ${transactionReference || 'N/A'}\nProof: ${proofOfPaymentUrl}`,
       }).catch(err => console.error('Admin email failed:', err));
     }
 
