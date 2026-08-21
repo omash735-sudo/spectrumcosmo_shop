@@ -33,14 +33,14 @@ const mPlus1p = M_PLUS_1p({
 
 const notoSansJP = Noto_Sans_JP({
   weight: ['400', '500', '700', '800', '900'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'cyrillic', 'latin-ext', 'vietnamese'],
   variable: '--font-noto-sans',
   display: 'swap',
 });
 
 const zenMaruGothic = Zen_Maru_Gothic({
   weight: ['400', '500', '700', '900'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'cyrillic', 'greek', 'latin-ext'],
   variable: '--font-zen-maru',
   display: 'swap',
 });
