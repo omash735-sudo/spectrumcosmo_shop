@@ -18,21 +18,60 @@ import OrderTimeline from './OrderTimeline';
 interface OrderCardProps {
   order: Order;
   onRefresh: () => void;
+  exchangeRates?: Record<string, number>;
+  userCurrency?: string;
 }
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
 
-// Helper function to format amounts with currency
-const formatAmount = (amount: number, currency: string) => {
-  return `${currency} ${amount?.toLocaleString() || '0'}`;
-};
+// Helper function to parse amount
+function parseAmount(amount: any): number {
+  if (typeof amount === 'number') return amount;
+  if (typeof amount === 'string') {
+    const cleaned = amount.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
 
-export default function OrderCard({ order, onRefresh }: OrderCardProps) {
+// Helper function to format amounts with currency
+function formatCurrency(amount: number, currency: string = 'MWK'): string {
+  if (currency === 'MWK') {
+    return `MWK ${amount.toLocaleString()}`;
+  }
+  return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Get display amount with conversion
+function getDisplayAmount(order: Order, rates: Record<string, number>, userCurrency: string): { amount: number; currency: string } {
+  const mwkAmount = parseAmount(order.total_amount);
+  
+  // If user prefers MWK or no conversion needed
+  if (userCurrency === 'MWK' || !rates || !rates[userCurrency]) {
+    return {
+      amount: mwkAmount,
+      currency: 'MWK'
+    };
+  }
+  
+  // Convert MWK to user's preferred currency
+  const convertedAmount = mwkAmount / rates[userCurrency];
+  return {
+    amount: convertedAmount,
+    currency: userCurrency
+  };
+}
+
+export default function OrderCard({ 
+  order, 
+  onRefresh,
+  exchangeRates = { MWK: 1 },
+  userCurrency = 'MWK'
+}: OrderCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  const displayCurrency = order.currency || 'MWK';
 
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
@@ -44,7 +83,8 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   
-  const totalAmount = order.total_amount ?? 0;
+  const display = getDisplayAmount(order, exchangeRates, userCurrency);
+  const mwkAmount = parseAmount(order.total_amount);
 
   const handleUploadProof = async (file: File, note: string, transactionRef: string) => {
     setUploading(true);
@@ -77,7 +117,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   };
 
   return (
-    <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+    <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
       
       {/* Header */}
       <div className="p-3.5 sm:p-4 md:p-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
@@ -131,8 +171,13 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
           <div className="text-right flex-shrink-0">
             <p className="text-xs text-[var(--foreground-muted)]">Total</p>
             <p className="text-base sm:text-lg font-bold text-[var(--primary)]">
-              {formatAmount(totalAmount, displayCurrency)}
+              {formatCurrency(display.amount, display.currency)}
             </p>
+            {display.currency !== 'MWK' && (
+              <p className="text-[10px] text-[var(--foreground-muted)]/60">
+                MWK {mwkAmount.toLocaleString()}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -146,7 +191,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             <div className="space-y-2">
               <p className="font-medium text-sm text-[var(--foreground)]">Items</p>
               {order.items.map((item, idx) => {
-                const itemTotal = item.total_price ?? 0;
+                const itemTotal = parseAmount(item.total_price);
                 return (
                   <div key={idx} className="flex items-center gap-3 text-sm py-1 border-b border-[var(--border)] last:border-0">
                     <div className="w-10 h-10 bg-[var(--background-secondary)] rounded-lg overflow-hidden flex-shrink-0">
@@ -159,7 +204,7 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
                       <p className="text-xs text-[var(--foreground-muted)]">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-[var(--foreground)]">
-                      {formatAmount(itemTotal, displayCurrency)}
+                      {formatCurrency(itemTotal, display.currency)}
                     </p>
                   </div>
                 );
