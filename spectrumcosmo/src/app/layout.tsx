@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { Anton, Kanit, Bangers, Black_Han_Sans } from 'next/font/google';
 import './globals.css';
 
 import { ThemeProvider } from './providers';
@@ -14,6 +15,35 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
 // import ClientOnboarding from '@/components/onboarding/ClientOnboarding'; // DISABLED - Onboarding turned off
+
+// ===== FONTS =====
+const anton = Anton({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-anton',
+  display: 'swap',
+});
+
+const kanit = Kanit({
+  weight: ['400', '700', '900'],
+  subsets: ['latin', 'thai'],
+  variable: '--font-kanit',
+  display: 'swap',
+});
+
+const bangers = Bangers({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-bangers',
+  display: 'swap',
+});
+
+const blackHanSans = Black_Han_Sans({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-black-han-sans',
+  display: 'swap',
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -68,7 +98,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html 
+      lang="en" 
+      suppressHydrationWarning
+      className={`${anton.variable} ${kanit.variable} ${bangers.variable} ${blackHanSans.variable}`}
+    >
       <body className="antialiased font-body">
         <ThemeProvider>
           <ErrorBoundary>
