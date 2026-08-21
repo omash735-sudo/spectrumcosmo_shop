@@ -1,3 +1,4 @@
+// app/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -134,7 +135,7 @@ function TrustBar() {
           {doubledItems.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div key={idx} className="flex items-center gap-2 mx-6 text-sm font-medium font-gothic">
+              <div key={idx} className="flex items-center gap-2 mx-6 text-sm font-medium font-body">
                 <Icon size={16} className="text-[var(--burnt-orange)] flex-shrink-0" />
                 <span>{item.text}</span>
               </div>
@@ -192,6 +193,7 @@ export default async function HomePage() {
 
   const h = hero || fallbackHero;
 
+  // Build marquee images from categories or use fallback
   const marqueeImages = categories && categories.length > 0
     ? categories.map(cat => ({
         url: cat.image_url!,
@@ -206,6 +208,9 @@ export default async function HomePage() {
       <EventAnnouncementBar />
       <Navbar />
       <main>
+        {/* ============================================
+            HERO SECTION - manga-bg + hero-manga
+            ============================================ */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
             <Image
@@ -229,55 +234,61 @@ export default async function HomePage() {
           <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
               
+              {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 
-                <h1 className="manga-action text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6">
+                {/* Heading - Now with manga fonts */}
+                <h1 className="manga-title text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
-                    <span className="text-[var(--burnt-orange)] font-brush">
+                    <span className="text-[var(--burnt-orange)] font-black-han">
                       {h.highlighted_word}
                     </span>
                   </span>{' '}
                   <span className="whitespace-nowrap">with pride.</span>
                 </h1>
 
-                <p className="font-gothic text-sm xs:text-base sm:text-lg text-[var(--foreground-muted)] leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8">
+                {/* Description - Using kanit font */}
+                <p className="font-kanit text-sm xs:text-base sm:text-lg text-[var(--foreground-muted)] leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8">
                   {h.description}
                 </p>
 
+                {/* Buttons - Using heading font for button text */}
                 <div className="flex flex-wrap gap-2 sm:gap-4 justify-center lg:justify-start">
                   <Link
                     href={h.button1_link}
-                    className="btn-primary"
+                    className="btn-primary font-anton tracking-wider"
                   >
                     {h.button1_text}
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
                   </Link>
                   <Link
                     href="#featured"
-                    className="btn-secondary"
+                    className="btn-secondary font-kanit font-bold"
                   >
                     View Collection
                     <ShoppingBag size={16} className="group-hover:translate-x-1 transition-transform sm:w-[18px] sm:h-[18px]" />
                   </Link>
                 </div>
 
+                {/* Features - Using body font */}
                 <div className="flex flex-wrap gap-3 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--border)]">
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-gothic">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-body">
                     <Shield size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature1}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-gothic">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-body">
                     <Truck size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature2}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-gothic">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-body">
                     <Shirt size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
                     <span className="text-xs sm:text-sm">{h.feature3}</span>
                   </div>
                 </div>
               </div>
 
+              {/* RIGHT IMAGES - MARQUEE */}
               <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
                 <div className="relative -mx-4 sm:mx-0 px-4 sm:px-0">
                   <HeroImageMarquee images={marqueeImages} />
@@ -289,16 +300,19 @@ export default async function HomePage() {
 
         <TrustBar />
 
+        {/* ============================================
+            CATEGORIES SECTION - manga-bg + cards-manga
+            ============================================ */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-gothic">
+              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-kanit">
                 Shop by Category
               </span>
               <h2 className="manga-subtitle text-3xl md:text-4xl text-[var(--foreground)] mt-2">
                 Explore Our Collections
               </h2>
-              <p className="font-gothic text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
+              <p className="font-body text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
                 Find the perfect piece that matches your style and passion
               </p>
             </div>
@@ -306,16 +320,19 @@ export default async function HomePage() {
           </div>
         </div>
 
+        {/* ============================================
+            FEATURED PRODUCTS - NO manga panel, just background color
+            ============================================ */}
         <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-gothic">
+              <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-kanit">
                 Trending Now
               </span>
               <h2 className="manga-subtitle text-3xl md:text-4xl text-[var(--foreground)] mt-2">
                 Featured Products
               </h2>
-              <p className="font-gothic text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
+              <p className="font-body text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
                 Handpicked items our customers love
               </p>
             </div>
@@ -323,17 +340,20 @@ export default async function HomePage() {
           </div>
         </div>
 
+        {/* ============================================
+            REVIEWS SECTION - manga-bg + hero-manga
+            ============================================ */}
         {reviews && reviews.length > 0 && (
           <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)] manga-bg hero-manga">
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
-                <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-gothic">
+                <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider font-kanit">
                   Testimonials
                 </span>
                 <h2 className="manga-subtitle text-3xl md:text-4xl text-[var(--foreground)] mt-2">
                   What Our Customers Say
                 </h2>
-                <p className="font-gothic text-[var(--foreground-muted)] mt-3">
+                <p className="font-body text-[var(--foreground-muted)] mt-3">
                   Join thousands of happy customers who love their SpectrumCosmo gear
                 </p>
               </div>
@@ -345,27 +365,27 @@ export default async function HomePage() {
                         <Star key={i} size={16} className={i < (review.rating || 5) ? 'fill-[var(--burnt-orange)] text-[var(--burnt-orange)]' : 'text-[var(--border)]'} />
                       ))}
                     </div>
-                    <p className="font-gothic text-[var(--foreground-muted)] text-sm leading-relaxed">
+                    <p className="font-body text-[var(--foreground-muted)] text-sm leading-relaxed">
                       "{review.review_text || review.comment || 'Amazing quality! The design is perfect.'}"
                     </p>
                     <div className="mt-4 flex items-center gap-3">
                       <div className="w-10 h-10 bg-[var(--burnt-orange)]/10 rounded-full flex items-center justify-center">
-                        <span className="text-[var(--burnt-orange)] font-action">
+                        <span className="text-[var(--burnt-orange)] font-anton">
                           {(review.customer_name || review.user_name || review.name || 'A').charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <p className="font-gothic-bold text-[var(--foreground)] text-sm">
+                        <p className="font-heading font-semibold text-[var(--foreground)] text-sm">
                           {review.customer_name || review.user_name || review.name || 'Verified Buyer'}
                         </p>
-                        <p className="font-gothic text-xs text-[var(--foreground-muted)]">Verified Purchase</p>
+                        <p className="font-body text-xs text-[var(--foreground-muted)]">Verified Purchase</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="text-center mt-8">
-                <Link href="/reviews" className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] font-gothic-bold transition-colors">
+                <Link href="/reviews" className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] font-heading font-medium transition-colors">
                   Read all reviews <ArrowRight size={16} />
                 </Link>
               </div>
@@ -373,18 +393,24 @@ export default async function HomePage() {
           </div>
         )}
 
+        {/* ============================================
+            RECENTLY VIEWED - manga-bg + cards-manga
+            ============================================ */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <RecentlyViewed />
           </div>
         </div>
 
+        {/* ============================================
+            NEWSLETTER - NO manga panel, just #111111 background
+            ============================================ */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="manga-pop text-3xl md:text-4xl text-[#F5F5F5] mb-4">
+            <h2 className="manga-display text-3xl md:text-4xl text-[#F5F5F5] mb-4">
               Join Our Newsletter
             </h2>
-            <p className="font-gothic text-[#9A9A9A] mb-8 max-w-lg mx-auto">
+            <p className="font-body text-[#9A9A9A] mb-8 max-w-lg mx-auto">
               Get exclusive offers, early access to new drops, and anime news delivered to your inbox.
             </p>
             <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
@@ -392,29 +418,32 @@ export default async function HomePage() {
                 type="email" 
                 name="email" 
                 placeholder="Your email address" 
-                className="font-gothic w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:border-transparent transition-all" 
+                className="font-body w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:border-transparent transition-all" 
               />
-              <button type="submit" className="btn-primary justify-center">
+              <button type="submit" className="btn-primary font-anton justify-center tracking-wider">
                 Subscribe <Send size={16} />
               </button>
             </form>
-            <p className="font-gothic text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
+            <p className="font-body text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
           </div>
         </div>
 
+        {/* ============================================
+            CTA SECTION - manga-bg + hero-manga
+            ============================================ */}
         <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)] manga-bg hero-manga">
           <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-            <h2 className="manga-action text-4xl sm:text-5xl text-[var(--foreground)] mb-6">
-              Ready to wear your <span className="text-[var(--burnt-orange)] font-brush">excitement?</span>
+            <h2 className="manga-display text-4xl sm:text-5xl text-[var(--foreground)] mb-6">
+              Ready to wear your <span className="text-[var(--burnt-orange)] font-black-han">excitement?</span>
             </h2>
-            <p className="font-gothic text-[var(--foreground-muted)] text-lg mb-10 max-w-xl mx-auto">
+            <p className="font-body text-[var(--foreground-muted)] text-lg mb-10 max-w-xl mx-auto">
               Browse our full collection and find the piece that speaks to your passion.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/products" className="btn-primary">
+              <Link href="/products" className="btn-primary font-anton tracking-wider">
                 Explore Products <ArrowRight size={18} />
               </Link>
-              <Link href="/reviews/submit" className="btn-secondary">
+              <Link href="/reviews/submit" className="btn-secondary font-kanit font-bold">
                 Share Your Story
               </Link>
             </div>
