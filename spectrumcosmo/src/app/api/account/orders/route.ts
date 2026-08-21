@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
         delivery_address, 
         total_amount, 
         currency,
+        mwk_amount, -- Add this field if it exists in your table
         status, 
         payment_method, 
         payment_status,
@@ -56,7 +57,9 @@ export async function GET(req: NextRequest) {
             unit_price_usd,
             subtotal_usd,
             custom_details,
-            created_at
+            created_at,
+            unit_price,
+            currency -- Add currency to items if needed
           FROM order_items
           WHERE order_id = ${order.id}::uuid
         `;
@@ -65,6 +68,9 @@ export async function GET(req: NextRequest) {
           items: items || [],
           subtotal: order.total_amount || 0,
           shipping_cost: 0,
+          // If mwk_amount doesn't exist, calculate it from a conversion
+          // but ideally it should be stored in the database
+          mwk_amount: order.mwk_amount || order.total_amount, // Fallback to total_amount
         };
       })
     );
@@ -164,7 +170,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Checking order existence for ID:', id);
     const [existingOrder] = await sql`
-      SELECT id, status, payment_status, customer_name, total_amount, customer_email, currency
+      SELECT id, status, payment_status, customer_name, total_amount, customer_email, currency, mwk_amount
       FROM orders 
       WHERE id = ${id}::uuid AND (user_id = ${user.id} OR customer_email = ${user.email})
     `;
@@ -174,7 +180,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    console.log('Order found:', { id: existingOrder.id, status: existingOrder.status, payment_status: existingOrder.payment_status });
+    console.log('Order found:', { 
+      id: existingOrder.id, 
+      status: existingOrder.status, 
+      payment_status: existingOrder.payment_status,
+      currency: existingOrder.currency,
+      total_amount: existingOrder.total_amount,
+      mwk_amount: existingOrder.mwk_amount
+    });
 
     if (existingOrder.status !== 'pending') {
       console.log('Order status not pending:', existingOrder.status);
@@ -218,7 +231,11 @@ export async function POST(req: NextRequest) {
       await sendMail({
         to: adminEmail,
         subject: `Payment Proof Uploaded - Order ${id.slice(-8)}`,
-        text: `Customer: ${existingOrder.customer_name}\nAmount: ${existingOrder.currency || 'MWK'} ${existingOrder.total_amount}\nTransaction Ref: ${transactionReference || 'N/A'}\nProof: ${proofOfPaymentUrl}`,
+        text: `Customer: ${existingOrder.customer_name}
+Amount: ${existingOrder.currency || 'MWK'} ${existingOrder.total_amount}
+MWK Amount: MWK ${existingOrder.mwk_amount || existingOrder.total_amount}
+Transaction Ref: ${transactionReference || 'N/A'}
+Proof: ${proofOfPaymentUrl}`,
       }).catch(err => console.error('Admin email failed:', err));
     }
 
