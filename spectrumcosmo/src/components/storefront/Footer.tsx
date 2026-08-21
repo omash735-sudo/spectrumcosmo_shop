@@ -183,10 +183,16 @@ export default function Footer() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
               <div className="text-center md:text-left">
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-[var(--primary)]/20 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2 sm:mb-3">
-                  <span className="text-[10px] sm:text-xs font-medium text-[var(--primary)]">Get 10% off on your first purchase</span>
+                  <span className="text-[10px] sm:text-xs font-medium font-kanit text-[var(--primary)]">
+                    Get 10% off on your first purchase
+                  </span>
                 </div>
-                <h3 className="text-base sm:text-xl font-bold text-[var(--foreground)]">Subscribe for exclusive offers</h3>
-                <p className="text-xs sm:text-sm text-[var(--foreground-muted)] mt-0.5 sm:mt-1">Anime news, drops & 10% off your first order</p>
+                <h3 className="text-base sm:text-xl font-bold font-kanit text-[var(--foreground)]">
+                  Subscribe for exclusive offers
+                </h3>
+                <p className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] mt-0.5 sm:mt-1">
+                  Anime news, drops & 10% off your first order
+                </p>
               </div>
               
               <form onSubmit={handleSubscribe} className="w-full sm:w-80 md:w-72 lg:w-80">
@@ -197,7 +203,7 @@ export default function Footer() {
                     onChange={(e) => setEmailSub(e.target.value)}
                     onBlur={() => checkSubscriptionStatus(emailSub)}
                     placeholder="Your email address"
-                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-l-xl bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-[var(--foreground-muted)] min-h-[44px]"
+                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-l-xl bg-[var(--background)] border border-[var(--border)] font-kanit text-[var(--foreground)] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-[var(--foreground-muted)] min-h-[44px]"
                     required
                     disabled={submitting}
                   />
@@ -210,10 +216,10 @@ export default function Footer() {
                   </button>
                 </div>
                 {(checking || submitting) && !subStatus && (
-                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mt-1.5">Checking...</p>
+                  <p className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)] mt-1.5">Checking...</p>
                 )}
                 {subStatus && (
-                  <p className={`text-[10px] sm:text-xs mt-1.5 ${subStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className={`text-[10px] sm:text-xs font-kanit mt-1.5 ${subStatus.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
                     {subStatus.msg}
                   </p>
                 )}
@@ -234,7 +240,7 @@ export default function Footer() {
                 className="object-contain"
                 priority
               />
-              <p className="text-xs sm:text-sm text-[var(--foreground-muted)] leading-relaxed">
+              <p className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] leading-relaxed">
                 Wear your excitement with pride. Premium custom apparel and anime merchandise for those who live boldly.
               </p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 sm:pt-2">
@@ -267,13 +273,13 @@ export default function Footer() {
 
             {/* SHOP SECTION - BOLD */}
             <div className="lg:col-span-2">
-              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+              <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Shop
               </h3>
               <ul className="space-y-1.5 sm:space-y-2">
                 {quickLinks.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                    <Link href={link.href} className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                       {link.label}
                     </Link>
                   </li>
@@ -283,32 +289,32 @@ export default function Footer() {
 
             {/* SUPPORT SECTION - BOLD */}
             <div className="lg:col-span-3">
-              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+              <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Support
               </h3>
               <ul className="space-y-1.5 sm:space-y-2">
                 <li>
-                  <Link href="/shipping" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/shipping" className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Shipping Info
                   </Link>
                 </li>
                 <li>
-                  <Link href="/returns" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/returns" className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Returns & Exchanges
                   </Link>
                 </li>
                 <li>
-                  <Link href="/size-guide" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/size-guide" className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Size Guide
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/terms" className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
+                  <Link href="/privacy" className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">
                     Privacy Policy
                   </Link>
                 </li>
@@ -317,23 +323,23 @@ export default function Footer() {
 
             {/* CONTACT US SECTION - BOLD */}
             <div className="lg:col-span-3">
-              <h3 className="font-bold text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wide">
+              <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Contact Us
               </h3>
               <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                <li className="flex items-start gap-2 text-xs sm:text-sm font-kanit text-[var(--foreground-muted)]">
                   <Mail size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
                   <a href={`mailto:${companyEmail}`} className="hover:text-[var(--primary)] transition">
                     {companyEmail}
                   </a>
                 </li>
-                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                <li className="flex items-start gap-2 text-xs sm:text-sm font-kanit text-[var(--foreground-muted)]">
                   <Smartphone size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
                   <a href={`tel:${companyPhone}`} className="hover:text-[var(--primary)] transition">
                     {companyPhone}
                   </a>
                 </li>
-                <li className="flex items-start gap-2 text-xs sm:text-sm text-[var(--foreground-muted)]">
+                <li className="flex items-start gap-2 text-xs sm:text-sm font-kanit text-[var(--foreground-muted)]">
                   <MapPin size={14} className="text-[var(--primary)] flex-shrink-0 mt-0.5" />
                   <span>{companyAddress}</span>
                 </li>
@@ -344,7 +350,7 @@ export default function Footer() {
                   return (
                     <div key={idx} className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-[var(--background)] rounded-lg border border-[var(--border)]">
                       <Icon size={12} className="sm:w-3.5 sm:h-3.5 text-[var(--foreground-muted)]" />
-                      <span className="text-[10px] sm:text-xs text-[var(--foreground-muted)]">{payment.name}</span>
+                      <span className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)]">{payment.name}</span>
                     </div>
                   )
                 })}
@@ -353,15 +359,15 @@ export default function Footer() {
           </div>
 
           <div className="border-t border-[var(--border)] mt-6 sm:mt-8 pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
-            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] text-center sm:text-left">
+            <p className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)] text-center sm:text-left">
               © {new Date().getFullYear()} {companyName}. {footerCopyright}
             </p>
-            <div className="flex gap-3 sm:gap-5 text-[10px] sm:text-xs">
+            <div className="flex gap-3 sm:gap-5 text-[10px] sm:text-xs font-kanit">
               <Link href="/terms" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Terms</Link>
               <Link href="/privacy" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Privacy</Link>
               <Link href="/shipping" className="text-[var(--foreground-muted)] hover:text-[var(--primary)] transition">Shipping</Link>
             </div>
-            <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] italic text-center sm:text-left">
+            <p className="text-[10px] sm:text-xs font-kanit text-[var(--foreground-muted)] italic text-center sm:text-left">
               "Wear your excitement with pride"
             </p>
           </div>
