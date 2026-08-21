@@ -1,16 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { 
-  M_PLUS_1p,
-  Noto_Sans_JP,
-  Zen_Maru_Gothic,
-  RocknRoll_One,
-  Train_One,
-  DotGothic16,
-  Yusei_Magic,
-  Reggae_One,
-} from 'next/font/google';
+import { Anton, Kanit, Bangers, Black_Han_Sans } from 'next/font/google';
 import './globals.css';
 
 import { ThemeProvider } from './providers';
@@ -23,60 +14,34 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
+// import ClientOnboarding from '@/components/onboarding/ClientOnboarding'; // DISABLED - Onboarding turned off
 
-const mPlus1p = M_PLUS_1p({
-  weight: ['400', '700', '800', '900'],
-  subsets: ['latin', 'cyrillic', 'latin-ext', 'vietnamese'],
-  variable: '--font-mplus',
+// ===== FONTS =====
+const anton = Anton({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-anton',
   display: 'swap',
 });
 
-const notoSansJP = Noto_Sans_JP({
-  weight: ['400', '500', '700', '800', '900'],
-  subsets: ['latin', 'cyrillic', 'latin-ext', 'vietnamese'],
-  variable: '--font-noto-sans',
+const kanit = Kanit({
+  weight: ['400', '700', '900'],
+  subsets: ['latin', 'thai'],
+  variable: '--font-kanit',
   display: 'swap',
 });
 
-const zenMaruGothic = Zen_Maru_Gothic({
-  weight: ['400', '500', '700', '900'],
-  subsets: ['latin', 'cyrillic', 'greek', 'latin-ext'],
-  variable: '--font-zen-maru',
+const bangers = Bangers({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-bangers',
   display: 'swap',
 });
 
-const rocknRoll = RocknRoll_One({
-  weight: ['400'],
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-rocknroll',
-  display: 'swap',
-});
-
-const trainOne = Train_One({
-  weight: ['400'],
-  subsets: ['latin', 'cyrillic', 'latin-ext'],
-  variable: '--font-train',
-  display: 'swap',
-});
-
-const dotGothic = DotGothic16({
-  weight: ['400'],
-  subsets: ['latin', 'cyrillic', 'latin-ext'],
-  variable: '--font-dot-gothic',
-  display: 'swap',
-});
-
-const yuseiMagic = Yusei_Magic({
-  weight: ['400'],
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-yusei',
-  display: 'swap',
-});
-
-const reggaeOne = Reggae_One({
-  weight: ['400'],
-  subsets: ['latin', 'cyrillic', 'latin-ext'],
-  variable: '--font-reggae',
+const blackHanSans = Black_Han_Sans({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-black-han-sans',
   display: 'swap',
 });
 
@@ -136,16 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html 
       lang="en" 
       suppressHydrationWarning
-      className={`
-        ${mPlus1p.variable} 
-        ${notoSansJP.variable} 
-        ${zenMaruGothic.variable} 
-        ${rocknRoll.variable} 
-        ${trainOne.variable}
-        ${dotGothic.variable}
-        ${yuseiMagic.variable}
-        ${reggaeOne.variable}
-      `}
+      className={`${anton.variable} ${kanit.variable} ${bangers.variable} ${blackHanSans.variable}`}
     >
       <body className="antialiased font-body">
         <ThemeProvider>
@@ -160,6 +116,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <Suspense fallback={<LoadingSpinner />}>
                           {children}
                         </Suspense>
+                        {/* ClientOnboarding DISABLED - Onboarding tour turned off */}
+                        {/* <ClientOnboarding /> */}
                         <Toaster
                           position="top-right"
                           toastOptions={{
