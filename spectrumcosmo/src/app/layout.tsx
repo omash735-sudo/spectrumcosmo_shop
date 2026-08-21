@@ -26,7 +26,7 @@ import TrackVisits from '@/components/TrackVisits';
 
 const mPlus1p = M_PLUS_1p({
   weight: ['400', '700', '800', '900'],
-  subsets: ['latin', 'cyrillic', 'latin-ext'],
+  subsets: ['latin', 'cyrillic', 'latin-ext', 'vietnamese'],
   variable: '--font-mplus',
   display: 'swap',
 });
@@ -47,14 +47,14 @@ const zenMaruGothic = Zen_Maru_Gothic({
 
 const rocknRoll = RocknRoll_One({
   weight: ['400'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-rocknroll',
   display: 'swap',
 });
 
 const trainOne = Train_One({
   weight: ['400'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'cyrillic', 'latin-ext'],
   variable: '--font-train',
   display: 'swap',
 });
@@ -68,14 +68,14 @@ const dotGothic = DotGothic16({
 
 const yuseiMagic = Yusei_Magic({
   weight: ['400'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-yusei',
   display: 'swap',
 });
 
 const reggaeOne = Reggae_One({
   weight: ['400'],
-  subsets: ['latin', 'japanese'],
+  subsets: ['latin', 'cyrillic', 'latin-ext'],
   variable: '--font-reggae',
   display: 'swap',
 });
