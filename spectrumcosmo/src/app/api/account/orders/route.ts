@@ -20,7 +20,12 @@ export async function GET(req: NextRequest) {
         delivery_address, 
         total_amount, 
         currency,
-        mwk_amount, -- Add this field if it exists in your table
+        mwk_amount,
+        checkout_currency,
+        checkout_amount,
+        expected_mwk_amount,
+        actual_mwk_amount,
+        exchange_rate_used,
         status, 
         payment_method, 
         payment_status,
@@ -43,7 +48,6 @@ export async function GET(req: NextRequest) {
       FROM orders
       WHERE user_id = ${user.id} 
          OR customer_email = ${user.email}
-         OR customer_email ILIKE ${user.email}
       ORDER BY created_at DESC
     `;
     
@@ -54,23 +58,25 @@ export async function GET(req: NextRequest) {
             id,
             product_name,
             quantity,
-            unit_price_usd,
-            subtotal_usd,
+            unit_price_usd as unit_price,
+            subtotal_usd as total_price,
             custom_details,
-            created_at,
-            unit_price,
-            currency -- Add currency to items if needed
+            created_at
           FROM order_items
           WHERE order_id = ${order.id}::uuid
         `;
         return {
           ...order,
+          // Use checkout fields for display (what customer sees)
+          currency: order.checkout_currency || order.currency || 'MWK',
+          total_amount: order.checkout_amount || order.total_amount || 0,
+          // Keep original for reference
+          _original_currency: order.currency,
+          _original_amount: order.total_amount,
+          _mwk_amount: order.mwk_amount,
           items: items || [],
           subtotal: order.total_amount || 0,
           shipping_cost: 0,
-          // If mwk_amount doesn't exist, calculate it from a conversion
-          // but ideally it should be stored in the database
-          mwk_amount: order.mwk_amount || order.total_amount, // Fallback to total_amount
         };
       })
     );
@@ -170,7 +176,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Checking order existence for ID:', id);
     const [existingOrder] = await sql`
-      SELECT id, status, payment_status, customer_name, total_amount, customer_email, currency, mwk_amount
+      SELECT id, status, payment_status, customer_name, total_amount, customer_email, currency, mwk_amount, checkout_currency, checkout_amount
       FROM orders 
       WHERE id = ${id}::uuid AND (user_id = ${user.id} OR customer_email = ${user.email})
     `;
@@ -186,6 +192,8 @@ export async function POST(req: NextRequest) {
       payment_status: existingOrder.payment_status,
       currency: existingOrder.currency,
       total_amount: existingOrder.total_amount,
+      checkout_currency: existingOrder.checkout_currency,
+      checkout_amount: existingOrder.checkout_amount,
       mwk_amount: existingOrder.mwk_amount
     });
 
@@ -228,12 +236,15 @@ export async function POST(req: NextRequest) {
 
     const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
     if (adminEmail) {
+      const displayCurrency = existingOrder.checkout_currency || existingOrder.currency || 'MWK';
+      const displayAmount = existingOrder.checkout_amount || existingOrder.total_amount || 0;
+      
       await sendMail({
         to: adminEmail,
         subject: `Payment Proof Uploaded - Order ${id.slice(-8)}`,
         text: `Customer: ${existingOrder.customer_name}
-Amount: ${existingOrder.currency || 'MWK'} ${existingOrder.total_amount}
-MWK Amount: MWK ${existingOrder.mwk_amount || existingOrder.total_amount}
+Amount: ${displayCurrency} ${displayAmount}
+MWK Amount: MWK ${existingOrder.mwk_amount || existingOrder.total_amount || 0}
 Transaction Ref: ${transactionReference || 'N/A'}
 Proof: ${proofOfPaymentUrl}`,
       }).catch(err => console.error('Admin email failed:', err));
