@@ -95,6 +95,7 @@ export type Order = {
   quote_requested_at?: string | null;
   items: OrderItem[];
   custom_delivery_method?: string | null;
+  currency?: string; // ADDED: Customer's selected currency
 };
 
 export type PromoCode = {
