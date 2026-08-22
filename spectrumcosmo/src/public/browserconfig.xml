@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+  <msapplication>
+    <tile>
+      <square150x150logo src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_1024_m4n3kk.png"/>
+      <square70x70logo src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_android_192_rcaktd.png"/>
+      <square310x310logo src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_1024_m4n3kk.png"/>
+      <wide310x150logo src="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_1024_m4n3kk.png"/>
+      <TileColor>#F97316</TileColor>
+    </tile>
+  </msapplication>
+</browserconfig>
