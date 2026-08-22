@@ -55,8 +55,20 @@ export default function Footer() {
   }, [])
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light'
-  
-  const logoSrc = currentTheme === 'dark'
+  const isDark = currentTheme === 'dark'
+
+  // SVG LOGOS - Primary (same as navbar)
+  const logoSvgSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg"
+
+  // PNG FALLBACK - If SVG fails to load (same as navbar)
+  const logoPngSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png"
+
+  // Also keep settings-based logos as fallback
+  const settingsLogoSrc = isDark
     ? settings?.company_logo_dark || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : settings?.company_logo || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
@@ -232,13 +244,24 @@ export default function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
             <div className="lg:col-span-4 space-y-3 sm:space-y-4">
-              <Image
-                src={logoSrc}
+              {/* Logo with SVG + PNG fallback */}
+              <img
+                src={logoSvgSrc}
                 alt={companyName}
                 width={140}
                 height={48}
                 className="object-contain"
-                priority
+                onError={(e) => {
+                  // Fallback to PNG if SVG fails
+                  e.currentTarget.src = logoPngSrc
+                }}
+                style={{ 
+                  display: 'block',
+                  width: 'auto',
+                  height: '48px',
+                  maxHeight: '48px',
+                  objectFit: 'contain'
+                }}
               />
               <p className="text-xs sm:text-sm font-kanit text-[var(--foreground-muted)] leading-relaxed">
                 Wear your excitement with pride. Premium custom apparel and anime merchandise for those who live boldly.
