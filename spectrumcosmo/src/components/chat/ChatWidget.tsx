@@ -47,7 +47,7 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
           setCountryCode(data.country_code);
         }
       } catch (error) {
-        console.log('Could not detect country, using default');
+        // Silently fail - country detection is optional
       }
     };
     detectCountry();
@@ -62,7 +62,9 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
             setMessages(data.messages);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          // Silently fail - history is optional
+        });
     }
   }, [sessionId, isOpen]);
 
@@ -78,8 +80,6 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
     setIsLoading(true);
 
     try {
-      console.log('[ChatWidget] Sending message:', content);
-      
       const response = await fetch('/api/ella/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,14 +91,9 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
         }),
       });
 
-      console.log('[ChatWidget] Response status:', response.status);
-      
       const data = await response.json();
-      console.log('[ChatWidget] Response data:', data);
 
-      // Check for error first
       if (data.error) {
-        console.error('[ChatWidget] API Error:', data.error);
         setMessages(prev => [
           ...prev,
           {
@@ -109,7 +104,6 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
         return;
       }
 
-      // Then check for message
       if (data.message) {
         const assistantMessage: Message = {
           role: 'assistant',
@@ -128,12 +122,11 @@ export default function ChatWidget({ isOpen: externalIsOpen, onToggle }: ChatWid
         ]);
       }
     } catch (error) {
-      console.error('[ChatWidget] Fetch error:', error);
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          content: 'Sorry, I encountered an error. Please try again.'
         }
       ]);
     } finally {
