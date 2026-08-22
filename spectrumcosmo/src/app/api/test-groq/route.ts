@@ -1,6 +1,16 @@
 // /app/api/test-groq/route.ts
 import { NextResponse } from 'next/server';
 
+interface TestResult {
+  status: string;
+  response?: string;
+  error?: string;
+}
+
+interface ResultsMap {
+  [key: string]: TestResult;
+}
+
 export async function GET() {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   
@@ -17,7 +27,7 @@ export async function GET() {
     'llama-3.1-70b-versatile'
   ];
 
-  const results = {};
+  const results: ResultsMap = {};
 
   for (const model of modelsToTest) {
     try {
@@ -39,20 +49,20 @@ export async function GET() {
       if (response.ok) {
         const data = await response.json();
         results[model] = {
-          status: '✅ WORKING',
+          status: 'WORKING',
           response: data.choices?.[0]?.message?.content || 'No response'
         };
       } else {
         const error = await response.text();
         results[model] = {
-          status: '❌ FAILED',
+          status: 'FAILED',
           error: error.substring(0, 150) // Truncate for readability
         };
       }
     } catch (error) {
       results[model] = {
-        status: '❌ ERROR',
-        error: error.message
+        status: 'ERROR',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
