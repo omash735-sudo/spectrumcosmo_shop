@@ -5,6 +5,7 @@ interface TestResult {
   status: string;
   response?: string;
   error?: string;
+  duration?: string;  // ✅ Added this property
 }
 
 interface ResultsMap {
