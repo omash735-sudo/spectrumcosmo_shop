@@ -199,6 +199,11 @@ export default function Navbar() {
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
 
+  // Desktop logo with brand text
+  const logoSrcDesktop = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
+
   const openCart = () => {
     setCartOpen(true);
     setMobileMenuOpen(false);
@@ -327,6 +332,41 @@ export default function Navbar() {
           max-height: 100%;
           object-fit: contain;
         }
+        /* Mobile header - absolute centering */
+        .mobile-header {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          min-height: 56px;
+        }
+        .mobile-logo-center {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+        .mobile-logo-center a {
+          pointer-events: auto;
+        }
+        .mobile-left {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          flex-shrink: 0;
+          z-index: 1;
+        }
+        .mobile-right {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          flex-shrink: 0;
+          z-index: 1;
+        }
       `}</style>
 
       <header className={clsx(
@@ -384,8 +424,27 @@ export default function Navbar() {
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center flex-shrink-0 group" style={{ height: '44px' }}>
-                <LogoImage className="h-10 w-auto transition-transform duration-300 group-hover:scale-105" />
+              <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group" style={{ height: '44px' }}>
+                <img 
+                  src={logoSrcDesktop}
+                  alt="SpectrumCosmo"
+                  className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = isDark
+                      ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
+                      : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
+                  }}
+                  style={{ 
+                    display: 'block',
+                    width: 'auto',
+                    height: '100%',
+                    maxHeight: '44px',
+                    objectFit: 'contain'
+                  }}
+                />
+                <span className="text-xl font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
+                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
+                </span>
               </Link>
 
               <nav className="flex items-center gap-1">
@@ -468,8 +527,27 @@ export default function Navbar() {
         <div className="hidden md:block lg:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <Link href="/" className="flex items-center flex-shrink-0 group" style={{ height: '40px' }}>
-                <LogoImage className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
+              <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" style={{ height: '40px' }}>
+                <img 
+                  src={logoSrcDesktop}
+                  alt="SpectrumCosmo"
+                  className="h-9 w-auto transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = isDark
+                      ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
+                      : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
+                  }}
+                  style={{ 
+                    display: 'block',
+                    width: 'auto',
+                    height: '100%',
+                    maxHeight: '40px',
+                    objectFit: 'contain'
+                  }}
+                />
+                <span className="text-lg font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
+                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
+                </span>
               </Link>
               <nav className="flex items-center gap-0.5 flex-1 justify-center px-2 overflow-x-auto">
                 {desktopLinks.slice(0, 4).map(link => {
@@ -511,23 +589,43 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE NAVBAR */}
-        <div className="md:hidden px-3 py-2.5">
-          <div className="flex items-center justify-between gap-1 min-w-0">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
-              aria-label="Menu"
-            >
-              <Menu size={22} className="text-[var(--foreground-muted)]" />
-            </button>
+        {/* MOBILE NAVBAR - PERFECTLY CENTERED LOGO */}
+        <div className="md:hidden">
+          <div className="px-3 py-2.5 mobile-header">
+            {/* Left side - Menu button */}
+            <div className="mobile-left">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+                aria-label="Menu"
+              >
+                <Menu size={22} className="text-[var(--foreground-muted)]" />
+              </button>
+            </div>
 
-            {/* Mobile - Logo ONLY, centered, with fallback */}
-            <Link href="/" className="flex items-center justify-center flex-shrink-0" style={{ height: '36px' }}>
-              <LogoImage className="h-8 w-auto" />
-            </Link>
+            {/* Center - Logo ONLY, absolutely centered */}
+            <div className="mobile-logo-center">
+              <Link href="/" className="flex items-center justify-center" style={{ height: '36px' }}>
+                <img 
+                  src={logoSvgSrc}
+                  alt="SpectrumCosmo"
+                  className="h-8 w-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = logoPngSrc;
+                  }}
+                  style={{ 
+                    display: 'block',
+                    width: 'auto',
+                    height: '32px',
+                    maxHeight: '36px',
+                    objectFit: 'contain'
+                  }}
+                />
+              </Link>
+            </div>
 
-            <div className="flex items-center gap-0.5 flex-shrink-0">
+            {/* Right side - User & Cart */}
+            <div className="mobile-right">
               {isLoggedIn && unreadCount > 0 && <NotificationBell />}
               <UserMenu />
               <button
@@ -554,7 +652,21 @@ export default function Navbar() {
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-[var(--background-card)] shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)]">
               <div className="flex items-center gap-2" style={{ height: '36px' }}>
-                <LogoImage className="h-8 w-auto" />
+                <img 
+                  src={logoSvgSrc}
+                  alt="SpectrumCosmo"
+                  className="h-8 w-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = logoPngSrc;
+                  }}
+                  style={{ 
+                    display: 'block',
+                    width: 'auto',
+                    height: '32px',
+                    maxHeight: '36px',
+                    objectFit: 'contain'
+                  }}
+                />
               </div>
               <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition flex items-center justify-center min-h-[44px] min-w-[44px]">
                 <X size={20} className="text-[var(--foreground-muted)]" />
