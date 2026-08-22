@@ -90,6 +90,10 @@ export class EllaService {
     const orderIntent = this.detectOrderIntent(message);
     const faqIntent = this.detectFAQIntent(message);
 
+    // Check for escalation FIRST - these override everything else
+    const escalationReason = this.detectEscalationNeeded(message);
+    const requiresEscalation = !!escalationReason;
+
     if (productIntent) {
       const searchQuery = this.extractProductQuery(message);
       const products = await searchProducts(searchQuery, 5);
@@ -168,6 +172,12 @@ export class EllaService {
     const systemPrompt = getSystemPrompt();
 
     let context = systemPrompt;
+
+    // Add customer name to context if available
+    if (customerName) {
+      context += `\n\nCUSTOMER INFO:\n- The customer's name is ${customerName}. Use their name naturally in conversation.\n`;
+    }
+
     context += `\n\nCurrency Information:\n- The customer's currency is ${currency}.\n- All prices should be shown in ${currency}.\n- The base currency is MWK (Malawian Kwacha).\n- Exchange rate from MWK to ${currency}: ${exchangeRate}`;
 
     const shippingInfo = `SpectrumCosmo shipping: Nationwide delivery within 3-7 business days. Costs depend on location. Contact us for a quote.`;
@@ -179,7 +189,28 @@ export class EllaService {
 
     let instruction = "";
 
-    if (toolResponse && toolType) {
+    if (requiresEscalation) {
+      // Escalation instruction
+      instruction = `
+CUSTOMER REQUEST: ${message}
+
+ESCALATION REQUIRED: ${escalationReason}
+
+INSTRUCTIONS:
+1. Acknowledge the customer's request with empathy
+2. Explain you are escalating this to Omash for review
+3. If applicable, ask for any additional details (order number, etc.)
+4. DO NOT approve refunds, cancellations, or discounts yourself
+5. Be warm and reassuring
+
+EXAMPLE RESPONSES:
+- Refund: "I understand you want a refund. 😕 Let me get Omash on this right away. Can you provide your order number?"
+- Cancellation: "I'll stop that order for you! 🚀 Let me escalate this to Omash to make sure it's handled."
+- Complaint: "I'm really sorry to hear that! 😔 Let me get this to Omash immediately so we can make it right."
+- Investment: "Wow, that's exciting! 🎉 I'll connect you with Omash directly. They handle all partnerships."
+- Founder request: "Omash is amazing! 😄 Let me get them to reach out to you personally."
+`;
+    } else if (toolResponse && toolType) {
       instruction = `
 CRITICAL INSTRUCTION:
 - The tool response above contains REAL DATA from the SpectrumCosmo database.
@@ -196,7 +227,22 @@ Customer question: ${message}
 Respond based ONLY on the tool data above. DO NOT add information that isn't in the tool response.`;
     } else {
       const generalIntent = this.detectGeneralIntent(message);
-      if (generalIntent) {
+      const unknownIntent = this.detectUnknownIntent(message);
+      
+      if (unknownIntent) {
+        instruction = `
+Customer question: ${message}
+
+This doesn't seem to be about products, stock, orders, or FAQ topics.
+
+RESPOND WITH ONE OF THESE (depending on the question):
+- If you don't understand: "I'm not quite sure what you mean! 🤔 Could you rephrase that? I can help with products, stock, orders, or general store questions."
+- If it's not about the store: "That's interesting! 😄 While I'm not an expert on everything, I can definitely help with SpectrumCosmo-related questions."
+- If it's off-topic: "I'm just a store assistant, so I'm not sure about that! 😅 Want to ask me about anime merchandise instead?"
+- If it's a personal question: "I'm just a virtual assistant, so I don't really have opinions on that! 😂 But I can talk anime merch all day!"
+
+Be friendly and redirect to what you CAN help with. Use emojis naturally.`;
+      } else if (generalIntent) {
         instruction = `
 Customer question: ${message}
 
@@ -204,27 +250,35 @@ This is a general question about SpectrumCosmo. Use your knowledge of the busine
 - If you don't know something, say you'll check and get back to them.
 - Never make up specific prices or product details.
 - For product-specific questions, ask them to specify what they're looking for.
-- If they ask about prices, tell them you'll check and get back to them.`;
+- If they ask about prices, tell them you'll check and get back to them.
+- Use your personality and emojis to keep it engaging!`;
       } else {
         instruction = `
 Customer question: ${message}
 
-Respond naturally. You are Ella, the SpectrumCosmo AI assistant. Be helpful, friendly, and professional.`;
+Respond naturally. You are Ella, the SpectrumCosmo AI assistant. Be helpful, friendly, and professional.
+- Use emojis to show personality
+- Match the user's energy
+- If they're playful, be playful
+- If they're serious, be professional
+- Keep it fun but helpful!`;
       }
     }
-
-    const escalationReason = this.detectEscalationNeeded(message);
-    const requiresEscalation = !!escalationReason;
 
     let aiResponse: string;
 
     if (requiresEscalation) {
-      const escalationContext = `${context}\n\nIMPORTANT: The customer has requested something that requires human approval (${escalationReason}). Acknowledge their request, explain you'll escalate it, and collect necessary details. Do NOT approve it yourself.\n\n${instruction}`;
+      const escalationContext = `${context}\n\n${instruction}`;
       aiResponse = await this.groqProvider.sendMessageWithContext(
         message,
         escalationContext,
         history
       );
+      
+      // Add escalation note to response if not already there
+      if (!aiResponse.includes('escalate') && !aiResponse.includes('Omash')) {
+        aiResponse += '\n\nI\'ll get Omash on this right away! 🚀';
+      }
     } else {
       aiResponse = await this.groqProvider.sendMessageWithContext(
         message,
@@ -308,6 +362,18 @@ Respond naturally. You are Ella, the SpectrumCosmo AI assistant. Be helpful, fri
     ];
     const lower = message.toLowerCase();
     return keywords.some(k => lower.includes(k)) && !this.detectProductIntent(message);
+  }
+
+  private detectUnknownIntent(message: string): boolean {
+    const hasKnownIntent = 
+      this.detectProductIntent(message) ||
+      this.detectStockIntent(message) ||
+      this.detectOrderIntent(message) ||
+      this.detectFAQIntent(message) ||
+      this.detectGeneralIntent(message) ||
+      this.detectEscalationNeeded(message) !== null;
+    
+    return !hasKnownIntent;
   }
 
   private extractOrderNumber(message: string): string | null {
