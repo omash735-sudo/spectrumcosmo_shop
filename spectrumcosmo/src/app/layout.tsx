@@ -88,11 +88,70 @@ export const metadata: Metadata = {
     images: ['https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'],
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { 
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426894/app_icon_orange_accent_wi0uge.svg',
+        type: 'image/svg+xml',
+      },
+      { 
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426892/app_icon_dark_vhmfte.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: dark)',
+      },
+      { 
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426894/app_icon_light_ce1msw.svg',
+        type: 'image/svg+xml',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426896/app_icon_orange_accent_1024_kmjqwc.png',
+        sizes: '1024x1024',
+        type: 'image/png',
+      },
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_1024_m4n3kk.png',
+        sizes: '1024x1024',
+        type: 'image/png',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426896/app_icon_light_1024_zcsd01.png',
+        sizes: '1024x1024',
+        type: 'image/png',
+        media: '(prefers-color-scheme: light)',
+      },
+    ],
+    apple: [
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426891/app_icon_dark_ios_180_ygceyt.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426894/app_icon_orange_accent_wi0uge.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+      },
+    ],
+    shortcut: [
+      {
+        url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426892/app_icon_dark_vhmfte.svg',
+        type: 'image/svg+xml',
+      },
+    ],
   },
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+  manifest: '/site.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SpectrumCosmo',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'msapplication-TileColor': '#F97316',
+    'msapplication-config': '/browserconfig.xml',
   },
 };
 
@@ -103,6 +162,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${anton.variable} ${kanit.variable} ${bangers.variable} ${blackHanSans.variable}`}
     >
+      <head>
+        {/* Additional meta tags for better PWA support */}
+        <link
+          rel="mask-icon"
+          href="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426894/app_icon_orange_accent_wi0uge.svg"
+          color="#F97316"
+        />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="SpectrumCosmo" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        
+        {/* Android Chrome icons */}
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="192x192"
+          href="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_android_192_rcaktd.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="512x512"
+          href="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/app_icon_dark_1024_m4n3kk.png"
+        />
+      </head>
       <body className="antialiased font-body">
         <ThemeProvider>
           <ErrorBoundary>
