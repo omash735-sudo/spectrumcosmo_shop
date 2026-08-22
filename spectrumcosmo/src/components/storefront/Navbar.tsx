@@ -43,7 +43,6 @@ import CurrencySelector from '@/components/storefront/CurrencySelector';
 import { useCart } from '@/components/storefront/CartProvider';
 import CartDrawer from '@/components/storefront/CartDrawer';
 import { useSettings } from '@/components/storefront/SettingsProvider';
-import SearchBar from '@/components/storefront/SearchBar';
 import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
@@ -188,10 +187,17 @@ export default function Navbar() {
   const showChat = !HIDE_CHAT_PATHS.some(path => pathname?.startsWith(path));
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const isDark = currentTheme === 'dark';
 
-  const logoSrc = currentTheme === 'dark'
-    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
+  // SVG LOGOS - Primary
+  const logoSvgSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
+
+  // PNG FALLBACK - If SVG fails to load
+  const logoPngSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
 
   const openCart = () => {
     setCartOpen(true);
@@ -231,6 +237,28 @@ export default function Navbar() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Logo component with fallback
+  const LogoImage = ({ className, alt = "SpectrumCosmo" }: { className?: string; alt?: string }) => {
+    return (
+      <img 
+        src={logoSvgSrc} 
+        alt={alt}
+        className={className}
+        onError={(e) => {
+          // Fallback to PNG if SVG fails to load
+          e.currentTarget.src = logoPngSrc;
+        }}
+        style={{ 
+          display: 'block',
+          width: 'auto',
+          height: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain'
+        }}
+      />
+    );
   };
 
   return (
@@ -286,13 +314,26 @@ export default function Navbar() {
         .chat-bubble-float {
           animation: float-bot 2.5s ease-in-out infinite;
         }
+        /* SVG logo smooth rendering */
+        .logo-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .logo-container img {
+          display: block;
+          width: auto;
+          height: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
       `}</style>
 
       <header className={clsx(
         'sticky top-0 z-50 transition-all duration-300',
         scrolled
-          ? 'bg-[var(--background-card)]/95 shadow-lg backdrop-blur-md'
-          : 'bg-[var(--background-card)]/90 backdrop-blur-md border-b border-[var(--border)]'
+          ? 'bg-[var(--background-card)] shadow-lg'
+          : 'bg-[var(--background-card)] border-b border-[var(--border)]'
       )}>
 
         {showBanner && !bannerLoading && (
@@ -339,14 +380,12 @@ export default function Navbar() {
           </div>
         )}
 
+        {/* DESKTOP NAVBAR */}
         <div className="hidden lg:block">
           <div className="max-w-7xl mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-                <img src={logoSrc} alt="SpectrumCosmo" className="h-9 w-auto transition-transform group-hover:scale-105" />
-                <span className="text-xl font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
-                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
-                </span>
+              <Link href="/" className="flex items-center flex-shrink-0 group" style={{ height: '44px' }}>
+                <LogoImage className="h-10 w-auto transition-transform duration-300 group-hover:scale-105" />
               </Link>
 
               <nav className="flex items-center gap-1">
@@ -403,8 +442,6 @@ export default function Navbar() {
 
               <div className="flex items-center gap-2">
                 <CurrencySelector />
-                <SearchBar />
-
                 {isLoggedIn && unreadCount > 0 && <NotificationBell />}
 
                 <button
@@ -427,14 +464,12 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* TABLET NAVBAR */}
         <div className="hidden md:block lg:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
-                <img src={logoSrc} alt="SpectrumCosmo" className="h-8 w-auto transition-transform group-hover:scale-105" />
-                <span className="text-lg font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] bg-clip-text text-transparent">
-                  Spectrum<span className="text-[var(--primary)]">Cosmo</span>
-                </span>
+              <Link href="/" className="flex items-center flex-shrink-0 group" style={{ height: '40px' }}>
+                <LogoImage className="h-9 w-auto transition-transform duration-300 group-hover:scale-105" />
               </Link>
               <nav className="flex items-center gap-0.5 flex-1 justify-center px-2 overflow-x-auto">
                 {desktopLinks.slice(0, 4).map(link => {
@@ -476,6 +511,7 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* MOBILE NAVBAR */}
         <div className="md:hidden px-3 py-2.5">
           <div className="flex items-center justify-between gap-1 min-w-0">
             <button
@@ -486,11 +522,9 @@ export default function Navbar() {
               <Menu size={22} className="text-[var(--foreground-muted)]" />
             </button>
 
-            <Link href="/" className="flex items-center gap-1.5 flex-shrink-0 min-w-0">
-              <img src={logoSrc} alt="SpectrumCosmo" className="h-6 w-auto" />
-              <span className="text-sm font-bold text-[var(--foreground)] truncate">
-                Spectrum<span className="text-[var(--primary)]">Cosmo</span>
-              </span>
+            {/* Mobile - Logo ONLY, centered, with fallback */}
+            <Link href="/" className="flex items-center justify-center flex-shrink-0" style={{ height: '36px' }}>
+              <LogoImage className="h-8 w-auto" />
             </Link>
 
             <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -514,13 +548,13 @@ export default function Navbar() {
         </div>
       </header>
 
+      {/* MOBILE MENU DRAWER */}
       {mobileMenuOpen && typeof window !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] bg-black/50 md:hidden" onClick={closeMobileMenu}>
           <div className="absolute left-0 top-0 w-[85%] max-w-sm h-full bg-[var(--background-card)] shadow-2xl flex flex-col animate-slide-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-5 border-b border-[var(--border)]">
-              <div className="flex items-center gap-2">
-                <img src={logoSrc} alt="Logo" className="h-7 w-auto" />
-                <span className="font-bold text-[var(--foreground)]">Menu</span>
+              <div className="flex items-center gap-2" style={{ height: '36px' }}>
+                <LogoImage className="h-8 w-auto" />
               </div>
               <button onClick={closeMobileMenu} className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition flex items-center justify-center min-h-[44px] min-w-[44px]">
                 <X size={20} className="text-[var(--foreground-muted)]" />
