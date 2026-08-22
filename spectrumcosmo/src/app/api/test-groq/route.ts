@@ -18,13 +18,13 @@ export async function GET() {
     return NextResponse.json({ error: 'GROQ_API_KEY not set' }, { status: 500 });
   }
 
-  // Test the most common working models
+  // ✅ Test ONLY currently supported models from Groq documentation
   const modelsToTest = [
-    'mixtral-8x7b-32768',
-    'llama-3.1-8b-instant',
-    'gemma2-9b-it',
-    'llama3-70b-8192',
-    'llama-3.1-70b-versatile'
+    'openai/gpt-oss-20b',        // Production model - Fast, cheap
+    'openai/gpt-oss-120b',       // Production model - Higher quality
+    'llama-3.3-70b-versatile',   // Production model - Llama 3.3
+    'groq/compound',             // Production system - Agentic
+    'groq/compound-mini',        // Production system - Lighter agentic
   ];
 
   const results: ResultsMap = {};
@@ -32,6 +32,8 @@ export async function GET() {
   for (const model of modelsToTest) {
     try {
       console.log(`[Test] Testing model: ${model}`);
+      
+      const startTime = Date.now();
       
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -43,20 +45,36 @@ export async function GET() {
           model: model,
           messages: [{ role: 'user', content: 'Say "working" in one word' }],
           max_tokens: 10,
+          temperature: 0.1, // Lower temperature for consistent test
         }),
       });
+      
+      const duration = Date.now() - startTime;
       
       if (response.ok) {
         const data = await response.json();
         results[model] = {
           status: 'WORKING',
-          response: data.choices?.[0]?.message?.content || 'No response'
+          response: data.choices?.[0]?.message?.content || 'No response',
+          duration: `${duration}ms`
         };
       } else {
-        const error = await response.text();
+        const errorText = await response.text();
+        let errorMessage = errorText;
+        
+        // Try to parse JSON error
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error?.message) {
+            errorMessage = errorJson.error.message;
+          }
+        } catch {
+          // Keep raw error text
+        }
+        
         results[model] = {
           status: 'FAILED',
-          error: error.substring(0, 150) // Truncate for readability
+          error: errorMessage.substring(0, 200)
         };
       }
     } catch (error) {
@@ -67,5 +85,20 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json(results);
+  // Add summary
+  const workingModels = Object.keys(results).filter(
+    key => results[key].status === 'WORKING'
+  );
+  
+  const summary = {
+    total_tested: modelsToTest.length,
+    working: workingModels.length,
+    working_models: workingModels,
+    recommended: workingModels.length > 0 ? workingModels[0] : 'None found'
+  };
+
+  return NextResponse.json({
+    summary,
+    details: results
+  });
 }
