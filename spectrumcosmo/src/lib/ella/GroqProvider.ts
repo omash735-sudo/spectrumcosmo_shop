@@ -1,7 +1,7 @@
 // /lib/ella/GroqProvider.ts
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';  // ✅ Correct model (now supported)
+const MODEL = 'openai/gpt-oss-20b';  // Working model from test results
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -33,9 +33,6 @@ export class GroqProvider {
     ];
 
     try {
-      console.log('[GroqProvider] Using model:', MODEL);
-      console.log('[GroqProvider] Sending message:', message.substring(0, 50) + (message.length > 50 ? '...' : ''));
-      
       const response = await fetch(GROQ_API_URL, {
         method: 'POST',
         headers: {
@@ -63,7 +60,6 @@ export class GroqProvider {
           errorMessage += ` - ${errorText}`;
         }
         
-        console.error('[GroqProvider] Error response:', errorMessage);
         throw new Error(errorMessage);
       }
 
@@ -79,7 +75,6 @@ export class GroqProvider {
         return 'I apologize, but I was unable to generate a response. Please try again.';
       }
 
-      console.log('[GroqProvider] Response received, length:', responseContent.length);
       return responseContent;
       
     } catch (error) {
