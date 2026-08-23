@@ -20,6 +20,7 @@ import MobileHeader from '@/components/storefront/MobileHeader';
 import MobileSearchBar from '@/components/storefront/MobileSearchBar';
 import MobileBottomNav from '@/components/storefront/MobileBottomNav';
 import AppModeWrapper from '@/components/storefront/AppModeWrapper';
+import PWAInstallPrompt from '@/components/storefront/PWAInstallPrompt';
 
 // ===== FONTS =====
 const anton = Anton({
@@ -208,6 +209,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                               {children}
                             </Suspense>
                             <Footer />
+                            <PWAInstallPrompt />
                           </>
                         </AppModeWrapper>
                         <Toaster
