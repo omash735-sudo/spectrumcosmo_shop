@@ -14,13 +14,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 import AppModeWrapper from '@/components/storefront/AppModeWrapper';
 import PWAInstallPrompt from '@/components/storefront/PWAInstallPrompt';
 import NativeStatusBar from '@/components/storefront/NativeStatusBar';
 
-// ===== FONTS =====
 const anton = Anton({
   weight: '400',
   subsets: ['latin'],
@@ -202,15 +199,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <TrackVisits />
                         <NativeStatusBar />
                         <AppModeWrapper>
-                          <>
-                            <Navbar />
-                            <Suspense fallback={<LoadingSpinner />}>
-                              {children}
-                            </Suspense>
-                            <Footer />
-                            <PWAInstallPrompt />
-                          </>
+                          <Suspense fallback={<LoadingSpinner />}>
+                            {children}
+                          </Suspense>
                         </AppModeWrapper>
+                        <PWAInstallPrompt />
                         <Toaster
                           position="top-right"
                           toastOptions={{
