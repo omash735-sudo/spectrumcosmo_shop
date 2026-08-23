@@ -71,8 +71,19 @@ export default function AboutPage() {
   }, []);
 
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
-  
-  const logoSrc = currentTheme === 'dark'
+  const isDark = currentTheme === 'dark';
+
+  // SVG LOGOS with PNG fallback
+  const logoSvgSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
+
+  const logoPngSrc = isDark
+    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
+    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
+
+  // Settings logo fallback
+  const settingsLogoSrc = isDark
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
 
@@ -116,12 +127,20 @@ export default function AboutPage() {
         <main className="bg-[var(--background)] min-h-[60vh] flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
             <div className="flex justify-center mb-6">
-              <Image
-                src={logoSrc}
+              <img
+                src={logoSvgSrc}
                 alt="SpectrumCosmo"
-                width={160}
-                height={60}
-                className="object-contain"
+                className="h-12 w-auto"
+                onError={(e) => {
+                  e.currentTarget.src = logoPngSrc;
+                }}
+                style={{
+                  display: 'block',
+                  width: 'auto',
+                  height: '48px',
+                  maxHeight: '48px',
+                  objectFit: 'contain',
+                }}
               />
             </div>
             <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">About SpectrumCosmo</h2>
