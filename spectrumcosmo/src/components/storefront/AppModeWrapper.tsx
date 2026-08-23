@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { useAppMode } from '@/hooks/useAppMode';
 
 interface AppModeWrapperProps {
-  children: (isAppMode: boolean) => ReactNode;
+  children: ReactNode;
 }
 
 export default function AppModeWrapper({ children }: AppModeWrapperProps) {
@@ -18,5 +18,5 @@ export default function AppModeWrapper({ children }: AppModeWrapperProps) {
     );
   }
 
-  return <>{children(isAppMode)}</>;
+  return <>{children}</>;
 }
