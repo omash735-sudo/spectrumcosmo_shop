@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next build && next export",
+    "cap:init": "npx cap init SpectrumCosmo com.spectrumcosmo.app --web-dir=out",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:sync:android": "npx cap sync android",
+    "cap:sync:ios": "npx cap sync ios",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "build:android": "npm run build && npm run cap:sync:android && npm run cap:open:android",
+    "build:ios": "npm run build && npm run cap:sync:ios && npm run cap:open:ios"
   },
   "dependencies": {
     "next": "15.2.8",
@@ -37,7 +48,19 @@
     "xlsx": "^0.18.5",
     "framer-motion": "^11.0.0",
     "@react-oauth/google": "^0.12.1",
-    "google-auth-library": "^9.15.1"
+    "google-auth-library": "^9.15.1",
+    "@capacitor/core": "^5.7.0",
+    "@capacitor/android": "^5.7.0",
+    "@capacitor/ios": "^5.7.0",
+    "@capacitor/status-bar": "^5.0.0",
+    "@capacitor/splash-screen": "^5.0.0",
+    "@capacitor/app": "^5.0.0",
+    "@capacitor/camera": "^5.0.0",
+    "@capacitor/push-notifications": "^5.0.0",
+    "@capacitor/storage": "^5.0.0",
+    "@capacitor/share": "^5.0.0",
+    "@capacitor/browser": "^5.0.0",
+    "@capacitor/device": "^5.0.0"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -57,6 +80,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.8",
     "@tailwindcss/typography": "^0.5.15",
-    "critters": "^0.0.24"
+    "critters": "^0.0.24",
+    "@capacitor/cli": "^5.7.0"
   }
 }
