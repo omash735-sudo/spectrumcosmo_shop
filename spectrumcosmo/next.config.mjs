@@ -5,8 +5,6 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   
-  // For Capacitor static export
-  output: 'export',
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -20,9 +18,6 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  
-  trailingSlash: true,
-  skipTrailingSlashRedirect: true,
   
   async headers() {
     return [
@@ -79,8 +74,6 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-    // Disable server actions for static export
-    serverActions: false,
   },
   
   compiler: {
