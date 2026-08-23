@@ -8,9 +8,10 @@ import {
   ShoppingBag, Zap, CheckCircle, 
   CreditCard, Headphones, Send, Gift, Shirt
 } from 'lucide-react';
-import Navbar from '@/components/storefront/Navbar';
+// REMOVE THESE IMPORTS:
+// import Navbar from '@/components/storefront/Navbar';
+// import Footer from '@/components/storefront/Footer';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
-import Footer from '@/components/storefront/Footer';
 import { getDb, queryOne, queryMany } from '@/lib/db';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
 import HeroImageMarquee from '@/components/storefront/HeroImageMarquee';
@@ -193,7 +194,6 @@ export default async function HomePage() {
 
   const h = hero || fallbackHero;
 
-  // Build marquee images from categories or use fallback
   const marqueeImages = categories && categories.length > 0
     ? categories.map(cat => ({
         url: cat.image_url!,
@@ -206,11 +206,9 @@ export default async function HomePage() {
     <>
       <style>{marqueeStyles}</style>
       <EventAnnouncementBar />
-      <Navbar />
+      {/* <Navbar /> ← REMOVED - Already in layout.tsx */}
       <main>
-        {/* ============================================
-            HERO SECTION - manga-bg + hero-manga
-            ============================================ */}
+        {/* HERO SECTION */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
             <Image
@@ -236,8 +234,6 @@ export default async function HomePage() {
               
               {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
-                
-                {/* Heading - Now with manga fonts */}
                 <h1 className="manga-title text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
                   <span className="relative inline-block">
@@ -248,12 +244,10 @@ export default async function HomePage() {
                   <span className="whitespace-nowrap">with pride.</span>
                 </h1>
 
-                {/* Description - Using kanit font */}
                 <p className="font-kanit text-sm xs:text-base sm:text-lg text-[var(--foreground-muted)] leading-relaxed max-w-lg mx-auto lg:mx-0 mb-5 sm:mb-8">
                   {h.description}
                 </p>
 
-                {/* Buttons - Using heading font for button text */}
                 <div className="flex flex-wrap gap-2 sm:gap-4 justify-center lg:justify-start">
                   <Link
                     href={h.button1_link}
@@ -271,7 +265,6 @@ export default async function HomePage() {
                   </Link>
                 </div>
 
-                {/* Features - Using body font */}
                 <div className="flex flex-wrap gap-3 sm:gap-6 justify-center lg:justify-start mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--border)]">
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[var(--foreground-muted)] whitespace-nowrap font-body">
                     <Shield size={15} className="text-[var(--burnt-orange)] sm:w-[18px] sm:h-[18px] flex-shrink-0" />
@@ -300,9 +293,7 @@ export default async function HomePage() {
 
         <TrustBar />
 
-        {/* ============================================
-            CATEGORIES SECTION - manga-bg + cards-manga
-            ============================================ */}
+        {/* CATEGORIES SECTION */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -320,9 +311,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* ============================================
-            FEATURED PRODUCTS - NO manga panel, just background color
-            ============================================ */}
+        {/* FEATURED PRODUCTS */}
         <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -340,9 +329,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* ============================================
-            REVIEWS SECTION - manga-bg + hero-manga
-            ============================================ */}
+        {/* REVIEWS SECTION */}
         {reviews && reviews.length > 0 && (
           <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)] manga-bg hero-manga">
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -393,18 +380,14 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* ============================================
-            RECENTLY VIEWED - manga-bg + cards-manga
-            ============================================ */}
+        {/* RECENTLY VIEWED */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <RecentlyViewed />
           </div>
         </div>
 
-        {/* ============================================
-            NEWSLETTER - NO manga panel, just #111111 background
-            ============================================ */}
+        {/* NEWSLETTER */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="manga-display text-3xl md:text-4xl text-[#F5F5F5] mb-4">
@@ -428,9 +411,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* ============================================
-            CTA SECTION - manga-bg + hero-manga
-            ============================================ */}
+        {/* CTA SECTION */}
         <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)] manga-bg hero-manga">
           <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
             <h2 className="manga-display text-4xl sm:text-5xl text-[var(--foreground)] mb-6">
@@ -450,7 +431,7 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-      <Footer />
+      {/* <Footer /> ← REMOVED - Already in layout.tsx */}
       <HomepagePopup />
       <ContinueShopping />
     </>
