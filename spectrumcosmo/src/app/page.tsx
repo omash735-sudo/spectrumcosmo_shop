@@ -1,16 +1,14 @@
-// app/page.tsx
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
-  ArrowRight, Sparkles, Shield, Truck, Star, 
+  ArrowRight, Shield, Truck, Star, 
   ShoppingBag, Zap, CheckCircle, 
-  CreditCard, Headphones, Send, Gift, Shirt
+  CreditCard, Headphones, Send, Shirt
 } from 'lucide-react';
-// REMOVE THESE IMPORTS:
-// import Navbar from '@/components/storefront/Navbar';
-// import Footer from '@/components/storefront/Footer';
+import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
 import { getDb, queryOne, queryMany } from '@/lib/db';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
@@ -206,9 +204,8 @@ export default async function HomePage() {
     <>
       <style>{marqueeStyles}</style>
       <EventAnnouncementBar />
-      {/* <Navbar /> ← REMOVED - Already in layout.tsx */}
+      <Navbar />
       <main>
-        {/* HERO SECTION */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
             <Image
@@ -232,7 +229,6 @@ export default async function HomePage() {
           <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
               
-              {/* LEFT CONTENT */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 <h1 className="manga-title text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-[var(--foreground)] leading-[1.15] sm:leading-[1.2] mb-3 sm:mb-6 tracking-tight">
                   <span className="block sm:inline">{h.heading_prefix}</span>{' '}
@@ -281,7 +277,6 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              {/* RIGHT IMAGES - MARQUEE */}
               <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
                 <div className="relative -mx-4 sm:mx-0 px-4 sm:px-0">
                   <HeroImageMarquee images={marqueeImages} />
@@ -293,7 +288,6 @@ export default async function HomePage() {
 
         <TrustBar />
 
-        {/* CATEGORIES SECTION */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -311,7 +305,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* FEATURED PRODUCTS */}
         <div className="bg-[var(--background-secondary)] py-8 md:py-16" id="featured">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -329,7 +322,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* REVIEWS SECTION */}
         {reviews && reviews.length > 0 && (
           <div className="bg-[var(--background)] py-8 md:py-16 border-y border-[var(--border)] manga-bg hero-manga">
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -380,14 +372,12 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* RECENTLY VIEWED */}
         <div className="bg-[var(--background-card)] py-8 md:py-16 manga-bg cards-manga">
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <RecentlyViewed />
           </div>
         </div>
 
-        {/* NEWSLETTER */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="manga-display text-3xl md:text-4xl text-[#F5F5F5] mb-4">
@@ -411,7 +401,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* CTA SECTION */}
         <section className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)] manga-bg hero-manga">
           <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
             <h2 className="manga-display text-4xl sm:text-5xl text-[var(--foreground)] mb-6">
@@ -431,7 +420,7 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-      {/* <Footer /> ← REMOVED - Already in layout.tsx */}
+      <Footer />
       <HomepagePopup />
       <ContinueShopping />
     </>
