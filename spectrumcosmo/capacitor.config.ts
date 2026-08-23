@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.spectrumcosmo.app',
   appName: 'SpectrumCosmo',
-  webDir: 'out',
+  webDir: '.next',
   server: {
     androidScheme: 'https'
   },
@@ -22,18 +22,18 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#ffffff',
+      backgroundColor: '#F97316',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       iosSpinnerStyle: 'small',
-      iosSpinnerColor: '#000000',
+      iosSpinnerColor: '#F97316',
       splashFullScreen: true,
       splashImmersive: true,
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#FFFFFF',
       overlaysWebView: false,
     },
     Preferences: {
