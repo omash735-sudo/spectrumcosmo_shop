@@ -15,8 +15,14 @@ const desktopSlides = [
 const MANGA_BG = 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1783775798/9b8e69a00494ab278c6f3f1e8d1a4f0c_vkjyhx.jpg';
 
 const LOGOS = {
-  light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
-  dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
+  light: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png',
+  },
+  dark: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png',
+  },
 };
 
 interface AuthLayoutProps {
@@ -42,13 +48,42 @@ export default function AuthLayout({ children, isDark }: AuthLayoutProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const logoSrc = isDark ? LOGOS.dark : LOGOS.light;
+  const LogoImage = ({ className, alt = "SpectrumCosmo" }: { className?: string; alt?: string }) => {
+    const logo = isDark ? LOGOS.dark : LOGOS.light;
+    return (
+      <img
+        src={logo.svg}
+        alt={alt}
+        className={className}
+        onError={(e) => {
+          e.currentTarget.src = logo.png;
+        }}
+        style={{
+          display: 'block',
+          width: 'auto',
+          height: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+        }}
+      />
+    );
+  };
 
-  // Desktop layout
+  const BrandName = ({ className = '', textClassName = '' }: { className?: string; textClassName?: string }) => (
+    <div className={`flex items-center gap-2 ${className}`}>
+      <div className="h-8 sm:h-10">
+        <LogoImage className="h-full w-auto" />
+      </div>
+      <span className={`font-bold tracking-tight ${textClassName}`}>
+        <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
+        <span className="text-orange-500">COSMO</span>
+      </span>
+    </div>
+  );
+
   if (isDesktop) {
     return (
       <div className="flex h-screen overflow-hidden bg-black">
-        {/* Left: Slideshow */}
         <div className="relative flex-[3] bg-black overflow-hidden">
           {desktopSlides.map((img, i) => (
             <div
@@ -66,12 +101,8 @@ export default function AuthLayout({ children, isDark }: AuthLayoutProps) {
           <div className="absolute inset-0 bg-black/60" />
 
           <div className="relative h-full flex flex-col justify-center px-10 z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <img src={logoSrc} alt="SpectrumCosmo" className="h-12" />
-              <span className="text-2xl font-bold tracking-tight">
-                <span className="text-white">SPECTRUM</span>
-                <span className="text-orange-400">COSMO</span>
-              </span>
+            <div className="mb-6">
+              <BrandName textClassName="text-2xl" />
             </div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -105,7 +136,6 @@ export default function AuthLayout({ children, isDark }: AuthLayoutProps) {
           </div>
         </div>
 
-        {/* Right: Auth content */}
         <div 
           className="relative flex-[2] flex items-center justify-center p-6 overflow-hidden"
           style={{
@@ -134,10 +164,9 @@ export default function AuthLayout({ children, isDark }: AuthLayoutProps) {
     );
   }
 
-  // Mobile layout
   return (
     <div 
-      className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
+      className="h-screen flex items-center justify-center px-3 relative overflow-hidden"
       style={{
         backgroundImage: `url(${MANGA_BG})`,
         backgroundSize: 'cover',
@@ -151,25 +180,28 @@ export default function AuthLayout({ children, isDark }: AuthLayoutProps) {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-sm"
       >
-        <div className="text-center mb-8">
+        <div className="text-center mb-3">
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5 }}
             className="inline-block"
           >
-            <img src={logoSrc} alt="SpectrumCosmo" className="h-20 mx-auto mb-4" />
+            <div className="flex items-center justify-center gap-1.5">
+              <div className="h-7 w-auto">
+                <LogoImage className="h-full w-auto" />
+              </div>
+              <span className={`text-base font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                SPECTRUM<span className="text-orange-500">COSMO</span>
+              </span>
+            </div>
           </motion.div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            <span className={isDark ? 'text-white' : 'text-gray-900'}>SPECTRUM</span>
-            <span className="text-orange-500">COSMO</span>
-          </h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Welcome to the anime marketplace
           </p>
         </div>
 
-        <div className={`rounded-2xl p-6 shadow-xl ${
+        <div className={`rounded-2xl p-4 shadow-xl ${
           isDark 
             ? 'bg-gray-900/80 backdrop-blur-xl border border-gray-800' 
             : 'bg-white/95 backdrop-blur-xl border border-gray-200'
