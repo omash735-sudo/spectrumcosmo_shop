@@ -16,11 +16,9 @@ import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
-import MobileHeader from '@/components/storefront/MobileHeader';
-import MobileSearchBar from '@/components/storefront/MobileSearchBar';
-import MobileBottomNav from '@/components/storefront/MobileBottomNav';
 import AppModeWrapper from '@/components/storefront/AppModeWrapper';
 import PWAInstallPrompt from '@/components/storefront/PWAInstallPrompt';
+import NativeStatusBar from '@/components/storefront/NativeStatusBar';
 
 // ===== FONTS =====
 const anton = Anton({
@@ -202,6 +200,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <WishlistProvider>
                       <NotificationProvider>
                         <TrackVisits />
+                        <NativeStatusBar />
                         <AppModeWrapper>
                           <>
                             <Navbar />
