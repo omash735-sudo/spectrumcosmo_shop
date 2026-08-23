@@ -48,6 +48,7 @@ import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
 import { useUser } from '@/components/storefront/UserProvider';
 import ChatWidget from '@/components/chat/ChatWidget';
+import { useAppMode } from '@/hooks/useAppMode';
 
 const categories = [
   { name: 'T-Shirts', href: '/products?category=T-Shirts' },
@@ -105,6 +106,7 @@ const getIconComponent = (iconName: string) => {
 
 export default function Navbar() {
   const { user: contextUser } = useUser();
+  const { isAppMode } = useAppMode();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -265,6 +267,11 @@ export default function Navbar() {
       />
     );
   };
+
+  // Hide navbar completely in app mode
+  if (isAppMode) {
+    return null;
+  }
 
   return (
     <>
