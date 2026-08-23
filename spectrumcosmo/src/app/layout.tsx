@@ -14,6 +14,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
+import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 import MobileHeader from '@/components/storefront/MobileHeader';
 import MobileSearchBar from '@/components/storefront/MobileSearchBar';
 import MobileBottomNav from '@/components/storefront/MobileBottomNav';
@@ -200,24 +202,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       <NotificationProvider>
                         <TrackVisits />
                         <AppModeWrapper>
-                          {(isAppMode) => (
-                            <>
-                              {isAppMode ? (
-                                <>
-                                  <MobileHeader />
-                                  <MobileSearchBar />
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    {children}
-                                  </Suspense>
-                                  <MobileBottomNav />
-                                </>
-                              ) : (
-                                <Suspense fallback={<LoadingSpinner />}>
-                                  {children}
-                                </Suspense>
-                              )}
-                            </>
-                          )}
+                          <>
+                            <Navbar />
+                            <Suspense fallback={<LoadingSpinner />}>
+                              {children}
+                            </Suspense>
+                            <Footer />
+                          </>
                         </AppModeWrapper>
                         <Toaster
                           position="top-right"
