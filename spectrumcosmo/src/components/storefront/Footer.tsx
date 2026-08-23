@@ -1,4 +1,3 @@
-// components/storefront/Footer.tsx
 'use client'
 
 import Link from 'next/link'
@@ -23,6 +22,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { useSettings } from './SettingsProvider'
+import { useAppMode } from '@/hooks/useAppMode'
 
 type SocialLinks = {
   instagram: string
@@ -36,6 +36,7 @@ type SocialLinks = {
 export default function Footer() {
   const { theme, systemTheme } = useTheme()
   const { settings } = useSettings()
+  const { isAppMode } = useAppMode()
   const [mounted, setMounted] = useState(false)
   const [links, setLinks] = useState<SocialLinks>({
     instagram: '',
@@ -54,6 +55,11 @@ export default function Footer() {
     setMounted(true)
   }, [])
 
+  // Hide footer in app mode
+  if (isAppMode) {
+    return null
+  }
+
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light'
   const isDark = currentTheme === 'dark'
 
@@ -66,11 +72,6 @@ export default function Footer() {
   const logoPngSrc = isDark
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png"
-
-  // Also keep settings-based logos as fallback
-  const settingsLogoSrc = isDark
-    ? settings?.company_logo_dark || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
-    : settings?.company_logo || "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png"
 
   useEffect(() => {
     fetch('/api/admin/social-links')
@@ -175,12 +176,6 @@ export default function Footer() {
     { icon: Handshake, name: 'Cash' },
   ]
 
-  const trustFeatures = [
-    { icon: Heart, text: 'Authentic Products' },
-    { icon: Truck, text: 'Fast Delivery' },
-    { icon: Shield, text: 'Secure Payments' },
-  ]
-
   const companyName = settings?.store_name || 'SpectrumCosmo'
   const companyAddress = settings?.store_address || 'Lilongwe, Malawi'
   const companyEmail = settings?.store_email || 'spectrumcosmo01@gmail.com'
@@ -244,7 +239,6 @@ export default function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
             
             <div className="lg:col-span-4 space-y-3 sm:space-y-4">
-              {/* Logo with SVG + PNG fallback */}
               <img
                 src={logoSvgSrc}
                 alt={companyName}
@@ -252,7 +246,6 @@ export default function Footer() {
                 height={48}
                 className="object-contain"
                 onError={(e) => {
-                  // Fallback to PNG if SVG fails
                   e.currentTarget.src = logoPngSrc
                 }}
                 style={{ 
@@ -294,7 +287,6 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* SHOP SECTION - BOLD */}
             <div className="lg:col-span-2">
               <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Shop
@@ -310,7 +302,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* SUPPORT SECTION - BOLD */}
             <div className="lg:col-span-3">
               <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Support
@@ -344,7 +335,6 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* CONTACT US SECTION - BOLD */}
             <div className="lg:col-span-3">
               <h3 className="font-bold font-anton text-xs sm:text-sm uppercase text-[var(--foreground)] mb-3 sm:mb-4 tracking-wider">
                 Contact Us
