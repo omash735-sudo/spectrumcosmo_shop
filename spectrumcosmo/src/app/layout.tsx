@@ -14,7 +14,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NotificationProvider } from '@/components/ui/CustomNotification';
 import TrackVisits from '@/components/TrackVisits';
-// import ClientOnboarding from '@/components/onboarding/ClientOnboarding'; // DISABLED - Onboarding turned off
+import MobileHeader from '@/components/storefront/MobileHeader';
+import MobileSearchBar from '@/components/storefront/MobileSearchBar';
+import MobileBottomNav from '@/components/storefront/MobileBottomNav';
+import AppModeWrapper from '@/components/storefront/AppModeWrapper';
 
 // ===== FONTS =====
 const anton = Anton({
@@ -163,7 +166,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${anton.variable} ${kanit.variable} ${bangers.variable} ${blackHanSans.variable}`}
     >
       <head>
-        {/* Additional meta tags for better PWA support */}
         <link
           rel="mask-icon"
           href="https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426894/app_icon_orange_accent_wi0uge.svg"
@@ -174,7 +176,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="SpectrumCosmo" />
         <meta name="mobile-web-app-capable" content="yes" />
         
-        {/* Android Chrome icons */}
         <link
           rel="icon"
           type="image/png"
@@ -198,11 +199,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <WishlistProvider>
                       <NotificationProvider>
                         <TrackVisits />
-                        <Suspense fallback={<LoadingSpinner />}>
-                          {children}
-                        </Suspense>
-                        {/* ClientOnboarding DISABLED - Onboarding tour turned off */}
-                        {/* <ClientOnboarding /> */}
+                        <AppModeWrapper>
+                          {(isAppMode) => (
+                            <>
+                              {isAppMode ? (
+                                <>
+                                  <MobileHeader />
+                                  <MobileSearchBar />
+                                  <Suspense fallback={<LoadingSpinner />}>
+                                    {children}
+                                  </Suspense>
+                                  <MobileBottomNav />
+                                </>
+                              ) : (
+                                <Suspense fallback={<LoadingSpinner />}>
+                                  {children}
+                                </Suspense>
+                              )}
+                            </>
+                          )}
+                        </AppModeWrapper>
                         <Toaster
                           position="top-right"
                           toastOptions={{
