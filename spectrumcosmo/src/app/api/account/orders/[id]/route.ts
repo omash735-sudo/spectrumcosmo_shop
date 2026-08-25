@@ -1,8 +1,9 @@
-// app/api/account/orders/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { getStatusDisplayInfo, getOrderStatusHistory } from '@/lib/order-status';
+
+export const dynamic = 'force-static';
 
 export async function GET(
   req: NextRequest,
