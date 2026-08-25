@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/notifications-admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -53,7 +55,6 @@ export async function POST(
     `;
   }
 
-  // Customer notifications
   if (response === 'received') {
     await createNotification({
       userId: user.id,
@@ -81,7 +82,6 @@ export async function POST(
     });
   }
 
-  // Admin notifications
   const admins = await sql`
     SELECT id FROM users WHERE is_admin = true
   `;
