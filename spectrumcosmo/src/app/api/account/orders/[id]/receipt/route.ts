@@ -3,7 +3,8 @@ import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { generateReceiptPDF } from '@/lib/pdf-generator';
 
-// Types
+export const dynamic = 'force-static';
+
 interface OrderItem {
   name: string;
   quantity: number;
@@ -44,7 +45,6 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const download = searchParams.get('download') === 'true';
 
-    // Verify order belongs to user
     const ordersResult = await sql`
       SELECT o.*, 
              COALESCE(
@@ -63,7 +63,6 @@ export async function GET(
       GROUP BY o.id
     `;
 
-    // Fix: Cast to array before indexing
     const ordersArray = ordersResult as any[];
     const order = ordersArray[0] as Order | undefined;
 
@@ -71,7 +70,6 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get receipt
     const receiptsResult = await sql`
       SELECT * FROM order_receipts 
       WHERE order_id = ${orderId} 
@@ -86,7 +84,6 @@ export async function GET(
       return NextResponse.json({ error: 'No receipt found for this order' }, { status: 404 });
     }
 
-    // If download requested, generate PDF
     if (download) {
       try {
         const pdfBytes = await generateReceiptPDF(
@@ -101,7 +98,6 @@ export async function GET(
           }
         );
 
-        // Convert to Buffer
         let buffer: Buffer;
         if (pdfBytes instanceof Uint8Array) {
           buffer = Buffer.from(pdfBytes);
@@ -131,7 +127,6 @@ export async function GET(
       }
     }
 
-    // Return JSON response for preview
     return NextResponse.json({
       success: true,
       receipt: {
