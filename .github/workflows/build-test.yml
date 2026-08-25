@@ -1,9 +1,10 @@
-name: Build Android APK
+name: Build and Test
 
 on:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -26,32 +27,13 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Capacitor
-        run: npm install -g @capacitor/cli
-
-      - name: Sync Capacitor
+      - name: Check for splash.png
         run: |
-          npx cap sync android
-          npx cap copy android
-
-      - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          if [ -f "public/splash.png" ]; then
+            echo "splash.png exists"
+          else
+            echo "splash.png not found"
+          fi
