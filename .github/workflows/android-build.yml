@@ -24,12 +24,19 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Next.js app
-        run: npm run build
+      - name: Build Next.js app for mobile
+        run: |
+          if [ -d "src/app/api" ]; then
+            mv src/app/api /tmp/api_backup
+          fi
+          
+          BUILD_TARGET=mobile NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }} npm run build
+          
+          if [ -d "/tmp/api_backup" ]; then
+            mv /tmp/api_backup src/app/api
+          fi
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -44,7 +51,7 @@ jobs:
         run: npm install -g @capacitor/cli
 
       - name: Add Android platform
-        run: npx cap add android
+        run: npx cap add android || npx cap sync android
 
       - name: Sync Capacitor
         run: |
