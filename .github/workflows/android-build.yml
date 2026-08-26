@@ -51,20 +51,36 @@ jobs:
       - name: Install Capacitor
         run: npm install -g @capacitor/cli
 
-      - name: Add Android platform
-        run: npx cap add android || true
+      - name: Regenerate Android platform
+        run: |
+          rm -rf android
+          npx cap add android
 
       - name: Sync Capacitor
         run: |
           npx cap sync android
           npx cap copy android
 
+      - name: Copy custom icons
+        run: |
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            src="android-icons/mipmap-${density}"
+            dest="android/app/src/main/res/mipmap-${density}"
+            if [ -d "$src" ]; then
+              cp -r "$src/." "$dest/"
+              echo "Copied $density icons"
+            else
+              echo "Warning: $src not found, skipping"
+            fi
+          done
+          if [ -d "android-icons/mipmap-anydpi-v26" ]; then
+            cp -r "android-icons/mipmap-anydpi-v26/." "android/app/src/main/res/mipmap-anydpi-v26/"
+            echo "Copied anydpi-v26 icons"
+          fi
+
       - name: Build APK
         run: |
           cd android
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.2
-          fi
           chmod +x gradlew
           ./gradlew assembleDebug
 
