@@ -1,4 +1,3 @@
-// app/admin/payment-methods/page.tsx
 export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';
@@ -6,10 +5,10 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { verifyToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
 import { PaymentMethod } from '@/types/payment';
 import { Plus, Eye, EyeOff, Trash2, AlertCircle, CreditCard, Wallet, Building2, Coins } from 'lucide-react';
 import { PaymentMethodForm } from '@/components/admin/PaymentMethodForm';
+import { revalidatePath } from 'next/cache';
 
 export const metadata: Metadata = {
   title: 'Payment Methods | Admin Dashboard | SpectrumCosmo',
@@ -23,10 +22,50 @@ interface CreateMethodState {
   success?: string;
 }
 
-// Server action types
-async function createMethod(prevState: CreateMethodState | null, formData: FormData): Promise<CreateMethodState> {
-  'use server';
+const typeIcons: Record<string, any> = {
+  mobile_money: Wallet,
+  bank: Building2,
+  cash: Coins,
+  card: CreditCard,
+};
 
+const typeLabels: Record<string, string> = {
+  mobile_money: 'Mobile Money',
+  bank: 'Bank Transfer',
+  cash: 'Cash',
+  card: 'Card Payment',
+};
+
+function PaymentMethodsSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
+          <div className="h-4 bg-[var(--background-secondary)] rounded w-64 mt-1" />
+        </div>
+      </div>
+      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-6">
+        <div className="h-6 bg-[var(--background-secondary)] rounded w-32 mb-4" />
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-12 bg-[var(--background-secondary)] rounded" />
+          ))}
+        </div>
+      </div>
+      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-6">
+        <div className="h-6 bg-[var(--background-secondary)] rounded w-32 mb-4" />
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 bg-[var(--background-secondary)] rounded" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function createMethodAction(prevState: CreateMethodState | null, formData: FormData): Promise<CreateMethodState> {
   const sql = getDb();
 
   const name = formData.get('name')?.toString().trim();
@@ -36,7 +75,6 @@ async function createMethod(prevState: CreateMethodState | null, formData: FormD
   const branch = formData.get('branch')?.toString().trim() || null;
   const instructions = formData.get('instructions')?.toString().trim() || null;
 
-  // Validation
   if (!name) {
     return { error: 'Method name is required' };
   }
@@ -84,8 +122,6 @@ async function createMethod(prevState: CreateMethodState | null, formData: FormD
 }
 
 async function toggleMethod(id: string): Promise<void> {
-  'use server';
-
   const sql = getDb();
 
   const [method] = await sql`
@@ -104,8 +140,6 @@ async function toggleMethod(id: string): Promise<void> {
 }
 
 async function deleteMethod(id: string): Promise<void> {
-  'use server';
-
   const sql = getDb();
 
   await sql`
@@ -114,50 +148,6 @@ async function deleteMethod(id: string): Promise<void> {
 
   revalidatePath('/admin/payment-methods');
 }
-
-// ===== SKELETON =====
-function PaymentMethodsSkeleton() {
-  return (
-    <div className="space-y-8 animate-pulse">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="h-8 bg-[var(--background-secondary)] rounded w-48" />
-          <div className="h-4 bg-[var(--background-secondary)] rounded w-64 mt-1" />
-        </div>
-      </div>
-      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-6">
-        <div className="h-6 bg-[var(--background-secondary)] rounded w-32 mb-4" />
-        <div className="space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-12 bg-[var(--background-secondary)] rounded" />
-          ))}
-        </div>
-      </div>
-      <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-6">
-        <div className="h-6 bg-[var(--background-secondary)] rounded w-32 mb-4" />
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 bg-[var(--background-secondary)] rounded" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const typeIcons: Record<string, any> = {
-  mobile_money: Wallet,
-  bank: Building2,
-  cash: Coins,
-  card: CreditCard,
-};
-
-const typeLabels: Record<string, string> = {
-  mobile_money: 'Mobile Money',
-  bank: 'Bank Transfer',
-  cash: 'Cash',
-  card: 'Card Payment',
-};
 
 export default async function PaymentMethodsPage() {
   const cookieStore = await cookies();
@@ -185,7 +175,6 @@ export default async function PaymentMethodsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div>
@@ -204,7 +193,6 @@ export default async function PaymentMethodsPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
         {error ? (
-          /* Error State */
           <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 sm:p-8 text-center">
             <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3" />
             <h3 className="text-base sm:text-lg font-semibold text-red-800 dark:text-red-400 mb-2">Failed to Load Methods</h3>
@@ -212,7 +200,6 @@ export default async function PaymentMethodsPage() {
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">
-            {/* Create Form Card */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
@@ -221,11 +208,10 @@ export default async function PaymentMethodsPage() {
                 </div>
               </div>
               <div className="p-4 sm:p-6">
-                <PaymentMethodForm createMethodAction={createMethod} />
+                <PaymentMethodForm createMethodAction={createMethodAction} />
               </div>
             </div>
 
-            {/* Methods List Card */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <h2 className="text-sm sm:text-lg font-semibold text-[var(--foreground)]">Available Methods</h2>
