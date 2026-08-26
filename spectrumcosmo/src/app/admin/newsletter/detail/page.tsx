@@ -26,11 +26,11 @@ import {
 import { format } from 'date-fns';
 
 export default async function NewsletterPreviewPage({
-  params,
+  searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  searchParams: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = await searchParams;
 
   const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
@@ -132,7 +132,6 @@ export default async function NewsletterPreviewPage({
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-4xl mx-auto">
-        {/* Back Link */}
         <div className="mb-4">
           <Link
             href="/admin/newsletter"
@@ -144,7 +143,6 @@ export default async function NewsletterPreviewPage({
         </div>
 
         <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-sm">
-          {/* Header */}
           <div className="p-4 sm:p-6 border-b border-[var(--border)]">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
@@ -170,20 +168,9 @@ export default async function NewsletterPreviewPage({
               </div>
               <div className="flex flex-wrap gap-2 flex-shrink-0">
                 {newsletter.status === 'draft' && (
-                  <form
-                    action={async () => {
-                      'use server';
-                      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/newsletter/send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          id: newsletter.id,
-                          send_now: true 
-                        }),
-                      });
-                      redirect('/admin/newsletter');
-                    }}
-                  >
+                  <form action={`/api/newsletter/send`} method="POST">
+                    <input type="hidden" name="id" value={newsletter.id} />
+                    <input type="hidden" name="send_now" value="true" />
                     <button
                       type="submit"
                       className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm min-h-[44px]"
@@ -204,7 +191,6 @@ export default async function NewsletterPreviewPage({
               </div>
             </div>
 
-            {/* Meta Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 pt-4 border-t border-[var(--border)]">
               <div>
                 <p className="text-[10px] text-[var(--foreground-muted)]">Created</p>
@@ -237,7 +223,6 @@ export default async function NewsletterPreviewPage({
             </div>
           </div>
 
-          {/* Analytics Stats (if sent) */}
           {newsletter.status === 'sent' && (
             <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 bg-orange-50 dark:bg-orange-950/20 border-b border-[var(--border)]">
               <div className="text-center">
@@ -285,7 +270,6 @@ export default async function NewsletterPreviewPage({
             </div>
           )}
 
-          {/* Content */}
           <div className="p-4 sm:p-6">
             {newsletter.image_url && (
               <div className="relative w-full h-48 sm:h-64 mb-4 sm:mb-6 rounded-xl overflow-hidden bg-[var(--background-secondary)]">
@@ -304,26 +288,14 @@ export default async function NewsletterPreviewPage({
             />
           </div>
 
-          {/* Footer */}
           <div className="p-4 sm:p-6 border-t border-[var(--border)] bg-[var(--background-secondary)] flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] font-mono">
               ID: {newsletter.id}
             </p>
             {newsletter.status === 'draft' && (
-              <form
-                action={async () => {
-                  'use server';
-                  await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/newsletter/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      id: newsletter.id,
-                      send_now: true 
-                    }),
-                  });
-                  redirect('/admin/newsletter');
-                }}
-              >
+              <form action={`/api/newsletter/send`} method="POST">
+                <input type="hidden" name="id" value={newsletter.id} />
+                <input type="hidden" name="send_now" value="true" />
                 <button
                   type="submit"
                   className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition flex items-center gap-2 text-sm min-h-[44px] w-full sm:w-auto justify-center"
@@ -336,7 +308,6 @@ export default async function NewsletterPreviewPage({
           </div>
         </div>
 
-        {/* Pro Tip - Draft State */}
         {newsletter.status === 'draft' && (
           <div className="mt-4 sm:mt-6 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
             <div className="flex items-start gap-2">
@@ -353,7 +324,6 @@ export default async function NewsletterPreviewPage({
           </div>
         )}
 
-        {/* Pro Tip - Sent State */}
         {newsletter.status === 'sent' && (
           <div className="mt-4 sm:mt-6 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800 p-3 sm:p-4">
             <div className="flex items-start gap-2">
