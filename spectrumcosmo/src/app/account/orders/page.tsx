@@ -80,7 +80,6 @@ export default function OrdersPage() {
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
       
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -107,7 +106,6 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Filters - Rectangular with curved corners */}
       <div className="mb-6">
         <OrderFilters
           filterStatus={filterStatus}
@@ -117,7 +115,6 @@ export default function OrdersPage() {
         />
       </div>
 
-      {/* Orders List */}
       {filteredOrders.length === 0 ? (
         <EmptyOrders 
           hasFilters={filterStatus !== 'all' || !!searchTerm}
