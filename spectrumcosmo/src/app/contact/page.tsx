@@ -11,7 +11,10 @@ import {
   Facebook, Twitter, Instagram, Youtube
 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// REMOVE: export const dynamic = 'force-dynamic';
+// ADD: export const dynamic = 'force-static';
+
+export const dynamic = 'force-static';
 
 const getIconForTitle = (title: string) => {
   const lower = title.toLowerCase();
@@ -38,7 +41,6 @@ export default async function ContactPage() {
   const formTitle = content.form_title || 'Send us a message';
   const formSubtitle = content.form_subtitle || 'We typically respond within 24 hours';
   
-  // Filter out the "Support" item
   const featureGrid = (content.feature_grid || []).filter(
     (item: any) => item.title?.toLowerCase() !== 'support'
   );
@@ -66,7 +68,6 @@ export default async function ContactPage() {
       <Navbar />
       <main className="min-h-screen bg-[var(--background)]">
         
-        {/* Hero Section */}
         <div className="relative h-[400px] md:h-[500px] overflow-hidden">
           <Image
             src={heroImage}
@@ -88,10 +89,8 @@ export default async function ContactPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
           
-          {/* Contact Section Grid */}
           <div className="grid lg:grid-cols-3 gap-8 mb-16">
             
-            {/* Contact Info Cards */}
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
                 <div className="flex items-center gap-3 mb-4">
@@ -130,7 +129,6 @@ export default async function ContactPage() {
                 <p className="text-xs text-[var(--foreground-muted)] mt-2">By appointment only</p>
               </div>
 
-              {/* Social Links */}
               {(socialLinks.facebook || socialLinks.instagram || socialLinks.twitter || socialLinks.youtube) && (
                 <div className="bg-[var(--background-card)] rounded-2xl p-6 border border-[var(--border)]">
                   <h3 className="font-semibold text-[var(--foreground)] mb-4">Follow Us</h3>
@@ -160,7 +158,6 @@ export default async function ContactPage() {
               )}
             </div>
 
-            {/* Contact Form */}
             <div className="lg:col-span-2">
               <div className="bg-[var(--background-card)] rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden">
                 <div className="bg-[var(--background-secondary)] px-6 py-5 border-b border-[var(--border)]">
@@ -174,7 +171,6 @@ export default async function ContactPage() {
             </div>
           </div>
 
-          {/* Feature Grid - Evenly spaced with grid-cols-3 */}
           {featureGrid.length > 0 && (
             <div className="mb-16">
               <div className="text-center mb-8">
@@ -184,7 +180,6 @@ export default async function ContactPage() {
                 <h2 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Connect With Us</h2>
                 <p className="text-[var(--foreground-muted)] mt-2">Explore partnership opportunities</p>
               </div>
-              {/* Updated grid: responsive 1→2→3 columns, centered with max-w-4xl */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
                 {featureGrid.map((item: any, idx: number) => {
                   const Icon = getIconForTitle(item.title);
@@ -211,7 +206,6 @@ export default async function ContactPage() {
             </div>
           )}
 
-          {/* Community CTA */}
           {communityLink && (
             <div className="bg-[var(--background-secondary)] rounded-2xl p-8 text-center border border-[var(--border)]">
               <div className="inline-flex items-center gap-2 bg-[var(--primary)]/10 px-3 py-1 rounded-full mb-4">
@@ -235,7 +229,6 @@ export default async function ContactPage() {
             </div>
           )}
 
-          {/* FAQ Link */}
           <div className="text-center mt-12">
             <p className="text-[var(--foreground-muted)] text-sm">
               Have questions? Check our{' '}
