@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
+export const dynamic = 'force-static';
+
 export async function GET() {
   try {
     const sql = getDb();
