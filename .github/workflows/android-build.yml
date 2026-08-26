@@ -1,18 +1,14 @@
 name: Build Android APK
-
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./spectrumcosmo
-
     steps:
       - uses: actions/checkout@v4
 
@@ -32,9 +28,9 @@ jobs:
           if [ -d "src/app/admin" ]; then
             mv src/app/admin /tmp/admin_backup
           fi
-          
+
           BUILD_TARGET=mobile NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }} npm run build
-          
+
           if [ -d "/tmp/api_backup" ]; then
             mv /tmp/api_backup src/app/api
           fi
@@ -63,6 +59,12 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Debug - show manifest and icon files
+        run: |
+          cat android/app/src/main/AndroidManifest.xml
+          echo "---ICONS---"
+          find android/app/src/main/res -name "ic_launcher*"
+
       - name: Sync Capacitor
         run: |
           npx cap sync android
@@ -78,4 +80,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk
-          path: spectrumcosmo/android/app/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/debug/*.apk
