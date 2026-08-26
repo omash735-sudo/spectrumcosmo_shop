@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-// Remove caching temporarily
-// export const revalidate = 60;  // COMMENT THIS OUT
-
-export const dynamic = 'force-dynamic'; // ADD THIS
-
 export async function GET() {
   try {
     const sql = getDb();
