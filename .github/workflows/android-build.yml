@@ -53,17 +53,8 @@ jobs:
       - name: Install Capacitor
         run: npm install -g @capacitor/cli
 
-      - name: Remove existing Android platform
-        run: rm -rf android || true
-
       - name: Add Android platform
-        run: npx cap add android
-
-      - name: Debug - show manifest and icon files
-        run: |
-          cat android/app/src/main/AndroidManifest.xml
-          echo "---ICONS---"
-          find android/app/src/main/res -name "ic_launcher*"
+        run: npx cap add android || true
 
       - name: Sync Capacitor
         run: |
