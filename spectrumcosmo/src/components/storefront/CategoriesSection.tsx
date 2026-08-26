@@ -1,6 +1,9 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getDb, queryMany } from '@/lib/db';
+import { apiFetch } from '@/lib/api';
 import { FolderOpen, ArrowRight } from 'lucide-react';
 
 interface Category {
@@ -13,25 +16,18 @@ interface Category {
   product_count: number;
 }
 
-export default async function CategoriesSection() {
-  const sql = getDb();
-  
-  const categories = await queryMany<Category>`
-    SELECT 
-      c.id, 
-      c.name, 
-      c.slug, 
-      c.image_url, 
-      c.is_active, 
-      c.sort_order,
-      COUNT(p.id) as product_count
-    FROM categories c
-    LEFT JOIN products p ON p.category_id = c.id AND p.status = 'in_stock'
-    WHERE c.is_active = true 
-    GROUP BY c.id
-    ORDER BY c.sort_order ASC, c.name ASC
-  `;
-  
+export default function CategoriesSection() {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    apiFetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategories(data);
+      })
+      .catch(console.error);
+  }, []);
+
   if (categories.length === 0) return null;
 
   return (
@@ -43,8 +39,8 @@ export default async function CategoriesSection() {
             Shop by Category
           </h2>
         </div>
-        <Link 
-          href="/products" 
+        <Link
+          href="/products"
           className="text-xs md:text-sm text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-kanit font-medium flex items-center gap-1 group"
         >
           View all
@@ -52,7 +48,7 @@ export default async function CategoriesSection() {
         </Link>
       </div>
 
-      <div 
+      <div
         className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5"
         data-onboarding="categories"
       >
@@ -77,9 +73,7 @@ export default async function CategoriesSection() {
                     <FolderOpen size={24} className="text-orange-400 sm:w-6 sm:h-6 md:w-7 md:h-7" />
                   </div>
                 )}
-                
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block" />
-                
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 hidden md:flex">
                   <span className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-anton font-semibold shadow-lg flex items-center gap-1 tracking-wider">
                     Shop <ArrowRight size={10} className="sm:w-3 sm:h-3" />
@@ -87,7 +81,6 @@ export default async function CategoriesSection() {
                 </div>
               </div>
             </div>
-            
             <div className="text-center mt-1.5 sm:mt-2 md:mt-3">
               <h3 className="font-kanit font-semibold text-gray-800 dark:text-gray-200 text-[11px] sm:text-xs md:text-sm lg:text-base group-hover:text-orange-500 transition-colors line-clamp-1">
                 {category.name}
