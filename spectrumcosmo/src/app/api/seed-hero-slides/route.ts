@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
     const sql = getDb();
     
-    // Step 1: Create the table if it doesn't exist
     await sql`
       CREATE TABLE IF NOT EXISTS hero_slides (
         id SERIAL PRIMARY KEY,
@@ -24,10 +21,8 @@ export async function GET() {
       )
     `;
     
-    // Step 2: Clear any existing data (optional)
     await sql`DELETE FROM hero_slides`;
     
-    // Step 3: Insert slides
     await sql`
       INSERT INTO hero_slides (image_url, title, description, button_text, button_link, is_active, display_order, autoplay_delay)
       VALUES 
@@ -63,7 +58,6 @@ export async function GET() {
         )
     `;
     
-    // Step 4: Verify
     const result = await sql`SELECT COUNT(*) as count FROM hero_slides WHERE is_active = true`;
     const slideCount = parseInt(result[0]?.count || '0');
     
