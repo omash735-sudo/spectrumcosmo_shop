@@ -5,19 +5,34 @@ import { requireAdmin } from '@/lib/auth';
 interface Category {
   id: string;
   name: string;
+  slug: string;
   image_url: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: Date;
   updated_at: Date;
+  product_count: number;
 }
 
 // GET is public (no auth required)
 export async function GET() {
   try {
     const categories = await queryAsArray<Category>`
-      SELECT * FROM categories 
-      ORDER BY sort_order ASC, name ASC
+      SELECT 
+        c.id, 
+        c.name, 
+        c.slug, 
+        c.image_url, 
+        c.is_active, 
+        c.sort_order, 
+        c.created_at, 
+        c.updated_at,
+        COUNT(p.id)::int as product_count
+      FROM categories c
+      LEFT JOIN products p ON p.category_id = c.id AND p.status = 'in_stock'
+      WHERE c.is_active = true
+      GROUP BY c.id
+      ORDER BY c.sort_order ASC, c.name ASC
     `;
     return NextResponse.json(categories);
   } catch (err) {
