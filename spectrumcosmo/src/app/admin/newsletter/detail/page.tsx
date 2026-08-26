@@ -1,9 +1,7 @@
-export const dynamic = 'force-dynamic';
-
-import { getDb } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyToken } from '@/lib/auth';
+import { getDb } from '@/lib/db';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
