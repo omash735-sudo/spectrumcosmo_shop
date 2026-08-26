@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAdminFromRequest } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 interface ActiveUser {
@@ -20,7 +19,6 @@ interface ActiveUser {
 }
 
 export async function GET(req: NextRequest) {
-  // Only admins can access this stream
   const admin = getAdminFromRequest(req);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -67,7 +65,6 @@ export async function GET(req: NextRequest) {
             LIMIT 200
           `;
 
-          // Cast Neon result to array
           const activeUsers = result as ActiveUser[];
 
           const data = {
@@ -85,13 +82,10 @@ export async function GET(req: NextRequest) {
         }
       };
 
-      // Initial fetch
       await fetchActiveUsers();
 
-      // Schedule periodic updates (every 10 seconds)
       interval = setInterval(fetchActiveUsers, 10000);
 
-      // Handle client disconnect
       const cleanup = () => {
         if (interval) {
           clearInterval(interval);
@@ -100,7 +94,6 @@ export async function GET(req: NextRequest) {
         isClosed = true;
       };
 
-      // Override close method
       const originalClose = controller.close.bind(controller);
       controller.close = () => {
         cleanup();
@@ -114,7 +107,7 @@ export async function GET(req: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering
+      'X-Accel-Buffering': 'no',
     },
   });
 }
