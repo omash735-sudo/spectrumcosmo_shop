@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -129,7 +129,6 @@ const paymentStatusMap: Record<string, { label: string; color: string; bg: strin
   },
 };
 
-// ===== SKELETON =====
 function OrderDetailSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -165,9 +164,9 @@ function OrderDetailSkeleton() {
 }
 
 export default function AdminOrderDetailPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = params.id as string;
+  const orderId = searchParams.get('id');
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,8 +178,12 @@ export default function AdminOrderDetailPage() {
   const [adminNotes, setAdminNotes] = useState('');
 
   useEffect(() => {
+    if (!orderId) {
+      router.replace('/admin/orders');
+      return;
+    }
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, router]);
 
   const fetchOrder = async () => {
     setLoading(true);
@@ -200,6 +203,7 @@ export default function AdminOrderDetailPage() {
   };
 
   const updateOrderStatus = async () => {
+    if (!orderId) return;
     setUpdating(true);
     try {
       const res = await fetch(`/api/admin/orders`, {
@@ -224,6 +228,7 @@ export default function AdminOrderDetailPage() {
   };
 
   const updateAdminNotes = async () => {
+    if (!orderId) return;
     setUpdating(true);
     try {
       const res = await fetch(`/api/admin/orders`, {
@@ -297,7 +302,6 @@ export default function AdminOrderDetailPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
             <Link
@@ -326,7 +330,7 @@ export default function AdminOrderDetailPage() {
 
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`/admin/orders/${orderId}/receipt`}
+              href={`/admin/orders/receipt?orderId=${orderId}`}
               className="flex items-center gap-2 px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg transition text-sm font-medium min-h-[40px]"
             >
               <Upload size={16} />
@@ -341,7 +345,6 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
-        {/* Status Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-3 sm:p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
@@ -386,11 +389,8 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Left Column */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* Customer Information */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <User size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
@@ -436,7 +436,6 @@ export default function AdminOrderDetailPage() {
               </div>
             </div>
 
-            {/* Order Items */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <Package size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
@@ -473,7 +472,6 @@ export default function AdminOrderDetailPage() {
                 )}
               </div>
 
-              {/* Order Summary */}
               <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[var(--foreground-muted)]">Subtotal</span>
@@ -511,9 +509,7 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-4 sm:space-y-6">
-            {/* Order Status Update */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <Edit size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
@@ -565,7 +561,6 @@ export default function AdminOrderDetailPage() {
               )}
             </div>
 
-            {/* Payment Details */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <CreditCard size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
@@ -607,7 +602,6 @@ export default function AdminOrderDetailPage() {
               </div>
             </div>
 
-            {/* Admin Notes */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <FileText size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
@@ -659,7 +653,6 @@ export default function AdminOrderDetailPage() {
               )}
             </div>
 
-            {/* Order Meta */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-5 shadow-sm">
               <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2">
                 <Calendar size={16} className="sm:w-[18px] sm:h-[18px] text-[var(--primary)]" />
