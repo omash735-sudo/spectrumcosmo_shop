@@ -22,6 +22,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSettings } from '@/components/storefront/SettingsProvider';
 import clsx from 'clsx';
+import RequireAuth from '@/components/auth/RequireAuth';
 
 type User = {
   id: string;
@@ -31,7 +32,6 @@ type User = {
   profileImage?: string;
 };
 
-// Skeleton loader for user greeting
 function UserGreetingSkeleton() {
   return (
     <div className="flex items-center gap-3">
@@ -44,14 +44,13 @@ function UserGreetingSkeleton() {
   );
 }
 
-export default function AccountLayout({ children }: { children: ReactNode }) {
+function AccountLayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const { resolvedTheme } = useSettings();
 
-  // Logo based on dark mode setting
   const logoSrc = resolvedTheme === 'dark'
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png";
@@ -69,7 +68,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     { name: 'Settings', href: '/account/settings', icon: Settings },
   ];
 
-  // Fetch user data
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/me');
@@ -89,12 +87,10 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -108,7 +104,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 
   const SidebarContent = () => (
     <>
-      {/* Logo + Brand */}
       <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
         <div className="relative h-10 w-auto">
           <Image 
@@ -126,11 +121,9 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* User Greeting - With Manga Panel */}
       <div className="mx-4 mt-4 manga-bg cards-manga rounded-xl overflow-hidden">
         <div className="relative z-10 p-3 bg-[var(--primary)]/10">
           <div className="flex items-center gap-3">
-            {/* Profile picture or fallback */}
             <div className="w-10 h-10 rounded-full bg-[var(--primary)]/20 flex items-center justify-center overflow-hidden">
               {loadingUser ? (
                 <Loader2 className="animate-spin text-[var(--primary)] w-4 h-4" />
@@ -164,7 +157,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="p-4 space-y-1.5 flex-1" aria-label="Account navigation">
         {navItems.map((item) => {
           const active =
@@ -202,12 +194,10 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="flex relative">
-        {/* DESKTOP SIDEBAR */}
         <aside className="hidden md:flex md:w-72 flex-col bg-[var(--background-card)] backdrop-blur-sm border-r border-[var(--border)] sticky top-0 h-screen shadow-sm">
           <SidebarContent />
         </aside>
 
-        {/* MOBILE FLOATING BUTTON */}
         <div className="md:hidden fixed bottom-6 right-6 z-50">
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -219,7 +209,6 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* MOBILE DRAWER OVERLAY */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div 
@@ -244,11 +233,18 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {/* MAIN CONTENT */}
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-6xl mx-auto">{children}</div>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AccountLayout({ children }: { children: ReactNode }) {
+  return (
+    <RequireAuth>
+      <AccountLayoutContent>{children}</AccountLayoutContent>
+    </RequireAuth>
   );
 }
