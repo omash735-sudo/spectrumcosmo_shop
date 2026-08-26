@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 
+export const dynamic = 'force-static';
+
 export async function POST(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
   if (error || !user || user.role !== 'admin') {
@@ -15,26 +17,21 @@ export async function POST(req: NextRequest) {
     const sql = getDb();
 
     if (action === 'generate') {
-      // Generate new secret
       const secret = authenticator.generateSecret();
       
-      // Store temporarily
       await sql`
         UPDATE users 
         SET two_factor_secret = ${secret}, two_factor_enabled = false 
         WHERE id = ${user.id}
       `;
       
-      // Generate QR code URL
       const otpauth = authenticator.keyuri(user.email, 'SpectrumCosmo', secret);
       const qrCode = await QRCode.toDataURL(otpauth);
       
-      // Generate backup codes
       const backupCodes = Array.from({ length: 10 }, () => 
         Math.random().toString(36).substring(2, 10).toUpperCase()
       );
       
-      // Store backup codes (hashed in production)
       await sql`
         UPDATE users SET two_factor_backup_codes = ${JSON.stringify(backupCodes)} 
         WHERE id = ${user.id}
@@ -68,7 +65,6 @@ export async function POST(req: NextRequest) {
           WHERE id = ${user.id}
         `;
         
-        // Log the action
         await sql`
           INSERT INTO security_logs (user_id, action_type, ip_address, details, created_at)
           VALUES (${user.id}, 'admin_2fa_enabled', ${req.headers.get('x-forwarded-for') || 'unknown'}, ${JSON.stringify({ success: true })}, NOW())
