@@ -23,7 +23,6 @@ interface OrderCardProps {
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dfsvnaslv';
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'spectrumcosmo_unsigned_upload';
 
-// Helper function to parse amount
 function parseAmount(amount: any): number {
   if (typeof amount === 'number') return amount;
   if (typeof amount === 'string') {
@@ -34,7 +33,6 @@ function parseAmount(amount: any): number {
   return 0;
 }
 
-// Helper function to format amounts with currency
 function formatCurrency(amount: number, currency: string = 'MWK'): string {
   if (currency === 'MWK') {
     return `MWK ${amount.toLocaleString()}`;
@@ -56,7 +54,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
 
   const deliveryMethod = order.custom_delivery_method || 'Not specified';
   
-  // Use checkout currency (what customer paid in)
   const displayCurrency = order.checkout_currency || order.currency || 'MWK';
   const totalAmount = parseAmount(order.checkout_amount || order.total_amount);
 
@@ -93,7 +90,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
   return (
     <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden">
       
-      {/* Header */}
       <div className="p-3.5 sm:p-4 md:p-5 border-b border-[var(--border)] bg-[var(--background-secondary)]">
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -123,7 +119,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
         </div>
       </div>
 
-      {/* Body - Always visible summary */}
       <div className="p-3.5 sm:p-4 md:p-5">
         <div className="flex flex-wrap justify-between items-start gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
@@ -151,16 +146,13 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
         </div>
       </div>
 
-      {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-[var(--border)] p-3.5 sm:p-4 md:p-5 space-y-4 bg-[var(--background)]/50">
           
-          {/* Items List */}
           {order.items && order.items.length > 0 && (
             <div className="space-y-2">
               <p className="font-medium text-sm text-[var(--foreground)]">Items</p>
               {order.items.map((item, idx) => {
-                // Use total_price from API (mapped from subtotal_usd)
                 const itemTotal = parseAmount(item.total_price || 0);
                 return (
                   <div key={idx} className="flex items-center gap-3 text-sm py-1 border-b border-[var(--border)] last:border-0">
@@ -186,7 +178,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             </div>
           )}
 
-          {/* Delivery Info */}
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-[var(--foreground-muted)] font-medium">Delivery Address</p>
@@ -200,7 +191,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             </div>
           </div>
 
-          {/* Payment Proof Upload */}
           {canUploadProof && !hasProof && (
             <PaymentProofUpload 
               orderId={order.id}
@@ -209,7 +199,6 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             />
           )}
 
-          {/* Existing Proof */}
           {hasProof && (
             <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-3.5 sm:p-4 border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
@@ -226,13 +215,11 @@ export default function OrderCard({ order, onRefresh }: OrderCardProps) {
             </div>
           )}
 
-          {/* Order Timeline */}
           <OrderTimeline order={order} />
 
-          {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-2">
             <Link
-              href={`/account/orders/${order.id}`}
+              href={`/account/orders/detail?orderId=${order.id}`}
               className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium flex items-center gap-1"
             >
               <Eye size={14} /> View Details
