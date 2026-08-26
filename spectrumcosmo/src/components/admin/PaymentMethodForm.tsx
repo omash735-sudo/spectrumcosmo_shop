@@ -1,44 +1,67 @@
-// components/admin/PaymentMethodForm.tsx
 'use client';
 
 import { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
-
-interface CreateMethodState {
-  error?: string;
-  success?: string;
-}
+import { apiFetch } from '@/lib/api';
 
 interface PaymentMethodFormProps {
-  createMethodAction: (prevState: CreateMethodState | null, formData: FormData) => Promise<CreateMethodState>;
+  onSuccess?: () => void;
 }
 
-export function PaymentMethodForm({ createMethodAction }: PaymentMethodFormProps) {
-  const [state, setState] = useState<CreateMethodState | null>(null);
+export function PaymentMethodForm({ onSuccess }: PaymentMethodFormProps) {
   const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setIsPending(true);
-    const result = await createMethodAction(null, formData);
-    setState(result);
-    setIsPending(false);
-    if (result.success) {
-      const form = document.getElementById('create-method-form') as HTMLFormElement;
-      if (form) form.reset();
-      setTimeout(() => setState(null), 3000);
+    setError(null);
+    setSuccess(null);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get('name')?.toString().trim(),
+      type: formData.get('type')?.toString(),
+      logo_url: formData.get('logo_url')?.toString().trim() || null,
+      account_number: formData.get('account_number')?.toString().trim() || null,
+      branch: formData.get('branch')?.toString().trim() || null,
+      instructions: formData.get('instructions')?.toString().trim() || null,
+    };
+
+    try {
+      const res = await apiFetch('/api/admin/payment-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        setSuccess('Payment method added successfully');
+        e.currentTarget.reset();
+        if (onSuccess) onSuccess();
+      } else {
+        setError(result.error || 'Failed to add payment method');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsPending(false);
     }
   }
 
   return (
-    <form id="create-method-form" action={handleSubmit} className="space-y-4">
-      {state?.error && (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
-          {state.error}
+          {error}
         </div>
       )}
-      {state?.success && (
+      {success && (
         <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-600 dark:text-green-400">
-          {state.success}
+          {success}
         </div>
       )}
 
