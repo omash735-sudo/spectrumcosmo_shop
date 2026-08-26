@@ -548,15 +548,17 @@ export default function ProductDetailPage() {
                 </div>
               </div>
               <div className="md:col-span-2">
-                <ProductReviews 
-                  productId={id} 
-                  initialReviews={reviews.map(r => ({
-                    ...r,
-                    created_at: r.created_at.toISOString(),
-                    customer_name: r.customer_name,
-                    review_text: r.review_text,
-                  }))} 
-                />
+                {id && (
+                  <ProductReviews 
+                    productId={id} 
+                    initialReviews={reviews.map(r => ({
+                      ...r,
+                      created_at: r.created_at.toISOString(),
+                      customer_name: r.customer_name,
+                      review_text: r.review_text,
+                    }))} 
+                  />
+                )}
               </div>
             </div>
           </div>
