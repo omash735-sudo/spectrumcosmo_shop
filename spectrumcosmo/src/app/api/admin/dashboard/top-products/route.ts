@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-export const revalidate = 300; // Cache for 5 minutes
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -12,7 +11,6 @@ export async function GET(request: NextRequest) {
   try {
     const sql = getDb();
     
-    // Try materialized view first, fallback to regular query
     let products;
     try {
       products = await sql`
@@ -22,7 +20,6 @@ export async function GET(request: NextRequest) {
         LIMIT ${limit}
       `;
     } catch {
-      // Fallback if materialized view doesn't exist
       products = await sql`
         SELECT 
           p.id,
