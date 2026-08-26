@@ -58,7 +58,7 @@ jobs:
         run: npm install -g @capacitor/cli
 
       - name: Install Capacitor Assets
-        run: npm install -D @capacitor/assets
+        run: npm install -D @capacitor/assets --legacy-peer-deps
 
       - name: Add Android platform
         run: npx cap add android || npx cap sync android
