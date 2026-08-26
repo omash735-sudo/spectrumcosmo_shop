@@ -1,3 +1,5 @@
+import '@/lib/fetch-patch';
+
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
