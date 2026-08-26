@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-
 interface MonthlyData {
   month: string;
   revenue: number;
@@ -23,7 +21,6 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
 
-    // ----- Order status counts + revenue -----
     const [statsRow] = await sql`
       SELECT
         COUNT(*)::int AS total_orders,
@@ -42,7 +39,6 @@ export async function GET(req: NextRequest) {
       declinedOrders: statsRow?.declined_orders || 0,
     };
 
-    // ----- Monthly revenue/orders trend (last 6 months) -----
     const monthlyRows = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month,
@@ -54,7 +50,6 @@ export async function GET(req: NextRequest) {
       ORDER BY DATE_TRUNC('month', created_at) ASC
     `;
 
-    // Ensure monthlyData is always an array
     let monthlyData: MonthlyData[] = [];
     if (monthlyRows && Array.isArray(monthlyRows)) {
       monthlyData = monthlyRows.map((row: any) => ({
@@ -64,7 +59,6 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    // ----- Top selling products -----
     const topProductRows = await sql`
       SELECT
         oi.product_name,
@@ -87,7 +81,6 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    // ----- Customer retention: repeat vs new -----
     const customerRows = await sql`
       SELECT
         COUNT(*) FILTER (WHERE order_count > 1)::int AS repeat_customers,
