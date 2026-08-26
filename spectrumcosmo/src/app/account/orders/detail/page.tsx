@@ -105,6 +105,11 @@ export default function OrderDetailPage() {
   }, [orderId, router]);
 
   const handleDownloadInvoice = async () => {
+    if (!orderId) {
+      toast.error('Order ID not found');
+      return;
+    }
+
     try {
       const res = await fetch(`/api/orders/${orderId}/invoice`);
       if (!res.ok) throw new Error('Failed to generate invoice');
@@ -125,6 +130,11 @@ export default function OrderDetailPage() {
   };
 
   const handleConfirmDelivery = async (response: 'received' | 'not_received') => {
+    if (!orderId) {
+      toast.error('Order ID not found');
+      return;
+    }
+
     setConfirming(true);
     try {
       const res = await fetch(`/api/account/orders/${orderId}/confirm`, {
