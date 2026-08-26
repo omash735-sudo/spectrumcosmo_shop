@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Loader2, CheckCircle2, XCircle, Package, Truck, 
@@ -11,9 +11,9 @@ import {
 import toast from 'react-hot-toast';
 
 export default function ConfirmDeliveryPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = params.id as string;
+  const orderId = searchParams.get('orderId');
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,11 @@ export default function ConfirmDeliveryPage() {
   const [selectedOption, setSelectedOption] = useState<'received' | 'not_received' | null>(null);
 
   useEffect(() => {
+    if (!orderId) {
+      router.replace('/account/orders');
+      return;
+    }
+
     const fetchOrder = async () => {
       try {
         const res = await fetch(`/api/account/orders/${orderId}`);
@@ -89,7 +94,6 @@ export default function ConfirmDeliveryPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 bg-[var(--background)]">
       <div className="max-w-2xl w-full">
         
-        {/* Header - With Manga Panel */}
         <div className="manga-bg hero-manga rounded-xl sm:rounded-2xl overflow-hidden mb-5 sm:mb-6">
           <div className="relative z-10 text-center p-6 sm:p-8 bg-[var(--background-card)]/95">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[var(--primary)]/10 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
@@ -100,7 +104,6 @@ export default function ConfirmDeliveryPage() {
           </div>
         </div>
 
-        {/* Order Summary Card */}
         <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden mb-5 sm:mb-6">
           <div className="bg-[var(--background-secondary)] px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
             <div className="flex items-center justify-between">
@@ -151,7 +154,6 @@ export default function ConfirmDeliveryPage() {
           </div>
         </div>
 
-        {/* Confirmation Options */}
         <div className="bg-[var(--background-card)] rounded-xl sm:rounded-2xl shadow-lg border border-[var(--border)] overflow-hidden mb-5 sm:mb-6">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)] bg-[var(--background-secondary)]">
             <h2 className="font-semibold text-[var(--foreground)] text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
@@ -164,7 +166,6 @@ export default function ConfirmDeliveryPage() {
               Did you receive your order? Your confirmation helps us improve our service.
             </p>
             
-            {/* Option 1 - Received */}
             <label
               className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 selectedOption === 'received'
@@ -190,7 +191,6 @@ export default function ConfirmDeliveryPage() {
               </div>
             </label>
 
-            {/* Option 2 - Not Received */}
             <label
               className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 selectedOption === 'not_received'
@@ -216,7 +216,6 @@ export default function ConfirmDeliveryPage() {
               </div>
             </label>
 
-            {/* Confirm Button */}
             <button
               onClick={handleConfirm}
               disabled={confirming || !selectedOption}
@@ -238,7 +237,6 @@ export default function ConfirmDeliveryPage() {
           </div>
         </div>
 
-        {/* Help Section */}
         <div className="text-center">
           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] mb-1 sm:mb-2">Need help with your order?</p>
           <div className="flex items-center justify-center gap-3 sm:gap-4">
@@ -252,7 +250,6 @@ export default function ConfirmDeliveryPage() {
           </div>
         </div>
 
-        {/* Back Link */}
         <div className="text-center mt-5 sm:mt-6">
           <Link href="/account/orders" className="inline-flex items-center gap-0.5 sm:gap-1 text-[var(--foreground-muted)] hover:text-[var(--foreground)] text-xs sm:text-sm transition">
             ← Back to Orders
@@ -263,7 +260,6 @@ export default function ConfirmDeliveryPage() {
   );
 }
 
-// Helper component for HelpCircle icon
 function HelpCircle(props: any) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
