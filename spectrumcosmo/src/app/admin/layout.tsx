@@ -51,6 +51,7 @@ import {
   UserPlus,
   Megaphone,
 } from 'lucide-react';
+import RequireAuth from '@/components/auth/RequireAuth';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, section: 'CORE' },
@@ -222,7 +223,7 @@ function NotificationBadge() {
   );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -442,5 +443,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth requireAdmin>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </RequireAuth>
   );
 }
