@@ -146,7 +146,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Image Container */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-[var(--background-secondary)]">
-        <Link href={`/products/${product.id}`} onClick={handleProductClick}>
+        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
           <div className={`absolute inset-0 bg-[var(--background-secondary)] transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
@@ -160,14 +160,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {/* Sale Badge - Removed shadow */}
+        {/* Sale Badge */}
         {hasDiscount && !isOutOfStock && !isComingSoon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-anton font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
             -{discountPercent}%
           </div>
         )}
 
-        {/* Status Badge - Removed shadow */}
+        {/* Status Badge */}
         {statusBadge && StatusIcon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
             <span className={`${statusBadge.color} text-[10px] sm:text-xs font-anton font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-1`}>
@@ -177,7 +177,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Quick View Overlay - Removed shadow */}
+        {/* Quick View Overlay */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
           <div className="hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
             <button className="bg-[var(--background-card)] text-[var(--foreground)] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-kanit font-medium hover:bg-[var(--primary)] hover:text-white transition flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
@@ -187,7 +187,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Wishlist Button - Removed shadow */}
+        {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
@@ -209,7 +209,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="p-2.5 sm:p-4">
-        <Link href={`/products/${product.id}`} onClick={handleProductClick}>
+        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
           <h3 className="font-kanit font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
             {productName}
           </h3>
@@ -232,7 +232,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         
-        {/* Price - Uses foreground color for dark/light mode */}
+        {/* Price */}
         <div className="mt-1 sm:mt-2 flex items-baseline gap-1 sm:gap-2 flex-wrap">
           <span className="text-base sm:text-xl font-anton font-bold text-[var(--foreground)]">
             <CurrencyPrice amountUsd={priceMwk} />
@@ -244,14 +244,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* Stock Warning - Removed shadow */}
+        {/* Stock Warning */}
         {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
           <p className="text-[10px] sm:text-xs font-kanit text-[var(--primary)] mt-0.5 sm:mt-1">
             Only {product.stock_quantity} left
           </p>
         )}
 
-        {/* Action Buttons - Removed shadow from Add to Cart */}
+        {/* Action Buttons */}
         <div className="mt-2 sm:mt-4 flex gap-1.5 sm:gap-2">
           {!isOutOfStock && !isComingSoon ? (
             <>
@@ -264,7 +264,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span className="xs:hidden">Add</span>
               </button>
               <Link
-                href={`/products/${product.id}`}
+                href={`/product?id=${product.id}`}
                 onClick={handleProductClick}
                 className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
               >
