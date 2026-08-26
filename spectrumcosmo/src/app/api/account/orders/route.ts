@@ -3,6 +3,8 @@ import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
 import { sendMail } from '@/lib/mailer';
 
+export const dynamic = 'force-static';
+
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
   if (error) return error;
@@ -67,10 +69,8 @@ export async function GET(req: NextRequest) {
         `;
         return {
           ...order,
-          // Use checkout fields for display (what customer sees)
           currency: order.checkout_currency || order.currency || 'MWK',
           total_amount: order.checkout_amount || order.total_amount || 0,
-          // Keep original for reference
           _original_currency: order.currency,
           _original_amount: order.total_amount,
           _mwk_amount: order.mwk_amount,
