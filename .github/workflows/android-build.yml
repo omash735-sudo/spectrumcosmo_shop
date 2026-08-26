@@ -37,6 +37,7 @@ jobs:
           fi
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
