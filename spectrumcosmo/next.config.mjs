@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
+const isMobileBuild = process.env.BUILD_TARGET === 'mobile';
+
 const nextConfig = {
-  output: 'export',
+  ...(isMobileBuild ? { output: 'export' } : {}),
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
   
   images: {
-    unoptimized: true,
+    unoptimized: isMobileBuild,
     remotePatterns: [
       {
         protocol: 'https',
