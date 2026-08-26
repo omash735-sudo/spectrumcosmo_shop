@@ -1,7 +1,8 @@
-// app/api/admin/active-users/route.ts
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAdminFromRequest } from '@/lib/auth';
+
+export const dynamic = 'force-static';
 
 export async function GET(req: Request) {
   try {
@@ -23,7 +24,6 @@ export async function GET(req: Request) {
 
     const sql = getDb();
 
-    // Get users from active_users table
     const users = await sql`
       SELECT 
         au.session_id,
