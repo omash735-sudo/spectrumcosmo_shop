@@ -1,7 +1,7 @@
-export const dynamic = 'force-dynamic';
+'use client'; 
 
-import ForgotPasswordForm from './ForgotPasswordForm'
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />
+  return <ForgotPasswordForm />;
 }
