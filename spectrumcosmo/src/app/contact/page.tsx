@@ -1,4 +1,3 @@
-// app/contact/page.tsx
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
@@ -10,9 +9,6 @@ import {
   ArrowRight, MessageCircle,
   Facebook, Twitter, Instagram, Youtube
 } from 'lucide-react';
-
-// REMOVE: export const dynamic = 'force-dynamic';
-// ADD: export const dynamic = 'force-static';
 
 export const dynamic = 'force-static';
 
