@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { notFound, useParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/storefront/Navbar';
@@ -64,8 +64,9 @@ interface DbReview {
 }
 
 export default function ProductDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const id = searchParams.get('id');
 
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<DbReview[]>([]);
@@ -79,6 +80,11 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
+    if (!id) {
+      router.replace('/products');
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const res = await fetch(`/api/products/${id}`);
@@ -100,7 +106,7 @@ export default function ProductDetailPage() {
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, router]);
 
   const getDisplayImages = (): string[] => {
     const images: string[] = [];
@@ -201,7 +207,21 @@ export default function ProductDetailPage() {
   }
 
   if (!product) {
-    notFound();
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Product Not Found</h1>
+            <p className="text-[var(--foreground-muted)] mt-2">The product you're looking for doesn't exist.</p>
+            <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:underline">
+              Browse Products
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
   }
 
   const basePrice = Number(product.price ?? 0);
@@ -224,7 +244,7 @@ export default function ProductDetailPage() {
     if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
   });
 
-  const productUrl = `https://spectrumcosmo.shop/products/${product.id}`;
+  const productUrl = `https://spectrumcosmo.shop/products?id=${product.id}`;
   const productForTracking = {
     id: product.id,
     name: product.name,
@@ -546,7 +566,7 @@ export default function ProductDetailPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-4 sm:mb-6">You May Also Like</h2>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {relatedProducts.map((rel) => (
-                  <Link key={rel.id} href={`/products/${rel.id}`} className="group">
+                  <Link key={rel.id} href={`/products?id=${rel.id}`} className="group">
                     <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden hover:shadow-lg transition-all duration-300">
                       <div className="relative h-40 sm:h-48 bg-[var(--background-secondary)]">
                         <Image
