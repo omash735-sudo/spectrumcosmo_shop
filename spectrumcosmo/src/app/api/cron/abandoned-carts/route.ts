@@ -1,15 +1,12 @@
-// app/api/cron/abandoned-carts/route.ts
 import { NextResponse } from 'next/server';
 import { getDb, queryAsArray } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // seconds (for larger stores)
+export const maxDuration = 60;
 
 export async function GET() {
   try {
     const sql = getDb();
 
-    // Mark carts as abandoned where last_activity > 1 hour ago and status = 'active'
     const updated = await queryAsArray<{ session_id: string }>`
       UPDATE cart_sessions
       SET status = 'abandoned'
