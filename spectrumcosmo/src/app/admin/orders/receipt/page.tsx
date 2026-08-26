@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   Loader2, 
   Upload, 
@@ -23,7 +23,6 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// ===== SKELETON =====
 function ReceiptUploadSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -44,9 +43,9 @@ function ReceiptUploadSkeleton() {
 }
 
 export default function AdminReceiptUploadPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = params.id as string;
+  const orderId = searchParams.get('orderId');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
@@ -73,8 +72,12 @@ export default function AdminReceiptUploadPage() {
   });
 
   useEffect(() => {
+    if (!orderId) {
+      router.replace('/admin/orders');
+      return;
+    }
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, router]);
 
   const fetchOrder = async () => {
     setFetchingOrder(true);
@@ -83,7 +86,6 @@ export default function AdminReceiptUploadPage() {
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order || data);
-        // Pre-fill manual data from order
         if (data.order || data) {
           const orderData = data.order || data;
           setManualData(prev => ({
@@ -183,7 +185,7 @@ export default function AdminReceiptUploadPage() {
       }
 
       toast.success('Receipt uploaded and tracking updated!');
-      router.push(`/admin/orders/${orderId}`);
+      router.push(`/admin/orders/detail?orderId=${orderId}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to upload receipt');
     } finally {
@@ -219,10 +221,9 @@ export default function AdminReceiptUploadPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-3xl mx-auto">
-        {/* Header */}
         <div className="mb-4 sm:mb-6">
           <Link
-            href={`/admin/orders/${orderId}`}
+            href={`/admin/orders/detail?orderId=${orderId}`}
             className="inline-flex items-center gap-2 text-xs sm:text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition mb-2 sm:mb-3"
           >
             <ArrowLeft size={16} />
@@ -231,7 +232,7 @@ export default function AdminReceiptUploadPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Upload Receipt</h1>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
             <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
-              Order #{order?.order_number?.slice(-8) || orderId.slice(-8)}
+              Order #{order?.order_number?.slice(-8) || orderId?.slice(-8)}
             </p>
             <span className="w-px h-4 bg-[var(--border)] hidden sm:block" />
             <p className="text-xs sm:text-sm text-[var(--foreground-muted)]">
@@ -259,7 +260,6 @@ export default function AdminReceiptUploadPage() {
         </div>
 
         <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] p-4 sm:p-6 shadow-sm">
-          {/* Tabs */}
           <div className="mb-4 sm:mb-6">
             <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-3">
               <button
@@ -290,7 +290,6 @@ export default function AdminReceiptUploadPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-            {/* Image Upload */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5 sm:mb-2">
                 Receipt Image <span className="text-red-500">*</span>
@@ -346,7 +345,6 @@ export default function AdminReceiptUploadPage() {
               )}
             </div>
 
-            {/* Receipt Text or Manual Form */}
             {!useManual ? (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-[var(--foreground-muted)] mb-1.5">
@@ -480,7 +478,6 @@ export default function AdminReceiptUploadPage() {
               </div>
             )}
 
-            {/* Submit Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-3 sm:pt-4 border-t border-[var(--border)]">
               <button
                 type="button"
@@ -499,7 +496,6 @@ export default function AdminReceiptUploadPage() {
               </button>
             </div>
 
-            {/* Validation Message */}
             {!useManual && !receiptText && !imageUrl && (
               <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                 <AlertCircle size={12} />
@@ -509,7 +505,6 @@ export default function AdminReceiptUploadPage() {
           </form>
         </div>
 
-        {/* Helpful Tips */}
         <div className="mt-4 sm:mt-6 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-200 dark:border-orange-800 p-3 sm:p-4">
           <div className="flex items-start gap-2">
             <AlertCircle size={16} className="text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
