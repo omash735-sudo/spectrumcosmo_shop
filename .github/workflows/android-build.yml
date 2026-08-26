@@ -57,8 +57,11 @@ jobs:
       - name: Install Capacitor
         run: npm install -g @capacitor/cli
 
+      - name: Initialize Capacitor
+        run: npx cap init SpectrumCosmo com.spectrumcosmo.app --web-dir=out
+
       - name: Add Android platform
-        run: npx cap add android || npx cap sync android
+        run: npx cap add android
 
       - name: Sync Capacitor
         run: |
