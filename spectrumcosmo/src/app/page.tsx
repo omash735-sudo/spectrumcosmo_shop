@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -115,18 +113,15 @@ const fallbackMarqueeImages = [
   }
 ];
 
-// Loading Skeleton Components
 function HomePageSkeleton() {
   return (
     <>
       <EventAnnouncementBar />
       <Navbar />
       <main>
-        {/* Hero Section Skeleton */}
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden py-4 md:py-8 lg:py-12">
           <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
-              {/* Left Column Skeleton */}
               <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
                 <div className="h-8 bg-[var(--background-card)] rounded-lg animate-pulse w-3/4 mb-4"></div>
                 <div className="h-16 bg-[var(--background-card)] rounded-lg animate-pulse w-full mb-4"></div>
@@ -143,7 +138,6 @@ function HomePageSkeleton() {
                 </div>
               </div>
               
-              {/* Right Column Skeleton */}
               <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
                 <div className="grid grid-cols-2 gap-4">
                   {[1, 2, 3, 4].map((i) => (
@@ -155,7 +149,6 @@ function HomePageSkeleton() {
           </div>
         </section>
 
-        {/* Trust Bar Skeleton */}
         <div className="bg-[var(--background-secondary)] py-3 border-y border-[var(--border)]">
           <div className="flex justify-around max-w-7xl mx-auto px-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -164,7 +157,6 @@ function HomePageSkeleton() {
           </div>
         </div>
 
-        {/* Categories Section Skeleton */}
         <div className="bg-[var(--background-card)] py-8 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -180,7 +172,6 @@ function HomePageSkeleton() {
           </div>
         </div>
 
-        {/* Featured Products Skeleton */}
         <div className="bg-[var(--background-secondary)] py-8 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -200,7 +191,6 @@ function HomePageSkeleton() {
           </div>
         </div>
 
-        {/* Newsletter Section Skeleton */}
         <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <div className="h-10 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-4"></div>
@@ -212,7 +202,6 @@ function HomePageSkeleton() {
           </div>
         </div>
 
-        {/* CTA Section Skeleton */}
         <div className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)]">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <div className="h-12 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-6"></div>
