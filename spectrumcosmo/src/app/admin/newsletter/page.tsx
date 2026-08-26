@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 import { cookies } from 'next/headers';
@@ -63,7 +62,6 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 };
 
-// ===== SKELETON =====
 function NewsletterSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -267,7 +265,6 @@ export default async function AdminNewsletterPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-[var(--background-card)] border-b border-[var(--border)] shadow-sm">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -296,7 +293,6 @@ export default async function AdminNewsletterPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error ? (
-          /* Error State */
           <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-6 sm:p-8 text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
