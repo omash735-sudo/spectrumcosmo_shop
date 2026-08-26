@@ -16,12 +16,6 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 };
 
-// Types
-interface CreateMethodState {
-  error?: string;
-  success?: string;
-}
-
 const typeIcons: Record<string, any> = {
   mobile_money: Wallet,
   bank: Building2,
@@ -63,62 +57,6 @@ function PaymentMethodsSkeleton() {
       </div>
     </div>
   );
-}
-
-async function createMethodAction(prevState: CreateMethodState | null, formData: FormData): Promise<CreateMethodState> {
-  const sql = getDb();
-
-  const name = formData.get('name')?.toString().trim();
-  const type = formData.get('type')?.toString();
-  const logo_url = formData.get('logo_url')?.toString().trim() || null;
-  const account_number = formData.get('account_number')?.toString().trim() || null;
-  const branch = formData.get('branch')?.toString().trim() || null;
-  const instructions = formData.get('instructions')?.toString().trim() || null;
-
-  if (!name) {
-    return { error: 'Method name is required' };
-  }
-  if (!type) {
-    return { error: 'Payment type is required' };
-  }
-
-  const validTypes = ['mobile_money', 'bank', 'cash', 'card'];
-  if (!validTypes.includes(type)) {
-    return { error: 'Invalid payment type' };
-  }
-
-  try {
-    await sql`
-      INSERT INTO payment_methods (
-        name,
-        type,
-        logo_url,
-        account_number,
-        branch,
-        instructions,
-        is_active,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ${name},
-        ${type},
-        ${logo_url},
-        ${account_number},
-        ${branch},
-        ${instructions},
-        true,
-        NOW(),
-        NOW()
-      )
-    `;
-
-    revalidatePath('/admin/payment-methods');
-    return { success: 'Payment method added successfully' };
-  } catch (err) {
-    console.error('Failed to create payment method:', err);
-    return { error: 'Failed to create payment method' };
-  }
 }
 
 async function toggleMethod(id: string): Promise<void> {
@@ -208,7 +146,7 @@ export default async function PaymentMethodsPage() {
                 </div>
               </div>
               <div className="p-4 sm:p-6">
-                <PaymentMethodForm createMethodAction={createMethodAction} />
+                <PaymentMethodForm />
               </div>
             </div>
 
