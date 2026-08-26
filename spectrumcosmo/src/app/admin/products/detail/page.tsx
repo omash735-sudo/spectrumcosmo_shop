@@ -1,8 +1,7 @@
-// app/admin/products/[id]/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Loader2, Plus, Trash2, Save, X, Edit, Package, Tag, Layers, AlertCircle, Upload, Image as ImageIcon, Star, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -83,9 +82,9 @@ const statusOptions = [
 ];
 
 export default function AdminProductEditPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const productId = params.id as string;
+  const productId = searchParams.get('id');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,6 +112,14 @@ export default function AdminProductEditPage() {
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (!productId) {
+      router.replace('/admin/products');
+      return;
+    }
+    fetchData();
+  }, [productId, router]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -145,10 +152,6 @@ export default function AdminProductEditPage() {
       setLoading(false);
     }
   }, [productId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleSaveProduct = async () => {
     if (!product.name.trim()) {
@@ -473,7 +476,6 @@ export default function AdminProductEditPage() {
                   </div>
                 </div>
 
-                {/* FEATURED TOGGLE - Own row */}
                 <div className="flex items-center gap-3 pt-2">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -522,7 +524,6 @@ export default function AdminProductEditPage() {
               </div>
             </div>
 
-            {/* Variants Section */}
             <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--border)]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -719,7 +720,6 @@ export default function AdminProductEditPage() {
         />
       )}
 
-      {/* Bulk Variant Modal */}
       {showBulkVariantModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-[var(--background-card)] rounded-xl max-w-md w-full shadow-xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
