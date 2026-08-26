@@ -1,9 +1,9 @@
-export const dynamic = 'force-dynamic';
+'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CalendarDays, Clock, MapPin, Users, ArrowRight, ExternalLink, Video, Calendar, Tag, Sparkles } from 'lucide-react';
-import { getDb, queryMany, queryOne } from '@/lib/db';
+import { CalendarDays, Clock, MapPin, Users, ArrowRight, ExternalLink, Video, Calendar, Tag, Sparkles, Loader2 } from 'lucide-react';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 
@@ -18,60 +18,47 @@ interface SiteEvent {
   poster_image_url_dark?: string;
   registration_required: boolean;
   registration_form_url?: string;
-  registration_deadline?: Date;
+  registration_deadline?: string;
   max_attendees?: number;
   current_attendees?: number;
   location?: string;
   venue?: string;
   is_online_event: boolean;
-  event_date?: Date;
-  event_end_date?: Date;
+  event_date?: string;
+  event_end_date?: string;
   featured: boolean;
   event_type: string;
-  starts_at?: Date;
-  ends_at?: Date;
+  starts_at?: string;
+  ends_at?: string;
 }
 
-export default async function EventsPage() {
-  let events: SiteEvent[] = [];
-  let featuredEvent: SiteEvent | null = null;
+export default function EventsPage() {
+  const [events, setEvents] = useState<SiteEvent[]>([]);
+  const [featuredEvent, setFeaturedEvent] = useState<SiteEvent | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const sql = getDb();
-    
-    // Get featured event first
-    featuredEvent = await queryOne<SiteEvent>`
-      SELECT * FROM site_events 
-      WHERE active = true 
-        AND featured = true
-        AND (ends_at IS NULL OR ends_at >= NOW())
-      ORDER BY event_date DESC
-      LIMIT 1
-    `;
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          setFeaturedEvent(data.featuredEvent || null);
+          setEvents(data.events || []);
+        } else {
+          console.error('Failed to fetch events');
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Get all other events
-    events = await queryMany<SiteEvent>`
-      SELECT * FROM site_events 
-      WHERE active = true 
-        AND (ends_at IS NULL OR ends_at >= NOW())
-        AND featured = false
-      ORDER BY event_date DESC
-    `;
+    fetchEvents();
+  }, []);
 
-    // If no featured event, just get all events
-    if (!featuredEvent) {
-      events = await queryMany<SiteEvent>`
-        SELECT * FROM site_events 
-        WHERE active = true 
-          AND (ends_at IS NULL OR ends_at >= NOW())
-        ORDER BY event_date DESC
-      `;
-    }
-  } catch (err) {
-    console.error('Events page DB error:', err);
-  }
-
-  const formatDate = (date?: Date) => {
+  const formatDate = (date?: string) => {
     if (!date) return 'TBD';
     return new Date(date).toLocaleDateString('en-US', {
       month: 'long',
@@ -81,7 +68,8 @@ export default async function EventsPage() {
   };
 
   const EventCard = ({ event, featured = false }: { event: SiteEvent; featured?: boolean }) => {
-    const isRegistrationOpen = !event.registration_deadline || new Date(event.registration_deadline) > new Date();
+    const registrationDeadline = event.registration_deadline ? new Date(event.registration_deadline) : null;
+    const isRegistrationOpen = !registrationDeadline || registrationDeadline > new Date();
     const hasAvailableSpots = !event.max_attendees || (event.current_attendees || 0) < event.max_attendees;
     const canRegister = event.registration_required && isRegistrationOpen && hasAvailableSpots;
 
@@ -94,7 +82,6 @@ export default async function EventsPage() {
             : 'bg-[var(--background-card)] border-[var(--border)]'
           }
         `}>
-          {/* Poster Image */}
           {event.poster_image_url && (
             <div className="relative w-full aspect-[16/9] bg-[var(--background-secondary)]">
               <Image
@@ -113,7 +100,6 @@ export default async function EventsPage() {
           )}
 
           <div className="p-6">
-            {/* Badge & Type */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="text-xs font-bold uppercase tracking-wider bg-[var(--primary)]/20 text-[var(--primary)] px-3 py-1 rounded-full">
                 {event.badge}
@@ -131,17 +117,14 @@ export default async function EventsPage() {
               )}
             </div>
 
-            {/* Title */}
             <h3 className={`font-bold mb-2 ${featured ? 'text-2xl' : 'text-xl'} text-[var(--foreground)]`}>
               {event.title}
             </h3>
 
-            {/* Description */}
             <p className="text-[var(--foreground-muted)] text-sm leading-relaxed mb-4">
               {event.detail}
             </p>
 
-            {/* Event Details */}
             <div className="space-y-2 mb-4 text-sm text-[var(--foreground-muted)]">
               {event.event_date && (
                 <div className="flex items-center gap-2">
@@ -172,7 +155,6 @@ export default async function EventsPage() {
               )}
             </div>
 
-            {/* Registration Button */}
             <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-[var(--border)]">
               {event.registration_required && canRegister && (
                 event.registration_form_url ? (
@@ -213,12 +195,23 @@ export default async function EventsPage() {
     );
   };
 
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-[var(--background)] pt-8 md:pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
           <div className="text-center mb-12">
             <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">
               Stay Updated
@@ -231,7 +224,6 @@ export default async function EventsPage() {
             </p>
           </div>
 
-          {/* Events Grid */}
           {featuredEvent && (
             <div className="mb-8">
               <EventCard event={featuredEvent} featured={true} />
