@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -29,9 +29,9 @@ interface RequestDetail {
 }
 
 export default function RequestDetailPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = searchParams.get('id');
   
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,11 @@ export default function RequestDetailPage() {
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
+    if (!id) {
+      router.replace('/requests');
+      return;
+    }
+
     const loadRequest = async () => {
       try {
         const res = await fetch(`/api/requests/${id}`);
@@ -62,7 +67,7 @@ export default function RequestDetailPage() {
   }, [id, router]);
 
   const handleLike = async () => {
-    if (!request) return;
+    if (!request || !id) return;
     setLiking(true);
     
     try {
@@ -145,7 +150,6 @@ export default function RequestDetailPage() {
       <main className="min-h-screen bg-[var(--background)] py-8 md:py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Back Button */}
           <Link
             href="/requests"
             className="inline-flex items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--primary)] mb-6 transition group"
@@ -154,10 +158,8 @@ export default function RequestDetailPage() {
             Back to Requests
           </Link>
 
-          {/* Request Card */}
           <div className="bg-[var(--background-card)] rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
             <div className="p-6 md:p-8">
-              {/* Header */}
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-3">
@@ -206,14 +208,12 @@ export default function RequestDetailPage() {
                 </div>
               </div>
 
-              {/* Status Progression */}
               {!isRejected && (
                 <div className="mb-6">
                   <RequestProgress status={request.status} />
                 </div>
               )}
 
-              {/* Rejected State */}
               {isRejected && (
                 <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800">
                   <div className="flex items-center gap-3">
@@ -228,7 +228,6 @@ export default function RequestDetailPage() {
                 </div>
               )}
 
-              {/* Available State */}
               {isAvailable && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-3">
@@ -243,12 +242,10 @@ export default function RequestDetailPage() {
                 </div>
               )}
 
-              {/* Description */}
               <div className="prose prose-sm max-w-none text-[var(--foreground)] mt-4">
                 <p className="whitespace-pre-wrap">{request.description}</p>
               </div>
 
-              {/* Images Gallery */}
               {request.images.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-[var(--border)]">
                   <h3 className="font-semibold text-[var(--foreground)] mb-3">Reference Images</h3>
@@ -270,7 +267,6 @@ export default function RequestDetailPage() {
                 </div>
               )}
 
-              {/* Footer - Date */}
               <div className="mt-6 pt-4 border-t border-[var(--border)]">
                 <div className="flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
                   <Calendar size={16} />
@@ -284,7 +280,6 @@ export default function RequestDetailPage() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="mt-6 flex flex-wrap gap-3 justify-between">
             <Link
               href="/requests"
