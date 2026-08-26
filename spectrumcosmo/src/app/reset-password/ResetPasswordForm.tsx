@@ -1,65 +1,74 @@
-// app/reset-password/ResetPasswordForm.tsx
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Eye, EyeOff, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Eye, EyeOff, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LOGOS = {
-  light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
-  dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
-}
+  light: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png',
+  },
+  dark: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png',
+  },
+};
 
 export default function ResetPasswordForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token')
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const isDark = currentTheme === 'dark';
+  const logoSrc = isDark ? LOGOS.dark.svg : LOGOS.light.svg;
+  const logoFallback = isDark ? LOGOS.dark.png : LOGOS.light.png;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!token) return
+    e.preventDefault();
+    if (!token) return;
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
+      setError('Passwords do not match');
+      return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
+      setError('Password must be at least 8 characters');
+      return;
     }
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Reset failed')
-      setSuccess(true)
-      setTimeout(() => router.push('/auth/login'), 2000)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Reset failed');
+      setSuccess(true);
+      setTimeout(() => router.push('/auth/login'), 2000);
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const isDark = mounted && theme === 'dark'
-  const logoSrc = isDark ? LOGOS.dark : LOGOS.light
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[var(--background)]">
@@ -75,7 +84,14 @@ export default function ResetPasswordForm() {
             animate={{ scale: 1 }}
             className="inline-block"
           >
-            <img src={logoSrc} alt="SpectrumCosmo" className="h-16 mx-auto mb-4" />
+            <img
+              src={logoSrc}
+              alt="SpectrumCosmo"
+              className="h-16 mx-auto mb-4"
+              onError={(e) => {
+                e.currentTarget.src = logoFallback;
+              }}
+            />
           </motion.div>
           <p className="text-sm text-[var(--foreground-muted)]">Set new password</p>
         </div>
@@ -186,5 +202,5 @@ export default function ResetPasswordForm() {
         </div>
       </motion.div>
     </div>
-  )
+  );
 }
