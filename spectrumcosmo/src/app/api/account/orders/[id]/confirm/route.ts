@@ -4,8 +4,6 @@ import { getDb } from '@/lib/db';
 import { createNotification } from '@/lib/notifications';
 import { createAdminNotification } from '@/lib/notifications-admin';
 
-export const dynamic = 'force-dynamic';
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
