@@ -1,5 +1,3 @@
-// app/privacy/page.tsx
-export const dynamic = 'force-dynamic';
 import { getDb } from '@/lib/db';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
