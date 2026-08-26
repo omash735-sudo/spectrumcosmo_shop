@@ -29,11 +29,17 @@ jobs:
           if [ -d "src/app/api" ]; then
             mv src/app/api /tmp/api_backup
           fi
+          if [ -d "src/app/orders" ]; then
+            mv src/app/orders /tmp/orders_backup
+          fi
           
           BUILD_TARGET=mobile NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }} npm run build
           
           if [ -d "/tmp/api_backup" ]; then
             mv /tmp/api_backup src/app/api
+          fi
+          if [ -d "/tmp/orders_backup" ]; then
+            mv /tmp/orders_backup src/app/orders
           fi
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
