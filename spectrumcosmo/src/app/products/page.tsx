@@ -1,5 +1,6 @@
-export const dynamic = 'force-dynamic';
+'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/storefront/Navbar';
@@ -7,8 +8,7 @@ import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
-import { getDb, queryMany } from '@/lib/db';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 
 interface Category {
   name: string;
@@ -69,78 +69,90 @@ const heroSettings = {
   buttonTextColor: '#FFFFFF',
 };
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const sql = getDb();
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [categoryNames, setCategoryNames] = useState<string[]>(['All']);
+  const [productCardProps, setProductCardProps] = useState<ProductCardProps[]>([]);
 
-  let categories: Category[] = [];
-  try {
-    categories = await queryMany<Category>`
-      SELECT name, slug FROM categories WHERE is_active = true ORDER BY sort_order ASC
-    `;
-  } catch (err) {
-    console.error('Failed to fetch categories:', err);
-  }
-  const categoryNames = ['All', ...categories.map((c) => c.name)];
+  // Get URL params on client
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category') || 'All';
+    const q = params.get('q') || '';
+    setSelectedCategory(category);
+    setSearchQuery(q);
+  }, []);
 
-  let products: Product[] = [];
-  try {
-    let query;
-    if (params.q && params.category && params.category !== 'All') {
-      query = queryMany<Product>`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        JOIN categories c ON p.category_id = c.id
-        WHERE c.name = ${params.category}
-          AND (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
-          AND p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    } else if (params.q) {
-      query = queryMany<Product>`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE (p.name ILIKE ${'%' + params.q + '%'} OR p.description ILIKE ${'%' + params.q + '%'})
-          AND p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    } else if (params.category && params.category !== 'All') {
-      query = queryMany<Product>`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        JOIN categories c ON p.category_id = c.id
-        WHERE c.name = ${params.category} AND p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    } else {
-      query = queryMany<Product>`
-        SELECT p.*, c.name as category_name 
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.status = 'in_stock'
-        ORDER BY p.created_at DESC
-      `;
-    }
-    products = await query;
-  } catch (err) {
-    console.error('Products query error:', err);
-    products = [];
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch categories
+        const catRes = await fetch('/api/categories');
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data);
+          const names = ['All', ...data.map((c: Category) => c.name)];
+          setCategoryNames(names);
+        }
 
-  const productCardProps = products.map(toProductCardProps);
+        // Fetch products with filters
+        const params = new URLSearchParams();
+        if (selectedCategory !== 'All') params.append('category', selectedCategory);
+        if (searchQuery) params.append('q', searchQuery);
+        
+        const prodRes = await fetch(`/api/products?${params.toString()}`);
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data);
+          setProductCardProps(data.map(toProductCardProps));
+        }
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const clearFilters = () => {
-    const urlParams = new URLSearchParams();
-    if (params.q) urlParams.set('q', params.q);
-    return `/products?${urlParams.toString()}`;
+    fetchData();
+  }, [selectedCategory, searchQuery]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery) params.append('q', searchQuery);
+    if (selectedCategory !== 'All') params.append('category', selectedCategory);
+    window.location.href = `/products?${params.toString()}`;
   };
 
-  const hasFilters = params.category && params.category !== 'All';
+  const handleCategorySelect = (category: string) => {
+    const params = new URLSearchParams();
+    if (category !== 'All') params.append('category', category);
+    if (searchQuery) params.append('q', searchQuery);
+    window.location.href = `/products?${params.toString()}`;
+  };
+
+  const clearFilters = () => {
+    window.location.href = '/products';
+  };
+
+  const hasFilters = selectedCategory !== 'All';
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -169,7 +181,7 @@ export default async function ProductsPage({
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-                  {params.q ? `Search results for "${params.q}"` : params.category && params.category !== 'All' ? params.category : 'All Products'}
+                  {searchQuery ? `Search results for "${searchQuery}"` : selectedCategory !== 'All' ? selectedCategory : 'All Products'}
                 </h1>
                 <p className="text-[var(--foreground-muted)] text-sm mt-1">
                   {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
@@ -178,12 +190,12 @@ export default async function ProductsPage({
             </div>
 
             <div className="mb-8">
-              <form method="GET" action="/products" className="relative max-w-2xl mx-auto">
+              <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
                 <div className="relative">
                   <input
                     type="text"
-                    name="q"
-                    defaultValue={params.q || ''}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for anime merch, apparel, accessories..."
                     className="w-full border border-[var(--border)] bg-[var(--background-card)] rounded-2xl py-4 pl-6 pr-14 text-base text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent shadow-sm"
                   />
@@ -195,11 +207,14 @@ export default async function ProductsPage({
                     <Search size={18} />
                   </button>
                 </div>
-                {params.q && (
+                {searchQuery && (
                   <div className="text-center mt-3">
-                    <Link href={clearFilters()} className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]">
+                    <button
+                      onClick={clearFilters}
+                      className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
+                    >
                       Clear search
-                    </Link>
+                    </button>
                   </div>
                 )}
               </form>
@@ -209,19 +224,19 @@ export default async function ProductsPage({
               <div className="flex items-center gap-2">
                 <SlidersHorizontal size={16} className="text-[var(--foreground-muted)]" />
                 <span className="text-sm font-medium text-[var(--foreground-muted)]">Filters:</span>
-                {params.category && params.category !== 'All' && (
+                {selectedCategory !== 'All' && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs">
-                    Category: {params.category}
-                    <Link href={clearFilters()} className="hover:text-red-500">
+                    Category: {selectedCategory}
+                    <button onClick={clearFilters} className="hover:text-red-500">
                       <X size={12} />
-                    </Link>
+                    </button>
                   </span>
                 )}
               </div>
               {hasFilters && (
-                <Link href={clearFilters()} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+                <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
                   <X size={12} /> Clear all filters
-                </Link>
+                </button>
               )}
             </div>
 
@@ -229,21 +244,11 @@ export default async function ProductsPage({
               <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
                 <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
                   {categoryNames.map((cat) => {
-                    const isActive = (!params.category && cat === 'All') || params.category === cat;
-                    let href;
-                    if (params.q) {
-                      href = cat === 'All'
-                        ? `/products?q=${encodeURIComponent(params.q)}`
-                        : `/products?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(params.q)}`;
-                    } else {
-                      href = cat === 'All'
-                        ? '/products'
-                        : `/products?category=${encodeURIComponent(cat)}`;
-                    }
+                    const isActive = selectedCategory === cat;
                     return (
-                      <a
+                      <button
                         key={cat}
-                        href={href}
+                        onClick={() => handleCategorySelect(cat)}
                         className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                           isActive
                             ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-200 dark:shadow-none'
@@ -251,7 +256,7 @@ export default async function ProductsPage({
                         }`}
                       >
                         {cat}
-                      </a>
+                      </button>
                     );
                   })}
                 </div>
