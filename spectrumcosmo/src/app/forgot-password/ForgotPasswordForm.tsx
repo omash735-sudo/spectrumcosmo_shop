@@ -1,49 +1,59 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LOGOS = {
-  light: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913281-removebg-preview_jblapw.png',
-  dark: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png',
-}
+  light: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png',
+  },
+  dark: {
+    svg: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg',
+    png: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png',
+  },
+};
 
 export default function ForgotPasswordPage() {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const isDark = currentTheme === 'dark';
+  const logoSrc = isDark ? LOGOS.dark.svg : LOGOS.light.svg;
+  const logoFallback = isDark ? LOGOS.dark.png : LOGOS.light.png;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess(false)
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess(false);
     try {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      })
-      if (!res.ok) throw new Error('Something went wrong')
-      setSuccess(true)
-      setEmail('')
+      });
+      if (!res.ok) throw new Error('Something went wrong');
+      setSuccess(true);
+      setEmail('');
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const isDark = mounted && theme === 'dark'
-  const logoSrc = isDark ? LOGOS.dark : LOGOS.light
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[var(--background)]">
@@ -59,7 +69,14 @@ export default function ForgotPasswordPage() {
             animate={{ scale: 1 }}
             className="inline-block"
           >
-            <img src={logoSrc} alt="SpectrumCosmo" className="h-16 mx-auto mb-4" />
+            <img
+              src={logoSrc}
+              alt="SpectrumCosmo"
+              className="h-16 mx-auto mb-4"
+              onError={(e) => {
+                e.currentTarget.src = logoFallback;
+              }}
+            />
           </motion.div>
           <p className="text-sm text-[var(--foreground-muted)]">Reset your password</p>
         </div>
@@ -77,7 +94,7 @@ export default function ForgotPasswordPage() {
                 <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Check your email</h3>
                 <p className="text-sm text-[var(--foreground-muted)]">
-                  If an account exists for {email || 'that email'}, you’ll receive a password reset link.
+                  If an account exists for {email || 'that email'}, you'll receive a password reset link.
                 </p>
                 <Link
                   href="/auth/login"
@@ -155,5 +172,5 @@ export default function ForgotPasswordPage() {
         </div>
       </motion.div>
     </div>
-  )
+  );
 }
