@@ -3,8 +3,7 @@ import { getVerifiedUser } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { logAdminAction } from '@/lib/admin-audit';
 
-// Generate TOTP secret (you'll need speakeasy or otplib)
-// npm install otplib
+export const dynamic = 'force-static';
 
 export async function POST(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req);
@@ -16,11 +15,9 @@ export async function POST(req: NextRequest) {
   const sql = getDb();
 
   if (action === 'enable') {
-    // Generate secret
     const { authenticator } = await import('otplib');
     const secret = authenticator.generateSecret();
     
-    // Store temporarily in session or pending_2fa table
     await sql`
       UPDATE users SET two_factor_secret = ${secret}, two_factor_pending = true WHERE id = ${user.id}
     `;
