@@ -1,11 +1,8 @@
-// app/api/admin/refresh-rules/route.ts
 import { NextResponse } from 'next/server';
 import { getDb, queryAsArray } from '@/lib/db';
 import { Redis } from '@upstash/redis';
 
 const redis = Redis.fromEnv();
-
-export const dynamic = 'force-dynamic';
 
 interface ProtectionRule {
   rule_key: string;
