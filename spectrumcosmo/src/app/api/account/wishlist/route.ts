@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { getVerifiedUser } from '@/lib/auth'
 
+export const dynamic = 'force-static';
+
 export async function GET(req: NextRequest) {
   const { user, error } = await getVerifiedUser(req)
   if (error) {
@@ -44,7 +46,6 @@ export async function POST(req: NextRequest) {
     
     const sql = getDb()
     
-    // Check if product exists
     const [product] = await sql`SELECT id FROM products WHERE id = ${productId}`
     if (!product) {
       return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 })
@@ -56,7 +57,6 @@ export async function POST(req: NextRequest) {
       ON CONFLICT (user_id, product_id) DO NOTHING
     `
     
-    // Get updated wishlist count
     const [countResult] = await sql`
       SELECT COUNT(*) as count FROM wishlist WHERE user_id = ${user.id}
     `
@@ -90,7 +90,6 @@ export async function DELETE(req: NextRequest) {
       WHERE user_id = ${user.id} AND product_id = ${productId}
     `
     
-    // Get updated wishlist count
     const [countResult] = await sql`
       SELECT COUNT(*) as count FROM wishlist WHERE user_id = ${user.id}
     `
