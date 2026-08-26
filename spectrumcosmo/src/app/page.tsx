@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -8,14 +11,13 @@ import {
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
-import { getDb, queryOne, queryMany } from '@/lib/db';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
 import HeroImageMarquee from '@/components/storefront/HeroImageMarquee';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HomepagePopup from '@/components/storefront/HomepagePopup';
 import RecentlyViewed from '@/components/storefront/RecentlyViewed';
 import ContinueShopping from '@/components/storefront/ContinueShopping';
-import { Suspense } from 'react';
+import FirstLaunchGuard from '@/components/FirstLaunchGuard';
 
 interface HeroSection {
   id: string;
@@ -264,34 +266,75 @@ const marqueeStyles = `
   }
 `;
 
-async function HomePageContent() {
-  let hero: HeroSection | null = null;
-  let products: Product[] = [];
-  let reviews: Review[] = [];
-  let categories: Category[] = [];
+function HomePageContent() {
+  const [hero, setHero] = useState<HeroSection | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeMessage, setSubscribeMessage] = useState('');
 
-  try {
-    const sql = getDb();
-    const heroRow = await queryOne<HeroSection>`
-      SELECT * FROM hero_sections WHERE page = 'home' AND active = true LIMIT 1
-    `;
-    hero = heroRow;
-    products = await queryMany<Product>`
-      SELECT * FROM products WHERE status = 'in_stock' ORDER BY created_at DESC LIMIT 8
-    `;
-    reviews = await queryMany<Review>`
-      SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 6
-    `;
-    categories = await queryMany<Category>`
-      SELECT id, name, image_url 
-      FROM categories 
-      WHERE is_active = true 
-      AND image_url IS NOT NULL
-      ORDER BY sort_order ASC, name ASC 
-      LIMIT 4
-    `;
-  } catch (err) {
-    console.error('Homepage DB error:', err);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/homepage-data');
+        const data = await response.json();
+        
+        if (response.ok) {
+          setHero(data.hero);
+          setProducts(data.products);
+          setReviews(data.reviews);
+          setCategories(data.categories);
+        } else {
+          console.error('API error:', data.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch homepage data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleNewsletterSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const emailInput = form.elements.namedItem('email') as HTMLInputElement;
+    const email = emailInput?.value || '';
+
+    if (!email) return;
+
+    setSubscribing(true);
+    setSubscribeMessage('');
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubscribeMessage('Subscribed successfully!');
+        form.reset();
+      } else {
+        setSubscribeMessage(data.error || 'Failed to subscribe. Please try again.');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setSubscribeMessage('Network error. Please try again.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  if (loading) {
+    return <HomePageSkeleton />;
   }
 
   const h = hero || fallbackHero;
@@ -306,6 +349,7 @@ async function HomePageContent() {
 
   return (
     <>
+      <FirstLaunchGuard />
       <style>{marqueeStyles}</style>
       <EventAnnouncementBar />
       <Navbar />
@@ -490,17 +534,24 @@ async function HomePageContent() {
             <p className="font-body text-[#9A9A9A] mb-8 max-w-lg mx-auto">
               Get exclusive offers, early access to new drops, and anime news delivered to your inbox.
             </p>
-            <form action="/api/newsletter/subscribe" method="POST" className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full">
               <input 
                 type="email" 
                 name="email" 
                 placeholder="Your email address" 
                 className="font-body w-full sm:flex-1 px-5 py-3 rounded-full bg-[var(--background-card)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--burnt-orange)] focus:border-transparent transition-all" 
+                required
+                disabled={subscribing}
               />
-              <button type="submit" className="btn-primary font-anton justify-center tracking-wider">
-                Subscribe <Send size={16} />
+              <button type="submit" className="btn-primary font-anton justify-center tracking-wider" disabled={subscribing}>
+                {subscribing ? 'Subscribing...' : 'Subscribe'} <Send size={16} />
               </button>
             </form>
+            {subscribeMessage && (
+              <p className={`font-body text-sm mt-4 ${subscribeMessage.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>
+                {subscribeMessage}
+              </p>
+            )}
             <p className="font-body text-[var(--foreground-muted)] text-xs mt-4">No spam. Unsubscribe anytime.</p>
           </div>
         </div>
@@ -531,10 +582,6 @@ async function HomePageContent() {
   );
 }
 
-export default async function HomePage() {
-  return (
-    <Suspense fallback={<HomePageSkeleton />}>
-      <HomePageContent />
-    </Suspense>
-  );
+export default function HomePage() {
+  return <HomePageContent />;
 }
