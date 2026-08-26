@@ -1,7 +1,8 @@
-// app/api/account/orders/[id]/tracking/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getVerifiedUser } from '@/lib/auth';
+
+export const dynamic = 'force-static';
 
 interface OrderTracking {
   order_id: string;
@@ -24,7 +25,7 @@ interface OrderTracking {
   admin_notes: string | null;
   promo_code: string | null;
   referral_code: string | null;
-  delivery_method_id: string | null;  // Added
+  delivery_method_id: string | null;
 }
 
 interface OrderItem {
@@ -59,7 +60,6 @@ export async function GET(
   try {
     const sql = getDb();
 
-    // Get order with delivery_method_id
     const ordersResult = await sql`
       SELECT 
         o.id as order_id,
@@ -94,7 +94,6 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Get order items
     const itemsResult = await sql`
       SELECT 
         oi.id,
@@ -110,7 +109,6 @@ export async function GET(
     const itemsArray = itemsResult as any[];
     const items: OrderItem[] = itemsArray;
 
-    // Get delivery method
     let deliveryMethod: DeliveryMethod | null = null;
     if (order.delivery_method_id) {
       const dmResult = await sql`
@@ -122,7 +120,6 @@ export async function GET(
       deliveryMethod = dmArray[0] as DeliveryMethod | null;
     }
 
-    // Get payment provider
     let paymentProvider: PaymentProvider | null = null;
     if (order.payment_method) {
       const ppResult = await sql`
