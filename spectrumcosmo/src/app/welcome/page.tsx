@@ -4,71 +4,63 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
-const WELCOME_IMAGES = [
+const WELCOME_CAROUSEL_IMAGES = [
   {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg',
-    alt: 'T-Shirt Collection',
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
+    alt: 'SpectrumCosmo T-Shirt',
   },
   {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_23.58.16_a0z7ns.jpg',
-    alt: 'Hoodie Collection',
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714750/d98193c851d049a19cf7de400ec47132_fepxrd.jpg',
+    alt: 'SpectrumCosmo Hat',
   },
   {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.34_c2lzfq.jpg',
-    alt: 'Pendant Collection',
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1779458747/vi5qhouqm7f92q2ghzka.jpg',
+    alt: 'SpectrumCosmo Pendant',
   },
   {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.16_rkdwvc.jpg',
-    alt: 'Bracelet Collection',
-  },
-  {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_17.26.34_c2lzfq.jpg',
-    alt: 'Accessories',
-  },
-  {
-    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg',
-    alt: 'Anime Collection',
+    url: 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1784714751/f09477c9aef7e70ff0a559489fac4dcd_mffof9.jpg',
+    alt: 'SpectrumCosmo Collection',
   },
 ];
 
-function AnimatedImageStrip({ 
-  images, 
-  direction = 'up', 
-  speed = 20,
-  offset = 0 
-}: { 
-  images: typeof WELCOME_IMAGES;
-  direction?: 'up' | 'down';
-  speed?: number;
-  offset?: number;
-}) {
+export default function WelcomePage() {
   const [mounted, setMounted] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % WELCOME_CAROUSEL_IMAGES.length);
+    }, 5000);
 
-  const doubledImages = [...images, ...images];
+    return () => clearInterval(interval);
+  }, [mounted]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const currentImage = WELCOME_CAROUSEL_IMAGES[currentIndex];
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
-      <div 
-        className="flex gap-3 py-2"
-        style={{
-          animation: `strip-scroll-${direction} ${speed}s linear infinite`,
-          animationDelay: `${offset}s`,
-          width: 'fit-content',
-        }}
-      >
-        {doubledImages.map((img, idx) => (
-          <div 
+    <div className="relative min-h-screen overflow-hidden bg-[var(--background)]">
+      {/* Background Image Carousel */}
+      <div className="absolute inset-0">
+        {WELCOME_CAROUSEL_IMAGES.map((img, idx) => (
+          <div
             key={idx}
-            className="relative flex-shrink-0 rounded-2xl overflow-hidden"
-            style={{ 
-              width: '140px',
-              height: '180px',
+            className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+            style={{
+              opacity: idx === currentIndex ? 1 : 0,
             }}
           >
             <Image
@@ -76,60 +68,27 @@ function AnimatedImageStrip({
               alt={img.alt}
               fill
               className="object-cover"
-              sizes="140px"
+              priority={idx === 0}
+              sizes="100vw"
             />
           </div>
         ))}
-      </div>
-
-      <style jsx>{`
-        @keyframes strip-scroll-up {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-50%); }
-        }
-        @keyframes strip-scroll-down {
-          0% { transform: translateY(-50%); }
-          100% { transform: translateY(0); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-export default function WelcomePage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0a0a0a]">
-      {/* Image Strips - Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 right-0 opacity-30">
-          <AnimatedImageStrip images={WELCOME_IMAGES} direction="up" speed={25} offset={0} />
-        </div>
         
-        <div className="absolute top-1/4 left-0 right-0 opacity-20">
-          <AnimatedImageStrip images={WELCOME_IMAGES} direction="down" speed={30} offset={2} />
-        </div>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/70" />
         
-        <div className="absolute top-1/2 left-0 right-0 opacity-25">
-          <AnimatedImageStrip images={WELCOME_IMAGES} direction="up" speed={22} offset={4} />
-        </div>
+        {/* Blur overlay */}
+        <div className="absolute inset-0 backdrop-blur-md" />
         
-        <div className="absolute bottom-0 left-0 right-0 opacity-15">
-          <AnimatedImageStrip images={WELCOME_IMAGES} direction="down" speed={28} offset={1} />
-        </div>
+        {/* Burnt orange atmospheric overlay */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{ background: 'radial-gradient(ellipse at center, var(--primary) 0%, transparent 70%)' }}
+        />
+        
+        {/* Edge fade gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] via-transparent to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-transparent to-transparent opacity-40" />
       </div>
 
       {/* Main Content */}
@@ -158,7 +117,7 @@ export default function WelcomePage() {
           <div className="space-y-3">
             <Link
               href="/signup"
-              className="block w-full bg-[var(--primary)] text-white font-semibold py-3.5 rounded-xl transition-colors hover:bg-[var(--primary-hover)]"
+              className="block w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold py-3.5 rounded-xl transition-colors"
             >
               Create Account
             </Link>
