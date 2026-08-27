@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useAppMode } from '@/hooks/useAppMode';
+import { usePlatform } from '@/hooks/usePlatform';
 import Navbar from '@/components/storefront/Navbar';
 import Footer from '@/components/storefront/Footer';
 import MobileHeader from '@/components/storefront/MobileHeader';
@@ -35,9 +36,16 @@ const APP_BOTTOM_NAV_PATHS = [
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isAppMode } = useAppMode();
+  const { isNative } = usePlatform();
+
+  // Consistent app mode detection (same as AppModeWrapper)
+  const showAppMode = isAppMode || isNative;
 
   // Check if current path is auth/onboarding (no nav)
-  const isNoNavPage = NO_NAV_PATHS.some(path => pathname?.startsWith(path));
+  const isNoNavPage = NO_NAV_PATHS.some(path => {
+    if (path === '/') return pathname === '/';
+    return pathname?.startsWith(path);
+  });
   
   // Check if current path should show bottom nav in app
   const showAppBottomNav = APP_BOTTOM_NAV_PATHS.some(path => {
@@ -50,8 +58,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return <>{children}</>;
   }
 
-  // APP MODE - Application navigation
-  if (isAppMode) {
+  // APP MODE - Application navigation (only rendered here, once)
+  if (showAppMode) {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--background)]">
         <MobileHeader />
