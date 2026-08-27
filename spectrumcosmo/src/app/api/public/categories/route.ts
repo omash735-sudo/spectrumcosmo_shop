@@ -1,9 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb, queryAsArray } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { queryAsArray } from '@/lib/db';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
 
 export async function GET() {
   try {
-    const sql = getDb();
     const categories = await queryAsArray<any>`
       SELECT 
         c.id, 
@@ -21,9 +30,12 @@ export async function GET() {
       GROUP BY c.id
       ORDER BY c.sort_order ASC, c.name ASC
     `;
-    return NextResponse.json(categories);
+    return NextResponse.json(categories, { headers: corsHeaders });
   } catch (err) {
     console.error('Failed to fetch categories:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
