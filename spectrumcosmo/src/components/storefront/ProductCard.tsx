@@ -27,6 +27,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
   if (!product || !product.id) {
     return null;
   }
@@ -59,7 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   useEffect(() => {
     const fetchRating = async () => {
       try {
-        const res = await fetch(`/api/reviews?product_id=${product.id}`);
+        const res = await fetch(`${API_BASE}/api/reviews?product_id=${product.id}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length) {
@@ -73,7 +75,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       }
     };
     fetchRating();
-  }, [product.id]);
+  }, [product.id, API_BASE]);
 
   const handleProductClick = () => {
     const categoryToSave = product.category_name || product.category;
@@ -86,7 +88,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    const userRes = await fetch('/api/auth/me');
+    const userRes = await fetch(`${API_BASE}/api/auth/me`);
     if (!userRes.ok) {
       toast.error('Please login to add items to wishlist');
       setTimeout(() => {
@@ -144,9 +146,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       onMouseLeave={() => setShowQuickView(false)}
       data-onboarding="product-card"
     >
-      {/* Image Container */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-[var(--background-secondary)]">
-        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
+        <Link href={`/products?id=${product.id}`} onClick={handleProductClick}>
           <div className={`absolute inset-0 bg-[var(--background-secondary)] transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
@@ -160,14 +161,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {/* Sale Badge */}
         {hasDiscount && !isOutOfStock && !isComingSoon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-anton font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10">
             -{discountPercent}%
           </div>
         )}
 
-        {/* Status Badge */}
         {statusBadge && StatusIcon && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
             <span className={`${statusBadge.color} text-[10px] sm:text-xs font-anton font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-1`}>
@@ -177,7 +176,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Quick View Overlay */}
         {showQuickView && !isOutOfStock && !isComingSoon && (
           <div className="hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
             <button className="bg-[var(--background-card)] text-[var(--foreground)] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-kanit font-medium hover:bg-[var(--primary)] hover:text-white transition flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
@@ -187,7 +185,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Wishlist Button */}
         <button
           onClick={handleToggleWishlist}
           disabled={loading}
@@ -201,21 +198,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </button>
 
-        {/* Category Tag */}
         <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-[var(--primary)]/80 backdrop-blur-sm text-white text-[10px] sm:text-xs font-kanit px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full z-10 max-w-[80px] sm:max-w-[120px] truncate">
           {categoryName}
         </div>
       </div>
 
-      {/* Product Info */}
       <div className="p-2.5 sm:p-4">
-        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
+        <Link href={`/products?id=${product.id}`} onClick={handleProductClick}>
           <h3 className="font-kanit font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
             {productName}
           </h3>
         </Link>
         
-        {/* Rating */}
         {reviewCount > 0 ? (
           <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
             <StarRating rating={avgRating} size={12} />
@@ -232,7 +226,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         
-        {/* Price */}
         <div className="mt-1 sm:mt-2 flex items-baseline gap-1 sm:gap-2 flex-wrap">
           <span className="text-base sm:text-xl font-anton font-bold text-[var(--foreground)]">
             <CurrencyPrice amountUsd={priceMwk} />
@@ -244,14 +237,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* Stock Warning */}
         {!isOutOfStock && !isComingSoon && (product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 5 && (
           <p className="text-[10px] sm:text-xs font-kanit text-[var(--primary)] mt-0.5 sm:mt-1">
             Only {product.stock_quantity} left
           </p>
         )}
 
-        {/* Action Buttons */}
         <div className="mt-2 sm:mt-4 flex gap-1.5 sm:gap-2">
           {!isOutOfStock && !isComingSoon ? (
             <>
@@ -264,7 +255,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span className="xs:hidden">Add</span>
               </button>
               <Link
-                href={`/product?id=${product.id}`}
+                href={`/products?id=${product.id}`}
                 onClick={handleProductClick}
                 className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
               >
