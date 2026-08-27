@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarDays, Clock, MapPin, Users, ArrowRight, ExternalLink, Video, Calendar, Tag, Sparkles, Loader2 } from 'lucide-react';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 
 interface SiteEvent {
   id: string;
@@ -24,15 +22,16 @@ interface SiteEvent {
   location?: string;
   venue?: string;
   is_online_event: boolean;
-  event_date?: string;
-  event_end_date?: string;
   featured: boolean;
   event_type: string;
+  event_date?: string;
+  event_end_date?: string;
   starts_at?: string;
   ends_at?: string;
 }
 
 export default function EventsPage() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const [events, setEvents] = useState<SiteEvent[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<SiteEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +39,7 @@ export default function EventsPage() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch(`${API_BASE}/api/events`);
         if (res.ok) {
           const data = await res.json();
           setFeaturedEvent(data.featuredEvent || null);
@@ -56,7 +55,7 @@ export default function EventsPage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [API_BASE]);
 
   const formatDate = (date?: string) => {
     if (!date) return 'TBD';
@@ -197,62 +196,54 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
-        </div>
-        <Footer />
-      </>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-[var(--background)] pt-8 md:pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">
-              Stay Updated
-            </span>
-            <h1 className="text-4xl md:text-5xl font-bold text-[var(--foreground)] mt-2">
-              Events & Announcements
-            </h1>
-            <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
-              Discover upcoming events, product drops, and exclusive offers from SpectrumCosmo
-            </p>
-          </div>
-
-          {featuredEvent && (
-            <div className="mb-8">
-              <EventCard event={featuredEvent} featured={true} />
-            </div>
-          )}
-
-          {events && events.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          ) : !featuredEvent && (
-            <div className="text-center py-20">
-              <CalendarDays size={64} className="mx-auto text-[var(--foreground-muted)]/30 mb-4" />
-              <h3 className="text-2xl font-semibold text-[var(--foreground)] mb-2">
-                No Events Right Now
-              </h3>
-              <p className="text-[var(--foreground-muted)]">
-                Check back soon for upcoming events and announcements!
-              </p>
-              <Link href="/" className="inline-flex items-center gap-2 mt-6 text-[var(--primary)] hover:text-[var(--primary-hover)]">
-                Return to Home <ArrowRight size={16} />
-              </Link>
-            </div>
-          )}
+    <main className="min-h-screen bg-[var(--background)] pt-8 md:pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <span className="text-[var(--foreground-muted)] text-sm font-medium uppercase tracking-wider">
+            Stay Updated
+          </span>
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--foreground)] mt-2">
+            Events & Announcements
+          </h1>
+          <p className="text-[var(--foreground-muted)] mt-3 max-w-2xl mx-auto">
+            Discover upcoming events, product drops, and exclusive offers from SpectrumCosmo
+          </p>
         </div>
-      </main>
-      <Footer />
-    </>
+
+        {featuredEvent && (
+          <div className="mb-8">
+            <EventCard event={featuredEvent} featured={true} />
+          </div>
+        )}
+
+        {events && events.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : !featuredEvent && (
+          <div className="text-center py-20">
+            <CalendarDays size={64} className="mx-auto text-[var(--foreground-muted)]/30 mb-4" />
+            <h3 className="text-2xl font-semibold text-[var(--foreground)] mb-2">
+              No Events Right Now
+            </h3>
+            <p className="text-[var(--foreground-muted)]">
+              Check back soon for upcoming events and announcements!
+            </p>
+            <Link href="/" className="inline-flex items-center gap-2 mt-6 text-[var(--primary)] hover:text-[var(--primary-hover)]">
+              Return to Home <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
