@@ -3,9 +3,6 @@
 import { ReactNode } from 'react';
 import { useAppMode } from '@/hooks/useAppMode';
 import { usePlatform } from '@/hooks/usePlatform';
-import MobileHeader from './MobileHeader';
-import MobileSearchBar from './MobileSearchBar';
-import MobileBottomNav from './MobileBottomNav';
 
 interface AppModeWrapperProps {
   children: ReactNode;
@@ -23,19 +20,7 @@ export default function AppModeWrapper({ children }: AppModeWrapperProps) {
     );
   }
 
-  // Native apps (Capacitor) always use app mode
-  const showAppMode = isAppMode || isNative;
-
-  if (showAppMode) {
-    return (
-      <>
-        <MobileHeader />
-        <MobileSearchBar />
-        {children}
-        <MobileBottomNav />
-      </>
-    );
-  }
-
+  // AppModeWrapper ONLY provides app mode context, does NOT render navigation
+  // Navigation is handled by LayoutWrapper
   return <>{children}</>;
 }
