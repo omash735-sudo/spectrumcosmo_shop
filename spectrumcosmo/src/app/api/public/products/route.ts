@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, queryAsArray } from '@/lib/db';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const category = url.searchParams.get('category');
@@ -9,7 +19,6 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb();
 
-    // Fetch all in-stock products with category info
     const products = await queryAsArray<any>`
       SELECT p.*, c.name as category_name 
       FROM products p
@@ -19,27 +28,27 @@ export async function GET(req: NextRequest) {
       LIMIT 100
     `;
 
-    // Filter in JavaScript
     let filtered = products;
 
     if (category && category !== 'All') {
-      filtered = filtered.filter(p => p.category_name === category);
+      filtered = filtered.filter((p: any) => p.category_name === category);
     }
 
     if (q) {
       const searchLower = q.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter((p: any) =>
         p.name?.toLowerCase().includes(searchLower) ||
         p.description?.toLowerCase().includes(searchLower)
       );
     }
 
-    return NextResponse.json(filtered);
+    return NextResponse.json(filtered, { headers: corsHeaders });
+
   } catch (error) {
     console.error('Public products API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch products' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
