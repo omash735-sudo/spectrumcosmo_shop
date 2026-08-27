@@ -20,7 +20,7 @@ export default function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    apiFetch('/api/categories')
+    apiFetch('/api/public/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);
