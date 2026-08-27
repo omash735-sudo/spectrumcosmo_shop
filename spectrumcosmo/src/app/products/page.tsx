@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
@@ -144,150 +142,141 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
-        </div>
-        <Footer />
-      </>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-[var(--background)]">
-        
-        <HeroCarousel
-          titleColor={heroSettings.titleColor}
-          subtitleColor={heroSettings.subtitleColor}
-          titleAlignment={heroSettings.titleAlignment}
-          subtitleAlignment={heroSettings.subtitleAlignment}
-          verticalPosition={heroSettings.verticalPosition}
-          buttonBgColor={heroSettings.buttonBgColor}
-          buttonTextColor={heroSettings.buttonTextColor}
-        />
+    <main className="min-h-screen bg-[var(--background)]">
+      <HeroCarousel
+        titleColor={heroSettings.titleColor}
+        subtitleColor={heroSettings.subtitleColor}
+        titleAlignment={heroSettings.titleAlignment}
+        subtitleAlignment={heroSettings.subtitleAlignment}
+        verticalPosition={heroSettings.verticalPosition}
+        buttonBgColor={heroSettings.buttonBgColor}
+        buttonTextColor={heroSettings.buttonTextColor}
+      />
 
-        <div className="bg-[var(--background-secondary)] py-8 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FeaturedProducts />
-          </div>
+      <div className="bg-[var(--background-secondary)] py-8 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FeaturedProducts />
         </div>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 manga-bg hero-manga">
-          <div className="relative z-10">
-            
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-                  {searchQuery ? `Search results for "${searchQuery}"` : selectedCategory !== 'All' ? selectedCategory : 'All Products'}
-                </h1>
-                <p className="text-[var(--foreground-muted)] text-sm mt-1">
-                  {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 manga-bg hero-manga">
+        <div className="relative z-10">
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+                {searchQuery ? `Search results for "${searchQuery}"` : selectedCategory !== 'All' ? selectedCategory : 'All Products'}
+              </h1>
+              <p className="text-[var(--foreground-muted)] text-sm mt-1">
+                {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
+              </p>
             </div>
+          </div>
 
-            <div className="mb-8">
-              <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for anime merch, apparel, accessories..."
-                    className="w-full border border-[var(--border)] bg-[var(--background-card)] rounded-2xl py-4 pl-6 pr-14 text-base text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent shadow-sm"
-                  />
+          <div className="mb-8">
+            <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for anime merch, apparel, accessories..."
+                  className="w-full border border-[var(--border)] bg-[var(--background-card)] rounded-2xl py-4 pl-6 pr-14 text-base text-[var(--foreground)] placeholder-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent shadow-sm"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white p-2.5 rounded-xl transition shadow-md"
+                  aria-label="Search"
+                >
+                  <Search size={18} />
+                </button>
+              </div>
+              {searchQuery && (
+                <div className="text-center mt-3">
                   <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white p-2.5 rounded-xl transition shadow-md"
-                    aria-label="Search"
+                    onClick={clearFilters}
+                    className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
                   >
-                    <Search size={18} />
+                    Clear search
                   </button>
                 </div>
-                {searchQuery && (
-                  <div className="text-center mt-3">
-                    <button
-                      onClick={clearFilters}
-                      className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
-                    >
-                      Clear search
-                    </button>
-                  </div>
-                )}
-              </form>
-            </div>
+              )}
+            </form>
+          </div>
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal size={16} className="text-[var(--foreground-muted)]" />
-                <span className="text-sm font-medium text-[var(--foreground-muted)]">Filters:</span>
-                {selectedCategory !== 'All' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs">
-                    Category: {selectedCategory}
-                    <button onClick={clearFilters} className="hover:text-red-500">
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
-              </div>
-              {hasFilters && (
-                <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
-                  <X size={12} /> Clear all filters
-                </button>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={16} className="text-[var(--foreground-muted)]" />
+              <span className="text-sm font-medium text-[var(--foreground-muted)]">Filters:</span>
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs">
+                  Category: {selectedCategory}
+                  <button onClick={clearFilters} className="hover:text-red-500">
+                    <X size={12} />
+                  </button>
+                </span>
               )}
             </div>
-
-            <div className="mb-10">
-              <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
-                <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
-                  {categoryNames.map((cat) => {
-                    const isActive = selectedCategory === cat;
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => handleCategorySelect(cat)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                          isActive
-                            ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-200 dark:shadow-none'
-                            : 'bg-[var(--background-card)] text-[var(--foreground-muted)] hover:bg-[var(--border)]'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {productCardProps.length === 0 ? (
-              <div className="text-center py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
-                <div className="w-20 h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search size={32} className="text-[var(--foreground-muted)]" />
-                </div>
-                <h3 className="text-lg font-medium text-[var(--foreground)] mb-2">No products found</h3>
-                <p className="text-[var(--foreground-muted)]">Try adjusting your search or browse our categories.</p>
-                <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium">
-                  View all products →
-                </Link>
-              </div>
-            ) : (
-              <div 
-                className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
-                data-onboarding="product-grid"
-              >
-                {productCardProps.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+            {hasFilters && (
+              <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+                <X size={12} /> Clear all filters
+              </button>
             )}
           </div>
+
+          <div className="mb-10">
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide md:overflow-visible md:mx-0 md:px-0">
+              <div className="flex gap-2 min-w-max md:flex-wrap md:justify-center">
+                {categoryNames.map((cat) => {
+                  const isActive = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => handleCategorySelect(cat)}
+                      className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                        isActive
+                          ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-200 dark:shadow-none'
+                          : 'bg-[var(--background-card)] text-[var(--foreground-muted)] hover:bg-[var(--border)]'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {productCardProps.length === 0 ? (
+            <div className="text-center py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
+              <div className="w-20 h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search size={32} className="text-[var(--foreground-muted)]" />
+              </div>
+              <h3 className="text-lg font-medium text-[var(--foreground)] mb-2">No products found</h3>
+              <p className="text-[var(--foreground-muted)]">Try adjusting your search or browse our categories.</p>
+              <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium">
+                View all products →
+              </Link>
+            </div>
+          ) : (
+            <div 
+              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+              data-onboarding="product-grid"
+            >
+              {productCardProps.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
-      </main>
-      <Footer />
-    </>
+      </div>
+    </main>
   );
 }
