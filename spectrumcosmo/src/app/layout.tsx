@@ -19,6 +19,7 @@ import TrackVisits from '@/components/TrackVisits';
 import AppModeWrapper from '@/components/storefront/AppModeWrapper';
 import PWAInstallPrompt from '@/components/storefront/PWAInstallPrompt';
 import NativeStatusBar from '@/components/storefront/NativeStatusBar';
+import LayoutWrapper from '@/components/LayoutWrapper';
 
 const anton = Anton({
   weight: '400',
@@ -202,7 +203,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <NativeStatusBar />
                         <AppModeWrapper>
                           <Suspense fallback={<LoadingSpinner />}>
-                            {children}
+                            <LayoutWrapper>
+                              {children}
+                            </LayoutWrapper>
                           </Suspense>
                         </AppModeWrapper>
                         <PWAInstallPrompt />
