@@ -6,29 +6,9 @@ import Image from 'next/image';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
-import { Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
-
-interface Category {
-  name: string;
-  slug: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  compare_price: number | null;
-  currency: string;
-  image_url: string | null;
-  category_id: string | null;
-  status: string;
-  stock_quantity: number;
-  is_featured: boolean;
-  sku: string | null;
-  created_at: Date;
-  category_name?: string;
-}
+import { Search, SlidersHorizontal, X, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { useProductsWithCache } from '@/hooks/useProductsWithCache';
+import { useAppMode } from '@/hooks/useAppMode';
 
 interface ProductCardProps {
   id: string;
@@ -43,7 +23,7 @@ interface ProductCardProps {
   description?: string;
 }
 
-function toProductCardProps(product: Product): ProductCardProps {
+function toProductCardProps(product: any): ProductCardProps {
   return {
     id: product.id,
     name: product.name,
@@ -68,15 +48,11 @@ const heroSettings = {
 };
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [categoryNames, setCategoryNames] = useState<string[]>(['All']);
-  const [productCardProps, setProductCardProps] = useState<ProductCardProps[]>([]);
+  const { isAppMode } = useAppMode();
 
-  // Get URL params on client
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const category = params.get('category') || 'All';
@@ -85,39 +61,27 @@ export default function ProductsPage() {
     setSearchQuery(q);
   }, []);
 
+  const {
+    products,
+    categories,
+    loading,
+    refreshing,
+    fromCache,
+    error,
+    refresh,
+  } = useProductsWithCache(
+    selectedCategory !== 'All' ? selectedCategory : undefined,
+    searchQuery || undefined
+  );
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch categories from public endpoint
-        const catRes = await fetch('/api/public/categories');
-        if (catRes.ok) {
-          const data = await catRes.json();
-          setCategories(data);
-          const names = ['All', ...data.map((c: Category) => c.name)];
-          setCategoryNames(names);
-        }
+    if (categories && categories.length > 0) {
+      const names = ['All', ...categories.map((c: any) => c.name)];
+      setCategoryNames(names);
+    }
+  }, [categories]);
 
-        // Fetch products from public endpoint with filters
-        const params = new URLSearchParams();
-        if (selectedCategory !== 'All') params.append('category', selectedCategory);
-        if (searchQuery) params.append('q', searchQuery);
-        
-        const prodRes = await fetch(`/api/public/products?${params.toString()}`);
-        if (prodRes.ok) {
-          const data = await prodRes.json();
-          setProducts(data);
-          setProductCardProps(data.map(toProductCardProps));
-        }
-      } catch (err) {
-        console.error('Failed to fetch products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedCategory, searchQuery]);
+  const productCardProps = products.map(toProductCardProps);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +104,7 @@ export default function ProductsPage() {
 
   const hasFilters = selectedCategory !== 'All';
 
-  if (loading) {
+  if (loading && !fromCache) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
@@ -171,13 +135,39 @@ export default function ProductsPage() {
           
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
-                {searchQuery ? `Search results for "${searchQuery}"` : selectedCategory !== 'All' ? selectedCategory : 'All Products'}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
+                  {searchQuery ? `Search results for "${searchQuery}"` : selectedCategory !== 'All' ? selectedCategory : 'All Products'}
+                </h1>
+                {isAppMode && fromCache && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs">
+                    <WifiOff size={12} />
+                    Cached
+                  </span>
+                )}
+                {isAppMode && refreshing && (
+                  <Loader2 size={16} className="animate-spin text-[var(--primary)]" />
+                )}
+              </div>
               <p className="text-[var(--foreground-muted)] text-sm mt-1">
                 {productCardProps.length} {productCardProps.length === 1 ? 'product' : 'products'} found
+                {fromCache && ' (cached)'}
               </p>
             </div>
+            {isAppMode && (
+              <button
+                onClick={() => refresh()}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-[var(--background-card)] border border-[var(--border)] rounded-lg hover:bg-[var(--background-secondary)] transition disabled:opacity-50"
+              >
+                {refreshing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Wifi size={16} />
+                )}
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            )}
           </div>
 
           <div className="mb-8">
@@ -254,7 +244,19 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {productCardProps.length === 0 ? (
+          {error && (
+            <div className="text-center py-8 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-800 mb-6">
+              <p className="text-red-600 dark:text-red-400">Failed to load products. {fromCache ? 'Showing cached data.' : 'Please try again.'}</p>
+              <button
+                onClick={() => refresh()}
+                className="mt-2 text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {productCardProps.length === 0 && !error ? (
             <div className="text-center py-20 bg-[var(--background-card)] rounded-2xl border border-[var(--border)]">
               <div className="w-20 h-20 bg-[var(--background-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search size={32} className="text-[var(--foreground-muted)]" />
