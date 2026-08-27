@@ -27,6 +27,8 @@ export interface Category {
   product_count: number;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
 export class ProductService {
   private static instance: ProductService;
   private isNative: boolean;
@@ -52,9 +54,9 @@ export class ProductService {
         queryParams.append('q', params.search);
       }
 
-      const url = `/api/public/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      const response = await fetch(url);
-      
+      const path = `/api/public/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await fetch(`${API_BASE}${path}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
@@ -62,7 +64,7 @@ export class ProductService {
       const data = await response.json();
       await storage.set(CACHE_KEYS.PRODUCTS, data);
       await storage.set(CACHE_KEYS.PRODUCTS_TIMESTAMP, Date.now());
-      
+
       return data;
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -72,15 +74,15 @@ export class ProductService {
 
   async fetchCategories(): Promise<Category[]> {
     try {
-      const response = await fetch('/api/public/categories');
-      
+      const response = await fetch(`${API_BASE}/api/public/categories`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch categories');
       }
 
       const data = await response.json();
       await storage.set(CACHE_KEYS.CATEGORIES, data);
-      
+
       return data;
     } catch (error) {
       console.error('Failed to fetch categories:', error);
@@ -96,15 +98,19 @@ export class ProductService {
     return await storage.get<Category[]>(CACHE_KEYS.CATEGORIES);
   }
 
-  async getProductsWithCache(params?: { category?: string; search?: string }): Promise<{ data: Product[]; fromCache: boolean }> {
+  async getProductsWithCache(params?: {
+    category?: string;
+    search?: string;
+  }): Promise<{ data: Product[]; fromCache: boolean }> {
     try {
       const cached = await this.getCachedProducts();
       const timestamp = await storage.get<number>(CACHE_KEYS.PRODUCTS_TIMESTAMP);
-      
+
       if (cached && timestamp) {
         const isExpired = storage.isExpired(timestamp, 24);
-        
+
         if (!isExpired) {
+          // Show cache immediately, refresh in background on native
           if (this.isNative) {
             this.fetchProductsInBackground(params);
           }
@@ -112,33 +118,35 @@ export class ProductService {
         }
       }
 
+      // No cache or expired — fetch fresh
       const freshData = await this.fetchProducts(params);
       return { data: freshData, fromCache: false };
     } catch (error) {
       console.error('Failed to get products:', error);
-      
+
+      // Network failed — fall back to cache if available
       const cached = await this.getCachedProducts();
       if (cached) {
+        console.warn('Network unavailable, serving from cache');
         return { data: cached, fromCache: true };
       }
-      
+
       throw error;
     }
   }
 
-  private async fetchProductsInBackground(params?: { category?: string; search?: string }): Promise<void> {
+  private async fetchProductsInBackground(
+    params?: { category?: string; search?: string }
+  ): Promise<void> {
     try {
-      const freshData = await this.fetchProducts(params);
-      await storage.set(CACHE_KEYS.PRODUCTS, freshData);
-      await storage.set(CACHE_KEYS.PRODUCTS_TIMESTAMP, Date.now());
+      await this.fetchProducts(params);
     } catch (error) {
       console.warn('Background refresh failed:', error);
     }
   }
 
   async refreshProducts(params?: { category?: string; search?: string }): Promise<Product[]> {
-    const freshData = await this.fetchProducts(params);
-    return freshData;
+    return await this.fetchProducts(params);
   }
 
   async clearCache(): Promise<void> {
