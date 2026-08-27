@@ -89,8 +89,8 @@ export default function ProductsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch categories
-        const catRes = await fetch('/api/categories');
+        // Fetch categories from public endpoint
+        const catRes = await fetch('/api/public/categories');
         if (catRes.ok) {
           const data = await catRes.json();
           setCategories(data);
@@ -98,12 +98,12 @@ export default function ProductsPage() {
           setCategoryNames(names);
         }
 
-        // Fetch products with filters
+        // Fetch products from public endpoint with filters
         const params = new URLSearchParams();
         if (selectedCategory !== 'All') params.append('category', selectedCategory);
         if (searchQuery) params.append('q', searchQuery);
         
-        const prodRes = await fetch(`/api/products?${params.toString()}`);
+        const prodRes = await fetch(`/api/public/products?${params.toString()}`);
         if (prodRes.ok) {
           const data = await prodRes.json();
           setProducts(data);
