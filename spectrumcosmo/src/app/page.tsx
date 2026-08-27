@@ -8,8 +8,6 @@ import {
   ShoppingBag, Zap, CheckCircle, 
   CreditCard, Headphones, Send, Shirt
 } from 'lucide-react';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 import EventAnnouncementBar from '@/components/storefront/EventAnnouncementBar';
 import CategoriesSection from '@/components/storefront/CategoriesSection';
 import HeroImageMarquee from '@/components/storefront/HeroImageMarquee';
@@ -117,106 +115,101 @@ const fallbackMarqueeImages = [
 
 function HomePageSkeleton() {
   return (
-    <>
-      <EventAnnouncementBar />
-      <Navbar />
-      <main>
-        <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden py-4 md:py-8 lg:py-12">
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
-              <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
-                <div className="h-8 bg-[var(--background-card)] rounded-lg animate-pulse w-3/4 mb-4"></div>
-                <div className="h-16 bg-[var(--background-card)] rounded-lg animate-pulse w-full mb-4"></div>
-                <div className="h-16 bg-[var(--background-card)] rounded-lg animate-pulse w-2/3 mb-6"></div>
-                <div className="h-6 bg-[var(--background-card)] rounded-lg animate-pulse w-full max-w-lg mb-8"></div>
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start mb-8">
-                  <div className="h-12 w-40 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                  <div className="h-12 w-40 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                </div>
-                <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-8 border-t border-[var(--border)]">
-                  <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                  <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                  <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                </div>
+    <main>
+      <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden py-4 md:py-8 lg:py-12">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start lg:items-center">
+            <div className="text-center lg:text-left w-full min-w-0 overflow-x-hidden">
+              <div className="h-8 bg-[var(--background-card)] rounded-lg animate-pulse w-3/4 mb-4"></div>
+              <div className="h-16 bg-[var(--background-card)] rounded-lg animate-pulse w-full mb-4"></div>
+              <div className="h-16 bg-[var(--background-card)] rounded-lg animate-pulse w-2/3 mb-6"></div>
+              <div className="h-6 bg-[var(--background-card)] rounded-lg animate-pulse w-full max-w-lg mb-8"></div>
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start mb-8">
+                <div className="h-12 w-40 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+                <div className="h-12 w-40 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
               </div>
-              
-              <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
-                <div className="grid grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-square bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-8 border-t border-[var(--border)]">
+                <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+                <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+                <div className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+              </div>
+            </div>
+            
+            <div className="mt-8 lg:mt-0 overflow-hidden w-full max-w-full">
+              <div className="grid grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="aspect-square bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+                ))}
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <div className="bg-[var(--background-secondary)] py-3 border-y border-[var(--border)]">
-          <div className="flex justify-around max-w-7xl mx-auto px-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+      <div className="bg-[var(--background-secondary)] py-3 border-y border-[var(--border)]">
+        <div className="flex justify-around max-w-7xl mx-auto px-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-6 w-32 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-[var(--background-card)] py-8 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="h-4 w-40 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto mb-2"></div>
+            <div className="h-10 w-64 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto"></div>
+            <div className="h-6 w-96 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto mt-3"></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-square bg-[var(--background-secondary)] rounded-lg animate-pulse"></div>
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="bg-[var(--background-card)] py-8 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="h-4 w-40 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto mb-2"></div>
-              <div className="h-10 w-64 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto"></div>
-              <div className="h-6 w-96 bg-[var(--background-secondary)] rounded-lg animate-pulse mx-auto mt-3"></div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-square bg-[var(--background-secondary)] rounded-lg animate-pulse"></div>
-              ))}
-            </div>
+      <div className="bg-[var(--background-secondary)] py-8 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="h-4 w-40 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-2"></div>
+            <div className="h-10 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto"></div>
+            <div className="h-6 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mt-3"></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-[var(--background-card)] rounded-lg p-4 animate-pulse">
+                <div className="aspect-square bg-[var(--background-secondary)] rounded-lg mb-4"></div>
+                <div className="h-4 bg-[var(--background-secondary)] rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-[var(--background-secondary)] rounded w-1/2"></div>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        <div className="bg-[var(--background-secondary)] py-8 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <div className="h-4 w-40 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-2"></div>
-              <div className="h-10 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto"></div>
-              <div className="h-6 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mt-3"></div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-[var(--background-card)] rounded-lg p-4 animate-pulse">
-                  <div className="aspect-square bg-[var(--background-secondary)] rounded-lg mb-4"></div>
-                  <div className="h-4 bg-[var(--background-secondary)] rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-[var(--background-secondary)] rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
+      <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="h-10 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-4"></div>
+          <div className="h-6 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-8"></div>
+          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            <div className="h-12 flex-1 bg-[var(--background-card)] rounded-full animate-pulse"></div>
+            <div className="h-12 w-32 bg-[var(--background-card)] rounded-full animate-pulse"></div>
           </div>
         </div>
+      </div>
 
-        <div className="bg-[#111111] py-16 lg:py-20 border-t border-[var(--border)]">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="h-10 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-4"></div>
-            <div className="h-6 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-8"></div>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <div className="h-12 flex-1 bg-[var(--background-card)] rounded-full animate-pulse"></div>
-              <div className="h-12 w-32 bg-[var(--background-card)] rounded-full animate-pulse"></div>
-            </div>
+      <div className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)]">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="h-12 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-6"></div>
+          <div className="h-6 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-10"></div>
+          <div className="flex flex-wrap justify-center gap-4">
+            <div className="h-12 w-48 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
+            <div className="h-12 w-48 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
           </div>
         </div>
-
-        <div className="bg-[var(--background-secondary)] py-20 lg:py-24 border-y border-[var(--border)]">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="h-12 w-96 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-6"></div>
-            <div className="h-6 w-64 bg-[var(--background-card)] rounded-lg animate-pulse mx-auto mb-10"></div>
-            <div className="flex flex-wrap justify-center gap-4">
-              <div className="h-12 w-48 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-              <div className="h-12 w-48 bg-[var(--background-card)] rounded-lg animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+      </div>
+    </main>
   );
 }
 
@@ -352,7 +345,6 @@ function HomePageContent() {
       <FirstLaunchGuard />
       <style>{marqueeStyles}</style>
       <EventAnnouncementBar />
-      <Navbar />
       <main>
         <section className="relative min-h-[60vh] md:min-h-[90vh] flex items-center bg-[var(--background)] overflow-x-hidden manga-bg hero-manga py-4 md:py-8 lg:py-12">
           {h.bg_image_url && (
@@ -575,7 +567,6 @@ function HomePageContent() {
           </div>
         </section>
       </main>
-      <Footer />
       <HomepagePopup />
       <ContinueShopping />
     </>
@@ -583,5 +574,5 @@ function HomePageContent() {
 }
 
 export default function HomePage() {
-  return <HomePageContent />;
+  return <HomePageContent>();
 }
