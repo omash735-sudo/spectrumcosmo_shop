@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import Image from 'next/image';
+import { Bell, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useUser } from './UserProvider';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -28,10 +29,13 @@ export default function MobileHeader() {
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
 
   const isLoggedIn = !!user;
+  const profileImage = user?.profileImage;
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Account';
 
   return (
     <div className="md:hidden bg-[var(--background-card)] border-b border-[var(--border)]">
       <div className="flex items-center justify-between px-4 py-2.5">
+        {/* Left: Logo + Name */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" style={{ height: '36px' }}>
           <img
             src={logoSvg}
@@ -53,8 +57,27 @@ export default function MobileHeader() {
           </span>
         </Link>
 
+        {/* Right: Notification + User */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {isLoggedIn && <NotificationBell />}
+          
+          <Link
+            href={isLoggedIn ? '/account' : '/login'}
+            className="p-2 rounded-full hover:bg-[var(--background-secondary)] transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+            aria-label={isLoggedIn ? 'Account' : 'Sign in'}
+          >
+            {profileImage ? (
+              <Image
+                src={profileImage}
+                alt={displayName}
+                width={28}
+                height={28}
+                className="w-7 h-7 rounded-full object-cover"
+              />
+            ) : (
+              <User size={22} className="text-[var(--foreground-muted)]" />
+            )}
+          </Link>
         </div>
       </div>
     </div>
