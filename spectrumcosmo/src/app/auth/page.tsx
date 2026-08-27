@@ -14,12 +14,12 @@ import AuthMessages from './components/AuthMessages';
 type AuthStep = 'landing' | 'email' | 'login' | 'register';
 
 export default function AuthPage() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
-  // Auth state
   const [step, setStep] = useState<AuthStep>('landing');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -27,19 +27,16 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
-  // URL params handling
   const verified = searchParams.get('verified');
   const registered = searchParams.get('registered');
   const errorParam = searchParams.get('error');
 
-  // Theme handling
   useEffect(() => {
     setMounted(true);
     const currentTheme = theme === 'system' ? systemTheme : theme;
     setIsDark(currentTheme === 'dark');
   }, [theme, systemTheme]);
 
-  // URL param messages
   useEffect(() => {
     if (verified === 'true') {
       setSuccess('Email verified successfully! You can now log in.');
@@ -68,7 +65,7 @@ export default function AuthPage() {
     setError('');
     
     try {
-      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(emailValue)}`);
+      const res = await fetch(`${API_BASE}/api/auth/check-email?email=${encodeURIComponent(emailValue)}`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -93,7 +90,6 @@ export default function AuthPage() {
 
   const handleBackToLanding = () => {
     setStep('landing');
-    // Preserve email if they go back
   };
 
   const handleLoginSuccess = () => {
@@ -120,7 +116,6 @@ export default function AuthPage() {
     setSuccess('');
   };
 
-  // Render content based on step
   const renderContent = () => {
     switch (step) {
       case 'landing':
