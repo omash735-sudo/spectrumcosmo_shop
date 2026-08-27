@@ -27,17 +27,9 @@ export default function MobileBottomNav() {
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
 
-  const logoSvg = isDark
-    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
-
-  const logoPng = isDark
-    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
-
   const navItems: NavItem[] = [
     { name: 'Home', href: '/', icon: <Home size={24} strokeWidth={1.8} /> },
-    { name: 'Products', href: '/products', icon: <ShoppingBag size={24} strokeWidth={1.8} /> },
+    { name: 'Shop', href: '/products', icon: <ShoppingBag size={24} strokeWidth={1.8} /> },
     { name: 'Cart', href: '/cart', icon: <ShoppingCart size={24} strokeWidth={1.8} /> },
     { name: 'Account', href: '/account', icon: <User size={24} strokeWidth={1.8} /> },
   ];
