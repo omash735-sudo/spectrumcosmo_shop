@@ -62,6 +62,7 @@ interface DbReview {
 }
 
 export default function ProductDetailPage() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = searchParams.get('id');
@@ -85,7 +86,7 @@ export default function ProductDetailPage() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/products/${id}`);
+        const res = await fetch(`${API_BASE}/api/products/${id}`);
         if (res.ok) {
           const data = await res.json();
           setProduct(data.product);
@@ -104,7 +105,7 @@ export default function ProductDetailPage() {
       }
     };
     fetchData();
-  }, [id, router]);
+  }, [id, router, API_BASE]);
 
   const getDisplayImages = (): string[] => {
     const images: string[] = [];
