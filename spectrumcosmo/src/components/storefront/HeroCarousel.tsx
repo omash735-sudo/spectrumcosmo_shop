@@ -19,7 +19,6 @@ interface HeroSlide {
   autoplay_delay: number;
 }
 
-// For backward compatibility with old products page
 interface LegacySlide {
   id: number;
   image: string;
@@ -28,10 +27,9 @@ interface LegacySlide {
 }
 
 interface HeroCarouselProps {
-  slides?: LegacySlide[];  // Support old prop format
-  textColor?: string;       // Support old prop format
-  autoplayDelay?: number;   // Support old prop format
-  // New props for full control
+  slides?: LegacySlide[];
+  textColor?: string;
+  autoplayDelay?: number;
   titleColor?: string;
   subtitleColor?: string;
   titleAlignment?: 'left' | 'center' | 'right';
@@ -56,12 +54,10 @@ export default function HeroCarousel({
   const [slides, setSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
   useEffect(() => {
-    // If slides passed as prop (old products page), use them directly
     if (propSlides && propSlides.length > 0) {
-      console.log('Using slides from prop:', propSlides);
-      // Convert legacy format to component format
       const formattedSlides = propSlides.map((slide) => ({
         id: String(slide.id),
         image_url: slide.image,
@@ -76,18 +72,14 @@ export default function HeroCarousel({
       return;
     }
 
-    // Otherwise fetch from API
-    fetch('/api/hero-slides')
+    fetch(`${API_BASE}/api/hero-slides`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then(data => {
-        console.log('Hero slides loaded from API:', data);
         if (data && data.length > 0) {
           setSlides(data);
-        } else {
-          console.warn('No slides found in API response');
         }
         setLoading(false);
       })
@@ -96,19 +88,13 @@ export default function HeroCarousel({
         setError(true);
         setLoading(false);
       });
-  }, [propSlides, autoplayDelay]);
+  }, [propSlides, autoplayDelay, API_BASE]);
 
   if (loading) {
     return <div className="h-[400px] md:h-[500px] lg:h-[600px] bg-gray-100 animate-pulse" />;
   }
 
-  if (error) {
-    console.warn('HeroCarousel: Error loading slides');
-    return null;
-  }
-
-  if (slides.length === 0) {
-    console.warn('HeroCarousel: No slides to display');
+  if (error || slides.length === 0) {
     return null;
   }
 
@@ -118,7 +104,6 @@ export default function HeroCarousel({
     bottom: 'items-end',
   }[verticalPosition];
 
-  // Determine which colors to use (legacy textColor takes priority if using old format)
   const finalTitleColor = propSlides ? textColor : titleColor;
   const finalSubtitleColor = propSlides ? textColor : subtitleColor;
 
