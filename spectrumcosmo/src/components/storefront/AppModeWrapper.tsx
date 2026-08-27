@@ -20,7 +20,5 @@ export default function AppModeWrapper({ children }: AppModeWrapperProps) {
     );
   }
 
-  // AppModeWrapper ONLY provides app mode context, does NOT render navigation
-  // Navigation is handled by LayoutWrapper
   return <>{children}</>;
 }
