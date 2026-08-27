@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 import StarRating from '@/components/ui/StarRating';
 import CurrencyPrice from '@/components/storefront/CurrencyPrice';
 import AddToCartButton from '@/components/storefront/AddToCartButton';
@@ -196,31 +194,23 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="w-8 h-8 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
-        </div>
-        <Footer />
-      </>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
+      </div>
     );
   }
 
   if (!product) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-[var(--foreground)]">Product Not Found</h1>
-            <p className="text-[var(--foreground-muted)] mt-2">The product you're looking for doesn't exist.</p>
-            <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:underline">
-              Browse Products
-            </Link>
-          </div>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Product Not Found</h1>
+          <p className="text-[var(--foreground-muted)] mt-2">The product you're looking for doesn't exist.</p>
+          <Link href="/products" className="inline-block mt-4 text-[var(--primary)] hover:underline">
+            Browse Products
+          </Link>
         </div>
-        <Footer />
-      </>
+      </div>
     );
   }
 
@@ -267,7 +257,6 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <Navbar />
       <ProductViewTracker product={productForTracking} />
       <main className="min-h-screen bg-[var(--background)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
@@ -594,7 +583,6 @@ export default function ProductDetailPage() {
           )}
         </div>
       </main>
-      <Footer />
       <ContinueShopping />
     </>
   );
