@@ -4,8 +4,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/storefront/CartProvider';
 import { useCurrency } from '@/components/storefront/CurrencyProvider';
-import Navbar from '@/components/storefront/Navbar';
-import Footer from '@/components/storefront/Footer';
 import CheckoutStepper from './components/CheckoutStepper';
 import Step1CartReview from './components/Step1CartReview';
 import Step2CustomerInfo from './components/Step2CustomerInfo';
@@ -15,6 +13,7 @@ import { orderService } from '@/lib/services/orderService';
 import toast from 'react-hot-toast';
 
 export default function CheckoutPage() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const router = useRouter();
   const { items, subtotalUsd, clearCart } = useCart();
   const { currency, rates } = useCurrency();
@@ -51,7 +50,6 @@ export default function CheckoutPage() {
 
   const subtotal = subtotalUsd * (rates[currency] ?? 1);
 
-  // Calculate tax and total
   const taxAmount = useMemo(() => {
     const taxableAmount = subtotal + deliveryFee - state.discountAmount;
     return (taxableAmount * taxRate) / 100;
@@ -63,7 +61,6 @@ export default function CheckoutPage() {
 
   const selectedPaymentProvider = state.selectedPaymentProvider;
 
-  // Load delivery methods
   useEffect(() => {
     const loadDeliveryMethods = async () => {
       try {
@@ -81,12 +78,10 @@ export default function CheckoutPage() {
     loadDeliveryMethods();
   }, []);
 
-  // Load payment providers with country/currency filtering
   useEffect(() => {
     const loadPaymentProviders = async () => {
       setLoadingPaymentProviders(true);
       try {
-        // Map currency to country code
         const currencyToCountry: Record<string, string> = {
           MWK: 'MW',
           USD: 'US',
@@ -103,29 +98,24 @@ export default function CheckoutPage() {
         const country = currencyToCountry[currency] || 'MW';
         const amount = finalTotal || 1000;
 
-        // Fetch filtered providers
         const res = await fetch(
-          `/api/payment-providers?country=${country}&currency=${currency}&amount=${amount}`
+          `${API_BASE}/api/payment-providers?country=${country}&currency=${currency}&amount=${amount}`
         );
         
         if (res.ok) {
           const data = await res.json();
-          
-          // Combine providers
           const automatic = data.automatic || [];
           const manual = data.manual || [];
           
           setFilteredPaymentProviders({ automatic, manual });
           setPaymentProviders({ automatic, manual });
           
-          // Auto-select first available provider
           if (automatic.length > 0) {
             selectPaymentProvider(automatic[0]);
           } else if (manual.length > 0) {
             selectPaymentProvider(manual[0]);
           }
         } else {
-          // Fallback to unfiltered providers
           const providers = await orderService.fetchPaymentProviders();
           if (providers) {
             setFilteredPaymentProviders(providers);
@@ -139,7 +129,6 @@ export default function CheckoutPage() {
         }
       } catch (err) {
         console.error('Failed to load payment providers:', err);
-        // Fallback to original fetch
         try {
           const providers = await orderService.fetchPaymentProviders();
           if (providers) {
@@ -162,13 +151,12 @@ export default function CheckoutPage() {
     if (currency && finalTotal > 0) {
       loadPaymentProviders();
     }
-  }, [currency, finalTotal]);
+  }, [currency, finalTotal, API_BASE]);
 
-  // Load tax rate
   useEffect(() => {
     const loadTax = async () => {
       try {
-        const taxRes = await fetch('/api/tax');
+        const taxRes = await fetch(`${API_BASE}/api/tax`);
         if (taxRes.ok) {
           const tax = await taxRes.json();
           setTaxRate(tax.rate);
@@ -181,7 +169,7 @@ export default function CheckoutPage() {
       }
     };
     loadTax();
-  }, []);
+  }, [API_BASE]);
 
   const handleConfirmOrder = useCallback(async () => {
     const { form, selectedPaymentProvider, appliedPromo, savedReferral, discountAmount } = state;
@@ -241,91 +229,85 @@ export default function CheckoutPage() {
   }, [state, items, subtotal, taxAmount, finalTotal, preferredCourier, currency, createOrder, clearCart, resetCheckout, router]);
 
   const isEmpty = items.length === 0;
-
-  // Use filtered providers if available, otherwise fallback to original
   const displayProviders = filteredPaymentProviders || paymentProviders;
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[var(--background)]">
-        <div 
-          className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12"
-          data-onboarding="checkout"
-        >
-          <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">Secure Checkout</h1>
-            <p className="text-[var(--foreground-muted)] text-sm mt-1">Complete your purchase with confidence</p>
-          </div>
-
-          <CheckoutStepper currentStep={state.step} />
-
-          {isEmpty && state.step === 1 ? (
-            <div className="text-center py-12 bg-[var(--background-card)] rounded-xl border border-[var(--border)]">
-              <p className="text-[var(--foreground-muted)]">Your cart is empty</p>
-              <button
-                onClick={() => router.push('/products')}
-                className="mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium"
-              >
-                Continue Shopping →
-              </button>
-            </div>
-          ) : (
-            <>
-              {state.step === 1 && (
-                <Step1CartReview
-                  onNext={nextStep}
-                  appliedPromo={state.appliedPromo}
-                  discountAmount={state.discountAmount}
-                  onApplyPromo={(code) => applyPromo(code, subtotal, items.map(i => i.id))}
-                  onRemovePromo={removePromo}
-                  onSaveReferral={saveReferral}
-                  savedReferral={state.savedReferral}
-                  isSubmitting={state.isSubmitting}
-                  error={state.error}
-                />
-              )}
-
-              {state.step === 2 && (
-                <Step2CustomerInfo
-                  form={state.form}
-                  onUpdateForm={updateForm}
-                  preferredCourier={preferredCourier}
-                  onPreferredCourierChange={setPreferredCourier}
-                  paymentProviders={displayProviders}
-                  selectedPaymentProvider={selectedPaymentProvider}
-                  onSelectPaymentProvider={selectPaymentProvider}
-                  onNext={nextStep}
-                  onPrev={prevStep}
-                  isSubmitting={state.isSubmitting}
-                  error={state.error}
-                  orderTotal={finalTotal}
-                />
-              )}
-
-              {state.step === 3 && (
-                <Step3OrderReview
-                  form={state.form}
-                  customDeliveryMethod={preferredCourier}
-                  selectedPaymentProvider={selectedPaymentProvider}
-                  subtotal={subtotal}
-                  deliveryFee={deliveryFee}
-                  discountAmount={state.discountAmount}
-                  taxAmount={taxAmount}
-                  taxRate={taxRate}
-                  taxName={taxName}
-                  finalTotal={finalTotal}
-                  onConfirm={handleConfirmOrder}
-                  onBack={prevStep}
-                  isSubmitting={isCreatingOrder || state.isSubmitting}
-                  error={state.error}
-                />
-              )}
-            </>
-          )}
+    <div className="min-h-screen bg-[var(--background)]">
+      <div 
+        className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12"
+        data-onboarding="checkout"
+      >
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)]">Secure Checkout</h1>
+          <p className="text-[var(--foreground-muted)] text-sm mt-1">Complete your purchase with confidence</p>
         </div>
+
+        <CheckoutStepper currentStep={state.step} />
+
+        {isEmpty && state.step === 1 ? (
+          <div className="text-center py-12 bg-[var(--background-card)] rounded-xl border border-[var(--border)]">
+            <p className="text-[var(--foreground-muted)]">Your cart is empty</p>
+            <button
+              onClick={() => router.push('/products')}
+              className="mt-4 text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium"
+            >
+              Continue Shopping →
+            </button>
+          </div>
+        ) : (
+          <>
+            {state.step === 1 && (
+              <Step1CartReview
+                onNext={nextStep}
+                appliedPromo={state.appliedPromo}
+                discountAmount={state.discountAmount}
+                onApplyPromo={(code) => applyPromo(code, subtotal, items.map(i => i.id))}
+                onRemovePromo={removePromo}
+                onSaveReferral={saveReferral}
+                savedReferral={state.savedReferral}
+                isSubmitting={state.isSubmitting}
+                error={state.error}
+              />
+            )}
+
+            {state.step === 2 && (
+              <Step2CustomerInfo
+                form={state.form}
+                onUpdateForm={updateForm}
+                preferredCourier={preferredCourier}
+                onPreferredCourierChange={setPreferredCourier}
+                paymentProviders={displayProviders}
+                selectedPaymentProvider={selectedPaymentProvider}
+                onSelectPaymentProvider={selectPaymentProvider}
+                onNext={nextStep}
+                onPrev={prevStep}
+                isSubmitting={state.isSubmitting}
+                error={state.error}
+                orderTotal={finalTotal}
+              />
+            )}
+
+            {state.step === 3 && (
+              <Step3OrderReview
+                form={state.form}
+                customDeliveryMethod={preferredCourier}
+                selectedPaymentProvider={selectedPaymentProvider}
+                subtotal={subtotal}
+                deliveryFee={deliveryFee}
+                discountAmount={state.discountAmount}
+                taxAmount={taxAmount}
+                taxRate={taxRate}
+                taxName={taxName}
+                finalTotal={finalTotal}
+                onConfirm={handleConfirmOrder}
+                onBack={prevStep}
+                isSubmitting={isCreatingOrder || state.isSubmitting}
+                error={state.error}
+              />
+            )}
+          </>
+        )}
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }
