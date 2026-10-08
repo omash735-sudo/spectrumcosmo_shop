@@ -30,6 +30,23 @@ const config: Config = {
           border: '#343434',
         },
       },
+      // ------------------------------------------------------------
+      // Typography system.
+      // These route Tailwind font utilities through the CSS variables
+      // composed in app/globals.css, which in turn point at the
+      // next/font variables registered in app/layout.tsx.
+      //
+      //   font-sans     → Kanit (UI font: body, nav, buttons, forms)
+      //   font-ui       → same as font-sans, semantic alias
+      //   font-display  → Anton  (h1 / hero only)
+      //   font-promo    → Bangers (opt-in marketing accents only)
+      // ------------------------------------------------------------
+      fontFamily: {
+        sans:    ['var(--font-body)'],
+        ui:      ['var(--font-ui)'],
+        display: ['var(--font-display)'],
+        promo:   ['var(--font-promo)'],
+      },
     },
   },
   plugins: [],
