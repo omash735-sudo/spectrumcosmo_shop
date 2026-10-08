@@ -21,22 +21,26 @@
    ============================================ */
 
 :root {
-  /* Composed font stacks */
+  /* ---- Primary UI stack: body, nav, buttons, forms, prices ---- */
   --font-body: var(--font-kanit), -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --font-heading: var(--font-anton), var(--font-bangers),
-    var(--font-black-han-sans), var(--font-kanit), sans-serif;
+  /* Semantic alias so components can ask for "the UI font" */
+  --font-ui: var(--font-body);
 
-  --font-display: var(--font-bangers), var(--font-anton),
-    var(--font-black-han-sans), cursive;
+  /* ---- Display stack: reserved for h1 / hero only ---- */
+  --font-display: var(--font-anton), var(--font-kanit), sans-serif;
 
-  /* Alias kept for readability — points to next/font's variable */
+  /* ---- Promo stack: opt-in accent, never automatic ---- */
+  --font-promo: var(--font-bangers), var(--font-anton), cursive;
+
+  /* ---- Legacy aliases (kept so existing classNames don't break) ---- */
+  --font-heading: var(--font-body);
   --font-black-han: var(--font-black-han-sans), sans-serif;
 
-  /* ===== LIGHT MODE (default) ===== */
-  --background: #f5f5f5;
-  --background-secondary: #e8e8e8;
+  /* ===== LIGHT MODE TOKENS (active) ===== */
+  --background: #ffffff;
+  --background-secondary: #f5f5f5;
   --background-card: #ffffff;
 
   --foreground: #111111;
@@ -45,12 +49,14 @@
   --primary: #C96712;
   --primary-hover: #E27716;
 
-  --border: #d1d5db;
+  --border: #e5e7eb;
 
   --header-height: 80px;
 }
 
-/* ===== DARK MODE ===== */
+/* ===== DARK MODE TOKENS =====
+   Kept intact for future re-enable.
+   Currently neutralized by the "LIGHT MODE LOCK" block below. */
 .dark {
   --background: #111111;
   --background-secondary: #1B1B1B;
@@ -65,6 +71,36 @@
   --border: #343434;
 }
 
+/* ============================================
+   TEMPORARY LIGHT MODE LOCK
+   ============================================
+   Dark mode is intentionally disabled for now.
+   This block overrides the tokens above whenever
+   .dark is present, so the UI stays light even if
+   the .dark class gets applied by the theme system.
+
+   TO RE-ENABLE DARK MODE LATER:
+     Delete this entire block. Nothing else needs to change.
+   ============================================ */
+:root,
+.dark {
+  --background: #ffffff;
+  --background-secondary: #f5f5f5;
+  --background-card: #ffffff;
+
+  --foreground: #111111;
+  --foreground-muted: #6B7280;
+
+  --primary: #C96712;
+  --primary-hover: #E27716;
+
+  --border: #e5e7eb;
+}
+/* ============ END LIGHT MODE LOCK ============ */
+
+/* ============================================
+   BASE
+   ============================================ */
 * {
   box-sizing: border-box;
 }
@@ -72,6 +108,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--header-height);
+  color-scheme: light;
 }
 
 body {
@@ -79,48 +116,114 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-size: 1rem;
+  font-weight: 400;
   line-height: 1.5;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ============================================
-   TYPOGRAPHY - Bold, Manga-Inspired
+   TYPOGRAPHY — clean, e-commerce readable
+   ============================================
+   Default: everything inherits the UI font (Kanit).
+   Only h1 uses the display font by default. Add
+   .font-display / .font-promo on specific elements
+   for hero / promo treatments.
    ============================================ */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-family: var(--font-body);
+  color: var(--foreground);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0;
 }
 
 h1 {
-  font-size: 3rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
   font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;          /* Anton is single-weight */
+  line-height: 1.05;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
 }
 
 h2 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h3 {
-  font-size: 1.75rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   font-weight: 700;
 }
 
 h4 {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 
-@media (max-width: 768px) {
-  h1 { font-size: 2.25rem; }
-  h2 { font-size: 1.75rem; }
-  h3 { font-size: 1.25rem; }
+h5 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--foreground-muted);
+}
+
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+small {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* ============================================
+   FORM CONTROLS & BUTTONS
+   ============================================
+   Force everything to inherit the UI font so a
+   stray Tailwind preflight reset can't sneak in
+   a system stack.
+   ============================================ */
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+button {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+label {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+code, pre, kbd, samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
 }
 
 /* ============================================
@@ -139,17 +242,31 @@ h4 {
   .font-black-han {
     font-family: var(--font-black-han-sans), sans-serif;
   }
-  .font-display {
-    font-family: var(--font-display);
-  }
-  .font-heading {
-    font-family: var(--font-heading);
-  }
+
   .font-body {
     font-family: var(--font-body);
   }
+  .font-ui {
+    font-family: var(--font-ui);
+  }
 
-  /* Manga text effects */
+  /* Legacy alias — now points at the UI font */
+  .font-heading {
+    font-family: var(--font-body);
+  }
+
+  /* Opt-in display / promo */
+  .font-display {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  .font-promo {
+    font-family: var(--font-promo);
+    letter-spacing: 0.02em;
+  }
+
+  /* Manga text effects (kept for homepage work) */
   .manga-title {
     font-family: var(--font-display);
     text-transform: uppercase;
@@ -157,12 +274,31 @@ h4 {
   }
 
   .manga-subtitle {
-    font-family: var(--font-heading);
+    font-family: var(--font-body);
     font-weight: 700;
   }
 
   .manga-body {
     font-family: var(--font-body);
+  }
+
+  /* Semantic helpers for shop UI */
+  .text-price {
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-nav {
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    font-size: 0.9375rem;
+  }
+
+  .text-muted {
+    color: var(--foreground-muted);
   }
 }
 
@@ -212,10 +348,7 @@ h4 {
     @apply bg-[#C96712] hover:bg-[#E27716] text-white px-6 py-3 rounded-full font-bold text-sm transition-all duration-200 inline-flex items-center gap-2 shadow-lg hover:shadow-orange-500/20;
   }
   .btn-secondary {
-    @apply border border-[#d1d5db] dark:border-[#343434] hover:border-[#C96712] text-[#111111] dark:text-[#F5F5F5] hover:text-[#C96712] px-6 py-3 rounded-full font-semibold text-sm transition-all inline-flex items-center gap-2;
-  }
-  .btn-secondary:hover {
-    border-color: #C96712;
+    @apply border border-[#e5e7eb] dark:border-[#343434] hover:border-[#C96712] text-[#111111] dark:text-[#F5F5F5] hover:text-[#C96712] px-6 py-3 rounded-full font-semibold text-sm transition-all inline-flex items-center gap-2;
   }
 }
 
