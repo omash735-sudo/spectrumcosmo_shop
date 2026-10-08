@@ -11,8 +11,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     <GoogleOAuthProvider clientId={googleClientId}>
       <NextThemesProvider
         attribute="class"
-        defaultTheme="system"
-        enableSystem={true}
+        defaultTheme="light"
+        // ------------------------------------------------------------
+        // TEMPORARY: dark mode is disabled for now.
+        // The .dark token block in globals.css is kept intact, and the
+        // ThemeSwitcher component still works — it just can't activate
+        // a dark UI while forcedTheme is set.
+        //
+        // TO RE-ENABLE DARK MODE LATER:
+        //   - delete  forcedTheme="light"
+        //   - change  enableSystem={false}  →  enableSystem={true}
+        //   - (optional) change defaultTheme back to "system"
+        // ------------------------------------------------------------
+        forcedTheme="light"
+        enableSystem={false}
         disableTransitionOnChange={false}
       >
         {children}
