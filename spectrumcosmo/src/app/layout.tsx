@@ -28,8 +28,14 @@ const anton = Anton({
   display: 'swap',
 });
 
+// ------------------------------------------------------------
+// Kanit is the app-wide UI font (body, nav, buttons, forms, prices).
+// Weights 500 and 600 are explicitly loaded so `font-medium` and
+// `font-semibold` render the real font instead of a browser-
+// synthesized faux-bold, which was causing inconsistent weights.
+// ------------------------------------------------------------
 const kanit = Kanit({
-  weight: ['400', '700', '900'],
+  weight: ['400', '500', '600', '700', '900'],
   subsets: ['latin', 'thai'],
   variable: '--font-kanit',
   display: 'swap',
