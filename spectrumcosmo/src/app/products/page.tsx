@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/storefront/ProductCard';
 import FeaturedProducts from '@/components/storefront/FeaturedProducts';
 import HeroCarousel from '@/components/storefront/HeroCarousel';
@@ -47,20 +48,46 @@ const heroSettings = {
   buttonTextColor: '#FFFFFF',
 };
 
-export default function ProductsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+// ---------------------------------------------------------------------
+// ProductsContent
+//
+// URL is the single source of truth for query intent:
+//   urlQ        — the committed search term
+//   urlCategory — the committed category filter
+//   urlFocus    — "search-first" hint from the bottom-nav Search tab
+//
+// Local `searchQuery` state drives the controlled input while typing.
+// It is re-synced from `urlQ` when the URL changes. The data hook reads
+// `urlQ` / `urlCategory` directly, so fetches never fire with stale
+// values, and typing does not trigger requests until submit.
+// ---------------------------------------------------------------------
+function ProductsContent() {
+  const searchParams = useSearchParams();
+  const urlQ = searchParams.get('q') || '';
+  const urlCategory = searchParams.get('category') || 'All';
+  const urlFocus = searchParams.get('focus') === 'search';
+  const urlKey = searchParams.toString();
+
+  // Search-first mode: promo blocks hidden, input autofocused.
+  // Derived from the URL so it cannot drift.
+  const inSearchMode = urlFocus || urlQ.length > 0;
+
+  const [searchQuery, setSearchQuery] = useState(urlQ);
   const [categoryNames, setCategoryNames] = useState<string[]>(['All']);
   const { isAppMode } = useAppMode();
 
+  // Keep the controlled input in sync with the URL.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const category = params.get('category') || 'All';
-    const q = params.get('q') || '';
-    setSelectedCategory(category);
-    setSearchQuery(q);
-  }, []);
+    setSearchQuery(urlQ);
+  }, [urlQ]);
 
+  // Category is derived from the URL — never stored, so the highlighted
+  // pill cannot go stale.
+  const selectedCategory = urlCategory;
+
+  // Data hook reads committed URL values. Because these are derived
+  // from `useSearchParams`, a URL change causes exactly one fetch with
+  // the new values — no intermediate render sees the previous query.
   const {
     products,
     categories,
@@ -70,9 +97,14 @@ export default function ProductsPage() {
     error,
     refresh,
   } = useProductsWithCache(
-    selectedCategory !== 'All' ? selectedCategory : undefined,
-    searchQuery || undefined
+    urlCategory !== 'All' ? urlCategory : undefined,
+    urlQ || undefined
   );
+
+  // Single definition of "the page is showing the full-screen spinner".
+  // The render below returns the spinner (without the search input) when
+  // this is true, so the autofocus effect must use the same condition.
+  const showSpinner = loading && !fromCache;
 
   useEffect(() => {
     if (categories && categories.length > 0) {
@@ -82,6 +114,44 @@ export default function ProductsPage() {
   }, [categories]);
 
   const productCardProps = products.map(toProductCardProps);
+
+  // ----------------------------------------------------------------
+  // Search input autofocus
+  //
+  // The input element is held in state via a callback ref. When the
+  // spinner replaces the page, React calls the ref with null and the
+  // state clears; when the page returns, the ref fires with the new
+  // element and the effect re-runs. That removes the "input not mounted
+  // yet" ordering problem.
+  //
+  // Focus is attempted only when:
+  //   - the URL asks for it (`focus=search` from the bottom-nav tab),
+  //   - the spinner is not showing (loading-aware, same condition the
+  //     render uses), and
+  //   - the input element actually exists.
+  //
+  // The URL key is recorded only AFTER focus() is called, so a skipped
+  // attempt is retried on the next run instead of being lost.
+  //
+  // Bookmarked `?q=…` URLs are deliberately not focused, so the
+  // keyboard is not forced when opening a shared link.
+  //
+  // Note: calling focus() from an effect after navigation is not
+  // guaranteed to open the on-screen keyboard on iOS Safari, which
+  // prefers focus that follows a direct tap. Verify on a real device.
+  // ----------------------------------------------------------------
+  const [searchInputEl, setSearchInputEl] = useState<HTMLInputElement | null>(null);
+  const lastAutoFocusKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!urlFocus) return;
+    if (showSpinner) return;
+    if (!searchInputEl) return;
+    if (lastAutoFocusKeyRef.current === urlKey) return;
+
+    searchInputEl.focus({ preventScroll: true });
+    lastAutoFocusKeyRef.current = urlKey;
+  }, [urlFocus, urlKey, showSpinner, searchInputEl]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +174,7 @@ export default function ProductsPage() {
 
   const hasFilters = selectedCategory !== 'All';
 
-  if (loading && !fromCache) {
+  if (showSpinner) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
@@ -114,21 +184,25 @@ export default function ProductsPage() {
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <HeroCarousel
-        titleColor={heroSettings.titleColor}
-        subtitleColor={heroSettings.subtitleColor}
-        titleAlignment={heroSettings.titleAlignment}
-        subtitleAlignment={heroSettings.subtitleAlignment}
-        verticalPosition={heroSettings.verticalPosition}
-        buttonBgColor={heroSettings.buttonBgColor}
-        buttonTextColor={heroSettings.buttonTextColor}
-      />
+      {!inSearchMode && (
+        <HeroCarousel
+          titleColor={heroSettings.titleColor}
+          subtitleColor={heroSettings.subtitleColor}
+          titleAlignment={heroSettings.titleAlignment}
+          subtitleAlignment={heroSettings.subtitleAlignment}
+          verticalPosition={heroSettings.verticalPosition}
+          buttonBgColor={heroSettings.buttonBgColor}
+          buttonTextColor={heroSettings.buttonTextColor}
+        />
+      )}
 
-      <div className="bg-[var(--background-secondary)] py-8 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FeaturedProducts />
+      {!inSearchMode && (
+        <div className="bg-[var(--background-secondary)] py-8 md:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FeaturedProducts />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 manga-bg hero-manga">
         <div className="relative z-10">
@@ -156,6 +230,7 @@ export default function ProductsPage() {
             </div>
             {isAppMode && (
               <button
+                type="button"
                 onClick={() => refresh()}
                 disabled={refreshing}
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-[var(--background-card)] border border-[var(--border)] rounded-lg hover:bg-[var(--background-secondary)] transition disabled:opacity-50"
@@ -174,7 +249,10 @@ export default function ProductsPage() {
             <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
               <div className="relative">
                 <input
+                  ref={setSearchInputEl}
                   type="text"
+                  inputMode="search"
+                  enterKeyHint="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for anime merch, apparel, accessories..."
@@ -191,6 +269,7 @@ export default function ProductsPage() {
               {searchQuery && (
                 <div className="text-center mt-3">
                   <button
+                    type="button"
                     onClick={clearFilters}
                     className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
                   >
@@ -208,14 +287,18 @@ export default function ProductsPage() {
               {selectedCategory !== 'All' && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--primary)]/10 text-[var(--primary)] rounded-full text-xs">
                   Category: {selectedCategory}
-                  <button onClick={clearFilters} className="hover:text-red-500">
+                  <button type="button" onClick={clearFilters} className="hover:text-red-500">
                     <X size={12} />
                   </button>
                 </span>
               )}
             </div>
             {hasFilters && (
-              <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600"
+              >
                 <X size={12} /> Clear all filters
               </button>
             )}
@@ -229,6 +312,7 @@ export default function ProductsPage() {
                   return (
                     <button
                       key={cat}
+                      type="button"
                       onClick={() => handleCategorySelect(cat)}
                       className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                         isActive
@@ -248,6 +332,7 @@ export default function ProductsPage() {
             <div className="text-center py-8 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-800 mb-6">
               <p className="text-red-600 dark:text-red-400">Failed to load products. {fromCache ? 'Showing cached data.' : 'Please try again.'}</p>
               <button
+                type="button"
                 onClick={() => refresh()}
                 className="mt-2 text-sm text-[var(--primary)] hover:text-[var(--primary-hover)]"
               >
@@ -280,5 +365,25 @@ export default function ProductsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------
+// ProductsPage
+//
+// Thin shell providing the Suspense boundary required by
+// `useSearchParams()` under Next 15 App Router with `output: 'export'`.
+// ---------------------------------------------------------------------
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <Loader2 className="animate-spin text-[var(--primary)]" size={32} />
+        </div>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   );
 }
