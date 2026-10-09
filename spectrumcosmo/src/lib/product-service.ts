@@ -57,7 +57,12 @@ export class ProductService {
   private indexQueue: Promise<void> = Promise.resolve();
 
   private constructor() {
-    this.isNative = typeof window !== 'undefined' && !!(window as any).Capacitor;
+    // `window.Capacitor` exists in normal browsers too once @capacitor/core
+    // is imported anywhere, so its presence does not mean "inside the app".
+    // isNativePlatform() is true only in the Android/iOS app.
+    this.isNative =
+      typeof window !== 'undefined' &&
+      (window as any).Capacitor?.isNativePlatform?.() === true;
   }
 
   static getInstance(): ProductService {
