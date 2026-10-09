@@ -48,17 +48,29 @@ export function useProductsWithCache(
     const requestId = ++requestIdRef.current;
     const isLatest = () => requestId === requestIdRef.current;
 
-    try {
-      if (refresh) {
-        setRefreshing(true);
+    if (refresh) {
+      setRefreshing(true);
+      try {
         const freshData = await productService.refreshProducts({ category, search });
         if (!isLatest()) return;
         setProducts(freshData);
         setFromCache(false);
-        setRefreshing(false);
-        return;
+        // A successful retry must clear the error that triggered it,
+        // otherwise the retry banner stays on screen after recovery.
+        setError(null);
+      } catch (err) {
+        if (!isLatest()) return;
+        setError(err instanceof Error ? err : new Error('Failed to load products'));
+      } finally {
+        // Guarded by isLatest so a superseded refresh cannot clear the
+        // loading state of a newer request. When the query changes, the
+        // render-phase reset already set refreshing to false.
+        if (isLatest()) setRefreshing(false);
       }
+      return;
+    }
 
+    try {
       const result = await productService.getProductsWithCache({ category, search });
       if (!isLatest()) return;
       setProducts(result.data);
