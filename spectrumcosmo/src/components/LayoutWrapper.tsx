@@ -29,8 +29,10 @@ const NO_MOBILE_HEADER_PATHS = [
 ];
 
 // Routes where the shell-level MobileSearchBar is suppressed because the
-// page already provides its own search input. /products renders its own
-// search field inside <main>, so the shell bar would duplicate it.
+// page already provides its own search input. Only the /products LISTING
+// renders a search field inside <main>; product detail pages under
+// /products/... do not, so this list is matched EXACTLY (see
+// `suppressMobileSearch` below), not by prefix like the other lists.
 const NO_MOBILE_SEARCH_PATHS = [
   '/products',
 ];
@@ -64,7 +66,10 @@ export default function LayoutWrapper({
   const isNoNavPage = NO_NAV_PATHS.some(matches);
   const showBottomNav = APP_BOTTOM_NAV_PATHS.some(matches);
   const suppressMobileHeader = NO_MOBILE_HEADER_PATHS.some(matches);
-  const suppressMobileSearch = NO_MOBILE_SEARCH_PATHS.some(matches);
+
+  // Exact match, tolerant of a trailing slash ("/products/" === "/products").
+  const normalizedPath = (pathname || '/').replace(/\/+$/, '') || '/';
+  const suppressMobileSearch = NO_MOBILE_SEARCH_PATHS.includes(normalizedPath);
 
   if (isNoNavPage) {
     return (
