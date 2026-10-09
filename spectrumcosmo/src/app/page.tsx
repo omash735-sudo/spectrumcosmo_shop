@@ -22,6 +22,17 @@ import FirstLaunchGuard from '@/components/FirstLaunchGuard';
 import ProductCard from '@/components/storefront/ProductCard';
 
 /* ------------------------------------------------------------------ */
+/* API base                                                            */
+/* ------------------------------------------------------------------ */
+
+// On the website the API lives on the same origin, so this is ''. In the
+// installed app (static export) there is no server inside the app, so a
+// relative "/api/..." URL points at the app itself and returns nothing.
+// ProductService already solves this with NEXT_PUBLIC_API_BASE_URL; the
+// homepage must use the same base for its data and the newsletter.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
+/* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -152,10 +163,12 @@ function SectionHeading({
           </p>
         )}
       </div>
+      {/* Visible on every screen size. It used to be hidden below `sm`,
+          which left phones with no way into the reviews page. */}
       {href && (
         <Link
           href={href}
-          className="group hidden sm:inline-flex items-center gap-1.5 shrink-0 font-heading font-semibold text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors pb-1"
+          className="group inline-flex items-center gap-1.5 shrink-0 font-heading font-semibold text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors pb-1"
         >
           {linkLabel}
           <ArrowRight
@@ -224,9 +237,13 @@ function Hero({ hero }: { hero: HeroSection }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Promo card — used once, for the custom-orders destination           */
+/* Promo card — compact, used once, for the custom-orders destination  */
 /* ------------------------------------------------------------------ */
 
+// Fixed, short height instead of a 16:9 aspect ratio. With 16:9 inside
+// the 7xl container the card became a ~700px-tall banner on desktop,
+// which is the opposite of a "compact" custom-orders section and loads a
+// much larger image than it needs.
 function PromoCard({
   eyebrow,
   title,
@@ -245,25 +262,25 @@ function PromoCard({
   return (
     <Link
       href={href}
-      className="group relative block aspect-[16/10] md:aspect-[16/9] rounded-2xl overflow-hidden border border-[var(--border)]"
+      className="group relative block h-44 sm:h-48 md:h-56 rounded-2xl overflow-hidden border border-[var(--border)]"
     >
       <Image
         src={image}
         alt=""
         fill
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes="(max-width: 1280px) 100vw, 1280px"
         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
 
-      <div className="absolute inset-0 p-5 md:p-7 flex flex-col justify-end">
-        <span className="text-[10px] md:text-xs font-kanit font-bold uppercase tracking-[0.18em] text-white/75 mb-1.5">
+      <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-end">
+        <span className="text-[10px] md:text-xs font-kanit font-bold uppercase tracking-[0.18em] text-white/75 mb-1">
           {eyebrow}
         </span>
-        <h3 className="font-anton text-lg md:text-2xl text-white uppercase tracking-wide mb-1.5 leading-tight">
+        <h3 className="font-anton text-lg md:text-2xl text-white uppercase tracking-wide mb-1 leading-tight">
           {title}
         </h3>
-        <p className="font-body text-xs md:text-sm text-white/80 mb-3 max-w-xs">
+        <p className="font-body text-xs md:text-sm text-white/80 mb-2 max-w-xs">
           {description}
         </p>
         <span className="inline-flex items-center gap-1.5 text-white font-heading font-semibold text-xs md:text-sm">
@@ -349,7 +366,7 @@ function HomePageContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/homepage-data');
+        const response = await fetch(`${API_BASE}/api/homepage-data`);
         const data = await response.json();
 
         if (response.ok) {
@@ -380,7 +397,7 @@ function HomePageContent() {
     setSubscribeMessage('');
 
     try {
-      const response = await fetch('/api/newsletter/subscribe', {
+      const response = await fetch(`${API_BASE}/api/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -443,29 +460,17 @@ function HomePageContent() {
           </div>
         </section>
 
-        {/* 4. Custom Orders — single promotional card */}
-        <section className="bg-[var(--background-card)] py-10 md:py-14">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <PromoCard
-              eyebrow="Custom Orders"
-              title="Your design. Our quality."
-              description="Made to your spec — sizes, colours, prints and bulk orders."
-              cta="Request Now"
-              href="/custom-orders"
-              image="https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg"
-            />
-          </div>
-        </section>
-
-        {/* 5. Just Landed — real products, buyable directly */}
+        {/* 4. Just Landed — real products, buyable directly.
+            Kept next to Featured Products so the two product sections sit
+            together, with the custom-orders card after them. */}
         {justLanded.length > 0 && (
-          <section className="bg-[var(--background-secondary)] py-10 md:py-16 border-t border-[var(--border)]">
+          <section className="bg-[var(--background-card)] py-10 md:py-16 border-t border-[var(--border)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <SectionHeading
                 eyebrow="Fresh"
                 title="Just Landed"
                 subtitle="The most recent additions to our catalogue."
-                href="/products?sort=newest"
+                href="/products"
               />
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
@@ -484,19 +489,23 @@ function HomePageContent() {
                   />
                 ))}
               </div>
-
-              <div className="mt-6 sm:hidden">
-                <Link
-                  href="/products?sort=newest"
-                  className="inline-flex items-center gap-1.5 font-heading font-semibold text-sm text-[var(--primary)]"
-                >
-                  View All Products
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
             </div>
           </section>
         )}
+
+        {/* 5. Custom Orders — single, compact promotional card */}
+        <section className="bg-[var(--background-secondary)] py-8 md:py-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <PromoCard
+              eyebrow="Custom Orders"
+              title="Your design. Our quality."
+              description="Made to your spec — sizes, colours, prints and bulk orders."
+              cta="Request Now"
+              href="/custom-orders"
+              image="https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-03_at_16.15.36_ubl2ww.jpg"
+            />
+          </div>
+        </section>
 
         {/* 6. Service & Trust strip */}
         <ServiceTrustStrip />
@@ -645,5 +654,3 @@ function HomePageContent() {
 export default function HomePage() {
   return <HomePageContent />;
 }
-
-this is fine?
