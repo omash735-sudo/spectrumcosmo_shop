@@ -27,11 +27,34 @@ export interface Category {
   product_count: number;
 }
 
+type ProductQuery = { category?: string; search?: string };
+
+// One cached result set for one specific query (category + search).
+interface ProductCacheEntry {
+  data: Product[];
+  fetchedAt: number;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
+const CACHE_TTL_HOURS = 24;
+
+// Each distinct query gets its own cache entry, so search terms could
+// otherwise pile up forever. Keep only the most recently written ones.
+const MAX_CACHED_QUERIES = 20;
+
+// Ordered list (oldest first) of the per-query cache keys currently
+// stored. Needed because clearCache() and eviction must know which keys
+// exist, and the storage API is key-by-key.
+const PRODUCTS_INDEX_KEY = `${CACHE_KEYS.PRODUCTS}::index`;
 
 export class ProductService {
   private static instance: ProductService;
   private isNative: boolean;
+
+  // Serialises read-modify-write updates of the key index so two
+  // overlapping fetches cannot drop each other's entry.
+  private indexQueue: Promise<void> = Promise.resolve();
 
   private constructor() {
     this.isNative = typeof window !== 'undefined' && !!(window as any).Capacitor;
@@ -44,7 +67,71 @@ export class ProductService {
     return ProductService.instance;
   }
 
-  async fetchProducts(params?: { category?: string; search?: string }): Promise<Product[]> {
+  // ---------------------------------------------------------------
+  // Query-aware cache helpers
+  // ---------------------------------------------------------------
+
+  // The key is built from exactly what is sent to the API (category
+  // unless it is "All", plus the search text), so two requests share a
+  // cache entry only if the server would receive the same query.
+  private cacheKeyFor(params?: ProductQuery): string {
+    const category =
+      params?.category && params.category !== 'All' ? params.category : '';
+    const search = params?.search ?? '';
+    return `${CACHE_KEYS.PRODUCTS}::c=${encodeURIComponent(category)}::q=${encodeURIComponent(search)}`;
+  }
+
+  private enqueueIndexUpdate<T>(op: () => Promise<T>): Promise<T> {
+    const run = this.indexQueue.then(op, op);
+    this.indexQueue = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  }
+
+  private async readEntry(params?: ProductQuery): Promise<ProductCacheEntry | null> {
+    try {
+      const entry = await storage.get<ProductCacheEntry>(this.cacheKeyFor(params));
+      if (entry && Array.isArray(entry.data) && typeof entry.fetchedAt === 'number') {
+        return entry;
+      }
+      return null;
+    } catch (error) {
+      console.warn('Failed to read product cache:', error);
+      return null;
+    }
+  }
+
+  // Best-effort: a storage problem must never throw away data that was
+  // fetched successfully from the network.
+  private async writeEntry(params: ProductQuery | undefined, data: Product[]): Promise<void> {
+    const key = this.cacheKeyFor(params);
+    try {
+      const entry: ProductCacheEntry = { data, fetchedAt: Date.now() };
+      await storage.set(key, entry);
+
+      await this.enqueueIndexUpdate(async () => {
+        const stored = await storage.get<string[]>(PRODUCTS_INDEX_KEY);
+        const index = Array.isArray(stored) ? stored : [];
+        const next = [...index.filter((k) => k !== key), key];
+        const evicted =
+          next.length > MAX_CACHED_QUERIES
+            ? next.splice(0, next.length - MAX_CACHED_QUERIES)
+            : [];
+        await storage.set(PRODUCTS_INDEX_KEY, next);
+        await Promise.all(evicted.map((k) => storage.remove(k)));
+      });
+    } catch (error) {
+      console.warn('Failed to write product cache:', error);
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Network
+  // ---------------------------------------------------------------
+
+  async fetchProducts(params?: ProductQuery): Promise<Product[]> {
     try {
       const queryParams = new URLSearchParams();
       if (params?.category && params.category !== 'All') {
@@ -62,8 +149,7 @@ export class ProductService {
       }
 
       const data = await response.json();
-      await storage.set(CACHE_KEYS.PRODUCTS, data);
-      await storage.set(CACHE_KEYS.PRODUCTS_TIMESTAMP, Date.now());
+      await this.writeEntry(params, data);
 
       return data;
     } catch (error) {
@@ -90,54 +176,49 @@ export class ProductService {
     }
   }
 
-  async getCachedProducts(): Promise<Product[] | null> {
-    return await storage.get<Product[]>(CACHE_KEYS.PRODUCTS);
+  // With no params this returns the cached unfiltered ("All products")
+  // list. Pass the same params used for the request to get that query's
+  // cached results.
+  async getCachedProducts(params?: ProductQuery): Promise<Product[] | null> {
+    const entry = await this.readEntry(params);
+    return entry ? entry.data : null;
   }
 
   async getCachedCategories(): Promise<Category[] | null> {
     return await storage.get<Category[]>(CACHE_KEYS.CATEGORIES);
   }
 
-  async getProductsWithCache(params?: {
-    category?: string;
-    search?: string;
-  }): Promise<{ data: Product[]; fromCache: boolean }> {
+  async getProductsWithCache(params?: ProductQuery): Promise<{ data: Product[]; fromCache: boolean }> {
     try {
-      const cached = await this.getCachedProducts();
-      const timestamp = await storage.get<number>(CACHE_KEYS.PRODUCTS_TIMESTAMP);
+      const entry = await this.readEntry(params);
 
-      if (cached && timestamp) {
-        const isExpired = storage.isExpired(timestamp, 24);
-
-        if (!isExpired) {
-          // Show cache immediately, refresh in background on native
-          if (this.isNative) {
-            this.fetchProductsInBackground(params);
-          }
-          return { data: cached, fromCache: true };
+      if (entry && !storage.isExpired(entry.fetchedAt, CACHE_TTL_HOURS)) {
+        // Show cache immediately, refresh in background on native
+        if (this.isNative) {
+          this.fetchProductsInBackground(params);
         }
+        return { data: entry.data, fromCache: true };
       }
 
-      // No cache or expired — fetch fresh
+      // No cache for THIS query, or it expired — fetch fresh
       const freshData = await this.fetchProducts(params);
       return { data: freshData, fromCache: false };
     } catch (error) {
       console.error('Failed to get products:', error);
 
-      // Network failed — fall back to cache if available
-      const cached = await this.getCachedProducts();
-      if (cached) {
+      // Network failed — fall back to cache for THIS query only (expired
+      // is fine here). Never serve another query's results.
+      const entry = await this.readEntry(params);
+      if (entry) {
         console.warn('Network unavailable, serving from cache');
-        return { data: cached, fromCache: true };
+        return { data: entry.data, fromCache: true };
       }
 
       throw error;
     }
   }
 
-  private async fetchProductsInBackground(
-    params?: { category?: string; search?: string }
-  ): Promise<void> {
+  private async fetchProductsInBackground(params?: ProductQuery): Promise<void> {
     try {
       await this.fetchProducts(params);
     } catch (error) {
@@ -145,14 +226,22 @@ export class ProductService {
     }
   }
 
-  async refreshProducts(params?: { category?: string; search?: string }): Promise<Product[]> {
+  async refreshProducts(params?: ProductQuery): Promise<Product[]> {
     return await this.fetchProducts(params);
   }
 
   async clearCache(): Promise<void> {
+    await this.enqueueIndexUpdate(async () => {
+      const stored = await storage.get<string[]>(PRODUCTS_INDEX_KEY);
+      const keys = Array.isArray(stored) ? stored : [];
+      await Promise.all(keys.map((k) => storage.remove(k)));
+      await storage.remove(PRODUCTS_INDEX_KEY);
+    });
+
+    // Legacy single-key entries written by the previous version.
     await storage.remove(CACHE_KEYS.PRODUCTS);
-    await storage.remove(CACHE_KEYS.CATEGORIES);
     await storage.remove(CACHE_KEYS.PRODUCTS_TIMESTAMP);
+    await storage.remove(CACHE_KEYS.CATEGORIES);
   }
 }
 
