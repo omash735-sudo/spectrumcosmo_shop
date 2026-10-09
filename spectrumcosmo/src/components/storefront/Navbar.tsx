@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
   Menu,
@@ -15,15 +15,10 @@ import {
   Home,
   Clock,
   Info,
-  MapPin,
   Heart,
   Package,
-  Settings,
   LogOut,
-  Bell,
   ChevronDown,
-  Search,
-  TrendingUp,
   Tag,
   Truck,
   Shield,
@@ -31,10 +26,6 @@ import {
   CalendarDays,
   Gift,
   Zap,
-  MessageCircle,
-  MessageSquare,
-  Headphones,
-  Bot,
   ArrowUp,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -42,7 +33,6 @@ import clsx from 'clsx';
 import CurrencySelector from '@/components/storefront/CurrencySelector';
 import { useCart } from '@/components/storefront/CartProvider';
 import CartDrawer from '@/components/storefront/CartDrawer';
-import { useSettings } from '@/components/storefront/SettingsProvider';
 import UserMenu from '@/components/storefront/UserMenu';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTheme } from 'next-themes';
@@ -64,10 +54,6 @@ const desktopLinks = [
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ];
-
-const WHATSAPP_NUMBER = '265893160202';
-const WHATSAPP_MESSAGE = 'Hi, I need assistance with SpectrumCosmo.';
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 const HIDE_CHAT_PATHS = [
   '/checkout', '/login', '/register', '/admin', '/dashboard',
@@ -112,15 +98,12 @@ export default function Navbar() {
   const [bannerData, setBannerData] = useState<BannerData | null>(null);
   const [bannerLoading, setBannerLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
   const { totalItems } = useCart();
-  const { resolvedTheme } = useSettings();
   const { theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   const user = contextUser;
 
@@ -189,20 +172,13 @@ export default function Navbar() {
   const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
   const isDark = currentTheme === 'dark';
 
-  // SVG LOGOS - Primary
   const logoSvgSrc = isDark
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
 
-  // PNG FALLBACK - If SVG fails to load
   const logoPngSrc = isDark
     ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
     : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
-
-  // Desktop logo with brand text
-  const logoSrcDesktop = isDark
-    ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426887/spectrumcosmo_mark_white_lnavri.svg"
-    : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_black_fahcqs.svg";
 
   const openCart = () => {
     setCartOpen(true);
@@ -236,34 +212,8 @@ export default function Navbar() {
     window.location.replace('/?t=' + Date.now());
   };
 
-  const toggleChat = () => {
-    setChatOpen(!chatOpen);
-  };
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Logo component with fallback
-  const LogoImage = ({ className, alt = "SpectrumCosmo" }: { className?: string; alt?: string }) => {
-    return (
-      <img 
-        src={logoSvgSrc} 
-        alt={alt}
-        className={className}
-        onError={(e) => {
-          // Fallback to PNG if SVG fails to load
-          e.currentTarget.src = logoPngSrc;
-        }}
-        style={{ 
-          display: 'block',
-          width: 'auto',
-          height: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain'
-        }}
-      />
-    );
   };
 
   return (
@@ -319,7 +269,6 @@ export default function Navbar() {
         .chat-bubble-float {
           animation: float-bot 2.5s ease-in-out infinite;
         }
-        /* SVG logo smooth rendering */
         .logo-container {
           display: flex;
           align-items: center;
@@ -332,7 +281,6 @@ export default function Navbar() {
           max-height: 100%;
           object-fit: contain;
         }
-        /* Mobile header - absolute centering */
         .mobile-header {
           position: relative;
           display: flex;
@@ -426,13 +374,11 @@ export default function Navbar() {
             <div className="flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group" style={{ height: '44px' }}>
                 <img 
-                  src={logoSrcDesktop}
+                  src={logoSvgSrc}
                   alt="SpectrumCosmo"
                   className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
-                    e.currentTarget.src = isDark
-                      ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
-                      : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
+                    e.currentTarget.src = logoPngSrc;
                   }}
                   style={{ 
                     display: 'block',
@@ -529,13 +475,11 @@ export default function Navbar() {
             <div className="flex items-center justify-between gap-2">
               <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" style={{ height: '40px' }}>
                 <img 
-                  src={logoSrcDesktop}
+                  src={logoSvgSrc}
                   alt="SpectrumCosmo"
                   className="h-9 w-auto transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
-                    e.currentTarget.src = isDark
-                      ? "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426888/spectrumcosmo_mark_white_1024px_mppdiq.png"
-                      : "https://res.cloudinary.com/dfsvnaslv/image/upload/v1787426890/spectrumcosmo_mark_black_1024px_cwui04.png";
+                    e.currentTarget.src = logoPngSrc;
                   }}
                   style={{ 
                     display: 'block',
@@ -592,7 +536,6 @@ export default function Navbar() {
         {/* MOBILE NAVBAR - PERFECTLY CENTERED LOGO */}
         <div className="md:hidden">
           <div className="px-3 py-2.5 mobile-header">
-            {/* Left side - Menu button */}
             <div className="mobile-left">
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -603,7 +546,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Center - Logo ONLY, absolutely centered */}
             <div className="mobile-logo-center">
               <Link href="/" className="flex items-center justify-center" style={{ height: '36px' }}>
                 <img 
@@ -624,7 +566,6 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Right side - User & Cart */}
             <div className="mobile-right">
               {isLoggedIn && unreadCount > 0 && <NotificationBell />}
               <UserMenu />
@@ -753,19 +694,18 @@ export default function Navbar() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {showChat && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-center gap-4">
-          <ChatWidget />
-          {showScrollTop && (
-            <button
-              onClick={scrollToTop}
-              className="w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-hover)] hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110"
-              aria-label="Back to top"
-            >
-              <ArrowUp size={24} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
-            </button>
-          )}
-        </div>
+      {/* Chat widget — hidden on certain routes */}
+      {showChat && <ChatWidget />}
+
+      {/* Scroll to top — independent of chat visibility */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-6 z-[9999] w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-hover)] hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110"
+          aria-label="Back to top"
+        >
+          <ArrowUp size={24} />
+        </button>
       )}
     </>
   );
