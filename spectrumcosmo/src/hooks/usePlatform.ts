@@ -8,38 +8,27 @@ export function usePlatform() {
   const [platform, setPlatform] = useState<'web' | 'android' | 'ios' | 'unknown'>('web');
 
   useEffect(() => {
-    const checkPlatform = async () => {
-      // Check if running in Capacitor
-      const isCapacitor = typeof (window as any).Capacitor !== 'undefined';
-      
-      if (isCapacitor) {
-        try {
-          const { Device } = await import('@capacitor/device');
-          const info = await Device.getInfo();
-          setIsNative(true);
-          setIsWeb(false);
-          
-          if (info.platform === 'android') {
-            setPlatform('android');
-          } else if (info.platform === 'ios') {
-            setPlatform('ios');
-          } else {
-            setPlatform('unknown');
-          }
-        } catch {
-          // Fallback if device plugin not available
-          setIsNative(true);
-          setIsWeb(false);
-          setPlatform('unknown');
-        }
-      } else {
-        setIsNative(false);
-        setIsWeb(true);
-        setPlatform('web');
-      }
-    };
+    // `window.Capacitor` is NOT proof of running inside the app: it also
+    // exists in a normal browser as soon as @capacitor/core is imported
+    // anywhere in the bundle. `isNativePlatform()` is true only inside the
+    // Android/iOS app, and it is synchronous, so there is no async wait
+    // (previously: dynamic import + a native bridge call) before the
+    // native layout can be chosen.
+    const cap = (window as any).Capacitor;
+    const native = cap?.isNativePlatform?.() === true;
 
-    checkPlatform();
+    if (!native) {
+      setIsNative(false);
+      setIsWeb(true);
+      setPlatform('web');
+      return;
+    }
+
+    setIsNative(true);
+    setIsWeb(false);
+
+    const name = cap.getPlatform?.();
+    setPlatform(name === 'android' || name === 'ios' ? name : 'unknown');
   }, []);
 
   return { isNative, isWeb, platform };
