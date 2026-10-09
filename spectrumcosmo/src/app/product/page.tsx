@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -61,7 +61,7 @@ interface DbReview {
   created_at: Date;
 }
 
-export default function ProductDetailPage() {
+function ProductDetailContent() {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -235,7 +235,7 @@ export default function ProductDetailPage() {
     if (star >= 1 && star <= 5) ratingCounts[star as keyof typeof ratingCounts]++;
   });
 
-  const productUrl = `https://spectrumcosmo.shop/products?id=${product.id}`;
+  const productUrl = `https://spectrumcosmo.shop/product?id=${product.id}`;
   const productForTracking = {
     id: product.id,
     name: product.name,
@@ -558,7 +558,7 @@ export default function ProductDetailPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)] mb-4 sm:mb-6">You May Also Like</h2>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {relatedProducts.map((rel) => (
-                  <Link key={rel.id} href={`/products?id=${rel.id}`} className="group">
+                  <Link key={rel.id} href={`/product?id=${rel.id}`} className="group">
                     <div className="bg-[var(--background-card)] rounded-xl border border-[var(--border)] overflow-hidden hover:shadow-lg transition-all duration-300">
                       <div className="relative h-40 sm:h-48 bg-[var(--background-secondary)]">
                         <Image
@@ -586,5 +586,25 @@ export default function ProductDetailPage() {
       </main>
       <ContinueShopping />
     </>
+  );
+}
+
+// ---------------------------------------------------------------------
+// ProductDetailPage
+//
+// Thin shell providing the Suspense boundary required by
+// `useSearchParams()` under Next 15 App Router with `output: 'export'`.
+// ---------------------------------------------------------------------
+export default function ProductDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+          <div className="w-8 h-8 border-3 border-[var(--border)] border-t-[var(--primary)] rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <ProductDetailContent />
+    </Suspense>
   );
 }
