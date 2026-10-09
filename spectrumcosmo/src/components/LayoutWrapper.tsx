@@ -28,6 +28,13 @@ const NO_MOBILE_HEADER_PATHS = [
   '/account/wishlist',
 ];
 
+// Routes where the shell-level MobileSearchBar is suppressed because the
+// page already provides its own search input. /products renders its own
+// search field inside <main>, so the shell bar would duplicate it.
+const NO_MOBILE_SEARCH_PATHS = [
+  '/products',
+];
+
 const APP_BOTTOM_NAV_PATHS = [
   '/',
   '/products',
@@ -39,27 +46,25 @@ const APP_BOTTOM_NAV_PATHS = [
 
 const EXACT_MATCH_ONLY = ['/account'];
 
-export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
+export default function LayoutWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const { isAppMode } = useAppMode();
   const { isNative } = usePlatform();
-  const showAppMode = isAppMode || isNative;
 
-  const isNoNavPage = NO_NAV_PATHS.some(path => {
+  const matches = (path: string) => {
     if (path === '/') return pathname === '/';
-    return pathname?.startsWith(path);
-  });
-
-  const showAppBottomNav = APP_BOTTOM_NAV_PATHS.some(path => {
-    if (EXACT_MATCH_ONLY.includes(path)) return pathname === path;
-    if (path === '/') return pathname === '/';
-    return pathname?.startsWith(path);
-  });
-
-  const suppressMobileHeader = NO_MOBILE_HEADER_PATHS.some(path => {
     if (EXACT_MATCH_ONLY.includes(path)) return pathname === path;
     return pathname?.startsWith(path);
-  });
+  };
+
+  const isNoNavPage = NO_NAV_PATHS.some(matches);
+  const showBottomNav = APP_BOTTOM_NAV_PATHS.some(matches);
+  const suppressMobileHeader = NO_MOBILE_HEADER_PATHS.some(matches);
+  const suppressMobileSearch = NO_MOBILE_SEARCH_PATHS.some(matches);
 
   if (isNoNavPage) {
     return (
@@ -71,15 +76,23 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     );
   }
 
-  if (showAppMode) {
+  if (isNative) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[var(--background)]">
+        {!suppressMobileSearch && <MobileSearchBar />}
+        <main className="flex-1">{children}</main>
+        {showBottomNav && <MobileBottomNav />}
+      </div>
+    );
+  }
+
+  if (isAppMode) {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--background)]">
         {!suppressMobileHeader && <MobileHeader />}
-        {!suppressMobileHeader && <MobileSearchBar />}
-        <main className={showAppBottomNav ? 'flex-1 pb-[76px]' : 'flex-1'}>
-          {children}
-        </main>
-        {showAppBottomNav && <MobileBottomNav />}
+        {!suppressMobileSearch && <MobileSearchBar />}
+        <main className="flex-1">{children}</main>
+        {showBottomNav && <MobileBottomNav />}
       </div>
     );
   }
