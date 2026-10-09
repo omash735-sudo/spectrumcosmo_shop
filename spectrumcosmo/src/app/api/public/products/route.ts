@@ -16,33 +16,37 @@ export async function GET(req: NextRequest) {
   const category = url.searchParams.get('category');
   const q = url.searchParams.get('q');
 
+  // Filtering is done in SQL, BEFORE the LIMIT. Previously the newest 100
+  // products were fetched first and filtered afterwards, so any product
+  // outside those 100 could never appear in a search or category view.
+  //
+  // Values are passed as bound parameters (never concatenated into the
+  // SQL). An empty string means "no filter" for that field.
+  const categoryFilter = category && category !== 'All' ? category : '';
+  const searchTerm = (q ?? '').trim();
+  // Escape LIKE wildcards so "100%" or "a_b" match literally, the same
+  // way the old JS `.includes()` did.
+  const searchPattern = `%${searchTerm.replace(/[\\%_]/g, '\\$&')}%`;
+
   try {
     const sql = getDb();
 
     const products = await queryAsArray<any>`
-      SELECT p.*, c.name as category_name 
+      SELECT p.*, c.name as category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.status = 'in_stock'
+        AND (${categoryFilter} = '' OR c.name = ${categoryFilter})
+        AND (
+          ${searchTerm} = ''
+          OR p.name ILIKE ${searchPattern}
+          OR p.description ILIKE ${searchPattern}
+        )
       ORDER BY p.created_at DESC
       LIMIT 100
     `;
 
-    let filtered = products;
-
-    if (category && category !== 'All') {
-      filtered = filtered.filter((p: any) => p.category_name === category);
-    }
-
-    if (q) {
-      const searchLower = q.toLowerCase();
-      filtered = filtered.filter((p: any) =>
-        p.name?.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return NextResponse.json(filtered, { headers: corsHeaders });
+    return NextResponse.json(products, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Public products API error:', error);
