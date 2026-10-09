@@ -147,7 +147,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       data-onboarding="product-card"
     >
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-[var(--background-secondary)]">
-        <Link href={`/products/product?id=${product.id}`} onClick={handleProductClick}>
+        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
           <div className={`absolute inset-0 bg-[var(--background-secondary)] transition-opacity duration-300 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
             <div className="w-full h-full animate-pulse"></div>
           </div>
@@ -204,7 +204,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="p-2.5 sm:p-4">
-        <Link href={`/products/product?id=${product.id}`} onClick={handleProductClick}>
+        <Link href={`/product?id=${product.id}`} onClick={handleProductClick}>
           <h3 className="font-kanit font-semibold text-[var(--foreground)] text-sm sm:text-base line-clamp-1 hover:text-[var(--primary)] transition">
             {productName}
           </h3>
@@ -255,7 +255,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span className="xs:hidden">Add</span>
               </button>
               <Link
-                href={`/products/product?id=${product.id}`}
+                href={`/product?id=${product.id}`}
                 onClick={handleProductClick}
                 className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
               >
