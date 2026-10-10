@@ -6,6 +6,11 @@ import Link from 'next/link';
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock } from 'lucide-react';
 import CaptchaModal from '@/components/ui/CaptchaModal';
 
+// In the installed app there is no server inside the app, so a relative
+// "/api/..." URL points at the app itself. AuthPage already uses this base for
+// check-email; the login form must use the same one.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
 interface LoginFormProps {
   email: string;
   onSuccess: () => void;
@@ -38,17 +43,17 @@ export default function LoginForm({
     setNeedsVerification(false);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await res.json();
 
       if (res.status === 428 && data.requiresCaptcha) {
         setShowCaptcha(true);
-        setPendingCredentials({ email, password });
+        setPendingCredentials({ email: email.trim(), password });
         setLoading(false);
         return;
       }
@@ -77,7 +82,7 @@ export default function LoginForm({
 
   const handleCaptchaVerify = async (captchaToken: string, captchaAnswer: string) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -110,7 +115,7 @@ export default function LoginForm({
   };
 
   const handleResendVerification = async () => {
-    const emailToSend = unverifiedEmail || email;
+    const emailToSend = (unverifiedEmail || email).trim();
     if (!emailToSend) {
       onError('Please enter your email address first');
       return;
@@ -119,7 +124,7 @@ export default function LoginForm({
     setResending(true);
 
     try {
-      const res = await fetch('/api/auth/resend-verification', {
+      const res = await fetch(`${API_BASE}/api/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailToSend }),
@@ -158,12 +163,13 @@ export default function LoginForm({
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Sign In
           </h2>
-          <div className={`flex items-center justify-center gap-2 mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className={`flex flex-wrap items-center justify-center gap-x-2 mt-1 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             <span>Signing in as</span>
-            <span className="font-medium text-orange-500">{email}</span>
+            <span className="font-medium text-orange-500 break-all">{email}</span>
             <button
+              type="button"
               onClick={onBack}
-              className="text-orange-500 hover:text-orange-600 text-xs underline"
+              className="inline-flex items-center min-h-[44px] px-2 text-orange-500 hover:text-orange-600 text-xs underline"
             >
               Change
             </button>
@@ -171,19 +177,34 @@ export default function LoginForm({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Lets password managers (and Android autofill) tie the password
+              to this account. Not shown, not focusable. */}
+          <input
+            type="email"
+            name="email"
+            autoComplete="username"
+            value={email}
+            readOnly
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+          />
           <div>
-            <label className={`block text-sm font-medium mb-1.5 ${
+            <label htmlFor="login-password" className={`block text-sm font-medium mb-1.5 ${
               isDark ? 'text-gray-300' : 'text-gray-700'
             }`}>
               Password
             </label>
-            <div className={`relative transition-all duration-200 ${
-              focusedField === 'password' ? 'scale-[1.02]' : ''
-            }`}>
+            {/* No scale-up on focus: on a 320-360px screen it pushed the field
+                past the edge of the card. The orange ring is the focus cue. */}
+            <div className="relative">
               <Lock size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${
                 isDark ? 'text-gray-500' : 'text-gray-400'
               }`} />
               <input
+                id="login-password"
+                name="password"
+                autoComplete="current-password"
                 ref={passwordInputRef}
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
@@ -191,12 +212,16 @@ export default function LoginForm({
                 onChange={e => setPassword(e.target.value)}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
-                className={`w-full pl-10 pr-12 py-3 rounded-xl border transition-all focus:outline-none ${
+                className={`w-full pl-10 pr-14 py-3 min-h-[48px] text-base rounded-xl border transition-colors focus:outline-none ${
+                  isDark
+                    ? 'bg-gray-800 text-white placeholder-gray-500'
+                    : 'bg-gray-50 text-gray-900 placeholder-gray-400'
+                } ${
                   focusedField === 'password'
                     ? 'border-orange-500 ring-2 ring-orange-500/20'
                     : isDark
-                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500'
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                    ? 'border-gray-700'
+                    : 'border-gray-200'
                 }`}
                 required
                 autoFocus
@@ -204,7 +229,9 @@ export default function LoginForm({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className={`absolute right-0 top-1/2 -translate-y-1/2 h-11 w-11 flex items-center justify-center ${
                   isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
                 } transition`}
               >
@@ -217,7 +244,7 @@ export default function LoginForm({
             <button
               type="button"
               onClick={onBack}
-              className={`text-sm ${
+              className={`min-h-[44px] pr-3 text-sm ${
                 isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
               } transition-colors flex items-center gap-1`}
             >
@@ -226,7 +253,7 @@ export default function LoginForm({
             </button>
             <Link
               href="/auth/forgot-password"
-              className={`text-sm ${
+              className={`inline-flex items-center min-h-[44px] pl-3 text-sm ${
                 isDark ? 'text-gray-400 hover:text-orange-400' : 'text-gray-600 hover:text-orange-500'
               } transition-colors`}
             >
@@ -240,7 +267,7 @@ export default function LoginForm({
                 type="button"
                 onClick={handleResendVerification}
                 disabled={resending}
-                className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
+                className="min-h-[44px] px-3 text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm transition-colors disabled:opacity-50"
               >
                 {resending ? 'Sending...' : 'Resend verification email'}
               </button>
@@ -250,9 +277,8 @@ export default function LoginForm({
           <motion.button
             type="submit"
             disabled={loading}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 
+            className="w-full min-h-[48px] bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 
               disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20 text-sm
               flex items-center justify-center gap-2"
           >
