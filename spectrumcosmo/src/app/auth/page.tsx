@@ -61,11 +61,15 @@ export default function AuthPage() {
   }, [verified, registered, errorParam]);
 
   const handleEmailSubmit = async (emailValue: string) => {
+    // Phone keyboards often add a space after an autocompleted address. With
+    // the space, check-email would not find an existing account and the
+    // customer would be sent to the Register form instead of Sign In.
+    const cleanedEmail = emailValue.trim();
     setLoading(true);
     setError('');
     
     try {
-      const res = await fetch(`${API_BASE}/api/auth/check-email?email=${encodeURIComponent(emailValue)}`);
+      const res = await fetch(`${API_BASE}/api/auth/check-email?email=${encodeURIComponent(cleanedEmail)}`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -74,7 +78,7 @@ export default function AuthPage() {
         return;
       }
       
-      setEmail(emailValue);
+      setEmail(cleanedEmail);
       
       if (data.exists) {
         setStep('login');
