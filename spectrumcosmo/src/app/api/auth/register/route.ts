@@ -5,6 +5,19 @@ import { getDb, queryOne, queryAsArray } from '@/lib/db';
 import { sendMail } from '@/lib/mailer';
 import crypto from 'crypto';
 
+// Anything a customer typed (name) or an admin typed (product name) goes into
+// HTML emails, so it must be escaped. Otherwise a visitor can register someone
+// else's email address with a name containing links or markup, and the
+// verification email, sent from your address, delivers it.
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Types
 interface Product {
   name: string;
@@ -79,11 +92,11 @@ function generateProductCards(products: Product[]): string {
   }
   return products.map((product: Product) => `
     <div style="flex: 1; min-width: 120px; text-align: center; background: #f9f9f9; padding: 12px; border-radius: 12px; margin: 4px;">
-      <img src="${product.image || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png'}" 
+      <img src="${escapeHtml(product.image || 'https://res.cloudinary.com/dfsvnaslv/image/upload/v1777984813/1002913280-removebg-preview_cwcz7u.png')}" 
            style="width:80px; border-radius:8px;" 
-           alt="${product.name}" />
-      <p style="font-size:12px; margin-top:6px;"><strong>${product.name}</strong></p>
-      <p style="color:#F97316; font-size:12px;">${product.currency || 'MWK'} ${product.price.toLocaleString()}</p>
+           alt="${escapeHtml(product.name)}" />
+      <p style="font-size:12px; margin-top:6px;"><strong>${escapeHtml(product.name)}</strong></p>
+      <p style="color:#F97316; font-size:12px;">${escapeHtml(product.currency || 'MWK')} ${Number(product.price).toLocaleString()}</p>
     </div>
   `).join('');
 }
@@ -98,7 +111,7 @@ async function sendVerificationEmail(email: string, name: string, token: string,
         <h1 style="color: white; margin: 0; font-size: 28px;">Verify Your Email</h1>
       </div>
       <div style="padding: 24px; background: white;">
-        <p style="font-size: 16px; color: #333;">Hi <strong>${name}</strong>,</p>
+        <p style="font-size: 16px; color: #333;">Hi <strong>${escapeHtml(name)}</strong>,</p>
         <p style="font-size: 15px; line-height: 1.5; color: #555;">Thanks for joining SpectrumCosmo! Please confirm your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 32px 0;">
           <a href="${verificationUrl}" style="background: #F97316; color: white; padding: 12px 28px; text-decoration: none; border-radius: 40px; font-weight: bold; display: inline-block;">Verify Email Address</a>
@@ -124,10 +137,13 @@ async function sendVerificationEmail(email: string, name: string, token: string,
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as RegistrationRequest;
-    const { name, email, password, acceptedTerms } = body;
+    const { password, acceptedTerms } = body;
+    // Phone keyboards often add a trailing space or capital letter to emails.
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
 
     // Validation
-    if (!name || !email || !password) {
+    if (!name || !email || !password || typeof password !== 'string') {
       return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 });
     }
     if (!acceptedTerms) {
