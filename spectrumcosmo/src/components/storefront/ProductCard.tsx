@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import StarRating from '@/components/ui/StarRating';
 import { saveLastCategory } from '@/lib/recentlyViewedUtils';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: {
@@ -23,22 +24,35 @@ interface ProductCardProps {
     category_name?: string;
     category?: string;
     description?: string;
+    // Optional. When the list endpoint already provides them, the card skips
+    // its own /api/reviews request (one request per card otherwise).
+    avg_rating?: number;
+    review_count?: number;
   };
 }
 
+// The guard lives in this thin wrapper so the hooks inside ProductCardInner
+// are always called in the same order (hooks must not come after an early
+// return).
 export default function ProductCard({ product }: ProductCardProps) {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-
   if (!product || !product.id) {
     return null;
   }
+  return <ProductCardInner product={product} />;
+}
+
+function ProductCardInner({ product }: ProductCardProps) {
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+  const router = useRouter();
 
   const priceMwk = Number(product.price ?? 0);
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
   const [localLoading, setLocalLoading] = useState(false);
-  const [avgRating, setAvgRating] = useState(0);
-  const [reviewCount, setReviewCount] = useState(0);
+  const hasRatingFromList = typeof product.review_count === 'number';
+  const [fetchedRating, setFetchedRating] = useState({ avg: 0, count: 0 });
+  const avgRating = hasRatingFromList ? Number(product.avg_rating ?? 0) : fetchedRating.avg;
+  const reviewCount = hasRatingFromList ? Number(product.review_count) : fetchedRating.count;
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
 
@@ -59,6 +73,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const categoryName = product.category_name || product.category || 'Uncategorized';
 
   useEffect(() => {
+    if (hasRatingFromList) return;
+    let cancelled = false;
     const fetchRating = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/reviews?product_id=${product.id}`);
@@ -66,8 +82,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           const data = await res.json();
           if (data && data.length) {
             const sum = data.reduce((s: number, r: any) => s + r.rating, 0);
-            setAvgRating(sum / data.length);
-            setReviewCount(data.length);
+            if (!cancelled) setFetchedRating({ avg: sum / data.length, count: data.length });
           }
         }
       } catch (err) {
@@ -75,7 +90,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       }
     };
     fetchRating();
-  }, [product.id, API_BASE]);
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id, API_BASE, hasRatingFromList]);
 
   const handleProductClick = () => {
     const categoryToSave = product.category_name || product.category;
@@ -88,8 +106,18 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    const userRes = await fetch(`${API_BASE}/api/auth/me`);
-    if (!userRes.ok) {
+    // /api/auth/me answers 200 with { user: null } for guests, so the
+    // response status alone cannot tell us whether someone is logged in.
+    let loggedIn = false;
+    try {
+      const userRes = await fetch(`${API_BASE}/api/auth/me`);
+      const me = userRes.ok ? await userRes.json() : null;
+      loggedIn = !!me?.user;
+    } catch {
+      toast.error('Could not check your login. Please try again.');
+      return;
+    }
+    if (!loggedIn) {
       toast.error('Please login to add items to wishlist');
       setTimeout(() => {
         window.location.href = '/login';
@@ -118,6 +146,20 @@ export default function ProductCard({ product }: ProductCardProps) {
       priceUsd: priceMwk
     });
     toast.success('Added to cart');
+  };
+
+  // Buy Now uses the existing cart + checkout: the product goes into the cart
+  // (quantity +1) and the customer lands on the normal checkout page.
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      id: String(product.id),
+      name: productName,
+      image_url: productImage,
+      priceUsd: priceMwk
+    });
+    router.push('/checkout');
   };
 
   const getStatusBadge = () => {
@@ -254,13 +296,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span className="hidden xs:inline">Add to Cart</span>
                 <span className="xs:hidden">Add</span>
               </button>
-              <Link
-                href={`/product?id=${product.id}`}
-                onClick={handleProductClick}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2.5 border border-[var(--border)] rounded-lg sm:rounded-xl text-[var(--foreground)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
+              <button
+                onClick={handleBuyNow}
+                className="flex-1 border border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-anton font-semibold transition-all duration-200 flex items-center justify-center min-h-[36px] sm:min-h-[44px]"
               >
-                <Eye size={12} className="sm:w-4 sm:h-4" />
-              </Link>
+                Buy Now
+              </button>
             </>
           ) : isComingSoon ? (
             <button className="w-full bg-[var(--background-secondary)] text-[var(--foreground-muted)] py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-kanit font-medium cursor-not-allowed flex items-center justify-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[44px]">
