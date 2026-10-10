@@ -32,9 +32,19 @@ export async function GET(req: NextRequest) {
     const sql = getDb();
 
     const products = await queryAsArray<any>`
-      SELECT p.*, c.name as category_name
+      SELECT p.*, c.name as category_name,
+             COALESCE(r.avg_rating, 0) AS avg_rating,
+             COALESCE(r.review_count, 0) AS review_count
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN (
+        SELECT product_id,
+               ROUND(AVG(rating)::numeric, 2)::float AS avg_rating,
+               COUNT(*)::int AS review_count
+        FROM reviews
+        WHERE status = 'approved'
+        GROUP BY product_id
+      ) r ON r.product_id = p.id
       WHERE p.status = 'in_stock'
         AND (${categoryFilter} = '' OR c.name = ${categoryFilter})
         AND (
