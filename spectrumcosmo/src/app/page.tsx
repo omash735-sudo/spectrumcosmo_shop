@@ -21,20 +21,7 @@ import ContinueShopping from '@/components/storefront/ContinueShopping';
 import FirstLaunchGuard from '@/components/FirstLaunchGuard';
 import ProductCard from '@/components/storefront/ProductCard';
 
-/* ------------------------------------------------------------------ */
-/* API base                                                            */
-/* ------------------------------------------------------------------ */
-
-// On the website the API lives on the same origin, so this is ''. In the
-// installed app (static export) there is no server inside the app, so a
-// relative "/api/..." URL points at the app itself and returns nothing.
-// ProductService already solves this with NEXT_PUBLIC_API_BASE_URL; the
-// homepage must use the same base for its data and the newsletter.
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-
-/* ------------------------------------------------------------------ */
-/* Types                                                               */
-/* ------------------------------------------------------------------ */
 
 interface HeroSection {
   id: string;
@@ -70,10 +57,6 @@ interface Review {
   rating: number;
 }
 
-/* ------------------------------------------------------------------ */
-/* Static assets                                                       */
-/* ------------------------------------------------------------------ */
-
 const HERO_FALLBACK_IMAGE =
   'https://res.cloudinary.com/dfsvnaslv/image/upload/WhatsApp_Image_2026-04-04_at_23.58.16_a0z7ns.jpg';
 
@@ -89,10 +72,6 @@ const fallbackHero: HeroSection = {
   bg_image_url: HERO_FALLBACK_IMAGE,
   bg_image_url_dark: HERO_FALLBACK_IMAGE,
 };
-
-/* ------------------------------------------------------------------ */
-/* Skeleton                                                            */
-/* ------------------------------------------------------------------ */
 
 function HomePageSkeleton() {
   return (
@@ -111,27 +90,9 @@ function HomePageSkeleton() {
           </div>
         </div>
       </section>
-
-      <div className="bg-[var(--background-card)] py-10 md:py-16 border-y border-[var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-8 w-56 bg-[var(--background-secondary)] rounded-lg animate-pulse mb-8" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-[var(--background-secondary)] rounded-xl mb-2" />
-                <div className="h-3 bg-[var(--background-secondary)] rounded w-2/3 mx-auto" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </main>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* SectionHeading                                                      */
-/* ------------------------------------------------------------------ */
 
 function SectionHeading({
   eyebrow,
@@ -163,27 +124,18 @@ function SectionHeading({
           </p>
         )}
       </div>
-      {/* Visible on every screen size. It used to be hidden below `sm`,
-          which left phones with no way into the reviews page. */}
       {href && (
         <Link
           href={href}
           className="group inline-flex items-center gap-1.5 shrink-0 font-heading font-semibold text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors pb-1"
         >
           {linkLabel}
-          <ArrowRight
-            size={16}
-            className="group-hover:translate-x-1 transition-transform"
-          />
+          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
         </Link>
       )}
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Hero — single promotional banner, admin-configurable fields         */
-/* ------------------------------------------------------------------ */
 
 function Hero({ hero }: { hero: HeroSection }) {
   return (
@@ -197,25 +149,25 @@ function Hero({ hero }: { hero: HeroSection }) {
 
             <h1 className="font-anton text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-[var(--foreground)] leading-[1.05] tracking-wide uppercase mb-4 md:mb-5">
               {hero.heading_prefix}{' '}
-              <span className="text-[var(--primary)]">
-                {hero.highlighted_word}
-              </span>
+              <span className="text-[var(--primary)]">{hero.highlighted_word}</span>
             </h1>
 
             <p className="font-body text-sm sm:text-base md:text-lg text-[var(--foreground-muted)] leading-relaxed max-w-md mx-auto lg:mx-0 mb-6 md:mb-7">
               {hero.description}
             </p>
 
-            <Link
-              href={hero.button1_link || '/products'}
-              className="btn-primary font-anton tracking-wider"
-            >
-              {hero.button1_text || 'Shop Now'}
-              <ArrowRight
-                size={17}
-                className="group-hover:translate-x-1 transition-transform"
-              />
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <Link href={hero.button1_link || '/products'} className="btn-primary font-anton tracking-wider">
+                {hero.button1_text || 'Shop Now'}
+                <ArrowRight size={17} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/products"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-[var(--border)] font-anton tracking-wider text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
+              >
+                Browse All
+              </Link>
+            </div>
           </div>
 
           <div className="order-1 lg:order-2">
@@ -236,14 +188,6 @@ function Hero({ hero }: { hero: HeroSection }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Promo card — compact, used once, for the custom-orders destination  */
-/* ------------------------------------------------------------------ */
-
-// Fixed, short height instead of a 16:9 aspect ratio. With 16:9 inside
-// the 7xl container the card became a ~700px-tall banner on desktop,
-// which is the opposite of a "compact" custom-orders section and loads a
-// much larger image than it needs.
 function PromoCard({
   eyebrow,
   title,
@@ -272,7 +216,6 @@ function PromoCard({
         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
-
       <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-end">
         <span className="text-[10px] md:text-xs font-kanit font-bold uppercase tracking-[0.18em] text-white/75 mb-1">
           {eyebrow}
@@ -280,47 +223,22 @@ function PromoCard({
         <h3 className="font-anton text-lg md:text-2xl text-white uppercase tracking-wide mb-1 leading-tight">
           {title}
         </h3>
-        <p className="font-body text-xs md:text-sm text-white/80 mb-2 max-w-xs">
-          {description}
-        </p>
+        <p className="font-body text-xs md:text-sm text-white/80 mb-2 max-w-xs">{description}</p>
         <span className="inline-flex items-center gap-1.5 text-white font-heading font-semibold text-xs md:text-sm">
           {cta}
-          <ArrowRight
-            size={14}
-            className="group-hover:translate-x-0.5 transition-transform"
-          />
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
         </span>
       </div>
     </Link>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Service & Trust strip                                               */
-/* ------------------------------------------------------------------ */
-
 function ServiceTrustStrip() {
   const items = [
-    {
-      icon: Lock,
-      title: 'Secure Checkout',
-      text: 'Protected payment process.',
-    },
-    {
-      icon: Truck,
-      title: 'Delivery Across Malawi',
-      text: 'Nationwide coverage.',
-    },
-    {
-      icon: Package,
-      title: 'Pickup Available',
-      text: 'Collect from us.',
-    },
-    {
-      icon: MessageCircle,
-      title: 'Customer Support',
-      text: "We're here to help.",
-    },
+    { icon: Lock, title: 'Secure Checkout', text: 'Protected payment process.' },
+    { icon: Truck, title: 'Delivery Across Malawi', text: 'Nationwide coverage.' },
+    { icon: Package, title: 'Pickup Available', text: 'Collect from us.' },
+    { icon: MessageCircle, title: 'Customer Support', text: "We're here to help." },
   ];
 
   return (
@@ -351,10 +269,6 @@ function ServiceTrustStrip() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Homepage content                                                    */
-/* ------------------------------------------------------------------ */
-
 function HomePageContent() {
   const [hero, setHero] = useState<HeroSection | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -368,13 +282,10 @@ function HomePageContent() {
       try {
         const response = await fetch(`${API_BASE}/api/homepage-data`);
         const data = await response.json();
-
         if (response.ok) {
           setHero(data.hero);
           setProducts(data.products ?? []);
           setReviews(data.reviews ?? []);
-        } else {
-          console.error('API error:', data.error);
         }
       } catch (error) {
         console.error('Failed to fetch homepage data:', error);
@@ -382,7 +293,6 @@ function HomePageContent() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -403,33 +313,23 @@ function HomePageContent() {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
-
       if (response.ok) {
         setSubscribeMessage('Subscribed successfully!');
         form.reset();
       } else {
-        setSubscribeMessage(
-          data.error || 'Failed to subscribe. Please try again.'
-        );
+        setSubscribeMessage(data.error || 'Failed to subscribe. Please try again.');
       }
-    } catch (error) {
-      console.error('Newsletter subscription error:', error);
+    } catch {
       setSubscribeMessage('Network error. Please try again.');
     } finally {
       setSubscribing(false);
     }
   };
 
-  if (loading) {
-    return <HomePageSkeleton />;
-  }
+  if (loading) return <HomePageSkeleton />;
 
   const h = hero || fallbackHero;
-
-  // /api/homepage-data returns products ORDER BY created_at DESC,
-  // so the leading items are the newest uploads.
   const justLanded = products.slice(0, 8);
-
   const validReviews = reviews
     .filter((r) => {
       const text = r.review_text || r.comment;
@@ -446,23 +346,21 @@ function HomePageContent() {
         {/* 1. Hero */}
         <Hero hero={h} />
 
-        {/* 2. Categories (self-fetching) */}
+        {/* 2. Categories */}
         <section className="bg-[var(--background-card)] py-10 md:py-16 border-t border-[var(--border)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <CategoriesSection />
           </div>
         </section>
 
-        {/* 3. Featured Products (self-fetching) */}
+        {/* 3. Featured Products */}
         <section className="bg-[var(--background-secondary)] py-10 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FeaturedProducts />
           </div>
         </section>
 
-        {/* 4. Just Landed — real products, buyable directly.
-            Kept next to Featured Products so the two product sections sit
-            together, with the custom-orders card after them. */}
+        {/* 4. Just Landed */}
         {justLanded.length > 0 && (
           <section className="bg-[var(--background-card)] py-10 md:py-16 border-t border-[var(--border)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -472,7 +370,6 @@ function HomePageContent() {
                 subtitle="The most recent additions to our catalogue."
                 href="/products"
               />
-
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                 {justLanded.map((product) => (
                   <ProductCard
@@ -493,7 +390,10 @@ function HomePageContent() {
           </section>
         )}
 
-        {/* 5. Custom Orders — single, compact promotional card */}
+        {/* 5. Trust strip - moved higher */}
+        <ServiceTrustStrip />
+
+        {/* 6. Custom Orders */}
         <section className="bg-[var(--background-secondary)] py-8 md:py-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <PromoCard
@@ -507,9 +407,6 @@ function HomePageContent() {
           </div>
         </section>
 
-        {/* 6. Service & Trust strip */}
-        <ServiceTrustStrip />
-
         {/* 7. Recently Viewed */}
         <section className="bg-[var(--background-card)] py-10 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -517,7 +414,7 @@ function HomePageContent() {
           </div>
         </section>
 
-        {/* 8. Testimonials — real reviews only */}
+        {/* 8. Reviews */}
         {validReviews.length > 0 && (
           <section className="bg-[var(--background-secondary)] py-10 md:py-16 border-t border-[var(--border)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -528,21 +425,12 @@ function HomePageContent() {
                 href="/reviews"
                 linkLabel="Read All"
               />
-
               <div className="grid md:grid-cols-3 gap-4 md:gap-6">
                 {validReviews.map((review) => {
                   const displayName =
-                    review.customer_name ||
-                    review.user_name ||
-                    review.name ||
-                    'Customer';
-                  const reviewText = (
-                    review.review_text ||
-                    review.comment ||
-                    ''
-                  ).trim();
-                  const hasRating =
-                    typeof review.rating === 'number' && review.rating > 0;
+                    review.customer_name || review.user_name || review.name || 'Customer';
+                  const reviewText = (review.review_text || review.comment || '').trim();
+                  const hasRating = typeof review.rating === 'number' && review.rating > 0;
 
                   return (
                     <div
@@ -564,11 +452,9 @@ function HomePageContent() {
                           ))}
                         </div>
                       )}
-
                       <p className="font-body text-[var(--foreground-muted)] text-sm leading-relaxed">
-                        &ldquo;{reviewText}&rdquo;
+                        “{reviewText}”
                       </p>
-
                       <div className="mt-5 flex items-center gap-3">
                         <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-full flex items-center justify-center">
                           <span className="text-[var(--primary)] font-anton">
@@ -599,10 +485,8 @@ function HomePageContent() {
               Stay in the Loop
             </h2>
             <p className="font-body text-[#9A9A9A] mb-8 max-w-lg mx-auto text-sm md:text-base">
-              Get updates about new drops, promotions and collections delivered
-              to your inbox.
+              Get updates about new drops, promotions and collections delivered to your inbox.
             </p>
-
             <form
               onSubmit={handleNewsletterSubmit}
               className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto w-full"
@@ -625,19 +509,15 @@ function HomePageContent() {
                 <Send size={16} />
               </button>
             </form>
-
             {subscribeMessage && (
               <p
                 className={`font-body text-sm mt-4 ${
-                  subscribeMessage.includes('successfully')
-                    ? 'text-green-500'
-                    : 'text-red-500'
+                  subscribeMessage.includes('successfully') ? 'text-green-500' : 'text-red-500'
                 }`}
               >
                 {subscribeMessage}
               </p>
             )}
-
             <p className="font-body text-[var(--foreground-muted)] text-xs mt-4">
               No spam. Unsubscribe anytime.
             </p>
