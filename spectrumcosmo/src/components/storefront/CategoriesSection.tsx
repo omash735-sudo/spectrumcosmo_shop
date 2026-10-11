@@ -21,8 +21,8 @@ export default function CategoriesSection() {
 
   useEffect(() => {
     apiFetch('/api/public/categories')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (Array.isArray(data)) setCategories(data);
       })
       .catch(console.error);
@@ -31,63 +31,58 @@ export default function CategoriesSection() {
   if (categories.length === 0) return null;
 
   return (
-    <div className="relative px-4 sm:px-0">
-      <div className="flex items-center justify-between mb-5 md:mb-8">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-1 h-5 sm:h-6 md:h-7 bg-gradient-to-t from-orange-500 to-orange-600 rounded-full"></div>
-          <h2 className="text-base sm:text-lg md:text-2xl font-bold font-kanit text-gray-900 dark:text-white">
+    <div>
+      <div className="flex items-end justify-between gap-4 mb-6 md:mb-8">
+        <div>
+          <span className="inline-block text-[var(--primary)] text-[11px] md:text-xs font-kanit font-bold uppercase tracking-[0.18em] mb-1.5">
+            Browse
+          </span>
+          <h2 className="font-anton text-2xl md:text-3xl lg:text-4xl text-[var(--foreground)] leading-tight tracking-wide uppercase">
             Shop by Category
           </h2>
         </div>
         <Link
           href="/products"
-          className="text-xs md:text-sm text-orange-600 dark:text-orange-500 hover:text-orange-700 dark:hover:text-orange-400 font-kanit font-medium flex items-center gap-1 group"
+          className="group inline-flex items-center gap-1.5 shrink-0 font-heading font-semibold text-sm text-[var(--foreground-muted)] hover:text-[var(--primary)] transition-colors"
         >
-          View all
-          <ArrowRight size={12} className="md:w-[14px] md:h-[14px] group-hover:translate-x-1 transition-transform" />
+          View All
+          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
         </Link>
       </div>
 
-      <div
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5"
-        data-onboarding="categories"
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
         {categories.map((category) => (
           <Link
             key={category.id}
             href={`/products?category=${encodeURIComponent(category.name)}`}
-            className="group block touch-manipulation"
+            className="group block"
           >
-            <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 shadow-sm group-hover:shadow-xl transition-all duration-300">
-              <div className="relative aspect-square overflow-hidden">
-                {category.image_url ? (
-                  <Image
-                    src={category.image_url}
-                    alt={category.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30">
-                    <FolderOpen size={24} className="text-orange-400 sm:w-6 sm:h-6 md:w-7 md:h-7" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 hidden md:flex">
-                  <span className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-anton font-semibold shadow-lg flex items-center gap-1 tracking-wider">
-                    Shop <ArrowRight size={10} className="sm:w-3 sm:h-3" />
-                  </span>
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-[var(--background-secondary)] border border-[var(--border)] transition-all duration-300 group-hover:border-[var(--primary)]/40 group-hover:shadow-lg">
+              {category.image_url ? (
+                <Image
+                  src={category.image_url}
+                  alt={category.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5">
+                  <FolderOpen size={28} className="text-[var(--primary)]" />
                 </div>
-              </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <div className="text-center mt-1.5 sm:mt-2 md:mt-3">
-              <h3 className="font-kanit font-semibold text-gray-800 dark:text-gray-200 text-[11px] sm:text-xs md:text-sm lg:text-base group-hover:text-orange-500 transition-colors line-clamp-1">
+
+            <div className="mt-3 text-center">
+              <h3 className="font-kanit font-semibold text-[var(--foreground)] text-sm sm:text-base group-hover:text-[var(--primary)] transition-colors line-clamp-1">
                 {category.name}
               </h3>
-              <p className="font-kanit text-[9px] sm:text-[10px] md:text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                {category.product_count || 0} items
-              </p>
+              {category.product_count > 0 && (
+                <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                  {category.product_count} items
+                </p>
+              )}
             </div>
           </Link>
         ))}
